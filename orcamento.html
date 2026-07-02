@@ -4,7 +4,7 @@
   v1 (front apenas) · replica a proposta em PDF com seleção clicável.
 
   PLACEHOLDERS / PENDÊNCIAS:
-  - WhatsApp: usando +55 45 99907-7874. Jordan vai migrar pro DDD 41 (Curitiba) → trocar em WHATSAPP abaixo.
+  - Telefone: usando +55 45 99907-7874 (link tel: no rodapé). Jordan vai migrar pro DDD 41 (Curitiba) → trocar lá.
   - Fotos: extraídas do PDF (resolução de tela). Substituir pelas versões em alta que o Jordan vai mandar.
   - Marca nova do Diogo aplicada (2026-07-02): paleta oficial (petróleo #003646, aço #4F6278, preto #1D1D1B,
     cinza #706F6F, off-white #E8E1DC) + wordmark/assinatura em Assets/Marca/. Fonte display é aproximação
@@ -662,7 +662,6 @@
         A disponibilidade da data &eacute; confirmada diretamente com o Jordan.
       </div>
       <a class="cta desativado" id="cta-contrato" href="#">Gerar contrato</a>
-      <a class="limpar" id="cta-whatsapp" href="#" target="_blank" rel="noopener" style="text-align:center">Prefere conversar antes? Chame o Jordan no WhatsApp</a>
       <button class="limpar" type="button" id="limpar">Limpar escolhas</button>
     </div>
   </div>
@@ -683,9 +682,6 @@
 <script>
 (function(){
   "use strict";
-
-  /* PLACEHOLDER: trocar pro número novo com DDD 41 quando o Jordan migrar */
-  var WHATSAPP = "5545999077874";
 
   var reduzMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
@@ -733,7 +729,6 @@
     var totalBloco = document.getElementById("total-bloco");
     var valorTotal = document.getElementById("valor-total");
     var cta = document.getElementById("cta-contrato");
-    var zap = document.getElementById("cta-whatsapp");
 
     if (!estado.pacote){
       vazio.hidden = false;
@@ -742,7 +737,6 @@
       cta.classList.add("desativado");
       cta.setAttribute("aria-disabled", "true");
       cta.href = "#";
-      zap.href = "https://wa.me/" + WHATSAPP;
       return;
     }
 
@@ -780,22 +774,12 @@
     totalBloco.hidden = false;
     valorTotal.textContent = brl.format(total);
 
-    /* CTA principal: leva a seleção pra página do contrato via query string */
+    /* único CTA: leva a seleção pra página do contrato via query string */
     var extrasIds = estado.extras.map(function(btn){ return btn.dataset.id; });
     cta.href = "contrato.html?p=" + estado.pacote.dataset.id
       + (extrasIds.length ? "&x=" + extrasIds.join(",") : "");
     cta.classList.remove("desativado");
     cta.removeAttribute("aria-disabled");
-
-    /* secundário: conversar com o Jordan levando o orçamento montado */
-    var linhas = itens.map(function(btn){
-      return "- " + btn.dataset.rotulo + ": " + brl.format(Number(btn.dataset.preco));
-    });
-    var msg = "Olá, Jordan! Montei meu orçamento pelo site:\n"
-      + linhas.join("\n")
-      + "\nTotal: " + brl.format(total)
-      + "\nPodemos conversar sobre a disponibilidade da data?";
-    zap.href = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msg);
   }
 
   /* seleção */
