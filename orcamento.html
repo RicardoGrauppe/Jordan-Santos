@@ -776,7 +776,7 @@
 
     /* único CTA: leva a seleção pra página do contrato via query string */
     var extrasIds = estado.extras.map(function(btn){ return btn.dataset.id; });
-    cta.href = "contrato.html?p=" + estado.pacote.dataset.id
+    cta.href = "/contrato?p=" + estado.pacote.dataset.id
       + (extrasIds.length ? "&x=" + extrasIds.join(",") : "");
     cta.classList.remove("desativado");
     cta.removeAttribute("aria-disabled");
