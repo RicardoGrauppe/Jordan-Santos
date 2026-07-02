@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <!--
   Contrato · Jordan Santos Fotografia
-  v1 (front apenas) · recebe a seleção do orcamento.html via query string (?p=pacote&x=extras),
+  v1 (front apenas) · recebe a seleção do index.html (orçamento) via query string (?p=pacote&x=extras),
   coleta os dados do casal/evento e gera o contrato preenchido (texto integral do docx do Jordan).
-  Só visualizar e enviar por e-mail (mailto) — sem baixar nem editar depois de gerado, de propósito.
-  E-mail escolhido em vez de WhatsApp porque o Jordan pediu isso pra documentação/assinatura na
-  reunião de 23/04 ("comunicação com esse público é mais por e-mail... por ser documentação").
-  Assinatura digital (Autentique) fica pra fase 2.
+  Ação única: "Gerar contrato" mostra o documento pra revisão — sem botão de envio por enquanto
+  (o passo seguinte — e-mail, assinatura digital via Autentique etc. — será decidido na fase 2).
 
   PLACEHOLDERS / PENDÊNCIAS:
   - Texto do contrato transcrito VERBATIM de "contrato de casamento.docx" (inclusive duas cláusulas
@@ -152,23 +150,6 @@
   .sem-selecao a{display:inline-block;margin-top:14px}
 
   /* documento gerado */
-  .barra-acoes{
-    position:sticky;top:0;z-index:5;
-    background:var(--paper);
-    border-bottom:1px solid var(--line);
-    padding:14px 24px;
-    display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
-  }
-  .botao-mini{
-    display:inline-block;
-    font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
-    padding:11px 26px;border-radius:999px;
-    text-decoration:none;
-  }
-  .botao-mini.cheio{background:var(--noir);color:#fff}
-  .botao-mini:hover{opacity:.8}
-  .botao-mini:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-
   #documento{max-width:760px;margin:40px auto 100px;padding:0 30px}
   #documento h2{
     font-family:var(--serif);font-weight:500;font-size:21px;
@@ -216,7 +197,7 @@
 
   @media print{
     body{font-size:12px}
-    .topo,.intro,form,.sem-selecao,.barra-acoes{display:none !important}
+    .topo,.intro,form,.sem-selecao{display:none !important}
     #documento{display:block !important;max-width:none;margin:0;padding:0}
     #documento .campo{border-bottom:none}
     @page{margin:2cm}
@@ -298,11 +279,6 @@
       <p class="nota-form">Ao gerar, voc&ecirc;s revisam o contrato completo antes de qualquer assinatura.</p>
     </form>
   </div>
-</div>
-
-<!-- barra de ações do documento -->
-<div class="barra-acoes" id="barra-acoes" hidden>
-  <a class="botao-mini cheio" id="enviar" href="#">Enviar contrato por e-mail</a>
 </div>
 
 <!-- contrato gerado (texto integral do documento do Jordan) -->
@@ -508,7 +484,6 @@
   /* geração do contrato */
   var form = document.getElementById("form-contrato");
   var documento = document.getElementById("documento");
-  var barra = document.getElementById("barra-acoes");
 
   function valorCampo(id){
     var el = document.getElementById(id);
@@ -599,27 +574,8 @@
     document.querySelectorAll('[data-campo="cidade-assinatura"]').forEach(function(span){ span.textContent = valorCampo("cidade") || "________________"; });
     document.querySelectorAll('[data-campo="data-assinatura"]').forEach(function(span){ span.textContent = dataExtenso(new Date()); });
 
-    /* envio por e-mail: o Jordan prefere e-mail (não WhatsApp) pra tudo que é documentação/assinatura */
-    var resumoItens = itens.map(function(id){ return "- " + CATALOGO[id].curto + ": " + brl.format(CATALOGO[id].preco); }).join("\n");
-    var dataEventoTexto = dataEvento ? dataExtenso(new Date(dataEvento.getTime() + dataEvento.getTimezoneOffset()*60000)) : "a combinar";
-    var assunto = "Contrato de Casamento - " + valorCampo("noivo") + " & " + valorCampo("noiva");
-    var corpo = "Olá, Jordan!\n\n"
-      + "Revisamos o contrato completo pelo site e gostaríamos de seguir com a assinatura.\n\n"
-      + "Casal: " + valorCampo("noivo") + " & " + valorCampo("noiva") + "\n"
-      + "Telefones: " + valorCampo("tel-noivo") + " / " + valorCampo("tel-noiva") + "\n"
-      + "Data do casamento: " + dataEventoTexto + "\n"
-      + "Local: " + valorCampo("local") + " às " + valorCampo("horario") + "\n\n"
-      + "Pacote e adicionais escolhidos:\n" + resumoItens + "\n"
-      + "Valor total: " + brl.format(total) + "\n"
-      + "Entrada (30%): " + brl.format(entrada) + "\n\n"
-      + "Aguardamos o retorno para os próximos passos.";
-    document.getElementById("enviar").href = "mailto:jordansantosfotografia@gmail.com"
-      + "?subject=" + encodeURIComponent(assunto)
-      + "&body=" + encodeURIComponent(corpo);
-
     app.hidden = true;
     documento.hidden = false;
-    barra.hidden = false;
     window.scrollTo(0, 0);
   });
 })();
