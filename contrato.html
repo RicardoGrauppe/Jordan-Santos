@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<!--
+  Contrato · Jordan Santos Fotografia
+  v1 (front apenas) · recebe a seleção do orcamento.html via query string (?p=pacote&x=extras),
+  coleta os dados do casal/evento e gera o contrato preenchido (texto integral do docx do Jordan).
+  Só visualizar e enviar por e-mail (mailto) — sem baixar nem editar depois de gerado, de propósito.
+  E-mail escolhido em vez de WhatsApp porque o Jordan pediu isso pra documentação/assinatura na
+  reunião de 23/04 ("comunicação com esse público é mais por e-mail... por ser documentação").
+  Assinatura digital (Autentique) fica pra fase 2.
+
+  PLACEHOLDERS / PENDÊNCIAS:
+  - Texto do contrato transcrito VERBATIM de "contrato de casamento.docx" (inclusive duas cláusulas
+    numeradas como OITAVA e pequenos erros de digitação do original). Ajustes são do Jordan.
+  - WhatsApp/Pix/e-mail usando DDD 45 → atualizar quando o Jordan migrar pro DDD 41.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrato | Jordan Santos Fotografia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --ink:#1D1D1B;
+    --ink-soft:#706F6F;
+    --accent:#003646;
+    --accent-deep:#4F6278;
+    --noir:#1D1D1B;
+    --line:#E8E1DC;
+    --sombra:0 10px 34px rgba(29,29,27,.14);
+    --serif:"Bodoni Moda", "Didot", Georgia, serif;
+    --sans:"Jost", "Helvetica Neue", sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-weight:300;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  img{display:block;max-width:100%}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  a{color:var(--accent)}
+
+  .miolo{max-width:720px;margin:0 auto;padding:0 24px}
+
+  .topo{padding:44px 24px 0;text-align:center}
+  .topo img{width:min(230px,56vw);margin:0 auto}
+  .voltar{
+    display:inline-block;
+    margin-top:18px;
+    font-size:11px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    text-decoration:none;
+  }
+  .voltar:hover{color:var(--accent)}
+
+  .intro{text-align:center;padding:56px 0 8px}
+  .dica{
+    display:inline-block;
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--accent);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 14px;
+    margin-bottom:26px;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:clamp(28px,5vw,40px);
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:12px;
+  }
+  .sub{color:var(--ink-soft)}
+
+  /* formulário */
+  form{margin:56px 0 90px}
+  fieldset{border:none;margin-bottom:52px}
+  legend{
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:23px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:24px;
+  }
+  .grade{display:grid;grid-template-columns:1fr 1fr;gap:26px 28px}
+  .campo-form{display:flex;flex-direction:column}
+  .campo-form.largo{grid-column:1 / -1}
+  label{
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:7px;
+  }
+  input,select{
+    font:inherit;
+    color:var(--ink);
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    padding:9px 2px;
+    border-radius:0;
+    -webkit-appearance:none;
+  }
+  input:focus,select:focus{outline:none;border-bottom-color:var(--accent)}
+  input:focus-visible,select:focus-visible{outline:none}
+  input[readonly]{color:var(--ink-soft)}
+
+  .status-campo{
+    display:block;min-height:16px;
+    font-size:11.5px;margin-top:6px;
+    color:var(--ink-soft);
+  }
+  .status-campo.erro{color:#A33B3B}
+  .status-campo.ok{color:var(--accent)}
+
+  .cta{
+    display:block;width:100%;
+    padding:19px 24px;
+    background:var(--noir);color:#fff;
+    text-align:center;text-decoration:none;
+    font-size:13px;letter-spacing:.22em;text-transform:uppercase;
+    border-radius:999px;
+    transition:opacity .2s ease;
+  }
+  .cta:hover{opacity:.85}
+  .cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+  .nota-form{margin-top:20px;font-size:13.5px;color:var(--ink-soft);text-align:center}
+
+  /* aviso sem seleção */
+  .sem-selecao{
+    margin:70px auto;max-width:520px;
+    padding:40px 30px;border:1px dashed var(--line);border-radius:14px;
+    text-align:center;color:var(--ink-soft);
+  }
+  .sem-selecao a{display:inline-block;margin-top:14px}
+
+  /* documento gerado */
+  .barra-acoes{
+    position:sticky;top:0;z-index:5;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+    padding:14px 24px;
+    display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  }
+  .botao-mini{
+    display:inline-block;
+    font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
+    padding:11px 26px;border-radius:999px;
+    text-decoration:none;
+  }
+  .botao-mini.cheio{background:var(--noir);color:#fff}
+  .botao-mini:hover{opacity:.8}
+  .botao-mini:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  #documento{max-width:760px;margin:40px auto 100px;padding:0 30px}
+  #documento h2{
+    font-family:var(--serif);font-weight:500;font-size:21px;
+    letter-spacing:.06em;text-align:center;margin-bottom:30px;
+  }
+  #documento h3{
+    font-size:14.5px;font-weight:500;letter-spacing:.05em;
+    margin:26px 0 10px;
+  }
+  #documento p, #documento li{
+    font-size:13.8px;line-height:1.8;margin-bottom:10px;text-align:justify;
+  }
+  #documento ol{padding-left:22px;margin-bottom:10px}
+  #documento .campo{
+    font-weight:500;
+    border-bottom:1px solid var(--line);
+    padding:0 4px;
+    white-space:pre-wrap;
+  }
+  #documento table{
+    width:100%;border-collapse:collapse;margin:14px 0 18px;
+    font-size:13.8px;
+  }
+  #documento th, #documento td{
+    border:1px solid #C9C4BD;
+    padding:8px 10px;text-align:left;
+  }
+  #documento th{
+    font-weight:500;letter-spacing:.08em;font-size:11.5px;text-transform:uppercase;
+    background:#F6F3F0;
+  }
+  #documento td.num{text-align:right;white-space:nowrap}
+  #documento .assinaturas{margin-top:56px}
+  #documento .assinaturas p{text-align:center;margin-bottom:44px}
+  #documento .linha-ass{
+    border-top:1px solid var(--ink);
+    max-width:420px;margin:0 auto;
+    padding-top:6px;text-align:center;font-size:12.5px;
+  }
+
+  @media (max-width:640px){
+    .grade{grid-template-columns:1fr}
+    #documento{padding:0 20px}
+  }
+
+  @media print{
+    body{font-size:12px}
+    .topo,.intro,form,.sem-selecao,.barra-acoes{display:none !important}
+    #documento{display:block !important;max-width:none;margin:0;padding:0}
+    #documento .campo{border-bottom:none}
+    @page{margin:2cm}
+  }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <img src="img/logo-principal-petroleo.png" alt="Jordan Santos">
+  <div><a class="voltar" href="orcamento.html">&larr; Voltar ao or&ccedil;amento</a></div>
+</header>
+
+<!-- aviso quando a página é aberta sem seleção -->
+<div class="sem-selecao" id="sem-selecao" hidden>
+  Nenhum pacote selecionado ainda. Monte primeiro o seu or&ccedil;amento.
+  <br><a href="orcamento.html">Ir para o or&ccedil;amento</a>
+</div>
+
+<div id="app">
+  <section class="intro miolo">
+    <span class="dica">O come&ccedil;o oficial de tudo</span>
+    <h1>Quase l&aacute;</h1>
+    <p class="sub">Alguns minutos para preencher. O resto &eacute; sobre viver o dia.</p>
+  </section>
+
+  <div class="miolo">
+    <form id="form-contrato" novalidate>
+      <fieldset>
+        <legend>O casal</legend>
+        <div class="grade">
+          <div class="campo-form"><label for="noivo">Nome do noivo</label><input id="noivo" required autocomplete="name"></div>
+          <div class="campo-form"><label for="cpf-noivo">CPF do noivo</label><input id="cpf-noivo" required inputmode="numeric" placeholder="000.000.000-00"></div>
+          <div class="campo-form"><label for="noiva">Nome da noiva</label><input id="noiva" required autocomplete="name"></div>
+          <div class="campo-form"><label for="cpf-noiva">CPF da noiva</label><input id="cpf-noiva" required inputmode="numeric" placeholder="000.000.000-00"></div>
+          <div class="campo-form"><label for="tel-noivo">Telefone do noivo</label><input id="tel-noivo" required inputmode="tel" placeholder="(00) 00000-0000"></div>
+          <div class="campo-form"><label for="tel-noiva">Telefone da noiva</label><input id="tel-noiva" required inputmode="tel" placeholder="(00) 00000-0000"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Endere&ccedil;o</legend>
+        <div class="grade">
+          <div class="campo-form">
+            <label for="cep">CEP</label>
+            <input id="cep" required inputmode="numeric" placeholder="00000-000" autocomplete="postal-code" maxlength="9">
+            <span class="status-campo" id="status-cep" aria-live="polite"></span>
+          </div>
+          <div class="campo-form"><label for="numero">N&uacute;mero</label><input id="numero" required inputmode="numeric"></div>
+          <div class="campo-form largo"><label for="endereco">Endere&ccedil;o (rua ou avenida)</label><input id="endereco" required autocomplete="street-address"></div>
+          <div class="campo-form"><label for="complemento">Complemento (opcional)</label><input id="complemento"></div>
+          <div class="campo-form"><label for="bairro">Bairro</label><input id="bairro" required></div>
+          <div class="campo-form"><label for="cidade">Cidade</label><input id="cidade" required></div>
+          <div class="campo-form"><label for="estado">Estado</label><input id="estado" required value="Paraná"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>O evento</legend>
+        <div class="grade">
+          <div class="campo-form"><label for="data-evento">Data do casamento</label><input id="data-evento" type="date" required></div>
+          <div class="campo-form"><label for="horario">Hor&aacute;rio da cerim&ocirc;nia</label><input id="horario" type="time" required></div>
+          <div class="campo-form largo"><label for="local">Local do evento (espa&ccedil;o, igreja ou endere&ccedil;o)</label><input id="local" required></div>
+          <div class="campo-form largo">
+            <label for="origem">Como voc&ecirc;s ficaram sabendo do Jordan?</label>
+            <select id="origem">
+              <option value="">Prefiro n&atilde;o dizer</option>
+              <option>Instagram</option>
+              <option>Indica&ccedil;&atilde;o de amigos</option>
+              <option>Cerimonialista</option>
+              <option>Google</option>
+              <option>Outro</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <button class="cta" type="submit">Gerar contrato</button>
+      <p class="nota-form">Ao gerar, voc&ecirc;s revisam o contrato completo antes de qualquer assinatura.</p>
+    </form>
+  </div>
+</div>
+
+<!-- barra de ações do documento -->
+<div class="barra-acoes" id="barra-acoes" hidden>
+  <a class="botao-mini cheio" id="enviar" href="#">Enviar contrato por e-mail</a>
+</div>
+
+<!-- contrato gerado (texto integral do documento do Jordan) -->
+<article id="documento" hidden>
+  <h2>Contrato de Presta&ccedil;&atilde;o de Servi&ccedil;os de Fotografia</h2>
+
+  <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endere&ccedil;o na rua Jesu&iacute;tas, Carim&atilde; N&ordm;390, Foz do Igua&ccedil;u &ndash; Paran&aacute;, CEP: 85855700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de servi&ccedil;os relacionados &agrave; fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>
+
+  <p>
+    NOIVO: <span class="campo" data-campo="noivo"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noivo"></span><br>
+    NOIVA: <span class="campo" data-campo="noiva"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noiva"></span><br>
+    ENDERE&Ccedil;O: <span class="campo" data-campo="endereco"></span> &nbsp; N&ordm;: <span class="campo" data-campo="numero"></span> &nbsp; BAIRRO: <span class="campo" data-campo="bairro"></span><br>
+    CIDADE: <span class="campo" data-campo="cidade"></span> &nbsp; COMPLEMENTO: <span class="campo" data-campo="complemento"></span> &nbsp; ESTADO: <span class="campo" data-campo="estado"></span> &nbsp; CEP: <span class="campo" data-campo="cep"></span><br>
+    TELEFONE NOIVO: <span class="campo" data-campo="tel-noivo"></span> &nbsp; TELEFONE NOIVA: <span class="campo" data-campo="tel-noiva"></span>
+  </p>
+
+  <p>Tem entre si como certo e ajustado o presente contrato de presta&ccedil;&atilde;o de servi&ccedil;os que ser&aacute; regido pelas seguintes cl&aacute;usulas:</p>
+
+  <h3>CL&Aacute;USULA PRIMEIRA &ndash; OBJETO:</h3>
+  <p>Constitui o objeto do presente contrato a presta&ccedil;&atilde;o de servi&ccedil;os fotogr&aacute;ficos e/ou de v&iacute;deos, conforme descrito abaixo:</p>
+  <p>
+    DESCRI&Ccedil;&Atilde;O DO EVENTO: Casamento<br>
+    DATA DO EVENTO: <span class="campo" data-campo="data-formatada"></span><br>
+    LOCAL DO EVENTO: <span class="campo" data-campo="local"></span><br>
+    HOR&Aacute;RIO: <span class="campo" data-campo="horario"></span>
+  </p>
+  <table aria-label="Serviços contratados">
+    <thead>
+      <tr><th>Qtd</th><th>Descri&ccedil;&atilde;o dos servi&ccedil;os</th><th>Valor total</th></tr>
+    </thead>
+    <tbody id="tabela-servicos"></tbody>
+  </table>
+
+  <h3>CL&Aacute;USULA SEGUNDA &ndash; VALOR CONTRATUAL E CONDI&Ccedil;&Otilde;ES DE PAGAMENTO:</h3>
+  <ol>
+    <li>Pelo objeto ora contratado, a CONTRATANTE pagar&aacute; &agrave; CONTRATADA o valor total de <span class="campo" data-campo="valor-total"></span> com entrada de 30% (<span class="campo" data-campo="valor-entrada"></span>) na assinatura do contrato mediante recibo ou dep&oacute;sito banc&aacute;rio, entendida como reserva de data. Chave Pix cel 45999077874 nome Jordan Sant.</li>
+    <li>Pagamentos antecipados n&atilde;o sofrem altera&ccedil;&otilde;es de valores e nem acr&eacute;scimos de juros em caso de parcelas, exceto por cart&atilde;o de cr&eacute;dito via o sistema &ldquo;Pagseguro&rdquo; (ou outro meio que utilizar).</li>
+    <li>Os pagamentos devem ocorrer nas datas combinadas, sendo cab&iacute;vel multa de 2% calculados sobre o valor total deste contrato, mais multa morat&oacute;ria de 0,5% por dia de atraso ap&oacute;s o evento.</li>
+    <li>O n&atilde;o cumprimento das obriga&ccedil;&otilde;es financeiras do CONTRATANTE acarretar&aacute; na nulidade do cumprimento dos prazos por parte CONTRATADO, a n&atilde;o entrega dos materiais at&eacute; a regulariza&ccedil;&atilde;o das obriga&ccedil;&otilde;es, e em alguns casos espec&iacute;ficos, a n&atilde;o realiza&ccedil;&atilde;o do servi&ccedil;o contratado.</li>
+    <li>Para eventos em cidades com 100km de Foz do Igua&ccedil;u ou fora do estado do Paran&aacute;, fica estabelecido que os CONTRATANTES suportar&atilde;o as despesas de transportes, terrestres ou a&eacute;reos, com o m&iacute;nimo de uma di&aacute;ria de hospedagem para o CONTRATADO e sua equipe.</li>
+    <li>Eventuais acr&eacute;scimos ao or&ccedil;amento por conta de horas-extras, estacionamento, alimenta&ccedil;&atilde;o, taxas cobradas por Igrejas ou sal&otilde;es de eventos, dever&atilde;o ser reembolsadas &agrave; CONTRATADA, em uma s&oacute; parcela.</li>
+  </ol>
+
+  <h3>CL&Aacute;USULA TERCEIRA &ndash; SOBRE O CANCELAMENTO DO EVENTO OU RESCIS&Atilde;O DO CONTRATO:</h3>
+  <p>Diante da possibilidade de o evento ter sua data alterada, ser definitivamente cancelado ou as partes desejarem rescindir o presente contrato, as partes estabelecem o seguinte:</p>
+  <ol>
+    <li>No caso de falecimento de qualquer dos CONTRATANTES, ANTES DO INICIO DAS ATIVIDADES PARA O EVENTO, o presente contrato ser&aacute; rescindido de pleno direito, e ao CONTRATANTE sup&eacute;rstite ser&aacute; devolvido 100% do que j&aacute; tenha sido pago, sem quaisquer acr&eacute;scimos, AP&Oacute;S O IN&Iacute;CIO DAS ATIVIDADES ser&aacute; devolvido 80%. No caso de falecimento do CONTRATADO, os CONTRATANTES poder&atilde;o optar pela continua&ccedil;&atilde;o do contrato com a equipe do CONTRATADO ou pela rescis&atilde;o do contrato com recebimento na mesma regra citada neste item. O falecimento de qualquer das partes ap&oacute;s o evento n&atilde;o interferir&aacute; no cumprimento integral deste contrato.</li>
+    <li>Caso os CONTRATANTES decidam mudar a data do evento, havendo disponibilidade na agenda da CONTRATADA o contrato seguir&aacute; com a tabela de pre&ccedil;os da nova data escolhida junto com uma multa de 10% sobre o valor do contrato atual, exceto por cat&aacute;strofes naturais ou justificativas de for&ccedil;a maior. N&atilde;o havendo disponibilidade de agenda pela CONTRATADA, os CONTRATANTES dever&atilde;o pedir a rescis&atilde;o e o c&aacute;lculo da multa obedecer&aacute; aos crit&eacute;rios percentuais fixados no item a seguir.</li>
+    <li>Em caso de rescis&atilde;o, por ambas as partes, o DESISTENTE dever&aacute; comunicar com anteced&ecirc;ncia apresentando uma justificativa atrav&eacute;s do e-mail da outra parte, pagando multa contratual, al&eacute;m dos demais valores, fixada nos seguintes crit&eacute;rios:</li>
+  </ol>
+  <p>Multa Contratual sobre o valor total do contrato:</p>
+  <ol>
+    <li>Comunica&ccedil;&atilde;o com anteced&ecirc;ncia de at&eacute; 300 dias em rela&ccedil;&atilde;o ao evento &ndash; multa de 10%.</li>
+    <li>Comunica&ccedil;&atilde;o com anteced&ecirc;ncia de 299 at&eacute; 240 dias em rela&ccedil;&atilde;o ao evento &ndash; multa de 20%.</li>
+    <li>Comunica&ccedil;&atilde;o com anteced&ecirc;ncia de 239 at&eacute; 180 dias em rela&ccedil;&atilde;o ao evento &ndash; multa de 30%.</li>
+    <li>Comunica&ccedil;&atilde;o com anteced&ecirc;ncia de 179 at&eacute; 120 dias em rela&ccedil;&atilde;o ao evento &ndash; multa de 40%.</li>
+    <li>Comunica&ccedil;&atilde;o com anteced&ecirc;ncia de 119 at&eacute; 60 dias em rela&ccedil;&atilde;o ao evento &ndash; multa de 50%.</li>
+    <li>Comunica&ccedil;&atilde;o com anteced&ecirc;ncia de 59 at&eacute; 31 dias em rela&ccedil;&atilde;o ao evento &ndash; multa de 70%.</li>
+    <li>Comunica&ccedil;&atilde;o com anteced&ecirc;ncia inferior a 30 dias em rela&ccedil;&atilde;o ao evento &ndash; multa de 80%.</li>
+  </ol>
+  <p>Reserva de data:</p>
+  <p>O valor de reserva de data n&atilde;o &eacute; pass&iacute;vel de resgate e n&atilde;o tem rela&ccedil;&atilde;o com o valor da multa rescis&oacute;ria &ndash; Visto que trabalhamos com apenas um evento por dia.</p>
+  <p>Os gastos e preju&iacute;zos do CONTRATADO:</p>
+  <ol>
+    <li>Em caso de rescis&atilde;o pelo CONTRATANTE, este se responsabilizar&aacute; por todos os gastos e preju&iacute;zos que o CONTRATADO j&aacute; teve em virtude do presente contrato, al&eacute;m das demais obriga&ccedil;&otilde;es deste par&aacute;grafo.</li>
+    <li>Em caso do n&atilde;o comparecimento ao evento por parte da CONTRATADA, sujeitar&aacute; aos CONTRATANTES o pagamento de multa em 100% (cem por cento) do valor deste contrato, mais 100% (cem por cento) do mesmo valor aos pelos danos morais e materiais.</li>
+    <li>Nas hip&oacute;teses de caso fortuito ou de for&ccedil;a maior que o impe&ccedil;a de estar presente ao evento objeto deste contrato, a CONTRATADA poder&aacute; cumprir as obriga&ccedil;&otilde;es assumidas neste contrato atrav&eacute;s da nomea&ccedil;&atilde;o de outros profissionais que possuam as mesmas capacita&ccedil;&otilde;es t&eacute;cnicas e as mesmas caracter&iacute;sticas est&eacute;ticas, sem que isso represente infra&ccedil;&atilde;o contratual.</li>
+  </ol>
+
+  <h3>CL&Aacute;USULA QUARTA &ndash; MATERIAL DE ESCOLHA E PRAZOS:</h3>
+  <ol>
+    <li>Todas as fotos ser&atilde;o editadas ap&oacute;s passar por uma sele&ccedil;&atilde;o, e enviadas para o site de escolha em at&eacute; (20 dias &uacute;teis), podendo ser prorrogados por mais (15 dias &uacute;teis) em per&iacute;odos sazonais com aviso pr&eacute;vio. ATEN&Ccedil;&Atilde;O: Contratantes do PACOTES DIGITAL est&atilde;o isentos do item 2 ao 7 desta cl&aacute;usula.</li>
+    <li>O CONTRATANTE ter&aacute; um prazo de (30 dias) para selecionar as fotos, podendo ser prorrogado gratuitamente por mais (15 dias). Se ainda sim precisar de mais tempo, dever&aacute; escolher uma das seguintes op&ccedil;&otilde;es: para mais 15 dias no site de escolha (R$ 50,00); para mais 30 dias no site de escolha (R$ 100,00); para mais 60 dias no site de escolha (R$ 150,00).</li>
+    <li>Ap&oacute;s finalizada a sele&ccedil;&atilde;o o CONTRATANTE dever&aacute; clicar no bot&atilde;o ENVIAR SELE&Ccedil;&Atilde;O. A devolu&ccedil;&atilde;o da lista escolhida &eacute; feita automaticamente atrav&eacute;s do pr&oacute;prio sistema.</li>
+    <li>Ap&oacute;s a sele&ccedil;&atilde;o das fotos, uma amostra do &aacute;lbum ser&aacute; apresentada ao CONTRATANTE em at&eacute; (30 dias &uacute;teis) podendo ser prorrogado por mais (15 dias &uacute;teis) em per&iacute;odos sazonais com aviso pr&eacute;vio. O mesmo ter&aacute; um prazo de at&eacute; (7 dias) para solicitar pequenos ajustes ou aprovar para a impress&atilde;o.</li>
+    <li>A primeira altera&ccedil;&atilde;o nas p&aacute;ginas do &aacute;lbum &eacute; gratuita e irrevers&iacute;vel. Ap&oacute;s feitas as altera&ccedil;&otilde;es, na segunda solicita&ccedil;&atilde;o ser&aacute; cobrada uma taxa de R$ 50,00 pelos custos de diagrama&ccedil;&atilde;o n&atilde;o previstos no or&ccedil;amento.</li>
+    <li>Ap&oacute;s aprovado, o &aacute;lbum &eacute; enviado para produ&ccedil;&atilde;o e entregue ao CONTRATANTE em at&eacute; (45 dias &uacute;teis).</li>
+    <li>N&atilde;o finalizada a sele&ccedil;&atilde;o em (60 dias adicionais) ap&oacute;s o per&iacute;odo gratuito de (45 dias) anula o cumprimento de todos os prazos e passa a aguardar a vez at&eacute; que outros trabalhos em dia passem a ser conclu&iacute;dos.</li>
+    <li>Ap&oacute;s (6 meses) sem finalizar a sele&ccedil;&atilde;o das fotos, o CONTRATANTE atribui &agrave; CONTRATADA a autoriza&ccedil;&atilde;o para escolher e editar as fotos do &aacute;lbum, al&eacute;m de poss&iacute;veis reajustes nos produtos ainda n&atilde;o enviados para produ&ccedil;&atilde;o.</li>
+    <li>Caso n&atilde;o informado na CL&Aacute;USULA 1 desse documento o fornecimento de todas as imagens, o material de escolha ter&aacute; a marca d&#39;&aacute;gua com os direitos autorais e o texto (PROIBIDO PUBLICAR). Significa que o pacote escolhido n&atilde;o inclui todas as imagens originais, e com base no art. 7&ordm;, inc. VII da Lei n&ordm; 9.610/98 o CONTRATANTE n&atilde;o possui autoriza&ccedil;&atilde;o para imprimir/revelar o material em outro estabelecimento ou publicar imagens sem o consentimento da CONTRATADA. Sendo o &uacute;nico arquivo original a ser entregue sem as prote&ccedil;&otilde;es de direitos autorais a quantidade de imagens escolhidas, conforme o pacote adquirido, sendo essas de livre utiliza&ccedil;&atilde;o e sem fins comerciais.</li>
+    <li>Todas as fotos ficam arquivadas em suportes digitais pertencentes &agrave; CONTRATADA por um per&iacute;odo de (18 meses) ap&oacute;s a data do evento, ficando &agrave; disposi&ccedil;&atilde;o do CONTRATANTE mediante nova remunera&ccedil;&atilde;o. Ap&oacute;s esse per&iacute;odo os arquivos ser&atilde;o apagados.</li>
+  </ol>
+
+  <h3>CL&Aacute;USULA QUINTA &ndash; AS OBRIGA&Ccedil;&Otilde;ES DOS CONTRATANTES:</h3>
+  <ol>
+    <li>Os CONTRATANTES obrigam-se a apresentar &agrave; CONTRATADA, com anteced&ecirc;ncia, um roteiro completo com a sequ&ecirc;ncia de fatos e hor&aacute;rios do que acontecer&aacute; durante o evento, principalmente se qualquer atra&ccedil;&atilde;o especial e/ou n&atilde;o comum estiver prevista.</li>
+    <li>Dever&atilde;o, os CONTRATANTES, no mesmo prazo, informar eventual desejo de ter fotografado algum momento espec&iacute;fico (ora&ccedil;&atilde;o, discurso, homenagem, etc.). Esta exig&ecirc;ncia permitir&aacute; que a CONTRATADA se prepare e se posicione adequadamente de forma a n&atilde;o deixar de registrar tudo o que for relevante, respeitados os limites t&eacute;cnicos para troca de bateria ou cart&otilde;es das c&acirc;meras. O n&atilde;o recebimento deste roteiro isentar&aacute; a CONTRATADA da responsabilidade pela falta de registro de acontecimentos n&atilde;o usuais.</li>
+    <li>Os CONTRATANTES dever&atilde;o comunicar inequivocamente, com anteced&ecirc;ncia, os locais e hor&aacute;rios da prepara&ccedil;&atilde;o dos noivos, local e hor&aacute;rio da cerim&ocirc;nia, local e hor&aacute;rio da festa, endere&ccedil;o e hor&aacute;rio de check in e check out do hotel, al&eacute;m dos contatos da assessoria e os demais envolvidos em rela&ccedil;&atilde;o ao evento. Caso as informa&ccedil;&otilde;es precisem ser alteradas, os CONTRATADOS tamb&eacute;m dever&atilde;o ser comunicados com anteced&ecirc;ncia.</li>
+    <li>A n&atilde;o comunica&ccedil;&atilde;o nos termos aqui estabelecidos isentar&aacute; a CONTRATADA de quaisquer responsabilidades pela n&atilde;o realiza&ccedil;&atilde;o de cada etapa do trabalho.</li>
+    <li>Para todos os efeitos, as partes pactuam como sendo obrigat&oacute;rio apenas o registro da prepara&ccedil;&atilde;o da noiva. A prepara&ccedil;&atilde;o do noivo e os detalhes da decora&ccedil;&atilde;o da igreja e do sal&atilde;o antes do evento iniciar somente ser&atilde;o registrados caso os hor&aacute;rios e as condi&ccedil;&otilde;es de tr&acirc;nsito permitam, quando ser&atilde;o inclu&iacute;dos no trabalho sem qualquer despesa extra para os CONTRATANTES.</li>
+    <li>Os CONTRATANTES se comprometem a n&atilde;o comparar a CONTRATADA com outras empresas em rela&ccedil;&atilde;o a prazos, formas de pagamento ou intervir nos fornecedores com a inten&ccedil;&atilde;o de minimizar custos, cabendo &agrave; CONTRATADA decidir tais a&ccedil;&otilde;es.</li>
+    <li>Os CONTRATANTES t&ecirc;m o livre direito de comunicar suas prefer&ecirc;ncias e contribuir com ideias e dicas para que o trabalho fique satisfat&oacute;rio.</li>
+    <li>Os CONTRATANTES se comprometem a n&atilde;o exigir c&oacute;pias id&ecirc;nticas de trabalhos j&aacute; existentes no mercado, respeitando eticamente a propriedade autoral de cada profissional. Al&eacute;m de n&atilde;o solicitar ideias que inferiorize o estilo de trabalho da CONTRATADA.</li>
+  </ol>
+
+  <h3>CL&Aacute;USULA SEXTA &ndash; AS OBRIGA&Ccedil;&Otilde;ES DA CONTRATADA:</h3>
+  <ol>
+    <li>Considerando a natureza do servi&ccedil;o e que seu produto &eacute; legalmente definido como obra intelectual, a CONTRATADA disp&otilde;e de ampla liberdade de cria&ccedil;&atilde;o, n&atilde;o havendo qualquer par&acirc;metro norteador por parte dos CONTRATANTES.</li>
+    <li>A CONTRATADA diligenciar&aacute; para que os servi&ccedil;os alcancem o n&iacute;vel t&eacute;cnico ideal, comprometendo-se a executar de forma regular e eficiente todas as atividades descritas na Cl&aacute;usula Primeira (objeto). No entanto, cabe aos CONTRATANTES gerenciar ou contratar uma empresa respons&aacute;vel pela organiza&ccedil;&atilde;o, espa&ccedil;o e ordem. Eventos tumultuados ou em locais desagrad&aacute;veis n&atilde;o s&atilde;o garantias para obter boas imagens.</li>
+    <li>A CONTRATADA se compromete em estar &agrave; disposi&ccedil;&atilde;o dos CONTRATANTES durante todo o dia do evento, ficando at&eacute; o t&eacute;rmino de todas as atividades do protocolo de acordo com o roteiro a ser enviado.</li>
+    <li>A CONTRATADA autoriza a perman&ecirc;ncia dos profissionais para fotografias e v&iacute;deos sociais (revistas, jornais, blogs e bandas, DJs, decoradores...) no dia do evento, desde que os mesmos se comprometam a n&atilde;o interferir ou obstruir o trabalho da CONTRATADA, e nem comercializar as imagens adquiridas, sendo de inteira responsabilidade dos mesmos o conte&uacute;do produzido e publicado, podendo responder por seus atos.</li>
+    <li>Ao autorizar a perman&ecirc;ncia dos profissionais sociais, os CONTRATANTES assumem estar cientes de que poder&atilde;o ocorrer poss&iacute;veis obstru&ccedil;&otilde;es nas cenas a serem gravadas ou fotografadas e de que a CONTRATADA n&atilde;o tem como remov&ecirc;-los na p&oacute;s-produ&ccedil;&atilde;o/edi&ccedil;&atilde;o.</li>
+    <li>Os &aacute;lbuns descritos nos pacotes s&atilde;o de qualidade profissional, produzidos por empresas brasileiras e portuguesas certificadas e conceituadas no mercado fotogr&aacute;fico. Em caso de poss&iacute;vel altera&ccedil;&atilde;o por parte dos fornecedores, a CONTRATADA se compromete em fornecer op&ccedil;&otilde;es de substitui&ccedil;&atilde;o com mesmo n&iacute;vel de qualidade.</li>
+  </ol>
+
+  <h3>CL&Aacute;USULA S&Eacute;TIMA &ndash; INFORMA&Ccedil;&Otilde;ES E CONDI&Ccedil;&Otilde;ES GERAIS:</h3>
+  <p>Os CONTRATANTES declaram-se cientes de que a correta presta&ccedil;&atilde;o dos servi&ccedil;os depende de alguns fatores que fogem do controle da CONTRATADA. Desta forma, os CONTRATANTES obrigam-se a:</p>
+  <ol>
+    <li>Atuar pessoalmente, ou atrav&eacute;s de cerimonialistas, ajudando a identificar os principais convidados e familiares, de forma que a eles seja dada aten&ccedil;&atilde;o especial durante o processo de fotografia e capta&ccedil;&atilde;o.</li>
+    <li>Orientar a assessoria do evento a consultar a CONTRATADA e equipe antes de autorizar qualquer ato da cerim&ocirc;nia ou da festa declarados no roteiro.</li>
+    <li>Disponibilizar refei&ccedil;&atilde;o sem qualquer custo para a equipe CONTRATADA. N&atilde;o sendo disponibilizada a alimenta&ccedil;&atilde;o, a equipe CONTRATADA poder&aacute; se ausentar do evento por (2 horas) para se alimentarem nos arredores, sendo depois reembolsados pelos CONTRATANTES.</li>
+    <li>Tratar com os locais da cerim&ocirc;nia e da festa, para que a CONTRATADA possa trabalhar livremente e sem que sejam cobradas quaisquer taxas, e que, se cobradas, ser&atilde;o depois reembolsadas pelos CONTRATANTES.</li>
+    <li>Disponibilizar vagas de estacionamento para os CONTRATADOS pr&oacute;ximos aos port&otilde;es de entrada da igreja e da recep&ccedil;&atilde;o para maior agilidade na prepara&ccedil;&atilde;o dos equipamentos evitando os atrasos.</li>
+    <li>Orientar a equipe de som e ilumina&ccedil;&atilde;o para que utilizem com modera&ccedil;&atilde;o efeitos de fuma&ccedil;a, evitar a utiliza&ccedil;&atilde;o de strobos, e principalmente RAIOS LASER, pois estes recursos podem danificar os sensores das c&acirc;meras fotogr&aacute;ficas, comprometendo seriamente a qualidade para capta&ccedil;&atilde;o das imagens.</li>
+    <li>Comunicar a empresa respons&aacute;vel pela montagem dos televisores, tel&otilde;es ou projetores a deixarem prontos os equipamentos no qual ser&atilde;o exibidos os poss&iacute;veis v&iacute;deos e/ou slide show para os devidos testes com no m&iacute;nimo de (4 horas) de anteced&ecirc;ncia. N&atilde;o sendo poss&iacute;vel testar por falta de montagem no hor&aacute;rio combinado, ou a falta de qualidade nesses equipamentos coloca em risco o nome da CONTRATADA, a qual fica o poder de decidir exibir ou n&atilde;o os v&iacute;deos.</li>
+    <li>Alertar pessoalmente, ou atrav&eacute;s da assessoria do evento, os convidados e eventuais representantes da imprensa, que a CONTRATADA tem a m&aacute;xima prioridade na capta&ccedil;&atilde;o, principalmente no que diz respeito a posicionamento e n&atilde;o obstru&ccedil;&atilde;o da visibilidade.</li>
+  </ol>
+
+  <h3>CL&Aacute;USULA OITAVA &ndash; SOBRE A LICEN&Ccedil;A PARA USO DE IMAGEM:</h3>
+  <ol>
+    <li>Os CONTRATANTES autorizam a CONTRATADA, na forma de cess&atilde;o de direitos de imagem, a utilizar as fotos e os v&iacute;deos captados no decorrer do ensaio e do evento, a t&iacute;tulo gratuito, destinados &agrave; divulga&ccedil;&atilde;o da CONTRATADA em qualquer material impresso ou audiovisual, tais como revistas, jornais, panfletos, televis&atilde;o, sites e nas redes sociais. Expostos ao p&uacute;blico em geral e/ou para uso interno como portfolio e que poder&aacute; ser inscrito em concursos nacionais e internacionais de fotografia.</li>
+    <li>A divulga&ccedil;&atilde;o dos v&iacute;deos e das fotos &eacute; opcional da CONTRATADA e n&atilde;o ser&aacute; publicada caso o mesmo fuja dos padr&otilde;es necess&aacute;rios na organiza&ccedil;&atilde;o, est&eacute;tica e ordem do evento ou interesses do mesmo.</li>
+    <li>Os CONTRATANTES autorizam expressamente o uso da pr&oacute;pria imagem e assumem a responsabilidade de comunicar aos seus convidados acerca deste poss&iacute;vel uso pela CONTRATADA, respondendo aos CONTRATANTES pela repara&ccedil;&atilde;o de danos que a CONTRATADA sofra caso algum convidado questione o tal uso.</li>
+    <li>A CONTRATADA autoriza as empresas fornecedoras e organizadoras do evento, com o consentimento dos CONTRATANTES, que se comprometem a avisar as mesmas, a utilizarem e compartilharem as imagens para fins publicit&aacute;rios apenas na internet, sempre atribuindo os devidos cr&eacute;ditos da CONTRATADA no per&iacute;odo de 12 meses ap&oacute;s o evento.</li>
+    <li>A fotografia &eacute; considerada como obra intelectual, e como tal est&aacute; protegida pelo art. 7&ordm;, inc. VII da Lei n&ordm; 9.610/98. De acordo com a lei, as empresas fornecedoras e organizadoras do evento que desejarem utilizar as imagens da CONTRATADA em m&iacute;dias impressas ou audiovisuais dever&atilde;o solicitar uma autoriza&ccedil;&atilde;o por escrito, contendo a finalidade e o prazo de veicula&ccedil;&atilde;o, mediante o pagamento de 10% do valor deste contrato por m&ecirc;s de utiliza&ccedil;&atilde;o aos CONTRATANTES e &agrave; CONTRATADA.</li>
+    <li>Caso os CONTRATANTES desejem ver suspensa a divulga&ccedil;&atilde;o deste material, no todo ou em partes, bastar&aacute; que comuniquem por escrito e de forma inequ&iacute;voca a CONTRATADA desta inten&ccedil;&atilde;o, assinalando ao mesmo o prazo de 5 dias &uacute;teis que, se obedecido, afastar&aacute; a caracteriza&ccedil;&atilde;o de danos patrimoniais ou morais. Os CONTRATANTES obrigam-se a orientar seus convidados em rela&ccedil;&atilde;o a este procedimento, que tamb&eacute;m &eacute; aplic&aacute;vel a eles.</li>
+  </ol>
+  <p>Par&aacute;grafo &Uacute;nico: A autoriza&ccedil;&atilde;o para a CONTRATADA &eacute; concedida a t&iacute;tulo gratuito, abrangendo o uso das imagens acima mencionadas, em todo territ&oacute;rio nacional e/ou exterior, sem limita&ccedil;&atilde;o de tempo ou n&uacute;mero de utiliza&ccedil;&otilde;es e de maneira alguma as imagens utilizadas poder&atilde;o agredir a imagem pessoal e a personalidade dos CONTRATANTES e convidados.</p>
+
+  <h3>CL&Aacute;USULA OITAVA &ndash; FORO DE ELEI&Ccedil;&Atilde;O:</h3>
+  <ol>
+    <li>Na assinatura deste documento, os CONTRATANTES declaram estar cientes sobre o estilo de trabalho da CONTRATADA.</li>
+    <li>As partes elegem como competente para dirimir quaisquer quest&otilde;es relacionadas &agrave; interpreta&ccedil;&atilde;o ou aplica&ccedil;&atilde;o deste contrato o foro da sede dos CONTRATANTES, em detrimento de qualquer outro por mais privilegiado que possa ser.</li>
+  </ol>
+
+  <p>E por estarem certos e ajustados, as partes declaram que o presente contrato foi objeto de ampla negocia&ccedil;&atilde;o em todas as suas cl&aacute;usulas, notadamente aquelas que definem o objeto, o pre&ccedil;o e as multas, assinando o mesmo em duas vias de igual forma e teor, na presen&ccedil;a de testemunha:</p>
+
+  <div class="assinaturas">
+    <p><span class="campo" data-campo="cidade-assinatura"></span>, <span class="campo" data-campo="data-assinatura"></span>.</p>
+    <p class="linha-ass">Assinatura do noivo</p>
+    <p class="linha-ass">Assinatura da noiva</p>
+    <p class="linha-ass">Assinatura do respons&aacute;vel pela empresa</p>
+    <p class="linha-ass">Assinatura da testemunha</p>
+  </div>
+</article>
+
+<script>
+(function(){
+  "use strict";
+
+  var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+
+  /* mesmo catálogo do orçamento (ids compartilhados via query string) */
+  var CATALOGO = {
+    "eternal":   { rotulo:"Pacote 01. Eternal (making of, cerimônia e festa, galeria on-line, tratamento digital, álbum 30x30 até 100 fotos, ensaio pré-wedding, álbum 28x20 com 40 fotos, 12 horas de cobertura, 2 fotógrafos)", curto:"Pacote 01. Eternal", preco:18600 },
+    "heritage":  { rotulo:"Pacote 02. Heritage (making of, cerimônia e festa, galeria on-line, tratamento digital, 10 horas de cobertura, 2 fotógrafos)", curto:"Pacote 02. Heritage", preco:10850 },
+    "welcome":   { rotulo:"Welcome Wedding", curto:"Welcome Wedding", preco:2790 },
+    "fotografo": { rotulo:"Fotógrafo adicional", curto:"Fotógrafo adicional", preco:1150 },
+    "expressa":  { rotulo:"Entrega Expressa em 7 dias", curto:"Entrega Expressa", preco:3500 },
+    "bride":     { rotulo:"Bride Session, ensaio editorial da Noiva", curto:"Bride Session", preco:2790 },
+    "hora":      { rotulo:"Hora adicional de cobertura do casamento", curto:"Hora adicional", preco:1100 },
+    "civil":     { rotulo:"Cobertura fotográfica de Noivado ou Casamento Civil", curto:"Noivado / Civil", preco:2690 },
+    "album-30":  { rotulo:"Álbum 30x60 aberto, com 50 páginas (25 lâminas) e 100 imagens", curto:"Álbum 30x60", preco:5500 },
+    "album-20":  { rotulo:"Álbum 20x60 aberto, com 40 páginas (20 lâminas) e 60 imagens", curto:"Álbum 20x60", preco:3600 },
+    "prewedding":{ rotulo:"Ensaio Pré Wedding (3 horas de sessão, tratamento e galeria on-line)", curto:"Ensaio Pré Wedding", preco:2600 }
+  };
+
+  var params = new URLSearchParams(location.search);
+  var pacoteId = params.get("p");
+  var extrasIds = (params.get("x") || "").split(",").filter(function(id){ return CATALOGO[id]; });
+
+  var app = document.getElementById("app");
+  var semSelecao = document.getElementById("sem-selecao");
+
+  if (!pacoteId || !CATALOGO[pacoteId]){
+    app.hidden = true;
+    semSelecao.hidden = false;
+    return;
+  }
+
+  var itens = [pacoteId].concat(extrasIds);
+  var total = itens.reduce(function(soma, id){ return soma + CATALOGO[id].preco; }, 0);
+  var entrada = total * 0.3;
+
+  /* tabela de serviços do contrato (a seleção já foi mostrada no orçamento;
+     aqui ela só reaparece dentro do próprio texto legal do contrato) */
+  var tbody = document.getElementById("tabela-servicos");
+  itens.forEach(function(id){
+    var tr = document.createElement("tr");
+    var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
+    var desc = document.createElement("td"); desc.textContent = CATALOGO[id].rotulo;
+    var val = document.createElement("td"); val.textContent = brl.format(CATALOGO[id].preco); val.className = "num";
+    tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
+    tbody.appendChild(tr);
+  });
+  var trTotal = document.createElement("tr");
+  var tdVazio = document.createElement("td");
+  var tdRotulo = document.createElement("td"); tdRotulo.textContent = "VALOR TOTAL"; tdRotulo.style.fontWeight = "500";
+  var tdTotal = document.createElement("td"); tdTotal.textContent = brl.format(total); tdTotal.className = "num"; tdTotal.style.fontWeight = "500";
+  trTotal.appendChild(tdVazio); trTotal.appendChild(tdRotulo); trTotal.appendChild(tdTotal);
+  tbody.appendChild(trTotal);
+
+  /* geração do contrato */
+  var form = document.getElementById("form-contrato");
+  var documento = document.getElementById("documento");
+  var barra = document.getElementById("barra-acoes");
+
+  function valorCampo(id){
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function dataExtenso(d){
+    var meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+    return d.getDate() + " de " + meses[d.getMonth()] + " de " + d.getFullYear();
+  }
+
+  /* autocomplete de endereço a partir do CEP, via ViaCEP (gratuito, sem chave) */
+  var UF_NOME = {
+    AC:"Acre",AL:"Alagoas",AP:"Amapá",AM:"Amazonas",BA:"Bahia",CE:"Ceará",DF:"Distrito Federal",
+    ES:"Espírito Santo",GO:"Goiás",MA:"Maranhão",MT:"Mato Grosso",MS:"Mato Grosso do Sul",
+    MG:"Minas Gerais",PA:"Pará",PB:"Paraíba",PR:"Paraná",PE:"Pernambuco",PI:"Piauí",
+    RJ:"Rio de Janeiro",RN:"Rio Grande do Norte",RS:"Rio Grande do Sul",RO:"Rondônia",
+    RR:"Roraima",SC:"Santa Catarina",SP:"São Paulo",SE:"Sergipe",TO:"Tocantins"
+  };
+
+  var campoCep = document.getElementById("cep");
+  var statusCep = document.getElementById("status-cep");
+  var ultimoCepBuscado = "";
+
+  campoCep.addEventListener("input", function(){
+    var digitos = campoCep.value.replace(/\D/g, "").slice(0, 8);
+    campoCep.value = digitos.length > 5 ? digitos.slice(0,5) + "-" + digitos.slice(5) : digitos;
+    if (digitos.length < 8){
+      statusCep.textContent = "";
+      statusCep.className = "status-campo";
+    } else {
+      buscarCep();
+    }
+  });
+  campoCep.addEventListener("blur", buscarCep);
+
+  function buscarCep(){
+    var digitos = campoCep.value.replace(/\D/g, "");
+    if (digitos.length !== 8 || digitos === ultimoCepBuscado) return;
+    ultimoCepBuscado = digitos;
+
+    statusCep.textContent = "Buscando endereço...";
+    statusCep.className = "status-campo";
+
+    fetch("https://viacep.com.br/ws/" + digitos + "/json/")
+      .then(function(res){ return res.json(); })
+      .then(function(dados){
+        if (dados.erro){
+          statusCep.textContent = "CEP não encontrado. Preencha o endereço manualmente.";
+          statusCep.className = "status-campo erro";
+          return;
+        }
+        document.getElementById("endereco").value = dados.logradouro || document.getElementById("endereco").value;
+        document.getElementById("bairro").value = dados.bairro || document.getElementById("bairro").value;
+        document.getElementById("cidade").value = dados.localidade || document.getElementById("cidade").value;
+        document.getElementById("estado").value = UF_NOME[dados.uf] || document.getElementById("estado").value;
+        statusCep.textContent = "Endereço preenchido automaticamente.";
+        statusCep.className = "status-campo ok";
+        document.getElementById("numero").focus();
+      })
+      .catch(function(){
+        statusCep.textContent = "Não foi possível buscar o CEP agora. Preencha o endereço manualmente.";
+        statusCep.className = "status-campo erro";
+      });
+  }
+
+  form.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    if (!form.reportValidity()) return;
+
+    ["noivo","cpf-noivo","noiva","cpf-noiva","tel-noivo","tel-noiva",
+     "endereco","numero","bairro","cidade","estado","cep","local","horario"].forEach(function(id){
+      document.querySelectorAll('[data-campo="' + id + '"]').forEach(function(span){
+        span.textContent = valorCampo(id) || "________________";
+      });
+    });
+    document.querySelectorAll('[data-campo="complemento"]').forEach(function(span){
+      span.textContent = valorCampo("complemento") || "N/A";
+    });
+
+    var dataEvento = document.getElementById("data-evento").valueAsDate;
+    document.querySelectorAll('[data-campo="data-formatada"]').forEach(function(span){
+      span.textContent = dataEvento ? dataExtenso(new Date(dataEvento.getTime() + dataEvento.getTimezoneOffset()*60000)) : "________________";
+    });
+
+    document.querySelectorAll('[data-campo="valor-total"]').forEach(function(span){ span.textContent = brl.format(total); });
+    document.querySelectorAll('[data-campo="valor-entrada"]').forEach(function(span){ span.textContent = brl.format(entrada); });
+    document.querySelectorAll('[data-campo="cidade-assinatura"]').forEach(function(span){ span.textContent = valorCampo("cidade") || "________________"; });
+    document.querySelectorAll('[data-campo="data-assinatura"]').forEach(function(span){ span.textContent = dataExtenso(new Date()); });
+
+    /* envio por e-mail: o Jordan prefere e-mail (não WhatsApp) pra tudo que é documentação/assinatura */
+    var resumoItens = itens.map(function(id){ return "- " + CATALOGO[id].curto + ": " + brl.format(CATALOGO[id].preco); }).join("\n");
+    var dataEventoTexto = dataEvento ? dataExtenso(new Date(dataEvento.getTime() + dataEvento.getTimezoneOffset()*60000)) : "a combinar";
+    var assunto = "Contrato de Casamento - " + valorCampo("noivo") + " & " + valorCampo("noiva");
+    var corpo = "Olá, Jordan!\n\n"
+      + "Revisamos o contrato completo pelo site e gostaríamos de seguir com a assinatura.\n\n"
+      + "Casal: " + valorCampo("noivo") + " & " + valorCampo("noiva") + "\n"
+      + "Telefones: " + valorCampo("tel-noivo") + " / " + valorCampo("tel-noiva") + "\n"
+      + "Data do casamento: " + dataEventoTexto + "\n"
+      + "Local: " + valorCampo("local") + " às " + valorCampo("horario") + "\n\n"
+      + "Pacote e adicionais escolhidos:\n" + resumoItens + "\n"
+      + "Valor total: " + brl.format(total) + "\n"
+      + "Entrada (30%): " + brl.format(entrada) + "\n\n"
+      + "Aguardamos o retorno para os próximos passos.";
+    document.getElementById("enviar").href = "mailto:jordansantosfotografia@gmail.com"
+      + "?subject=" + encodeURIComponent(assunto)
+      + "&body=" + encodeURIComponent(corpo);
+
+    app.hidden = true;
+    documento.hidden = false;
+    barra.hidden = false;
+    window.scrollTo(0, 0);
+  });
+})();
+</script>
+</body>
+</html>
