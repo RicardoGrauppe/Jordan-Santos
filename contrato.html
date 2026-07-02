@@ -149,6 +149,13 @@
   }
   .sem-selecao a{display:inline-block;margin-top:14px}
 
+  /* aviso do envio automático da cópia pro Jordan */
+  .aviso-envio{
+    max-width:760px;margin:28px auto 0;padding:12px 30px;
+    font-size:12.5px;letter-spacing:.06em;text-align:center;
+    color:var(--ink-soft);
+  }
+
   /* documento gerado */
   #documento{max-width:760px;margin:40px auto 100px;padding:0 30px}
   #documento h2{
@@ -197,7 +204,7 @@
 
   @media print{
     body{font-size:12px}
-    .topo,.intro,form,.sem-selecao{display:none !important}
+    .topo,.intro,form,.sem-selecao,.aviso-envio{display:none !important}
     #documento{display:block !important;max-width:none;margin:0;padding:0}
     #documento .campo{border-bottom:none}
     @page{margin:2cm}
@@ -280,6 +287,9 @@
     </form>
   </div>
 </div>
+
+<!-- status do envio automático da cópia em PDF pro Jordan -->
+<p class="aviso-envio" id="aviso-envio" hidden></p>
 
 <!-- contrato gerado (texto integral do documento do Jordan) -->
 <article id="documento" hidden>
@@ -425,6 +435,8 @@
   </div>
 </article>
 
+<!-- html2pdf (html2canvas + jsPDF): converte o contrato gerado em PDF no navegador -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -577,7 +589,56 @@
     app.hidden = true;
     documento.hidden = false;
     window.scrollTo(0, 0);
+
+    enviarCopiaPdf(dataEvento);
   });
+
+  /* envio automático: gera o PDF do contrato no navegador e manda pra função
+     /api/enviar-contrato (Vercel), que dispara o e-mail pro Jordan via Resend.
+     Falha aqui não bloqueia nada: o casal continua vendo o contrato na tela. */
+  var aviso = document.getElementById("aviso-envio");
+
+  function enviarCopiaPdf(dataEvento){
+    if (typeof html2pdf === "undefined"){
+      aviso.hidden = false;
+      aviso.textContent = "Não conseguimos enviar a cópia automática agora. Avisem o Jordan pelo (45) 99907-7874 que o contrato está pronto.";
+      return;
+    }
+
+    aviso.hidden = false;
+    aviso.textContent = "Enviando uma cópia do contrato para o Jordan...";
+
+    var nomeArquivo = "Contrato - " + (valorCampo("noivo") || "Noivo") + " e " + (valorCampo("noiva") || "Noiva") + ".pdf";
+    var dataEventoTexto = dataEvento ? dataExtenso(new Date(dataEvento.getTime() + dataEvento.getTimezoneOffset()*60000)) : "a combinar";
+
+    html2pdf().set({
+      margin: [15, 15, 18, 15],
+      image: { type: "jpeg", quality: 0.78 },
+      html2canvas: { scale: 1.5, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4" },
+      pagebreak: { mode: ["css", "legacy"] }
+    }).from(documento).outputPdf("datauristring").then(function(dataUri){
+      return fetch("/api/enviar-contrato", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pdfBase64: dataUri.split(",")[1],
+          nomeArquivo: nomeArquivo,
+          noivo: valorCampo("noivo"), noiva: valorCampo("noiva"),
+          telNoivo: valorCampo("tel-noivo"), telNoiva: valorCampo("tel-noiva"),
+          dataEvento: dataEventoTexto,
+          local: valorCampo("local"), horario: valorCampo("horario"),
+          itens: itens.map(function(id){ return CATALOGO[id].curto + ": " + brl.format(CATALOGO[id].preco); }),
+          total: brl.format(total), entrada: brl.format(entrada)
+        })
+      });
+    }).then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      aviso.textContent = "Uma cópia do contrato já foi enviada para o Jordan. Ele entra em contato com vocês para os próximos passos.";
+    }).catch(function(){
+      aviso.textContent = "Não conseguimos enviar a cópia automática agora. Avisem o Jordan pelo (45) 99907-7874 que o contrato está pronto.";
+    });
+  }
 })();
 </script>
 </body>
