@@ -1,6 +1,3 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/orcamento.html" }
-  ]
+  "cleanUrls": true
 }
