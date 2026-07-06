@@ -6,6 +6,10 @@
   PLACEHOLDERS / PENDÊNCIAS:
   - Telefone: usando +55 45 99907-7874 (link tel: no rodapé). Jordan vai migrar pro DDD 41 (Curitiba) → trocar lá.
   - Fotos: extraídas do PDF (resolução de tela). Substituir pelas versões em alta que o Jordan vai mandar.
+  - Portfólio / Instagram (seção #portfolio): grid curado usando as fotos da proposta como stand-in.
+    Trocar pelas fotos reais do feed do Jordan. Cada tile aponta pro perfil
+    (https://instagram.com/jordansantosphotography); se o Jordan quiser, dá pra apontar cada foto
+    pro post específico (basta o link de cada post no href do respectivo <a class="insta-item">).
   - Marca nova do Diogo aplicada (2026-07-02): paleta oficial (petróleo #003646, aço #4F6278, preto #1D1D1B,
     cinza #706F6F, off-white #E8E1DC) + wordmark/assinatura em Assets/Marca/. Fonte display é aproximação
     (Bodoni Moda, estilo Didot como a wordmark) até o Diogo nomear as fontes oficiais.
@@ -275,6 +279,71 @@
   }
   .entrega-fotos img{width:100%;height:340px;object-fit:cover}
 
+  /* ---------- portfólio / instagram ---------- */
+  .insta-intro{max-width:520px;margin:0 auto;color:var(--ink-soft);font-size:15.5px}
+  .insta-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+    margin-top:48px;
+  }
+  .insta-item{
+    position:relative;
+    display:block;
+    aspect-ratio:1/1;
+    overflow:hidden;
+    border-radius:3px;
+    background:var(--noir);
+  }
+  .insta-item img{
+    width:100%;height:100%;
+    object-fit:cover;
+    transition:transform .6s ease;
+  }
+  .insta-item:hover img{transform:scale(1.06)}
+  .insta-item::after{
+    content:"";
+    position:absolute;inset:0;
+    background:rgba(0,54,70,0);   /* --accent, transparente em repouso */
+    transition:background .3s ease;
+  }
+  .insta-item:hover::after{background:rgba(0,54,70,.36)}
+  .insta-item .glifo{
+    position:absolute;
+    top:50%;left:50%;
+    transform:translate(-50%,-50%) scale(.8);
+    width:34px;height:34px;
+    opacity:0;
+    z-index:2;
+    pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease;
+  }
+  .insta-item:hover .glifo{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .insta-item:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  .insta-cta{
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    margin-top:48px;
+    padding:15px 30px;
+    border:1px solid var(--accent);
+    border-radius:999px;
+    color:var(--accent);
+    text-decoration:none;
+    font-size:12px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    transition:background .25s ease, color .25s ease;
+  }
+  .insta-cta svg{width:19px;height:19px}
+  .insta-cta:hover{background:var(--accent);color:#fff}
+  .insta-cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+
+  @media (max-width:640px){
+    .insta-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  }
+
   /* ---------- citação ---------- */
   .quote-full{
     position:relative;
@@ -433,6 +502,51 @@
 <figure class="foto-full">
   <img src="img/casal-jardim.jpg" alt="Casal de noivos caminhando de mãos dadas em um jardim">
 </figure>
+
+<!-- portfólio / instagram -->
+<section class="pagina" id="portfolio">
+  <div class="miolo-largo">
+    <div class="centro reveal">
+      <span class="dica">Portfólio &middot; @jordansantosphotography</span>
+      <h2>No Instagram</h2>
+      <p class="insta-intro">Cada imagem abre o meu Instagram, onde re&uacute;no os casamentos que tive a honra de eternizar.</p>
+    </div>
+
+    <div class="insta-grid reveal">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+        <img src="img/noiva-retrato.jpg" alt="Retrato da noiva com véu">
+        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+        <img src="img/casal-campo.jpg" alt="Casal de mãos dadas em um campo ao pôr do sol">
+        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+        <img src="img/casal-palacio.jpg" alt="Noivos em um palácio, em preto e branco">
+        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+        <img src="img/prewedding.jpg" alt="Casal sobre uma caminhonete antiga em um campo">
+        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+        <img src="img/entrega-2.jpg" alt="Noiva em um salão histórico">
+        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+        <img src="img/entrega-1.jpg" alt="Noivos em um corredor clássico">
+        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+      </a>
+    </div>
+
+    <div class="centro reveal">
+      <a class="insta-cta" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg>
+        Seguir no Instagram
+      </a>
+    </div>
+  </div>
+</section>
 
 <!-- pacotes -->
 <section class="pagina" id="pacotes">
