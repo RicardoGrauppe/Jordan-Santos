@@ -163,7 +163,8 @@
   .grade{display:grid;grid-template-columns:1fr 1fr;gap:26px 28px}
   .campo-form{display:flex;flex-direction:column}
   .campo-form.largo{grid-column:1 / -1}
-  label{
+  /* só os rótulos de campo — .opcao também é <label> e não pode herdar isto */
+  .campo-form label{
     font-size:11px;
     letter-spacing:.18em;
     text-transform:uppercase;
@@ -275,6 +276,12 @@
   @media (max-width:640px){
     .grade{grid-template-columns:1fr}
     #documento{padding:0 20px}
+    legend{font-size:20px}
+    .opcao{gap:12px;padding:13px 6px}
+    .opcao .nome{font-size:14.5px;line-height:1.45}
+    .opcao .nome small{font-size:12px}
+    .opcao .valor{font-size:15.5px}
+    .selecao-total strong{font-size:23px}
   }
 
   @media print{
