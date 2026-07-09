@@ -39,7 +39,9 @@
     --serif:"Bodoni Moda", "Didot", Georgia, serif;
     --sans:"Jost", "Helvetica Neue", sans-serif;
   }
-  *{margin:0;padding:0;box-sizing:border-box}
+  /* touch-action:manipulation desativa o zoom por duplo toque no mobile
+     (o zoom de pinça continua funcionando, por acessibilidade) */
+  *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
   html{scroll-behavior:smooth}
   body{
     background:var(--paper);
