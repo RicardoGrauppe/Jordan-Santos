@@ -21,7 +21,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Proposta | Jordan Santos Fotografia</title>
+<title>Portf&oacute;lio | Jordan Santos Fotografia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
@@ -367,7 +367,9 @@
     gap:14px;
     margin-top:44px;
   }
-  .entrega-fotos img{width:100%;height:auto;display:block}
+  /* proporção única (retrato 2:3) pra grade ficar alinhada — fotos de
+     proporções diferentes são cortadas pelo centro */
+  .entrega-fotos img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block}
 
   /* ---------- portfólio / instagram (feed) ---------- */
   .insta-feed{padding:88px 20px 96px}
