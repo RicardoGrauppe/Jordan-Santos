@@ -224,12 +224,36 @@
   #adicionais .linha[aria-pressed="true"]{background:rgba(255,255,255,.92)}
 
   @media (max-width:900px){
-    /* em tela estreita o céu da foto fica baixo demais pro conteúdo caber sobre
-       ele: o conteúdo sai da foto e senta num bloco sólido da cor exata do topo
-       do céu, emendado com a imagem logo abaixo — o céu "continua" pra cima */
-    .secao-conteudo{position:static;padding:44px 16px 24px}
+    /* em tela estreita a foto vira o fundo real da seção: ela cobre a seção
+       inteira ancorada no topo (onde está o céu) e o conteúdo flui por cima.
+       O min-height garante a altura natural da foto — nada é cortado enquanto
+       o conteúdo couber nela. A cor de fundo é só fallback de carregamento. */
+    #adicionais,#prewedding{min-height:calc(100vw * 2048 / 1365)}
     #adicionais{background:#FEFEFE}
     #prewedding{background:#D7E0E1}
+    .secao-bg{
+      position:absolute;
+      top:0;left:0;
+      width:100%;height:100%;
+      object-fit:cover;
+      object-position:top center;
+      z-index:0;
+    }
+    .secao-conteudo{position:relative;z-index:1;padding:44px 16px 24px}
+    #prewedding .secao-conteudo{padding-bottom:190px}
+    .prewed-legenda{z-index:1}
+    /* cards mais opacos pra ler bem sobre as partes escuras da foto */
+    #adicionais .linha{background:rgba(255,255,255,.78)}
+    #adicionais .linha[aria-pressed="true"]{background:rgba(255,255,255,.95)}
+    #prewedding .card{background:rgba(255,255,255,.78)}
+    #prewedding .card[aria-pressed="true"]{background:rgba(255,255,255,.95)}
+    /* o "Continuar" cai sobre partes escuras da foto: vira pílula translúcida */
+    #adicionais .proximo,#prewedding .proximo{
+      background:rgba(255,255,255,.85);
+      border:1px solid rgba(255,255,255,.9);
+      border-radius:999px;
+      padding:11px 22px;
+    }
   }
 
   @media (max-width:640px){
@@ -616,52 +640,6 @@
   <img src="img/casal-jardim.jpg" alt="Casal de noivos caminhando de mãos dadas em um jardim">
 </figure>
 
-<!-- portfólio / instagram -->
-<section class="pagina insta-feed" id="portfolio">
-  <div class="insta-feed-inner">
-    <h2 class="insta-feed-titulo reveal">Instagram</h2>
-
-    <div class="insta-perfil reveal">
-      <img class="insta-perfil-foto" src="img/jordan-perfil.webp" alt="Jordan Santos" width="128" height="128">
-      <div>
-        <a class="insta-perfil-user" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">jordansantosphotography</a>
-        <p class="insta-perfil-bio"><span class="insta-perfil-tag">#destinationwedding</span><br>✈️🌍🇧🇷🇦🇷🇵🇾🇵🇦🇲🇽🇨🇱🇩🇴🇫🇷<br>Fotografia cl&aacute;ssica para casamentos.<br>Est&eacute;tica fine art com dire&ccedil;&atilde;o cinematogr&aacute;fica</p>
-      </div>
-    </div>
-
-    <div class="insta-grid reveal">
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/noiva-retrato.jpg" alt="Retrato da noiva com véu">
-        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/casal-campo.jpg" alt="Casal de mãos dadas em um campo ao pôr do sol">
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/casal-palacio.jpg" alt="Noivos em um palácio, em preto e branco">
-        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/prewedding.jpg" alt="Casal sobre uma caminhonete antiga em um campo">
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/entrega-2.jpg" alt="Noiva em um salão histórico">
-        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/entrega-1.jpg" alt="Noivos em um corredor clássico">
-      </a>
-    </div>
-
-    <div class="insta-rodape reveal">
-      <a class="insta-cta" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg>
-        Seguir no Instagram
-      </a>
-    </div>
-  </div>
-</section>
-
 <!-- pacotes -->
 <section class="pagina" id="pacotes">
   <div class="miolo-largo">
@@ -890,6 +868,52 @@
       </div>
       <a class="cta desativado" id="cta-whatsapp" href="#" target="_blank" rel="noopener">Enviar or&ccedil;amento pro Jordan</a>
       <button class="limpar" type="button" id="limpar">Limpar escolhas</button>
+    </div>
+  </div>
+</section>
+
+<!-- portfólio / instagram -->
+<section class="pagina insta-feed" id="portfolio">
+  <div class="insta-feed-inner">
+    <h2 class="insta-feed-titulo reveal">Instagram</h2>
+
+    <div class="insta-perfil reveal">
+      <img class="insta-perfil-foto" src="img/jordan-perfil.webp" alt="Jordan Santos" width="128" height="128">
+      <div>
+        <a class="insta-perfil-user" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">jordansantosphotography</a>
+        <p class="insta-perfil-bio"><span class="insta-perfil-tag">#destinationwedding</span><br>✈️🌍🇧🇷🇦🇷🇵🇾🇵🇦🇲🇽🇨🇱🇩🇴🇫🇷<br>Fotografia cl&aacute;ssica para casamentos.<br>Est&eacute;tica fine art com dire&ccedil;&atilde;o cinematogr&aacute;fica</p>
+      </div>
+    </div>
+
+    <div class="insta-grid reveal">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
+        <img src="img/noiva-retrato.jpg" alt="Retrato da noiva com véu">
+        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
+        <img src="img/casal-campo.jpg" alt="Casal de mãos dadas em um campo ao pôr do sol">
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
+        <img src="img/casal-palacio.jpg" alt="Noivos em um palácio, em preto e branco">
+        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
+        <img src="img/prewedding.jpg" alt="Casal sobre uma caminhonete antiga em um campo">
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
+        <img src="img/entrega-2.jpg" alt="Noiva em um salão histórico">
+        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
+      </a>
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
+        <img src="img/entrega-1.jpg" alt="Noivos em um corredor clássico">
+      </a>
+    </div>
+
+    <div class="insta-rodape reveal">
+      <a class="insta-cta" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg>
+        Seguir no Instagram
+      </a>
     </div>
   </div>
 </section>
