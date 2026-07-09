@@ -153,11 +153,14 @@
     padding:36px 40px;
     border-radius:14px;
     background:var(--paper);
-    transition:box-shadow .25s ease, transform .25s ease;
+    /* em repouso o card já se anuncia clicável (não há hover no toque) */
+    border:1px solid var(--line);
+    box-shadow:0 4px 18px rgba(29,29,27,.06);
+    transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease;
   }
   .card:hover{box-shadow:var(--sombra)}
   .card:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
-  .card[aria-pressed="true"]{box-shadow:var(--sombra)}
+  .card[aria-pressed="true"]{box-shadow:var(--sombra);border-color:var(--accent)}
   /* check fica sempre em linha própria, no fluxo do layout, nunca sobre texto */
   .card .check{
     flex:none;
@@ -216,72 +219,22 @@
     padding:104px 24px;
   }
 
-  /* ---------- adicionais ---------- */
-  #adicionais .linha{
-    background:rgba(255,255,255,.55);
-    border-color:rgba(232,225,220,.85);
-    backdrop-filter:blur(3px);
-  }
-  #adicionais .linha:hover{background:rgba(255,255,255,.8)}
-  #adicionais .linha[aria-pressed="true"]{background:rgba(255,255,255,.92)}
-
-  @media (max-width:900px){
-    /* em tela estreita a foto vira o fundo real da seção: ela cobre a seção
-       inteira ancorada no topo (onde está o céu) e o conteúdo flui por cima.
-       O min-height garante a altura natural da foto — nada é cortado enquanto
-       o conteúdo couber nela. A cor de fundo é só fallback de carregamento. */
-    #adicionais,#prewedding{min-height:calc(100vw * 2048 / 1365)}
-    #adicionais{background:#FEFEFE}
-    #prewedding{background:#D7E0E1}
-    .secao-bg{
-      position:absolute;
-      top:0;left:0;
-      width:100%;height:100%;
-      object-fit:cover;
-      object-position:top center;
-      z-index:0;
-    }
-    .secao-conteudo{position:relative;z-index:1;padding:44px 16px 24px}
-    #prewedding .secao-conteudo{padding-bottom:190px}
-    .prewed-legenda{z-index:1}
-    /* cards mais opacos pra ler bem sobre as partes escuras da foto */
-    #adicionais .linha{background:rgba(255,255,255,.78)}
-    #adicionais .linha[aria-pressed="true"]{background:rgba(255,255,255,.95)}
-    #prewedding .card{background:rgba(255,255,255,.78)}
-    #prewedding .card[aria-pressed="true"]{background:rgba(255,255,255,.95)}
-    /* o "Continuar" cai sobre partes escuras da foto: vira pílula translúcida */
-    #adicionais .proximo,#prewedding .proximo{
-      background:rgba(255,255,255,.85);
-      border:1px solid rgba(255,255,255,.9);
-      border-radius:999px;
-      padding:11px 22px;
-    }
-  }
-
-  @media (max-width:640px){
-    /* compactação do conteúdo em celular */
-    #adicionais .dica{margin-bottom:14px;padding:5px 12px}
-    #adicionais h2{font-size:24px;margin-bottom:4px}
-    #adicionais .linha{padding:8px 8px;gap:10px}
-    #adicionais .linha .nome{font-size:13.5px;line-height:1.4}
-    #adicionais .linha .valor{font-size:15px}
-    #adicionais .linha .check{width:18px;height:18px}
-    #adicionais .linha .check svg{width:9px;height:9px}
-    #adicionais .proximo{margin-top:22px}
-  }
-
+  /* ---------- adicionais (linhas de texto puro, como no PDF) ---------- */
+  /* nome à esquerda, valor à direita, direto sobre o céu da foto; o círculo
+     de check volta pra indicar seleção. Linha selecionada vira pílula branca. */
   .linha{
     display:flex;
     align-items:center;
     gap:16px;
     width:100%;
     text-align:left;
-    padding:17px 14px;
-    border-bottom:1px solid var(--line);
-    border-radius:8px;
-    transition:box-shadow .25s ease, background .25s ease;
+    padding:11px 14px;
+    border-radius:10px;
+    /* pílula sutil em repouso: no toque não existe hover pra denunciar o clique */
+    background:rgba(255,255,255,.32);
+    transition:background .25s ease, box-shadow .25s ease;
   }
-  .linha:hover{box-shadow:var(--sombra)}
+  .linha:hover{background:rgba(255,255,255,.55);box-shadow:var(--sombra)}
   .linha:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .linha .check{
     flex:none;
@@ -292,10 +245,22 @@
     transition:all .2s ease;
   }
   .linha .check svg{width:11px;height:11px;opacity:0;transition:opacity .2s ease}
-  .linha[aria-pressed="true"]{background:#FBF9F6}
+  .linha[aria-pressed="true"]{background:rgba(255,255,255,.92);box-shadow:var(--sombra)}
   .linha[aria-pressed="true"] .check{background:var(--accent);border-color:var(--accent)}
   .linha[aria-pressed="true"] .check svg{opacity:1}
+  .linha[aria-pressed="true"] .nome{color:var(--accent);font-weight:500}
   .linha .nome{flex:1}
+  .linha .nome small{
+    display:block;
+    margin-top:4px;
+    font-size:12.5px;
+    line-height:1.5;
+    color:var(--ink-soft);
+    font-weight:300;
+  }
+  .linha.incluso .check{visibility:hidden}
+  .linha.incluso{background:none}
+  .linha.incluso:hover{background:none;box-shadow:none;cursor:default}
   .linha .valor{
     font-family:var(--serif);
     font-weight:600;
@@ -304,6 +269,49 @@
     white-space:nowrap;
   }
 
+  @media (max-width:900px){
+    /* Adicionais: em tela estreita o céu não comporta a lista inteira, então
+       o conteúdo flui num bloco da cor do céu (#FEFEFE) e a foto sobe por
+       trás do fim da lista (margem negativa proporcional à largura) — o
+       horizonte encosta logo depois do "Continuar", sem gap morto */
+    #adicionais{background:#FEFEFE;overflow:hidden}
+    #adicionais .secao-conteudo{position:relative;z-index:1;padding:44px 16px 0}
+    #adicionais .secao-bg{
+      position:relative;z-index:0;margin-top:-40vw;
+      /* fade no topo da foto: o bloco branco dissolve no céu sem emenda */
+      -webkit-mask-image:linear-gradient(to bottom,transparent,#000 20vw);
+      mask-image:linear-gradient(to bottom,transparent,#000 20vw);
+    }
+    #adicionais .dica{margin-bottom:14px;padding:5px 12px}
+    #adicionais h2{font-size:24px;margin-bottom:4px}
+    #adicionais .linha{padding:9px 10px;gap:10px}
+    #adicionais .linha .nome{font-size:13.5px;line-height:1.4}
+    #adicionais .linha .valor{font-size:15px}
+    #adicionais .linha .check{width:18px;height:18px}
+    #adicionais .linha .check svg{width:9px;height:9px}
+    #adicionais .proximo{margin-top:18px}
+
+    /* Pré Wedding: mesmo padrão — conteúdo no céu, foto sobe por trás */
+    #prewedding{background:#D7E0E1;overflow:hidden}
+    #prewedding .secao-conteudo{position:relative;z-index:1;padding:44px 16px 0}
+    #prewedding .secao-bg{
+      position:relative;z-index:0;margin-top:-32vw;
+      -webkit-mask-image:linear-gradient(to bottom,transparent,#000 20vw);
+      mask-image:linear-gradient(to bottom,transparent,#000 20vw);
+    }
+    #prewedding .dica{margin-bottom:14px;padding:5px 12px}
+    #prewedding h2{font-size:24px;margin-bottom:4px}
+    #prewedding .linha{padding:9px 10px;gap:10px}
+    #prewedding .linha .nome{font-size:13.5px;line-height:1.4}
+    #prewedding .linha .nome small{font-size:12px}
+    #prewedding .linha .valor{font-size:15px}
+    #prewedding .linha .check{width:18px;height:18px}
+    #prewedding .linha .check svg{width:9px;height:9px}
+    #prewedding .proximo{margin-top:18px}
+    .prewed-legenda{z-index:1}
+  }
+
+
   /* ---------- álbum / pré-wedding ---------- */
   .card-centro{max-width:480px;margin:0 auto;text-align:center}
   .card-centro .card-cabecalho{justify-content:flex-end;margin-bottom:14px}
@@ -311,8 +319,10 @@
   .card-desc{font-size:16px}
   .incluso .check{visibility:hidden}
   .incluso:hover{box-shadow:none;cursor:default}
+  .chip-incluso[hidden]{display:none}
   .chip-incluso{
-    display:inline-block;
+    display:block;
+    text-align:center;
     font-size:11px;
     letter-spacing:.2em;
     text-transform:uppercase;
@@ -320,15 +330,10 @@
     background:var(--accent);
     border-radius:999px;
     padding:7px 16px;
-    margin-top:20px;
+    margin:14px auto 0;
+    max-width:max-content;
   }
 
-  #prewedding .card{
-    background:rgba(255,255,255,.55);
-    backdrop-filter:blur(3px);
-  }
-  #prewedding .card:hover{background:rgba(255,255,255,.8)}
-  #prewedding .card[aria-pressed="true"]{background:rgba(255,255,255,.92)}
   .prewed-legenda{
     position:absolute;
     left:0;right:0;bottom:0;
@@ -343,12 +348,6 @@
   }
 
   @media (max-width:640px){
-    #prewedding .dica{margin-bottom:14px;padding:5px 12px}
-    #prewedding h2{font-size:24px;margin-bottom:4px}
-    #prewedding .card{padding:20px 18px}
-    #prewedding .card ul{font-size:13.5px}
-    #prewedding .preco{font-size:20px;margin-top:12px}
-    #prewedding .proximo{margin-top:22px}
     .prewed-legenda{padding:70px 20px 64px;font-size:14px;line-height:1.7}
   }
 
@@ -799,19 +798,16 @@
       <h2>Pr&eacute; Wedding</h2>
     </div>
 
-    <button class="card card-centro reveal" type="button" aria-pressed="false" id="card-prewedding"
+    <button class="linha reveal" type="button" aria-pressed="false" id="card-prewedding"
       data-grupo="prewedding" data-id="prewedding" data-preco="2600" data-rotulo="Ensaio Pré Wedding">
-      <div class="card-cabecalho">
-        <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </div>
-      <ul style="text-align:center">
-        <li>3 horas de sessão de fotos digitais</li>
-        <li>Tratamento de sombra, luz e cor</li>
-        <li>Galeria de fotos on-line</li>
-      </ul>
-      <span class="preco" id="preco-prewedding">R$ 2.600,00</span>
-      <span class="chip-incluso" id="chip-incluso" hidden>J&aacute; incluso no pacote Eternal</span>
+      <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="nome">
+        Ensaio Pr&eacute; Wedding
+        <small>3 horas de sess&atilde;o de fotos digitais &middot; Tratamento de sombra, luz e cor &middot; Galeria on-line</small>
+      </span>
+      <span class="valor" id="preco-prewedding">R$ 2.600,00</span>
     </button>
+    <span class="chip-incluso" id="chip-incluso" hidden>J&aacute; incluso no pacote Eternal</span>
 
     <div class="centro reveal">
       <button class="proximo" type="button" data-alvo="#entrega">Continuar &darr;</button>
