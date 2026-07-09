@@ -28,8 +28,9 @@ export default async function handler(req, res) {
 
   const {
     pdfBase64, nomeArquivo,
-    noivo, noiva, telNoivo, telNoiva,
+    noivo, noiva, telNoivo, telNoiva, email,
     dataEvento, local, horario,
+    origem, observacoes,
     itens, total, entrada
   } = req.body || {};
 
@@ -48,17 +49,22 @@ export default async function handler(req, res) {
     : "";
 
   const corpo =
-    "Um casal acabou de gerar o contrato pelo site. O PDF completo está em anexo.\n\n" +
+    "Um casal preencheu o questionário do contrato no site. O contrato preenchido (PDF) está em anexo.\n\n" +
     texto("Casal", [noivo, noiva].filter(Boolean).join(" e ")) +
     texto("Telefones", [telNoivo, telNoiva].filter(Boolean).join(" / ")) +
+    texto("E-mail", email) +
     texto("Data do casamento", dataEvento) +
     texto("Local", [local, horario].filter(Boolean).join(", às ")) +
     (listaItens ? "\nPacote e adicionais:\n" + listaItens + "\n" : "") +
     texto("Valor total", total) +
-    texto("Entrada (30%)", entrada);
+    texto("Entrada (30%)", entrada) +
+    texto("Como conheceram", origem) +
+    (observacoes && typeof observacoes === "string"
+      ? "\nObservações do casal:\n" + observacoes.slice(0, 1000) + "\n"
+      : "");
 
   const assunto =
-    "Contrato gerado no site: " +
+    "Questionário de contrato preenchido: " +
     ([noivo, noiva].filter(Boolean).join(" e ") || "casal não identificado");
 
   const resposta = await fetch("https://api.resend.com/emails", {

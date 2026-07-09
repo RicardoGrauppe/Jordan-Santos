@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <!--
   Contrato · Jordan Santos Fotografia
-  v1 (front apenas) · recebe a seleção do index.html (orçamento) via query string (?p=pacote&x=extras),
-  coleta os dados do casal/evento e gera o contrato preenchido (texto integral do docx do Jordan).
-  Ação única: "Gerar contrato" mostra o documento pra revisão — sem botão de envio por enquanto
-  (o passo seguinte — e-mail, assinatura digital via Autentique etc. — será decidido na fase 2).
+  v3 (questionário independente) · o Jordan envia /contrato ao casal DEPOIS de confirmar a data
+  no WhatsApp. A página é desconectada do orçamento (decisão de 2026-07-09): não recebe nada por
+  query string; o casal reescolhe pacote e adicionais aqui mesmo (mesmo CATALOGO do index,
+  duplicado de propósito, já que não há build) e preenche os dados. Ao enviar, vê só uma tela de
+  confirmação; o contrato completo (texto integral do docx do Jordan) é montado invisível, vira
+  PDF no navegador e segue por e-mail pro Jordan (/api/enviar-contrato, Resend).
+  Referência de fluxo: yoshioyoneoka-contrato.netlify.app.
 
   PLACEHOLDERS / PENDÊNCIAS:
   - Texto do contrato transcrito VERBATIM de "contrato de casamento.docx" (inclusive duas cláusulas
@@ -50,17 +53,6 @@
 
   .topo{padding:44px 24px 0;text-align:center}
   .topo img{width:min(230px,56vw);margin:0 auto}
-  .voltar{
-    display:inline-block;
-    margin-top:18px;
-    font-size:11px;
-    letter-spacing:.2em;
-    text-transform:uppercase;
-    color:var(--ink-soft);
-    text-decoration:none;
-  }
-  .voltar:hover{color:var(--accent)}
-
   .intro{text-align:center;padding:56px 0 8px}
   .dica{
     display:inline-block;
@@ -83,6 +75,76 @@
     margin-bottom:12px;
   }
   .sub{color:var(--ink-soft)}
+  .nota-intro{margin-top:16px;font-size:13px;color:var(--ink-soft)}
+
+  /* escolha de serviços dentro do questionário */
+  .grupo-titulo{
+    font-size:11px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:28px 0 4px;
+  }
+  fieldset .grupo-titulo:first-child{margin-top:0}
+  .opcao{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:14px 10px;
+    border-bottom:1px solid var(--line);
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .2s ease;
+  }
+  .opcao:hover{background:#FBF9F6}
+  .opcao:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+  .opcao input{
+    position:absolute;
+    opacity:0;
+    width:1px;height:1px;
+  }
+  .opcao .check{
+    flex:none;
+    width:22px;height:22px;
+    border:1px solid var(--line);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s ease;
+  }
+  .opcao .check svg{width:11px;height:11px;opacity:0;transition:opacity .2s ease}
+  .opcao input:checked ~ .check{background:var(--accent);border-color:var(--accent)}
+  .opcao input:checked ~ .check svg{opacity:1}
+  .opcao .nome{flex:1;font-size:15px}
+  .opcao .nome small{display:block;font-size:12.5px;color:var(--ink-soft)}
+  .opcao .valor{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:17px;
+    color:var(--accent-deep);
+    white-space:nowrap;
+  }
+  .opcao.desabilitada{opacity:.55;cursor:default}
+  .opcao.desabilitada:hover{background:transparent}
+
+  .selecao-total{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-top:24px;
+  }
+  .selecao-total span{
+    font-size:11px;
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .selecao-total strong{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:26px;
+    color:var(--accent-deep);
+  }
+  .selecao-nota{margin-top:14px;font-size:12.5px;color:var(--ink-soft);text-align:center}
 
   /* formulário */
   form{margin:56px 0 90px}
@@ -106,7 +168,7 @@
     color:var(--ink-soft);
     margin-bottom:7px;
   }
-  input,select{
+  input,select,textarea{
     font:inherit;
     color:var(--ink);
     background:transparent;
@@ -116,8 +178,9 @@
     border-radius:0;
     -webkit-appearance:none;
   }
-  input:focus,select:focus{outline:none;border-bottom-color:var(--accent)}
-  input:focus-visible,select:focus-visible{outline:none}
+  textarea{min-height:84px;resize:vertical;line-height:1.6}
+  input:focus,select:focus,textarea:focus{outline:none;border-bottom-color:var(--accent)}
+  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
   input[readonly]{color:var(--ink-soft)}
 
   .status-campo{
@@ -141,19 +204,29 @@
   .cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
   .nota-form{margin-top:20px;font-size:13.5px;color:var(--ink-soft);text-align:center}
 
-  /* aviso sem seleção */
-  .sem-selecao{
-    margin:70px auto;max-width:520px;
-    padding:40px 30px;border:1px dashed var(--line);border-radius:14px;
-    text-align:center;color:var(--ink-soft);
-  }
-  .sem-selecao a{display:inline-block;margin-top:14px}
-
   /* aviso do envio automático da cópia pro Jordan */
   .aviso-envio{
     max-width:760px;margin:28px auto 0;padding:12px 30px;
     font-size:12.5px;letter-spacing:.06em;text-align:center;
     color:var(--ink-soft);
+  }
+
+  /* confirmação pós-envio */
+  .confirmacao{
+    max-width:600px;
+    margin:90px auto 130px;
+    padding:0 24px;
+    text-align:center;
+  }
+  .confirmacao .aviso-envio{padding:0;margin-top:30px}
+
+  /* contrato fica fora da tela: o casal não o vê, mas o html2pdf consegue
+     renderizá-lo (display:none quebraria a captura do html2canvas) */
+  .fora-da-tela{
+    position:absolute;
+    left:-10000px;
+    top:0;
+    width:760px;
   }
 
   /* documento gerado */
@@ -204,8 +277,8 @@
 
   @media print{
     body{font-size:12px}
-    .topo,.intro,form,.sem-selecao,.aviso-envio{display:none !important}
-    #documento{display:block !important;max-width:none;margin:0;padding:0}
+    .topo,.intro,form,.aviso-envio,.confirmacao{display:none !important}
+    #documento{position:static !important;left:auto !important;width:auto !important;max-width:none;margin:0;padding:0}
     #documento .campo{border-bottom:none}
     @page{margin:2cm}
   }
@@ -215,24 +288,102 @@
 
 <header class="topo">
   <img src="img/logo-principal-petroleo.png" alt="Jordan Santos">
-  <div><a class="voltar" href="/">&larr; Voltar ao or&ccedil;amento</a></div>
 </header>
-
-<!-- aviso quando a página é aberta sem seleção -->
-<div class="sem-selecao" id="sem-selecao" hidden>
-  Nenhum pacote selecionado ainda. Monte primeiro o seu or&ccedil;amento.
-  <br><a href="/">Ir para o or&ccedil;amento</a>
-</div>
 
 <div id="app">
   <section class="intro miolo">
     <span class="dica">O come&ccedil;o oficial de tudo</span>
-    <h1>Quase l&aacute;</h1>
-    <p class="sub">Alguns minutos para preencher. O resto &eacute; sobre viver o dia.</p>
+    <h1>Vamos come&ccedil;ar a hist&oacute;ria de voc&ecirc;s</h1>
+    <p class="sub">Data confirmada com o Jordan, falta pouco: escolham os servi&ccedil;os e preencham as informa&ccedil;&otilde;es que entram no contrato de voc&ecirc;s.</p>
+    <p class="nota-intro">Tenham em m&atilde;os o CPF de ambos. Tudo aqui &eacute; usado exclusivamente para elaborar o contrato.</p>
   </section>
 
   <div class="miolo">
     <form id="form-contrato" novalidate>
+      <fieldset>
+        <legend>Os servi&ccedil;os</legend>
+
+        <p class="grupo-titulo">Pacote &middot; escolham um</p>
+        <label class="opcao">
+          <input type="radio" name="pacote" value="eternal" required>
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">01. Eternal<small>12 horas, 2 fot&oacute;grafos, &aacute;lbuns e ensaio pr&eacute;-wedding inclusos</small></span>
+          <span class="valor">R$ 18.600,00</span>
+        </label>
+        <label class="opcao">
+          <input type="radio" name="pacote" value="heritage" required>
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">02. Heritage<small>10 horas, 2 fot&oacute;grafos, galeria de fotos on-line</small></span>
+          <span class="valor">R$ 10.850,00</span>
+        </label>
+
+        <p class="grupo-titulo">Adicionais &middot; opcional</p>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="welcome">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">Welcome Wedding</span>
+          <span class="valor">R$ 2.790,00</span>
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="fotografo">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">Fot&oacute;grafo adicional</span>
+          <span class="valor">R$ 1.150,00</span>
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="expressa">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">Entrega Expressa em 7 dias</span>
+          <span class="valor">R$ 3.500,00</span>
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="bride">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">Bride Session &middot; Ensaio editorial da Noiva</span>
+          <span class="valor">R$ 2.790,00</span>
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="hora">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">Hora adicional &middot; Cobertura Casamento</span>
+          <span class="valor">R$ 1.100,00</span>
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="civil">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">Cobertura fotogr&aacute;fica Noivado ou Casamento Civil</span>
+          <span class="valor">R$ 2.690,00</span>
+        </label>
+
+        <p class="grupo-titulo">&Aacute;lbum &middot; opcional</p>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="album-30">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">&Aacute;lbum 30x60<small>aberto, 50 p&aacute;ginas, 100 imagens</small></span>
+          <span class="valor">R$ 5.500,00</span>
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="album-20">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">&Aacute;lbum 20x60<small>aberto, 40 p&aacute;ginas, 60 imagens</small></span>
+          <span class="valor">R$ 3.600,00</span>
+        </label>
+
+        <p class="grupo-titulo">Pr&eacute;-wedding &middot; opcional</p>
+        <label class="opcao">
+          <input type="checkbox" name="extra" value="prewedding" id="input-prewedding">
+          <span class="check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5 6 12 13.5 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="nome">Ensaio Pr&eacute; Wedding<small>3 horas de sess&atilde;o, tratamento e galeria on-line</small></span>
+          <span class="valor" id="valor-prewedding">R$ 2.600,00</span>
+        </label>
+
+        <div class="selecao-total">
+          <span>Total</span>
+          <strong id="selecao-total">R$ 0,00</strong>
+        </div>
+        <p class="selecao-nota">Entrada de 30% (<span id="selecao-entrada">R$ 0,00</span>) na assinatura, como reserva da data. Escolham exatamente o que combinaram com o Jordan.</p>
+      </fieldset>
+
       <fieldset>
         <legend>O casal</legend>
         <div class="grade">
@@ -240,8 +391,9 @@
           <div class="campo-form"><label for="cpf-noivo">CPF do noivo</label><input id="cpf-noivo" required inputmode="numeric" placeholder="000.000.000-00"></div>
           <div class="campo-form"><label for="noiva">Nome da noiva</label><input id="noiva" required autocomplete="name"></div>
           <div class="campo-form"><label for="cpf-noiva">CPF da noiva</label><input id="cpf-noiva" required inputmode="numeric" placeholder="000.000.000-00"></div>
-          <div class="campo-form"><label for="tel-noivo">Telefone do noivo</label><input id="tel-noivo" required inputmode="tel" placeholder="(00) 00000-0000"></div>
-          <div class="campo-form"><label for="tel-noiva">Telefone da noiva</label><input id="tel-noiva" required inputmode="tel" placeholder="(00) 00000-0000"></div>
+          <div class="campo-form"><label for="tel-noivo">Celular / WhatsApp do noivo</label><input id="tel-noivo" required inputmode="tel" placeholder="(00) 00000-0000"></div>
+          <div class="campo-form"><label for="tel-noiva">Celular / WhatsApp da noiva</label><input id="tel-noiva" required inputmode="tel" placeholder="(00) 00000-0000"></div>
+          <div class="campo-form largo"><label for="email">E-mail do casal (para contato e envio do contrato)</label><input id="email" type="email" required autocomplete="email" placeholder="voces@email.com"></div>
         </div>
       </fieldset>
 
@@ -279,20 +431,30 @@
               <option>Outro</option>
             </select>
           </div>
+          <div class="campo-form largo">
+            <label for="observacoes">Observa&ccedil;&otilde;es para o Jordan (opcional)</label>
+            <textarea id="observacoes" placeholder="Algum detalhe do evento, pedido especial ou d&uacute;vida"></textarea>
+          </div>
         </div>
       </fieldset>
 
-      <button class="cta" type="submit">Gerar contrato</button>
-      <p class="nota-form">Ao gerar, voc&ecirc;s revisam o contrato completo antes de qualquer assinatura.</p>
+      <button class="cta" type="submit">Enviar informa&ccedil;&otilde;es</button>
+      <p class="nota-form">Ao enviar, o Jordan recebe tudo e volta com o contrato pronto para revis&atilde;o e assinatura.</p>
     </form>
   </div>
 </div>
 
-<!-- status do envio automático da cópia em PDF pro Jordan -->
-<p class="aviso-envio" id="aviso-envio" hidden></p>
+<!-- confirmação pós-envio -->
+<section class="confirmacao" id="confirmacao" hidden>
+  <span class="dica">Recebemos tudo</span>
+  <h1>Obrigado pela confian&ccedil;a</h1>
+  <p class="sub">As informa&ccedil;&otilde;es de voc&ecirc;s j&aacute; chegaram pro Jordan. Em breve ele entra em contato com o contrato pronto para revis&atilde;o e assinatura.</p>
+  <p class="aviso-envio" id="aviso-envio" hidden></p>
+</section>
 
-<!-- contrato gerado (texto integral do documento do Jordan) -->
-<article id="documento" hidden>
+<!-- contrato preenchido (texto integral do documento do Jordan) — fica fora da
+     tela: o casal não o vê, ele existe só pra virar o PDF enviado por e-mail -->
+<article id="documento" class="fora-da-tela" aria-hidden="true">
   <h2>Contrato de Presta&ccedil;&atilde;o de Servi&ccedil;os de Fotografia</h2>
 
   <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endere&ccedil;o na rua Jesu&iacute;tas, Carim&atilde; N&ordm;390, Foz do Igua&ccedil;u &ndash; Paran&aacute;, CEP: 85855700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de servi&ccedil;os relacionados &agrave; fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>
@@ -458,40 +620,76 @@
     "prewedding":{ rotulo:"Ensaio Pré Wedding (3 horas de sessão, tratamento e galeria on-line)", curto:"Ensaio Pré Wedding", preco:2600 }
   };
 
-  var params = new URLSearchParams(location.search);
-  var pacoteId = params.get("p");
-  var extrasIds = (params.get("x") || "").split(",").filter(function(id){ return CATALOGO[id]; });
-
   var app = document.getElementById("app");
-  var semSelecao = document.getElementById("sem-selecao");
 
-  if (!pacoteId || !CATALOGO[pacoteId]){
-    app.hidden = true;
-    semSelecao.hidden = false;
-    return;
+  /* seleção de serviços dentro do próprio questionário: a página é independente
+     do orçamento (o casal reescolhe aqui o que combinou com o Jordan) */
+  function selecaoAtual(){
+    var pacote = document.querySelector('input[name="pacote"]:checked');
+    var extras = Array.prototype.map.call(
+      document.querySelectorAll('input[name="extra"]:checked'),
+      function(input){ return input.value; }
+    );
+    return (pacote ? [pacote.value] : []).concat(extras);
+  }
+  function totalDe(itens){
+    return itens.reduce(function(soma, id){ return soma + CATALOGO[id].preco; }, 0);
   }
 
-  var itens = [pacoteId].concat(extrasIds);
-  var total = itens.reduce(function(soma, id){ return soma + CATALOGO[id].preco; }, 0);
-  var entrada = total * 0.3;
+  var totalEl = document.getElementById("selecao-total");
+  var entradaEl = document.getElementById("selecao-entrada");
+  var inputPrewedding = document.getElementById("input-prewedding");
+  var linhaPrewedding = inputPrewedding.closest("label");
+  var valorPrewedding = document.getElementById("valor-prewedding");
 
-  /* tabela de serviços do contrato (a seleção já foi mostrada no orçamento;
-     aqui ela só reaparece dentro do próprio texto legal do contrato) */
-  var tbody = document.getElementById("tabela-servicos");
-  itens.forEach(function(id){
-    var tr = document.createElement("tr");
-    var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
-    var desc = document.createElement("td"); desc.textContent = CATALOGO[id].rotulo;
-    var val = document.createElement("td"); val.textContent = brl.format(CATALOGO[id].preco); val.className = "num";
-    tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
-    tbody.appendChild(tr);
+  /* o pacote Eternal já inclui o ensaio pré-wedding */
+  function sincronizaPrewedding(){
+    var pacote = document.querySelector('input[name="pacote"]:checked');
+    if (pacote && pacote.value === "eternal"){
+      inputPrewedding.checked = false;
+      inputPrewedding.disabled = true;
+      linhaPrewedding.classList.add("desabilitada");
+      valorPrewedding.textContent = "incluso no Eternal";
+    } else {
+      inputPrewedding.disabled = false;
+      linhaPrewedding.classList.remove("desabilitada");
+      valorPrewedding.textContent = brl.format(CATALOGO.prewedding.preco);
+    }
+  }
+
+  function atualizaTotal(){
+    var total = totalDe(selecaoAtual());
+    totalEl.textContent = brl.format(total);
+    entradaEl.textContent = brl.format(total * 0.3);
+  }
+
+  document.querySelectorAll('input[name="pacote"], input[name="extra"]').forEach(function(input){
+    input.addEventListener("change", function(){
+      sincronizaPrewedding();
+      atualizaTotal();
+    });
   });
-  var trTotal = document.createElement("tr");
-  var tdVazio = document.createElement("td");
-  var tdRotulo = document.createElement("td"); tdRotulo.textContent = "VALOR TOTAL"; tdRotulo.style.fontWeight = "500";
-  var tdTotal = document.createElement("td"); tdTotal.textContent = brl.format(total); tdTotal.className = "num"; tdTotal.style.fontWeight = "500";
-  trTotal.appendChild(tdVazio); trTotal.appendChild(tdRotulo); trTotal.appendChild(tdTotal);
-  tbody.appendChild(trTotal);
+
+  /* tabela de serviços do contrato (dentro do texto legal, que segue invisível
+     pro casal e vira o PDF enviado pro Jordan) */
+  function montaTabela(itens, total){
+    var tbody = document.getElementById("tabela-servicos");
+    tbody.innerHTML = "";
+    itens.forEach(function(id){
+      var tr = document.createElement("tr");
+      var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
+      var desc = document.createElement("td"); desc.textContent = CATALOGO[id].rotulo;
+      var val = document.createElement("td"); val.textContent = brl.format(CATALOGO[id].preco); val.className = "num";
+      tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
+      tbody.appendChild(tr);
+    });
+    var trTotal = document.createElement("tr");
+    var tdVazio = document.createElement("td");
+    var tdRotulo = document.createElement("td"); tdRotulo.textContent = "VALOR TOTAL"; tdRotulo.style.fontWeight = "500";
+    var tdTotal = document.createElement("td"); tdTotal.textContent = brl.format(total); tdTotal.className = "num"; tdTotal.style.fontWeight = "500";
+    trTotal.appendChild(tdVazio); trTotal.appendChild(tdRotulo); trTotal.appendChild(tdTotal);
+    tbody.appendChild(trTotal);
+  }
 
   /* geração do contrato */
   var form = document.getElementById("form-contrato");
@@ -566,6 +764,11 @@
     ev.preventDefault();
     if (!form.reportValidity()) return;
 
+    var itens = selecaoAtual();
+    var total = totalDe(itens);
+    var entrada = total * 0.3;
+    montaTabela(itens, total);
+
     ["noivo","cpf-noivo","noiva","cpf-noiva","tel-noivo","tel-noiva",
      "endereco","numero","bairro","cidade","estado","cep","local","horario"].forEach(function(id){
       document.querySelectorAll('[data-campo="' + id + '"]').forEach(function(span){
@@ -587,26 +790,27 @@
     document.querySelectorAll('[data-campo="data-assinatura"]').forEach(function(span){ span.textContent = dataExtenso(new Date()); });
 
     app.hidden = true;
-    documento.hidden = false;
+    document.getElementById("confirmacao").hidden = false;
     window.scrollTo(0, 0);
 
-    enviarCopiaPdf(dataEvento);
+    enviarCopiaPdf(dataEvento, itens, total, entrada);
   });
 
-  /* envio automático: gera o PDF do contrato no navegador e manda pra função
-     /api/enviar-contrato (Vercel), que dispara o e-mail pro Jordan via Resend.
-     Falha aqui não bloqueia nada: o casal continua vendo o contrato na tela. */
+  /* envio automático: o contrato preenchido (fora da tela) vira PDF no navegador
+     e vai pra função /api/enviar-contrato (Vercel), que dispara o e-mail pro
+     Jordan via Resend. Falha não bloqueia nada: a confirmação continua na tela
+     e o aviso orienta o casal a chamar o Jordan. */
   var aviso = document.getElementById("aviso-envio");
 
-  function enviarCopiaPdf(dataEvento){
+  function enviarCopiaPdf(dataEvento, itens, total, entrada){
     if (typeof html2pdf === "undefined"){
       aviso.hidden = false;
-      aviso.textContent = "Não conseguimos enviar a cópia automática agora. Avisem o Jordan pelo (45) 99907-7874 que o contrato está pronto.";
+      aviso.textContent = "Não conseguimos enviar os dados automaticamente agora. Avisem o Jordan pelo (45) 99907-7874 que vocês preencheram o questionário.";
       return;
     }
 
     aviso.hidden = false;
-    aviso.textContent = "Enviando uma cópia do contrato para o Jordan...";
+    aviso.textContent = "Enviando as informações para o Jordan...";
 
     var nomeArquivo = "Contrato - " + (valorCampo("noivo") || "Noivo") + " e " + (valorCampo("noiva") || "Noiva") + ".pdf";
     var dataEventoTexto = dataEvento ? dataExtenso(new Date(dataEvento.getTime() + dataEvento.getTimezoneOffset()*60000)) : "a combinar";
@@ -626,17 +830,20 @@
           nomeArquivo: nomeArquivo,
           noivo: valorCampo("noivo"), noiva: valorCampo("noiva"),
           telNoivo: valorCampo("tel-noivo"), telNoiva: valorCampo("tel-noiva"),
+          email: valorCampo("email"),
           dataEvento: dataEventoTexto,
           local: valorCampo("local"), horario: valorCampo("horario"),
+          origem: valorCampo("origem"),
+          observacoes: valorCampo("observacoes"),
           itens: itens.map(function(id){ return CATALOGO[id].curto + ": " + brl.format(CATALOGO[id].preco); }),
           total: brl.format(total), entrada: brl.format(entrada)
         })
       });
     }).then(function(res){
       if (!res.ok) throw new Error("HTTP " + res.status);
-      aviso.textContent = "Uma cópia do contrato já foi enviada para o Jordan. Ele entra em contato com vocês para os próximos passos.";
+      aviso.textContent = "Tudo certo: as informações e o contrato preenchido já estão com o Jordan.";
     }).catch(function(){
-      aviso.textContent = "Não conseguimos enviar a cópia automática agora. Avisem o Jordan pelo (45) 99907-7874 que o contrato está pronto.";
+      aviso.textContent = "Não conseguimos enviar os dados automaticamente agora. Avisem o Jordan pelo (45) 99907-7874 que vocês preencheram o questionário.";
     });
   }
 })();

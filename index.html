@@ -4,12 +4,15 @@
   v1 (front apenas) · replica a proposta em PDF com seleção clicável.
 
   PLACEHOLDERS / PENDÊNCIAS:
-  - Telefone: usando +55 45 99907-7874 (link tel: no rodapé). Jordan vai migrar pro DDD 41 (Curitiba) → trocar lá.
+  - Telefone: usando +55 45 99907-7874 (link tel: no rodapé E link wa.me no CTA do resumo, dentro do script).
+    Jordan vai migrar pro DDD 41 (Curitiba) → trocar nos dois lugares.
+  - Página independente do contrato (decisão de 2026-07-09): /contrato é um questionário separado que o
+    Jordan envia depois de confirmar a data no WhatsApp; o casal reescolhe lá os serviços. Este index é só
+    portfólio + calculadora de orçamento (modo Jordan removido).
   - Fotos: extraídas do PDF (resolução de tela). Substituir pelas versões em alta que o Jordan vai mandar.
-  - Portfólio / Instagram (seção #portfolio): grid curado usando as fotos da proposta como stand-in.
-    Trocar pelas fotos reais do feed do Jordan. Cada tile aponta pro perfil
-    (https://instagram.com/jordansantosphotography); se o Jordan quiser, dá pra apontar cada foto
-    pro post específico (basta o link de cada post no href do respectivo <a class="insta-item">).
+  - Portfólio / Instagram (seção #portfolio): grid estilo feed do perfil (cabeçalho + grade 3 colunas).
+    Fotos são stand-in da proposta; trocar pelas do feed real do Jordan. Cada tile aponta pro perfil
+    (https://instagram.com/jordansantosphotography); pra linkar post específico, basta o URL do post no href.
   - Marca nova do Diogo aplicada (2026-07-02): paleta oficial (petróleo #003646, aço #4F6278, preto #1D1D1B,
     cinza #706F6F, off-white #E8E1DC) + wordmark/assinatura em Assets/Marca/. Fonte display é aproximação
     (Bodoni Moda, estilo Didot como a wordmark) até o Diogo nomear as fontes oficiais.
@@ -111,9 +114,13 @@
   }
 
   /* ---------- fotos full-bleed ---------- */
-  .foto-full img{width:100%;height:92vh;object-fit:cover}
+  /* seções só de foto: a imagem aparece inteira, altura natural, sem corte */
+  .foto-full img{width:100%;height:auto}
   .foto-meia{margin-top:72px}
   .foto-meia img{width:100%;height:64vh;object-fit:cover}
+  /* banner: largura total (anula o padding lateral da seção), altura baixa */
+  .foto-banner{margin:0 -24px 72px}
+  .foto-banner img{width:100%;height:34vh;object-fit:cover}
 
   /* foco das fotos: ancora o corte do cover nos rostos, pra nenhum
      redimensionamento (desktop largo em especial) decapitar as pessoas */
@@ -195,7 +202,48 @@
   }
   .parcela{font-size:14px;color:var(--ink-soft);letter-spacing:.04em}
 
+  /* ---------- seções com foto de fundo em tamanho natural ---------- */
+  /* a foto é um <img> comum no fluxo: a altura da seção É a altura renderizada
+     da imagem (width 100% + height auto), em qualquer navegador, sem corte.
+     O conteúdo fica em camada absoluta por cima. */
+  #adicionais,#prewedding{position:relative;padding:0}
+  .secao-bg{display:block;width:100%;height:auto}
+  .secao-conteudo{
+    position:absolute;
+    top:0;left:0;right:0;
+    padding:104px 24px;
+  }
+
   /* ---------- adicionais ---------- */
+  #adicionais .linha{
+    background:rgba(255,255,255,.55);
+    border-color:rgba(232,225,220,.85);
+    backdrop-filter:blur(3px);
+  }
+  #adicionais .linha:hover{background:rgba(255,255,255,.8)}
+  #adicionais .linha[aria-pressed="true"]{background:rgba(255,255,255,.92)}
+
+  @media (max-width:900px){
+    /* em tela estreita o céu da foto fica baixo demais pro conteúdo caber sobre
+       ele: o conteúdo sai da foto e senta num bloco sólido da cor exata do topo
+       do céu, emendado com a imagem logo abaixo — o céu "continua" pra cima */
+    .secao-conteudo{position:static;padding:44px 16px 24px}
+    #adicionais{background:#FEFEFE}
+    #prewedding{background:#D7E0E1}
+  }
+
+  @media (max-width:640px){
+    /* compactação do conteúdo em celular */
+    #adicionais .dica{margin-bottom:14px;padding:5px 12px}
+    #adicionais h2{font-size:24px;margin-bottom:4px}
+    #adicionais .linha{padding:8px 8px;gap:10px}
+    #adicionais .linha .nome{font-size:13.5px;line-height:1.4}
+    #adicionais .linha .valor{font-size:15px}
+    #adicionais .linha .check{width:18px;height:18px}
+    #adicionais .linha .check svg{width:9px;height:9px}
+    #adicionais .proximo{margin-top:22px}
+  }
+
   .linha{
     display:flex;
     align-items:center;
@@ -249,17 +297,33 @@
     margin-top:20px;
   }
 
-  .sobre-foto{position:relative}
-  .sobre-foto figcaption{
+  #prewedding .card{
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(3px);
+  }
+  #prewedding .card:hover{background:rgba(255,255,255,.8)}
+  #prewedding .card[aria-pressed="true"]{background:rgba(255,255,255,.92)}
+  .prewed-legenda{
     position:absolute;
     left:0;right:0;bottom:0;
-    padding:110px 24px 44px;
-    background:linear-gradient(transparent,rgba(0,0,0,.62));
+    padding:220px 24px 170px;
+    background:linear-gradient(transparent,rgba(0,0,0,.7));
     color:#fff;
     text-align:center;
-    font-size:15.5px;
+    font-size:19px;
+    font-weight:500;
     letter-spacing:.03em;
     line-height:1.8;
+  }
+
+  @media (max-width:640px){
+    #prewedding .dica{margin-bottom:14px;padding:5px 12px}
+    #prewedding h2{font-size:24px;margin-bottom:4px}
+    #prewedding .card{padding:20px 18px}
+    #prewedding .card ul{font-size:13.5px}
+    #prewedding .preco{font-size:20px;margin-top:12px}
+    #prewedding .proximo{margin-top:22px}
+    .prewed-legenda{padding:70px 20px 64px;font-size:14px;line-height:1.7}
   }
 
   /* ---------- entrega ---------- */
@@ -279,53 +343,99 @@
   }
   .entrega-fotos img{width:100%;height:auto;display:block}
 
-  /* ---------- portfólio / instagram ---------- */
-  .insta-intro{max-width:520px;margin:0 auto;color:var(--ink-soft);font-size:15.5px}
+  /* ---------- portfólio / instagram (feed) ---------- */
+  .insta-feed{padding:88px 20px 96px}
+  .insta-feed-inner{max-width:935px;margin:0 auto}
+
+  .insta-feed-titulo{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(22px,3.2vw,28px);
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    color:var(--ink);
+    text-align:center;
+    margin-bottom:36px;
+  }
+
+  .insta-perfil{
+    display:flex;
+    align-items:flex-start;
+    gap:16px;
+    max-width:520px;
+    margin:0 0 28px;
+    padding:0 4px;
+  }
+  .insta-perfil-foto{
+    width:56px;height:56px;
+    border-radius:50%;
+    object-fit:cover;
+    flex-shrink:0;
+    border:1px solid var(--line);
+  }
+  .insta-perfil-user{
+    display:block;
+    font-size:15px;
+    font-weight:500;
+    color:var(--ink);
+    text-decoration:none;
+    margin-bottom:6px;
+  }
+  .insta-perfil-user:hover{text-decoration:underline}
+  .insta-perfil-bio{
+    font-size:13px;
+    line-height:1.55;
+    color:var(--ink-soft);
+  }
+  .insta-perfil-bio a{
+    color:inherit;
+    text-decoration:none;
+    border-bottom:1px solid rgba(112,111,111,.35);
+  }
+  .insta-perfil-bio a:hover{color:var(--accent);border-color:var(--accent)}
+  .insta-perfil-tag{color:var(--ink);font-weight:400}
+
   .insta-grid{
     display:grid;
     grid-template-columns:repeat(3,1fr);
-    gap:14px;
-    margin-top:48px;
+    gap:4px;
   }
   .insta-item{
     position:relative;
     display:block;
     aspect-ratio:1/1;
     overflow:hidden;
-    border-radius:3px;
     background:var(--noir);
   }
   .insta-item img{
     width:100%;height:100%;
     object-fit:cover;
-    transition:transform .6s ease;
+    transition:opacity .2s ease;
   }
-  .insta-item:hover img{transform:scale(1.06)}
   .insta-item::after{
     content:"";
     position:absolute;inset:0;
-    background:rgba(0,54,70,0);   /* --accent, transparente em repouso */
-    transition:background .3s ease;
+    background:rgba(0,0,0,0);
+    transition:background .2s ease;
   }
-  .insta-item:hover::after{background:rgba(0,54,70,.36)}
-  .insta-item .glifo{
+  .insta-item:hover::after{background:rgba(0,0,0,.18)}
+  .insta-item:hover img{opacity:.92}
+  .insta-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .insta-carrossel{
     position:absolute;
-    top:50%;left:50%;
-    transform:translate(-50%,-50%) scale(.8);
-    width:34px;height:34px;
-    opacity:0;
+    top:8px;right:8px;
+    width:20px;height:20px;
     z-index:2;
     pointer-events:none;
-    transition:opacity .3s ease, transform .3s ease;
+    filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
   }
-  .insta-item:hover .glifo{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  .insta-item:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
+  .insta-rodape{text-align:center;margin-top:40px}
   .insta-cta{
     display:inline-flex;
     align-items:center;
     gap:12px;
-    margin-top:48px;
     padding:15px 30px;
     border:1px solid var(--accent);
     border-radius:999px;
@@ -341,7 +451,8 @@
   .insta-cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 
   @media (max-width:640px){
-    .insta-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+    .insta-grid{grid-template-columns:repeat(2,1fr);gap:3px}
+    .insta-perfil{max-width:100%;padding:0 2px}
   }
 
   /* ---------- citação ---------- */
@@ -443,6 +554,8 @@
   .cta:hover{opacity:.85}
   .cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
   .cta.desativado{opacity:.35;pointer-events:none}
+  button.cta{border:0;cursor:pointer;font-family:inherit;width:100%}
+
   .limpar{
     display:block;
     margin:22px auto 0;
@@ -485,7 +598,8 @@
     .pacote-heritage{margin-top:34px}
     .entrega-fotos{grid-template-columns:1fr}
     .quote-full blockquote{left:20px;right:20px;top:7%}
-    .foto-full img{height:72vh}
+    .foto-banner{margin:0 -20px 56px}
+    .foto-banner img{height:24vh}
   }
 </style>
 </head>
@@ -503,42 +617,43 @@
 </figure>
 
 <!-- portfólio / instagram -->
-<section class="pagina" id="portfolio">
-  <div class="miolo-largo">
-    <div class="centro reveal">
-      <span class="dica">Portfólio &middot; @jordansantosphotography</span>
-      <h2>No Instagram</h2>
-      <p class="insta-intro">Cada imagem abre o meu Instagram, onde re&uacute;no os casamentos que tive a honra de eternizar.</p>
+<section class="pagina insta-feed" id="portfolio">
+  <div class="insta-feed-inner">
+    <h2 class="insta-feed-titulo reveal">Instagram</h2>
+
+    <div class="insta-perfil reveal">
+      <img class="insta-perfil-foto" src="img/jordan-perfil.webp" alt="Jordan Santos" width="128" height="128">
+      <div>
+        <a class="insta-perfil-user" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">jordansantosphotography</a>
+        <p class="insta-perfil-bio"><span class="insta-perfil-tag">#destinationwedding</span><br>✈️🌍🇧🇷🇦🇷🇵🇾🇵🇦🇲🇽🇨🇱🇩🇴🇫🇷<br>Fotografia cl&aacute;ssica para casamentos.<br>Est&eacute;tica fine art com dire&ccedil;&atilde;o cinematogr&aacute;fica</p>
+      </div>
     </div>
 
     <div class="insta-grid reveal">
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
         <img src="img/noiva-retrato.jpg" alt="Retrato da noiva com véu">
-        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
       </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
         <img src="img/casal-campo.jpg" alt="Casal de mãos dadas em um campo ao pôr do sol">
-        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
       </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
         <img src="img/casal-palacio.jpg" alt="Noivos em um palácio, em preto e branco">
-        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
       </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
         <img src="img/prewedding.jpg" alt="Casal sobre uma caminhonete antiga em um campo">
-        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
       </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
         <img src="img/entrega-2.jpg" alt="Noiva em um salão histórico">
-        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
+        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
       </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Abrir o Instagram de Jordan Santos">
+      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
         <img src="img/entrega-1.jpg" alt="Noivos em um corredor clássico">
-        <svg class="glifo" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#fff" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="#fff"/></svg>
       </a>
     </div>
 
-    <div class="centro reveal">
+    <div class="insta-rodape reveal">
       <a class="insta-cta" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg>
         Seguir no Instagram
@@ -610,6 +725,7 @@
 
 <!-- adicionais -->
 <section class="pagina" id="adicionais">
+  <div class="secao-conteudo">
   <div class="miolo">
     <div class="centro reveal">
       <span class="dica">Opcional, selecione quantos quiser</span>
@@ -653,14 +769,13 @@
       <button class="proximo" type="button" data-alvo="#album">Continuar &darr;</button>
     </div>
   </div>
-  <figure class="foto-meia">
-    <img src="img/casal-campo.jpg" alt="Casal de mãos dadas em um campo ao pôr do sol">
-  </figure>
+  </div>
+  <img class="secao-bg" src="img/casal-campo.jpg" alt="" aria-hidden="true" width="1365" height="2048" loading="lazy">
 </section>
 
 <!-- álbum -->
 <section class="pagina" id="album" style="padding-top:0">
-  <figure class="foto-meia" style="margin:0 0 72px">
+  <figure class="foto-banner">
     <img src="img/album.jpg" alt="Álbum de fotografias aberto mostrando as lâminas">
   </figure>
   <div class="miolo">
@@ -694,7 +809,8 @@
 </section>
 
 <!-- pré-wedding -->
-<section class="pagina" id="prewedding" style="padding-bottom:0">
+<section class="pagina" id="prewedding">
+  <div class="secao-conteudo">
   <div class="miolo">
     <div class="centro reveal">
       <span class="dica" id="dica-prewedding">Opcional, toque para adicionar</span>
@@ -719,11 +835,9 @@
       <button class="proximo" type="button" data-alvo="#entrega">Continuar &darr;</button>
     </div>
   </div>
-
-  <figure class="sobre-foto foto-meia">
-    <img src="img/prewedding.jpg" alt="Casal sobre uma caminhonete antiga em um campo ao pôr do sol">
-    <figcaption>Meu trabalho depende da verdade de vocês,<br>quanto mais reais forem comigo, mais verdadeira será a foto.</figcaption>
-  </figure>
+  </div>
+  <img class="secao-bg" src="img/prewedding.jpg" alt="" aria-hidden="true" width="1365" height="2048" loading="lazy">
+  <p class="prewed-legenda">Meu trabalho depende da verdade de vocês,<br>quanto mais reais forem comigo, mais verdadeira será a foto.</p>
 </section>
 
 <!-- entrega -->
@@ -774,7 +888,7 @@
         Pacotes de casamento podem ser parcelados em at&eacute; 10x.<br>
         A disponibilidade da data &eacute; confirmada diretamente com o Jordan.
       </div>
-      <a class="cta desativado" id="cta-contrato" href="#">Gerar contrato</a>
+      <a class="cta desativado" id="cta-whatsapp" href="#" target="_blank" rel="noopener">Enviar or&ccedil;amento pro Jordan</a>
       <button class="limpar" type="button" id="limpar">Limpar escolhas</button>
     </div>
   </div>
@@ -841,15 +955,15 @@
     var lista = document.getElementById("resumo-lista");
     var totalBloco = document.getElementById("total-bloco");
     var valorTotal = document.getElementById("valor-total");
-    var cta = document.getElementById("cta-contrato");
+    var ctaZap = document.getElementById("cta-whatsapp");
 
     if (!estado.pacote){
       vazio.hidden = false;
       lista.hidden = true;
       totalBloco.hidden = true;
-      cta.classList.add("desativado");
-      cta.setAttribute("aria-disabled", "true");
-      cta.href = "#";
+      ctaZap.classList.add("desativado");
+      ctaZap.setAttribute("aria-disabled", "true");
+      ctaZap.href = "#";
       return;
     }
 
@@ -887,12 +1001,17 @@
     totalBloco.hidden = false;
     valorTotal.textContent = brl.format(total);
 
-    /* único CTA: leva a seleção pra página do contrato via query string */
-    var extrasIds = estado.extras.map(function(btn){ return btn.dataset.id; });
-    cta.href = "/contrato?p=" + estado.pacote.dataset.id
-      + (extrasIds.length ? "&x=" + extrasIds.join(",") : "");
-    cta.classList.remove("desativado");
-    cta.removeAttribute("aria-disabled");
+    /* CTA do casal: manda o orçamento montado pro WhatsApp do Jordan */
+    var linhas = itens.map(function(btn){
+      return "- " + btn.dataset.rotulo + " (" + brl.format(Number(btn.dataset.preco)) + ")";
+    });
+    if (eternalEscolhido()) linhas.push("- Ensaio pré-wedding e álbuns do pacote (incluso)");
+    var msg = "Olá, Jordan! Montei meu orçamento no site:\n"
+      + linhas.join("\n")
+      + "\nTotal: " + brl.format(total);
+    ctaZap.href = "https://wa.me/5545999077874?text=" + encodeURIComponent(msg);
+    ctaZap.classList.remove("desativado");
+    ctaZap.removeAttribute("aria-disabled");
   }
 
   /* seleção */
