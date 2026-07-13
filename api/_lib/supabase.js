@@ -11,11 +11,13 @@ export function supabaseConfigurado() {
   return Boolean(BASE && CHAVE);
 }
 
-function cabecalhos(extra) {
+function cabecalhos(temCorpo, extra) {
   return {
     apikey: CHAVE,
     Authorization: "Bearer " + CHAVE,
-    "Content-Type": "application/json",
+    /* Content-Type só com corpo: o parser do Storage devolve 400
+       pra "application/json" sem body */
+    ...(temCorpo ? { "Content-Type": "application/json" } : {}),
     ...extra
   };
 }
@@ -24,7 +26,7 @@ function cabecalhos(extra) {
 export async function rest(caminho, { method = "GET", body, prefer } = {}) {
   const r = await fetch(BASE + "/rest/v1/" + caminho, {
     method,
-    headers: cabecalhos(prefer ? { Prefer: prefer } : undefined),
+    headers: cabecalhos(body !== undefined, prefer ? { Prefer: prefer } : undefined),
     body: body !== undefined ? JSON.stringify(body) : undefined
   });
   if (!r.ok) {
@@ -40,7 +42,7 @@ export async function rest(caminho, { method = "GET", body, prefer } = {}) {
 export async function storage(caminho, { method = "GET", body } = {}) {
   const r = await fetch(BASE + "/storage/v1/" + caminho, {
     method,
-    headers: cabecalhos(),
+    headers: cabecalhos(body !== undefined),
     body: body !== undefined ? JSON.stringify(body) : undefined
   });
   if (!r.ok) {
@@ -87,7 +89,7 @@ export function urlStorage(caminho) {
 export async function loginSenha(email, senha) {
   const r = await fetch(BASE + "/auth/v1/token?grant_type=password", {
     method: "POST",
-    headers: cabecalhos(),
+    headers: cabecalhos(true),
     body: JSON.stringify({ email: email, password: senha })
   });
   if (r.status === 400 || r.status === 401 || r.status === 403) return null;
@@ -103,7 +105,7 @@ export async function loginSenha(email, senha) {
 export async function criarUsuarioAuth(email, senha) {
   const r = await fetch(BASE + "/auth/v1/admin/users", {
     method: "POST",
-    headers: cabecalhos(),
+    headers: cabecalhos(true),
     body: JSON.stringify({ email: email, password: senha, email_confirm: true })
   });
   if (r.status === 422) return null; /* e-mail já cadastrado */
@@ -118,7 +120,7 @@ export async function criarUsuarioAuth(email, senha) {
 export async function definirSenhaAuth(userId, senha) {
   const r = await fetch(BASE + "/auth/v1/admin/users/" + userId, {
     method: "PUT",
-    headers: cabecalhos(),
+    headers: cabecalhos(true),
     body: JSON.stringify({ password: senha })
   });
   if (!r.ok) {
@@ -133,7 +135,7 @@ export async function buscarUsuarioAuth(email) {
   const alvo = String(email || "").toLowerCase();
   const r = await fetch(BASE + "/auth/v1/admin/users?per_page=1000", {
     method: "GET",
-    headers: cabecalhos()
+    headers: cabecalhos(false)
   });
   if (!r.ok) {
     console.error("supabase auth busca falhou:", r.status);
