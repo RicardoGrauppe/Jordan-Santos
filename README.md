@@ -79,7 +79,7 @@ Os dois logins usam **e-mail + senha via Supabase Auth** (decisão de 2026-07-11
 | `RESEND_API_KEY` | chave do Resend (e-mail do contrato) |
 | `SUPABASE_URL` | Project URL do Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | service role key; só as functions leem, nunca vai pro browser |
-| `SESSION_SECRET` | segredo dos tokens de sessão (`openssl rand -hex 32`) |
+| `SESSION_SECRET` | opcional: segredo dos tokens de sessão (`openssl rand -hex 32`); sem ela, a chave deriva da service key |
 | `ADMIN_EMAIL` | opcional (fallback): e-mail tratado como admin; o caminho normal é o `app_metadata.role = "admin"` no usuário do Auth |
 
 Sem as vars do Supabase, o site público continua 100% funcional: o questionário só envia o e-mail (`cadastroOk:false`) e as áreas logadas avisam que o banco não está configurado.

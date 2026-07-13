@@ -21,12 +21,15 @@ function deB64url(s) {
 }
 
 async function chave() {
-  if (!process.env.SESSION_SECRET) {
-    /* sem segredo não há sessão: erro claro em vez de crash do Web Crypto */
-    throw new Error("SESSION_SECRET não configurada na Vercel");
+  /* material da chave: SESSION_SECRET, se existir, senão deriva da service key
+     do Supabase (secreta e só do servidor). Rotacionar qualquer uma das duas
+     apenas invalida as sessões abertas — todo mundo loga de novo. */
+  const material = process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!material) {
+    throw new Error("sem SESSION_SECRET nem SUPABASE_SERVICE_ROLE_KEY na Vercel");
   }
   return crypto.subtle.importKey(
-    "raw", enc.encode(process.env.SESSION_SECRET),
+    "raw", enc.encode("sessao-jordan|" + material),
     { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]
   );
 }
