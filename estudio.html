@@ -331,12 +331,15 @@
   }
 
   function api(url, corpo){
+    var ehLogin = corpo && corpo.acao === "entrar";
     return fetch(url, corpo ? {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(corpo)
     } : undefined).then(function(r){
-      if (r.status === 401){ mostrar("login"); throw new Error("sessao"); }
+      /* 401 fora do login = sessão expirada → volta pra tela de entrada;
+         401 NO login = credencial errada → o erro precisa aparecer */
+      if (r.status === 401 && !ehLogin){ mostrar("login"); throw new Error("sessao"); }
       return r.json().then(function(j){
         if (!r.ok) throw new Error(j.erro || "falha");
         return j;
