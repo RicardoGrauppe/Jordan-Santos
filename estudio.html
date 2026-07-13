@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<!--
+  Estúdio · Jordan Santos Fotografia
+  Painel do Jordan (/estudio, não linkado em lugar nenhum do site público).
+  Login por senha (env ADMIN_PASSWORD, validada em /api/sessao) → CRUD de clientes
+  (/api/estudio) + upload das fotos entregues (browser → Supabase Storage direto,
+  via signed upload URLs, contornando o limite de 4.5MB da Vercel).
+  Single-file, sem build, sem dependências: mesmo padrão do resto do site.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Estúdio | Jordan Santos Fotografia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --ink:#1D1D1B;
+    --ink-soft:#706F6F;
+    --accent:#003646;
+    --accent-deep:#4F6278;
+    --noir:#1D1D1B;
+    --line:#E8E1DC;
+    --sombra:0 10px 34px rgba(29,29,27,.14);
+    --serif:"Bodoni Moda","Didot",Georgia,serif;
+    --sans:"Jost","Helvetica Neue",sans-serif;
+    --ok:#2E6B4F;
+    --erro:#A33B3B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-weight:300;font-size:16px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  img{display:block;max-width:100%}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  a{color:var(--accent)}
+  .miolo{max-width:980px;margin:0 auto;padding:0 24px}
+
+  .topo{padding:36px 24px 0;text-align:center}
+  .topo img{width:min(200px,50vw);margin:0 auto}
+
+  h1{
+    font-family:var(--serif);font-weight:500;
+    font-size:clamp(24px,4vw,32px);letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent);text-align:center;margin:32px 0 6px;
+  }
+  .sub{color:var(--ink-soft);text-align:center;font-size:14px}
+
+  /* ---------- login ---------- */
+  .login{max-width:360px;margin:48px auto 120px;padding:0 24px}
+  .campo-form{display:flex;flex-direction:column;margin-bottom:22px}
+  .campo-form label{
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:7px;
+  }
+  input,select,textarea{
+    font:inherit;color:var(--ink);background:transparent;
+    border:none;border-bottom:1px solid var(--line);
+    padding:9px 2px;border-radius:0;-webkit-appearance:none;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-bottom-color:var(--accent)}
+  textarea{min-height:72px;resize:vertical}
+
+  .cta{
+    display:block;width:100%;padding:16px 24px;margin-top:8px;
+    background:var(--noir);color:#fff;text-align:center;
+    font-size:13px;letter-spacing:.22em;text-transform:uppercase;
+    border-radius:999px;transition:opacity .2s ease;
+  }
+  .cta:hover{opacity:.85}
+  .cta:disabled{opacity:.4;cursor:default}
+  .msg-erro{color:var(--erro);font-size:13.5px;text-align:center;margin-top:16px;min-height:20px}
+
+  /* ---------- painel ---------- */
+  .barra{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    margin:36px 0 20px;
+  }
+  .barra input[type="search"]{flex:1;min-width:180px}
+  .barra select{width:auto}
+  .botao-linha{
+    padding:10px 22px;border:1px solid var(--accent);border-radius:999px;
+    color:var(--accent);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    transition:background .2s ease,color .2s ease;white-space:nowrap;
+  }
+  .botao-linha:hover{background:var(--accent);color:#fff}
+  .botao-linha.perigo{border-color:var(--erro);color:var(--erro)}
+  .botao-linha.perigo:hover{background:var(--erro);color:#fff}
+  .sair{margin-left:auto;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+
+  table{width:100%;border-collapse:collapse;margin-bottom:90px}
+  th{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:500;
+    color:var(--ink-soft);text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);
+  }
+  td{padding:14px 10px;border-bottom:1px solid var(--line);font-size:15px}
+  tbody tr{cursor:pointer;transition:background .15s ease}
+  tbody tr:hover{background:#FBF9F6}
+  td.num{text-align:right;font-family:var(--serif);color:var(--accent-deep);white-space:nowrap}
+  .vazio{padding:60px 10px;text-align:center;color:var(--ink-soft)}
+
+  .badge{
+    display:inline-block;padding:4px 12px;border-radius:999px;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;
+  }
+  .badge.novo{border-color:var(--accent-deep);color:var(--accent-deep)}
+  .badge.confirmado{border-color:var(--accent);color:var(--accent)}
+  .badge.realizado{border-color:var(--ok);color:var(--ok)}
+  .badge.fotos_entregues{background:var(--accent);border-color:var(--accent);color:#fff}
+  .badge.arquivado{opacity:.55}
+
+  /* ---------- detalhe ---------- */
+  .detalhe-topo{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:36px 0 8px}
+  .detalhe-topo h2{
+    font-family:var(--serif);font-weight:500;font-size:24px;
+    letter-spacing:.06em;color:var(--accent);
+  }
+  .voltar{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  fieldset{border:none;margin:26px 0 6px}
+  legend{
+    font-family:var(--serif);font-weight:500;font-size:19px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:16px;
+  }
+  .grade{display:grid;grid-template-columns:repeat(3,1fr);gap:20px 24px}
+  .grade .largo{grid-column:1 / -1}
+  .acoes{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:30px 0 60px}
+  .aviso-salvo{font-size:13px;color:var(--ok);min-height:18px;margin-left:6px}
+
+  /* itens do contrato no detalhe */
+  .itens-lista{list-style:none;font-size:14.5px;margin-bottom:8px}
+  .itens-lista li{display:flex;justify-content:space-between;gap:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .itens-lista .valor{font-family:var(--serif);color:var(--accent-deep);white-space:nowrap}
+
+  /* ---------- fotos ---------- */
+  .fotos-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin:16px 0}
+  .foto{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:6px;background:#F2EEE9}
+  .foto img{width:100%;height:100%;object-fit:cover}
+  .foto button{
+    position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
+    background:rgba(29,29,27,.75);color:#fff;font-size:14px;line-height:1;
+  }
+  .progresso{font-size:13px;color:var(--ink-soft);min-height:18px;margin-top:8px}
+  input[type="file"]{border:none;padding:0;font-size:13.5px}
+
+  @media (max-width:720px){
+    .grade{grid-template-columns:1fr 1fr}
+    .col-total{display:none}
+    td,th{padding:12px 6px}
+  }
+  @media (max-width:520px){
+    .grade{grid-template-columns:1fr}
+    .col-status{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <img src="img/logo-principal-petroleo.png" alt="Jordan Santos">
+</header>
+
+<!-- estado 1: login -->
+<div id="tela-login" hidden>
+  <h1>Est&uacute;dio</h1>
+  <p class="sub">&Aacute;rea do Jordan</p>
+  <form class="login" id="form-login">
+    <div class="campo-form">
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="cta" type="submit">Entrar</button>
+    <p class="msg-erro" id="erro-login"></p>
+  </form>
+</div>
+
+<!-- estado 2: lista -->
+<div id="tela-lista" class="miolo" hidden>
+  <h1>Clientes</h1>
+  <div class="barra">
+    <input type="search" id="busca" placeholder="Buscar casal">
+    <select id="filtro-status">
+      <option value="">Todos os status</option>
+      <option value="novo">Novo</option>
+      <option value="confirmado">Confirmado</option>
+      <option value="realizado">Realizado</option>
+      <option value="fotos_entregues">Fotos entregues</option>
+      <option value="arquivado">Arquivado</option>
+    </select>
+    <button class="botao-linha" id="novo-cliente" type="button">Novo cliente</button>
+    <button class="sair" id="sair" type="button">Sair</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Casal</th><th>Data</th>
+        <th class="col-status">Status</th>
+        <th class="col-total" style="text-align:right">Total</th>
+      </tr>
+    </thead>
+    <tbody id="linhas"></tbody>
+  </table>
+</div>
+
+<!-- estado 3: detalhe / novo -->
+<div id="tela-detalhe" class="miolo" hidden>
+  <div class="detalhe-topo">
+    <button class="voltar" id="voltar" type="button">&larr; Clientes</button>
+    <h2 id="detalhe-titulo">Novo cliente</h2>
+  </div>
+
+  <form id="form-cliente">
+    <fieldset>
+      <legend>Status</legend>
+      <div class="grade">
+        <div class="campo-form">
+          <label for="f-status">Status</label>
+          <select id="f-status" data-campo="status">
+            <option value="novo">Novo</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="realizado">Realizado</option>
+            <option value="fotos_entregues">Fotos entregues</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>O casal</legend>
+      <div class="grade">
+        <div class="campo-form"><label for="f-noivo">Noivo</label><input id="f-noivo" data-campo="noivo"></div>
+        <div class="campo-form"><label for="f-cpf-noivo">CPF do noivo</label><input id="f-cpf-noivo" data-campo="cpf_noivo" inputmode="numeric"></div>
+        <div class="campo-form"><label for="f-tel-noivo">Telefone do noivo</label><input id="f-tel-noivo" data-campo="tel_noivo" inputmode="tel"></div>
+        <div class="campo-form"><label for="f-noiva">Noiva</label><input id="f-noiva" data-campo="noiva"></div>
+        <div class="campo-form"><label for="f-cpf-noiva">CPF da noiva</label><input id="f-cpf-noiva" data-campo="cpf_noiva" inputmode="numeric"></div>
+        <div class="campo-form"><label for="f-tel-noiva">Telefone da noiva</label><input id="f-tel-noiva" data-campo="tel_noiva" inputmode="tel"></div>
+        <div class="campo-form largo"><label for="f-email">E-mail do casal</label><input id="f-email" data-campo="email" type="email"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>O evento</legend>
+      <div class="grade">
+        <div class="campo-form"><label for="f-data">Data do casamento</label><input id="f-data" data-campo="data_evento" type="date"></div>
+        <div class="campo-form"><label for="f-horario">Hor&aacute;rio</label><input id="f-horario" data-campo="horario" type="time"></div>
+        <div class="campo-form largo"><label for="f-local">Local</label><input id="f-local" data-campo="local_evento"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Endere&ccedil;o</legend>
+      <div class="grade">
+        <div class="campo-form"><label for="f-cep">CEP</label><input id="f-cep" data-campo="cep" inputmode="numeric"></div>
+        <div class="campo-form"><label for="f-endereco">Endere&ccedil;o</label><input id="f-endereco" data-campo="endereco"></div>
+        <div class="campo-form"><label for="f-numero">N&uacute;mero</label><input id="f-numero" data-campo="numero"></div>
+        <div class="campo-form"><label for="f-complemento">Complemento</label><input id="f-complemento" data-campo="complemento"></div>
+        <div class="campo-form"><label for="f-bairro">Bairro</label><input id="f-bairro" data-campo="bairro"></div>
+        <div class="campo-form"><label for="f-cidade">Cidade</label><input id="f-cidade" data-campo="cidade"></div>
+        <div class="campo-form"><label for="f-estado">Estado</label><input id="f-estado" data-campo="estado"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Contrato</legend>
+      <ul class="itens-lista" id="itens-lista"></ul>
+      <div class="grade">
+        <div class="campo-form"><label for="f-total">Total (R$)</label><input id="f-total" data-campo="total" inputmode="decimal"></div>
+        <div class="campo-form"><label for="f-entrada">Entrada (R$)</label><input id="f-entrada" data-campo="entrada" inputmode="decimal"></div>
+        <div class="campo-form"><label for="f-origem">Como conheceu</label><input id="f-origem" data-campo="origem"></div>
+        <div class="campo-form largo"><label for="f-observacoes">Observa&ccedil;&otilde;es</label><textarea id="f-observacoes" data-campo="observacoes"></textarea></div>
+      </div>
+    </fieldset>
+
+    <div class="acoes">
+      <button class="botao-linha" type="submit" id="salvar">Salvar</button>
+      <button class="botao-linha perigo" type="button" id="arquivar" hidden>Arquivar</button>
+      <button class="botao-linha perigo" type="button" id="excluir" hidden>Excluir de vez</button>
+      <span class="aviso-salvo" id="aviso-salvo"></span>
+    </div>
+  </form>
+
+  <fieldset id="bloco-fotos" hidden>
+    <legend>Fotos da entrega</legend>
+    <p class="sub" style="text-align:left;margin-bottom:10px">
+      Envie as fotos finais em resolu&ccedil;&atilde;o web (1 a 3MB por foto). O casal v&ecirc; e baixa tudo na p&aacute;gina dele.
+    </p>
+    <input type="file" id="arquivos" multiple accept="image/*">
+    <p class="progresso" id="progresso"></p>
+    <div class="fotos-grade" id="fotos-grade"></div>
+  </fieldset>
+  <div style="height:80px"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+  var telas = { login: el("tela-login"), lista: el("tela-lista"), detalhe: el("tela-detalhe") };
+  var clientes = [];          /* cache da lista */
+  var clienteAtual = null;    /* id em edição; null = novo */
+
+  function el(id){ return document.getElementById(id); }
+  function mostrar(nome){
+    Object.keys(telas).forEach(function(t){ telas[t].hidden = t !== nome; });
+    window.scrollTo(0, 0);
+  }
+
+  function api(url, corpo){
+    return fetch(url, corpo ? {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo)
+    } : undefined).then(function(r){
+      if (r.status === 401){ mostrar("login"); throw new Error("sessao"); }
+      return r.json().then(function(j){
+        if (!r.ok) throw new Error(j.erro || "falha");
+        return j;
+      });
+    });
+  }
+
+  /* ---------- login ---------- */
+  el("form-login").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var botao = ev.target.querySelector(".cta");
+    botao.disabled = true;
+    el("erro-login").textContent = "";
+    api("/api/sessao", { acao: "entrar-estudio", senha: el("senha").value })
+      .then(function(){ el("senha").value = ""; carregarLista(); })
+      .catch(function(e){
+        if (e.message !== "sessao") el("erro-login").textContent = e.message;
+      })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  el("sair").addEventListener("click", function(){
+    api("/api/sessao", { acao: "sair" }).then(function(){ mostrar("login"); });
+  });
+
+  /* ---------- lista ---------- */
+  function carregarLista(){
+    api("/api/estudio?lista=1").then(function(r){
+      clientes = r.clientes;
+      desenharLista();
+      mostrar("lista");
+    }).catch(function(){});
+  }
+
+  var ROTULO_STATUS = {
+    novo: "Novo", confirmado: "Confirmado", realizado: "Realizado",
+    fotos_entregues: "Fotos entregues", arquivado: "Arquivado"
+  };
+
+  function dataBr(iso){
+    if (!iso) return "a definir";
+    var p = iso.split("-");
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+
+  function desenharLista(){
+    var termo = el("busca").value.trim().toLowerCase();
+    var status = el("filtro-status").value;
+    var corpo = el("linhas");
+    corpo.innerHTML = "";
+    var visiveis = clientes.filter(function(c){
+      if (status && c.status !== status) return false;
+      if (!status && c.status === "arquivado") return false;
+      var nome = ((c.noivo || "") + " " + (c.noiva || "")).toLowerCase();
+      return !termo || nome.indexOf(termo) !== -1;
+    });
+    if (!visiveis.length){
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 4; td.className = "vazio";
+      td.textContent = clientes.length ? "Nenhum cliente com esse filtro." : "Nenhum cliente ainda. O primeiro chega pelo questionário do contrato, ou crie manualmente.";
+      tr.appendChild(td); corpo.appendChild(tr);
+      return;
+    }
+    visiveis.forEach(function(c){
+      var tr = document.createElement("tr");
+      var casal = document.createElement("td");
+      casal.textContent = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "(sem nome)";
+      var data = document.createElement("td");
+      data.textContent = dataBr(c.data_evento);
+      var st = document.createElement("td");
+      st.className = "col-status";
+      var badge = document.createElement("span");
+      badge.className = "badge " + (c.status || "");
+      badge.textContent = ROTULO_STATUS[c.status] || c.status || "";
+      st.appendChild(badge);
+      var total = document.createElement("td");
+      total.className = "num col-total";
+      total.textContent = c.total != null ? brl.format(c.total) : "";
+      tr.appendChild(casal); tr.appendChild(data); tr.appendChild(st); tr.appendChild(total);
+      tr.addEventListener("click", function(){ abrirDetalhe(c.id); });
+      corpo.appendChild(tr);
+    });
+  }
+
+  el("busca").addEventListener("input", desenharLista);
+  el("filtro-status").addEventListener("change", desenharLista);
+
+  /* ---------- detalhe ---------- */
+  function campos(){ return Array.prototype.slice.call(document.querySelectorAll("[data-campo]")); }
+
+  function preencher(cliente){
+    campos().forEach(function(c){
+      var v = cliente ? cliente[c.dataset.campo] : null;
+      c.value = v == null ? "" : v;
+    });
+    if (!cliente) el("f-status").value = "novo";
+    var lista = el("itens-lista");
+    lista.innerHTML = "";
+    var itens = (cliente && Array.isArray(cliente.itens)) ? cliente.itens : [];
+    itens.forEach(function(i){
+      var li = document.createElement("li");
+      var nome = document.createElement("span"); nome.textContent = i.nome || i.id;
+      var valor = document.createElement("span"); valor.className = "valor";
+      valor.textContent = i.valor != null ? brl.format(i.valor) : "";
+      li.appendChild(nome); li.appendChild(valor); lista.appendChild(li);
+    });
+    if (!itens.length){
+      var li = document.createElement("li");
+      li.textContent = "Sem itens registrados (cliente criado manualmente).";
+      lista.appendChild(li);
+    }
+  }
+
+  function abrirDetalhe(id){
+    api("/api/estudio?id=" + id).then(function(r){
+      clienteAtual = id;
+      el("detalhe-titulo").textContent =
+        [r.cliente.noivo, r.cliente.noiva].filter(Boolean).join(" & ") || "Cliente";
+      preencher(r.cliente);
+      el("arquivar").hidden = r.cliente.status === "arquivado";
+      el("excluir").hidden = false;
+      el("bloco-fotos").hidden = false;
+      desenharFotos(r.fotos);
+      mostrar("detalhe");
+    }).catch(function(){});
+  }
+
+  el("novo-cliente").addEventListener("click", function(){
+    clienteAtual = null;
+    el("detalhe-titulo").textContent = "Novo cliente";
+    preencher(null);
+    el("arquivar").hidden = true;
+    el("excluir").hidden = true;
+    el("bloco-fotos").hidden = true;   /* fotos só depois de salvar */
+    el("fotos-grade").innerHTML = "";
+    mostrar("detalhe");
+  });
+
+  el("voltar").addEventListener("click", carregarLista);
+
+  el("form-cliente").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var cliente = {};
+    campos().forEach(function(c){ cliente[c.dataset.campo] = c.value; });
+    ["total", "entrada"].forEach(function(k){
+      if (cliente[k]) cliente[k] = cliente[k].replace(/\./g, "").replace(",", ".");
+    });
+    var chamada = clienteAtual
+      ? api("/api/estudio", { acao: "atualizar", id: clienteAtual, cliente: cliente })
+      : api("/api/estudio", { acao: "criar", cliente: cliente });
+    chamada.then(function(r){
+      if (!clienteAtual && r.cliente){ abrirDetalhe(r.cliente.id); return; }
+      avisar("Salvo.");
+    }).catch(function(e){
+      if (e.message !== "sessao") avisar(e.message, true);
+    });
+  });
+
+  function avisar(texto, erro){
+    var aviso = el("aviso-salvo");
+    aviso.textContent = texto;
+    aviso.style.color = erro ? "var(--erro)" : "var(--ok)";
+    setTimeout(function(){ aviso.textContent = ""; }, 4000);
+  }
+
+  el("arquivar").addEventListener("click", function(){
+    if (!clienteAtual) return;
+    if (!confirm("Arquivar este cliente? Ele some da lista padrão e perde o acesso à página do casal.")) return;
+    api("/api/estudio", { acao: "arquivar", id: clienteAtual })
+      .then(carregarLista).catch(function(){});
+  });
+
+  el("excluir").addEventListener("click", function(){
+    if (!clienteAtual) return;
+    if (!confirm("Excluir DE VEZ este cliente e todas as fotos? Não tem volta.")) return;
+    api("/api/estudio", { acao: "excluir", id: clienteAtual })
+      .then(carregarLista).catch(function(){});
+  });
+
+  /* ---------- fotos ---------- */
+  function desenharFotos(fotos){
+    var grade = el("fotos-grade");
+    grade.innerHTML = "";
+    (fotos || []).forEach(function(f){
+      var caixa = document.createElement("div");
+      caixa.className = "foto";
+      var img = document.createElement("img");
+      img.src = f.url; img.alt = f.nome; img.loading = "lazy";
+      var apagar = document.createElement("button");
+      apagar.type = "button"; apagar.textContent = "×";
+      apagar.setAttribute("aria-label", "Excluir " + f.nome);
+      apagar.addEventListener("click", function(){
+        if (!confirm("Excluir esta foto?")) return;
+        api("/api/estudio", { acao: "excluir-foto", id: clienteAtual, nome: f.nome })
+          .then(function(){ abrirDetalhe(clienteAtual); }).catch(function(){});
+      });
+      caixa.appendChild(img); caixa.appendChild(apagar);
+      grade.appendChild(caixa);
+    });
+  }
+
+  el("arquivos").addEventListener("change", function(){
+    var arquivos = Array.prototype.slice.call(el("arquivos").files);
+    if (!arquivos.length || !clienteAtual) return;
+    var progresso = el("progresso");
+    progresso.textContent = "Preparando envio...";
+    api("/api/estudio", {
+      acao: "upload-urls", id: clienteAtual,
+      arquivos: arquivos.map(function(a){ return { nome: a.name }; })
+    }).then(function(r){
+      var fila = r.urls.map(function(u, i){ return { url: u.url, arquivo: arquivos[i] }; });
+      var feitos = 0, falhas = 0, ativos = 0;
+      return new Promise(function(resolver){
+        function proximo(){
+          if (!fila.length && !ativos){ resolver({ feitos: feitos, falhas: falhas }); return; }
+          while (fila.length && ativos < 3){
+            var item = fila.shift();
+            ativos++;
+            fetch(item.url, {
+              method: "PUT",
+              headers: { "Content-Type": item.arquivo.type || "application/octet-stream" },
+              body: item.arquivo
+            }).then(function(resp){
+              if (!resp.ok) falhas++; else feitos++;
+            }).catch(function(){ falhas++; })
+              .finally(function(){
+                ativos--;
+                progresso.textContent = "Enviando: " + feitos + " de " + arquivos.length +
+                  (falhas ? " (" + falhas + " falharam)" : "");
+                proximo();
+              });
+          }
+        }
+        proximo();
+      });
+    }).then(function(resultado){
+      progresso.textContent = resultado.falhas
+        ? "Envio concluído com " + resultado.falhas + " falha(s). Tente reenviar as que faltaram."
+        : "Envio concluído.";
+      el("arquivos").value = "";
+      abrirDetalhe(clienteAtual);
+    }).catch(function(e){
+      if (e.message !== "sessao") progresso.textContent = "Falha no envio: " + e.message;
+    });
+  });
+
+  /* ---------- boot ---------- */
+  fetch("/api/sessao").then(function(r){
+    if (!r.ok) throw 0;
+    return r.json();
+  }).then(function(j){
+    if (j.role === "admin") carregarLista(); else mostrar("login");
+  }).catch(function(){ mostrar("login"); });
+})();
+</script>
+</body>
+</html>

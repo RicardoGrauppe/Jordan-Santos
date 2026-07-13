@@ -845,7 +845,21 @@
           origem: valorCampo("origem"),
           observacoes: valorCampo("observacoes"),
           itens: itens.map(function(id){ return CATALOGO[id].curto + ": " + brl.format(CATALOGO[id].preco); }),
-          total: brl.format(total), entrada: brl.format(entrada)
+          total: brl.format(total), entrada: brl.format(entrada),
+
+          /* campos estruturados pro cadastro automático no banco (área do casal
+             e painel do estúdio); o e-mail acima segue usando os textos prontos */
+          cpfNoivo: valorCampo("cpf-noivo").replace(/\D/g, ""),
+          cpfNoiva: valorCampo("cpf-noiva").replace(/\D/g, ""),
+          cep: valorCampo("cep"), endereco: valorCampo("endereco"),
+          numero: valorCampo("numero"), complemento: valorCampo("complemento"),
+          bairro: valorCampo("bairro"), cidade: valorCampo("cidade"),
+          estado: valorCampo("estado"),
+          dataEventoIso: document.getElementById("data-evento").value,
+          itensDetalhados: itens.map(function(id){
+            return { id: id, nome: CATALOGO[id].curto, valor: CATALOGO[id].preco };
+          }),
+          totalNumero: total, entradaNumero: entrada
         })
       });
     }).then(function(res){

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<!--
+  Área do casal · Jordan Santos Fotografia (/cliente)
+  Login sem senha: CPF de um dos noivos + data do casamento (dados que o casal já tem,
+  validados em /api/sessao contra o cadastro criado pelo questionário do contrato).
+  Hub: data do grande dia, resumo do contrato, status e a galeria das fotos entregues
+  (URLs assinadas de 1h vindas de /api/portal; expirou, a página recarrega os dados).
+  Single-file, sem build, sem dependências: mesmo padrão do resto do site.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>&Aacute;rea do casal | Jordan Santos Fotografia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --ink:#1D1D1B;
+    --ink-soft:#706F6F;
+    --accent:#003646;
+    --accent-deep:#4F6278;
+    --noir:#1D1D1B;
+    --line:#E8E1DC;
+    --sombra:0 10px 34px rgba(29,29,27,.14);
+    --serif:"Bodoni Moda","Didot",Georgia,serif;
+    --sans:"Jost","Helvetica Neue",sans-serif;
+    --erro:#A33B3B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-weight:300;font-size:16px;line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  img{display:block;max-width:100%}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  a{color:var(--accent)}
+  .miolo{max-width:720px;margin:0 auto;padding:0 24px}
+
+  .topo{padding:40px 24px 0;text-align:center}
+  .topo img{width:min(210px,52vw);margin:0 auto}
+
+  .dica{
+    display:inline-block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;
+    padding:6px 14px;margin-bottom:22px;
+  }
+  h1{
+    font-family:var(--serif);font-weight:500;
+    font-size:clamp(26px,5vw,36px);letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:10px;
+  }
+  .sub{color:var(--ink-soft)}
+
+  /* ---------- login ---------- */
+  .intro{text-align:center;padding:52px 0 4px}
+  .login{max-width:380px;margin:36px auto 120px;padding:0 24px}
+  .campo-form{display:flex;flex-direction:column;margin-bottom:22px}
+  .campo-form label{
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-soft);margin-bottom:7px;
+  }
+  input{
+    font:inherit;color:var(--ink);background:transparent;
+    border:none;border-bottom:1px solid var(--line);
+    padding:9px 2px;border-radius:0;-webkit-appearance:none;
+  }
+  input:focus{outline:none;border-bottom-color:var(--accent)}
+  .cta{
+    display:block;width:100%;padding:17px 24px;margin-top:8px;
+    background:var(--noir);color:#fff;text-align:center;
+    font-size:13px;letter-spacing:.22em;text-transform:uppercase;
+    border-radius:999px;transition:opacity .2s ease;
+  }
+  .cta:hover{opacity:.85}
+  .cta:disabled{opacity:.4;cursor:default}
+  .msg-erro{color:var(--erro);font-size:13.5px;text-align:center;margin-top:16px;min-height:20px}
+  .nota-login{font-size:13px;color:var(--ink-soft);text-align:center;margin-top:22px}
+
+  /* ---------- hub ---------- */
+  .hub-topo{text-align:center;padding:44px 0 8px}
+  .badge{
+    display:inline-block;padding:5px 14px;border-radius:999px;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    border:1px solid var(--accent-deep);color:var(--accent-deep);margin-top:14px;
+  }
+  .badge.fotos_entregues{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .cartao{
+    border:1px solid var(--line);border-radius:14px;
+    padding:26px 28px;margin-top:26px;
+    box-shadow:0 4px 18px rgba(29,29,27,.05);
+  }
+  .cartao h2{
+    font-family:var(--serif);font-weight:500;font-size:18px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;
+  }
+  .dia-grande{
+    font-family:var(--serif);font-weight:500;
+    font-size:clamp(22px,4.5vw,30px);color:var(--accent);
+  }
+  .dia-detalhe{color:var(--ink-soft);margin-top:6px;font-size:15px}
+  .contagem{margin-top:10px;font-size:13.5px;letter-spacing:.08em;color:var(--accent-deep);text-transform:uppercase}
+
+  .itens{list-style:none;font-size:15px}
+  .itens li{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .itens li:last-child{border-bottom:none}
+  .itens .valor{font-family:var(--serif);color:var(--accent-deep);white-space:nowrap}
+  .totais{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px}
+  .totais .rotulo{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft)}
+  .totais .numero{font-family:var(--serif);font-weight:600;font-size:24px;color:var(--accent-deep)}
+  .nota-entrada{font-size:12.5px;color:var(--ink-soft);margin-top:6px;text-align:right}
+
+  /* galeria */
+  .galeria{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+  .galeria a{display:block;aspect-ratio:1/1;overflow:hidden;border-radius:6px;background:#F2EEE9}
+  .galeria img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
+  .galeria a:hover img{transform:scale(1.05)}
+  .galeria-vazia{
+    text-align:center;color:var(--ink-soft);font-size:14.5px;
+    padding:34px 10px;border:1px dashed var(--line);border-radius:10px;margin-top:16px;
+  }
+  .baixar-todas{margin-top:16px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+
+  .rodape{
+    text-align:center;padding:50px 24px 70px;color:var(--ink-soft);font-size:13.5px;
+  }
+  .rodape .sair{
+    display:inline-block;margin-top:12px;
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);
+    border-bottom:1px solid var(--line);
+  }
+
+  @media (max-width:520px){
+    .galeria{grid-template-columns:repeat(2,1fr)}
+    .cartao{padding:22px 20px}
+  }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <img src="img/logo-principal-petroleo.png" alt="Jordan Santos">
+</header>
+
+<!-- estado 1: login -->
+<div id="tela-login" hidden>
+  <section class="intro miolo">
+    <span class="dica">&Aacute;rea do casal</span>
+    <h1>Bem-vindos</h1>
+    <p class="sub">Entrem com os dados usados no contrato.</p>
+  </section>
+  <form class="login" id="form-login">
+    <div class="campo-form">
+      <label for="cpf">CPF de um dos noivos</label>
+      <input id="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required>
+    </div>
+    <div class="campo-form">
+      <label for="data">Data do casamento</label>
+      <input id="data" type="date" required>
+    </div>
+    <button class="cta" type="submit">Entrar</button>
+    <p class="msg-erro" id="erro-login"></p>
+    <p class="nota-login">N&atilde;o conseguem entrar? Falem com o Jordan no WhatsApp, (45) 99907-7874.</p>
+  </form>
+</div>
+
+<!-- estado 2: hub -->
+<div id="tela-hub" class="miolo" hidden>
+  <div class="hub-topo">
+    <span class="dica">&Aacute;rea do casal</span>
+    <h1 id="saudacao">Ol&aacute;</h1>
+    <span class="badge" id="status-badge"></span>
+  </div>
+
+  <div class="cartao">
+    <h2>O grande dia</h2>
+    <p class="dia-grande" id="dia-data"></p>
+    <p class="dia-detalhe" id="dia-detalhe"></p>
+    <p class="contagem" id="contagem"></p>
+  </div>
+
+  <div class="cartao">
+    <h2>O combinado</h2>
+    <ul class="itens" id="itens"></ul>
+    <div class="totais">
+      <span class="rotulo">Total</span>
+      <span class="numero" id="total"></span>
+    </div>
+    <p class="nota-entrada" id="nota-entrada"></p>
+  </div>
+
+  <div class="cartao">
+    <h2>Suas fotos</h2>
+    <div class="galeria" id="galeria" hidden></div>
+    <div class="galeria-vazia" id="galeria-vazia" hidden>
+      Suas fotos aparecer&atilde;o aqui depois da entrega. Mal posso esperar pra mostrar.
+    </div>
+    <button class="baixar-todas" id="baixar-todas" type="button" hidden>Baixar todas</button>
+  </div>
+
+  <div class="rodape">
+    Qualquer d&uacute;vida, &eacute; s&oacute; chamar o Jordan no WhatsApp.
+    <br><button class="sair" id="sair" type="button">Sair</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+  var fotosAtuais = [];
+
+  function el(id){ return document.getElementById(id); }
+  function mostrar(tela){
+    el("tela-login").hidden = tela !== "login";
+    el("tela-hub").hidden = tela !== "hub";
+    window.scrollTo(0, 0);
+  }
+
+  /* máscara leve do CPF */
+  el("cpf").addEventListener("input", function(){
+    var d = el("cpf").value.replace(/\D/g, "").slice(0, 11);
+    var fmt = d;
+    if (d.length > 9) fmt = d.slice(0,3) + "." + d.slice(3,6) + "." + d.slice(6,9) + "-" + d.slice(9);
+    else if (d.length > 6) fmt = d.slice(0,3) + "." + d.slice(3,6) + "." + d.slice(6);
+    else if (d.length > 3) fmt = d.slice(0,3) + "." + d.slice(3);
+    el("cpf").value = fmt;
+  });
+
+  el("form-login").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var botao = ev.target.querySelector(".cta");
+    botao.disabled = true;
+    el("erro-login").textContent = "";
+    fetch("/api/sessao", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acao: "entrar-casal",
+        cpf: el("cpf").value,
+        dataEvento: el("data").value
+      })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(resp){
+        if (!resp.ok) throw new Error(resp.j.erro || "não foi possível entrar");
+        carregarHub();
+      })
+      .catch(function(e){ el("erro-login").textContent = e.message; })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  el("sair").addEventListener("click", function(){
+    fetch("/api/sessao", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acao: "sair" })
+    }).then(function(){ mostrar("login"); });
+  });
+
+  var ROTULO_STATUS = {
+    novo: "Contrato recebido",
+    confirmado: "Data confirmada",
+    realizado: "Grande dia realizado",
+    fotos_entregues: "Fotos entregues"
+  };
+
+  function dataExtenso(iso){
+    if (!iso) return "Data a definir";
+    var p = iso.split("-");
+    var meses = ["janeiro","fevereiro","março","abril","maio","junho",
+                 "julho","agosto","setembro","outubro","novembro","dezembro"];
+    return parseInt(p[2], 10) + " de " + meses[parseInt(p[1], 10) - 1] + " de " + p[0];
+  }
+
+  function carregarHub(){
+    fetch("/api/portal").then(function(r){
+      if (r.status === 401){ mostrar("login"); throw 0; }
+      return r.json();
+    }).then(function(dados){
+      var c = dados.cliente;
+
+      var nomes = [c.noiva, c.noivo].filter(Boolean).join(" & ");
+      el("saudacao").textContent = nomes ? "Olá, " + nomes : "Olá";
+
+      var badge = el("status-badge");
+      badge.textContent = ROTULO_STATUS[c.status] || "";
+      badge.className = "badge " + c.status;
+      badge.hidden = !ROTULO_STATUS[c.status];
+
+      el("dia-data").textContent = dataExtenso(c.data_evento);
+      var detalhe = [];
+      if (c.horario) detalhe.push("às " + c.horario.slice(0, 5));
+      if (c.local_evento) detalhe.push(c.local_evento);
+      el("dia-detalhe").textContent = detalhe.join(" · ");
+
+      var contagem = el("contagem");
+      contagem.textContent = "";
+      if (c.data_evento){
+        var hoje = new Date(); hoje.setHours(0,0,0,0);
+        var dia = new Date(c.data_evento + "T00:00:00");
+        var falta = Math.round((dia - hoje) / 86400000);
+        if (falta > 1) contagem.textContent = "Faltam " + falta + " dias";
+        else if (falta === 1) contagem.textContent = "É amanhã!";
+        else if (falta === 0) contagem.textContent = "É hoje!";
+      }
+
+      var lista = el("itens");
+      lista.innerHTML = "";
+      (Array.isArray(c.itens) ? c.itens : []).forEach(function(i){
+        var li = document.createElement("li");
+        var nome = document.createElement("span"); nome.textContent = i.nome || i.id;
+        var valor = document.createElement("span"); valor.className = "valor";
+        valor.textContent = i.valor != null ? brl.format(i.valor) : "";
+        li.appendChild(nome); li.appendChild(valor); lista.appendChild(li);
+      });
+      el("total").textContent = c.total != null ? brl.format(c.total) : "";
+      el("nota-entrada").textContent = c.entrada != null
+        ? "Entrada de 30%: " + brl.format(c.entrada) : "";
+
+      fotosAtuais = dados.fotos || [];
+      var galeria = el("galeria");
+      galeria.innerHTML = "";
+      el("galeria-vazia").hidden = fotosAtuais.length > 0;
+      galeria.hidden = fotosAtuais.length === 0;
+      el("baixar-todas").hidden = fotosAtuais.length === 0;
+      fotosAtuais.forEach(function(f){
+        var link = document.createElement("a");
+        link.href = f.url + "&download=" + encodeURIComponent(f.nome);
+        link.title = "Baixar " + f.nome;
+        var img = document.createElement("img");
+        img.src = f.url; img.alt = f.nome; img.loading = "lazy";
+        /* URL assinada expirou durante a sessão → recarrega tudo e reassina */
+        img.addEventListener("error", function(){ carregarHub(); }, { once: true });
+        link.appendChild(img);
+        galeria.appendChild(link);
+      });
+
+      mostrar("hub");
+    }).catch(function(){});
+  }
+
+  el("baixar-todas").addEventListener("click", function(){
+    /* dispara os downloads em sequência (o navegador enfileira) */
+    fotosAtuais.forEach(function(f, i){
+      setTimeout(function(){
+        var a = document.createElement("a");
+        a.href = f.url + "&download=" + encodeURIComponent(f.nome);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, i * 400);
+    });
+  });
+
+  /* boot: sessão viva pula o login */
+  fetch("/api/sessao").then(function(r){
+    if (!r.ok) throw 0;
+    return r.json();
+  }).then(function(j){
+    if (j.role === "cliente") carregarHub(); else mostrar("login");
+  }).catch(function(){ mostrar("login"); });
+})();
+</script>
+</body>
+</html>

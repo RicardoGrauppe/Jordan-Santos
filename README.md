@@ -9,12 +9,19 @@ Produção: https://jordan-santos.vercel.app (deploy automático a cada push na 
 ```
 index.html               Orçamento interativo (página inicial)
 contrato.html            Questionário de fechamento (contrato invisível vira PDF)
-api/enviar-contrato.js   Vercel Function: envia o PDF por e-mail via Resend
+cliente.html             Área do casal (/cliente): datas, contrato e fotos entregues
+estudio.html             Painel do Jordan (/estudio): CRUD de clientes + upload de fotos
+api/enviar-contrato.js   Vercel Function: e-mail com PDF via Resend + cadastro no Supabase
+api/sessao.js            Vercel Function: logins (casal e estúdio) e logout
+api/portal.js            Vercel Function: dados da área do casal
+api/estudio.js           Vercel Function: CRUD do painel + URLs assinadas de upload
+api/_lib/                Helpers compartilhados (não viram functions)
+supabase/schema.sql      DDL do banco (rodar uma vez no SQL Editor do Supabase)
 vercel.json              cleanUrls (URLs sem .html)
 img/                     Fotos e logos usados nas páginas
 ```
 
-Site estático, sem build e sem dependências: HTML, CSS e JS vanilla em arquivo único por página. A única biblioteca externa é o `html2pdf.js`, carregado por CDN no `contrato.html`.
+Site estático, sem build e sem dependências: HTML, CSS e JS vanilla em arquivo único por página. A única biblioteca externa é o `html2pdf.js`, carregado por CDN no `contrato.html`. Os dados das contas vivem no **Supabase** (Postgres + Storage), acessado só pelas functions com a service role key.
 
 ## Fluxo completo — duas páginas independentes
 
@@ -37,7 +44,36 @@ Passo a passo:
 
 ## URLs
 
-O `vercel.json` usa `"cleanUrls": true`: nenhuma URL leva `.html`. A raiz `/` serve o `index.html` (orçamento) e `/contrato` serve o `contrato.html`. Quem acessar com `.html` é redirecionado pela própria Vercel.
+O `vercel.json` usa `"cleanUrls": true`: nenhuma URL leva `.html`. A raiz `/` serve o `index.html` (orçamento), `/contrato` o questionário, `/cliente` a área do casal e `/estudio` o painel do Jordan (não linkado em lugar nenhum do site público). Quem acessar com `.html` é redirecionado pela própria Vercel.
+
+## Contas e área logada (2026-07-11)
+
+Além das duas páginas públicas, o site tem uma camada de contas em cima do **Supabase**:
+
+- **`/estudio` (Jordan):** login por senha (`ADMIN_PASSWORD`). CRUD completo de clientes (lista com busca e filtro, detalhe editável, criar manualmente, arquivar, excluir de vez) e upload das fotos da entrega. O upload vai do navegador **direto pro Supabase Storage** via URLs assinadas geradas por `/api/estudio` (contorna o limite de 4.5MB de body da Vercel). Fotos em `fotos-clientes/{cliente_id}/`.
+- **`/cliente` (casal):** login **sem senha**, com CPF de um dos noivos + data do casamento (dados que o casal já tem e que o questionário coleta). Hub com o grande dia (data, horário, local, contagem regressiva), o combinado (itens, total, entrada de 30%), status e a galeria das fotos entregues, com download. A área nunca mostra CPF nem endereço.
+- **Cadastro automático:** ao enviar o questionário (`/contrato`), além do e-mail com o PDF, a function faz upsert do casal na tabela `clientes` (chave `cpf_noivo + data_evento`; reenvio atualiza, não duplica). E-mail e cadastro são independentes: um falhar nunca bloqueia o outro.
+- **Sessões:** token HMAC-SHA256 (Web Crypto, segredo em `SESSION_SECRET`) num cookie `HttpOnly; Secure; SameSite=Lax`. Estúdio 7 dias, casal 30 dias. Sem tabela de sessões.
+- **Modelo de segurança aceito:** CPF + data do casamento é credencial fraca de propósito (conhecidos próximos podem saber). O que a área expõe é menos do que o questionário coletou, e as fotos são as que o casal compartilharia. Mitigações: espera de ~800ms e erro genérico em falha de login, throttle best-effort por IP, RLS ligado sem policies (anon key não faz nada), bucket privado com URLs assinadas de 1h.
+
+### Setup do Supabase (uma vez)
+
+1. Criar projeto em https://supabase.com (free tier), região `sa-east-1` (São Paulo).
+2. SQL Editor → rodar o conteúdo de `supabase/schema.sql`.
+3. Storage → New bucket → nome `fotos-clientes`, **privado** (public off).
+4. Settings → API: copiar a Project URL e a `service_role` key pras env vars abaixo.
+
+### Variáveis de ambiente (Vercel)
+
+| Var | O que é |
+|---|---|
+| `RESEND_API_KEY` | chave do Resend (e-mail do contrato) |
+| `SUPABASE_URL` | Project URL do Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | service role key; só as functions leem, nunca vai pro browser |
+| `SESSION_SECRET` | segredo dos tokens de sessão (`openssl rand -hex 32`) |
+| `ADMIN_PASSWORD` | senha do painel `/estudio` |
+
+Sem as vars do Supabase, o site público continua 100% funcional: o questionário só envia o e-mail (`cadastroOk:false`) e as áreas logadas avisam que o banco não está configurado.
 
 ## E-mail (Resend)
 
@@ -61,4 +97,5 @@ Enquanto a chave não existir, o site funciona normalmente e o envio cai no avis
 
 ## Desenvolvimento local
 
-Qualquer servidor estático serve, ex.: `python3 -m http.server 8014`. Dois comportamentos só existem em produção: as URLs sem `.html` (cleanUrls da Vercel) e a função de e-mail (`/api`). Localmente, acesse as páginas com `.html` e espere o aviso de fallback no envio.
+- **Só páginas (visual):** qualquer servidor estático serve, ex.: `python3 -m http.server 8014`. Acesse com `.html`; tudo que depende de `/api` cai nos avisos de fallback.
+- **Com as functions:** `npx vercel dev` na raiz do repo (o npx baixa a CLI na hora; o repo continua sem package.json). Antes, `npx vercel link` e `npx vercel env pull .env.local` pra trazer as env vars (o `.gitignore` já cobre `.env*`). Alternativa sem tooling local: push numa branch e testar no preview deploy da Vercel.
