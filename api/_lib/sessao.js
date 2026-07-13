@@ -21,6 +21,10 @@ function deB64url(s) {
 }
 
 async function chave() {
+  if (!process.env.SESSION_SECRET) {
+    /* sem segredo não há sessão: erro claro em vez de crash do Web Crypto */
+    throw new Error("SESSION_SECRET não configurada na Vercel");
+  }
   return crypto.subtle.importKey(
     "raw", enc.encode(process.env.SESSION_SECRET),
     { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]

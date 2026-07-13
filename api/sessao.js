@@ -27,6 +27,15 @@ function estourou(ip) {
 }
 
 export default async function handler(req, res) {
+  try {
+    return await tratar(req, res);
+  } catch (e) {
+    console.error("sessao falhou:", e.message);
+    return res.status(500).json({ erro: "erro de configuração no servidor" });
+  }
+}
+
+async function tratar(req, res) {
   if (req.method === "GET") {
     const sessao = await sessaoDe(req);
     if (!sessao) return res.status(401).json({ ok: false });
