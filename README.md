@@ -63,7 +63,13 @@ Os dois logins usam **e-mail + senha via Supabase Auth** (decisão de 2026-07-11
 1. Criar projeto em https://supabase.com (free tier), região `sa-east-1` (São Paulo).
 2. SQL Editor → rodar o conteúdo de `supabase/schema.sql` (banco já criado antes de 2026-07-11: rodar também `supabase/migracao-auth-email.sql`).
 3. Storage → New bucket → nome `fotos-clientes`, **privado** (public off).
-4. Authentication → Users → **Add user**: e-mail do Jordan + senha dele, com auto-confirm. Esse e-mail vai na env `ADMIN_EMAIL`.
+4. Authentication → Users → **Add user**: e-mail do Jordan + senha dele, com auto-confirm. Depois, marcar o usuário como admin no SQL Editor:
+   ```sql
+   update auth.users
+   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+   where email = 'e-mail-do-jordan';
+   ```
+   (app_metadata só é gravável pelo servidor, então esse papel não é forjável pelo browser.)
 5. Settings → API: copiar a Project URL e a `service_role` key pras env vars abaixo.
 
 ### Variáveis de ambiente (Vercel)
@@ -74,7 +80,7 @@ Os dois logins usam **e-mail + senha via Supabase Auth** (decisão de 2026-07-11
 | `SUPABASE_URL` | Project URL do Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | service role key; só as functions leem, nunca vai pro browser |
 | `SESSION_SECRET` | segredo dos tokens de sessão (`openssl rand -hex 32`) |
-| `ADMIN_EMAIL` | e-mail do usuário do Jordan no Supabase Auth (login do `/estudio`) |
+| `ADMIN_EMAIL` | opcional (fallback): e-mail tratado como admin; o caminho normal é o `app_metadata.role = "admin"` no usuário do Auth |
 
 Sem as vars do Supabase, o site público continua 100% funcional: o questionário só envia o e-mail (`cadastroOk:false`) e as áreas logadas avisam que o banco não está configurado.
 

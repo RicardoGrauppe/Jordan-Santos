@@ -85,9 +85,13 @@ async function tratar(req, res) {
       return res.status(401).json({ erro: "e-mail ou senha incorretos" });
     }
 
-    /* Jordan: identificado pelo ADMIN_EMAIL */
+    /* Jordan: usuário do Auth com app_metadata.role = "admin" (só o servidor
+       consegue gravar app_metadata, então isso não é forjável pelo cliente).
+       ADMIN_EMAIL segue aceito como fallback opcional. */
     const adminEmail = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
-    if (adminEmail && email === adminEmail) {
+    const ehAdmin = (usuario.app_metadata && usuario.app_metadata.role === "admin") ||
+      (adminEmail && email === adminEmail);
+    if (ehAdmin) {
       const token = await assinar({
         sub: "estudio", role: "admin", exp: Math.floor(Date.now() / 1000) + 7 * DIA
       });
