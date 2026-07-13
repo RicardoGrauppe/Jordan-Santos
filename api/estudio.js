@@ -112,7 +112,8 @@ export default async function handler(req, res) {
       for (const a of arquivos) {
         const nome = nomeSeguro(a.nome);
         const assinada = await storage(
-          "object/upload/sign/" + BUCKET + "/" + id + "/" + nome, { method: "POST" }
+          /* body {} obrigatório: o parser do Storage rejeita JSON vazio */
+          "object/upload/sign/" + BUCKET + "/" + id + "/" + nome, { method: "POST", body: {} }
         );
         urls.push({ nome: nome, url: urlStorage(assinada.url) });
       }
