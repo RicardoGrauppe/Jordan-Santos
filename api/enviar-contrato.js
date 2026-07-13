@@ -13,7 +13,9 @@
     silêncio (cadastroOk:false) e o e-mail continua funcionando sozinho.
 */
 
-import { rest, supabaseConfigurado } from "./_lib/supabase.js";
+import {
+  rest, supabaseConfigurado, criarUsuarioAuth, buscarUsuarioAuth, senhaTemporaria
+} from "./_lib/supabase.js";
 import { normalizarCpf } from "./_lib/sessao.js";
 
 const DESTINO = "jordansantosfotografia@gmail.com";
@@ -101,9 +103,9 @@ async function salvarCliente(dados) {
       }))
     : [];
 
-  await rest("clientes?on_conflict=cpf_noivo,data_evento", {
+  const linhas = await rest("clientes?on_conflict=cpf_noivo,data_evento", {
     method: "POST",
-    prefer: "resolution=merge-duplicates",
+    prefer: "resolution=merge-duplicates,return=representation",
     body: {
       noivo: textoCurto(dados.noivo), cpf_noivo: cpfNoivo,
       noiva: textoCurto(dados.noiva), cpf_noiva: normalizarCpf(dados.cpfNoiva) || null,
@@ -123,6 +125,24 @@ async function salvarCliente(dados) {
       observacoes: textoCurto(dados.observacoes, 1000)
     }
   });
+
+  /* cria o usuário do Supabase Auth do casal (senha aleatória descartada;
+     o Jordan gera a senha real no /estudio na hora de enviar o link).
+     Falha aqui não derruba o cadastro: é só o vínculo de login. */
+  try {
+    const linha = linhas && linhas[0];
+    if (linha && linha.email && !linha.auth_user_id) {
+      let usuario = await criarUsuarioAuth(linha.email, senhaTemporaria());
+      if (!usuario) usuario = await buscarUsuarioAuth(linha.email);
+      if (usuario) {
+        await rest("clientes?id=eq." + linha.id, {
+          method: "PATCH", body: { auth_user_id: usuario.id }
+        });
+      }
+    }
+  } catch (e) {
+    console.error("vínculo de acesso falhou:", e.message);
+  }
 }
 
 export default async function handler(req, res) {

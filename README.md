@@ -50,18 +50,21 @@ O `vercel.json` usa `"cleanUrls": true`: nenhuma URL leva `.html`. A raiz `/` se
 
 Além das duas páginas públicas, o site tem uma camada de contas em cima do **Supabase**:
 
-- **`/estudio` (Jordan):** login por senha (`ADMIN_PASSWORD`). CRUD completo de clientes (lista com busca e filtro, detalhe editável, criar manualmente, arquivar, excluir de vez) e upload das fotos da entrega. O upload vai do navegador **direto pro Supabase Storage** via URLs assinadas geradas por `/api/estudio` (contorna o limite de 4.5MB de body da Vercel). Fotos em `fotos-clientes/{cliente_id}/`.
-- **`/cliente` (casal):** login **sem senha**, com CPF de um dos noivos + data do casamento (dados que o casal já tem e que o questionário coleta). Hub com o grande dia (data, horário, local, contagem regressiva), o combinado (itens, total, entrada de 30%), status e a galeria das fotos entregues, com download. A área nunca mostra CPF nem endereço.
-- **Cadastro automático:** ao enviar o questionário (`/contrato`), além do e-mail com o PDF, a function faz upsert do casal na tabela `clientes` (chave `cpf_noivo + data_evento`; reenvio atualiza, não duplica). E-mail e cadastro são independentes: um falhar nunca bloqueia o outro.
+Os dois logins usam **e-mail + senha via Supabase Auth** (decisão de 2026-07-11; a senha vive hasheada no Supabase, nunca aqui). As functions validam a credencial no Auth e abrem a sessão própria do site (cookie HMAC), então o resto do sistema não conhece senhas.
+
+- **`/estudio` (Jordan):** login com o e-mail dele (identificado pela env `ADMIN_EMAIL`; o usuário é criado à mão no painel do Supabase). CRUD completo de clientes (lista com busca e filtro, detalhe editável, criar manualmente, arquivar, excluir de vez), upload das fotos da entrega e o bloco **"Acesso do casal"**: gera a senha temporária do casal e copia uma mensagem pronta pro WhatsApp. O upload vai do navegador **direto pro Supabase Storage** via URLs assinadas geradas por `/api/estudio` (contorna o limite de 4.5MB de body da Vercel). Fotos em `fotos-clientes/{cliente_id}/`.
+- **`/cliente` (casal):** login com o e-mail do contrato + a senha que o Jordan enviou. Hub com o grande dia (data, horário, local, contagem regressiva), o combinado (itens, total, entrada de 30%), status, a galeria das fotos entregues com download, e **troca de senha** (senha atual + nova). Esqueceu a senha: o Jordan gera outra temporária no `/estudio` (reset por e-mail automático fica pra quando o domínio estiver verificado no Resend, que hoje só entrega pro e-mail do dono da conta). A área nunca mostra CPF nem endereço.
+- **Cadastro automático:** ao enviar o questionário (`/contrato`), além do e-mail com o PDF, a function faz upsert do casal na tabela `clientes` (chave `cpf_noivo + data_evento`; reenvio atualiza, não duplica) e cria o usuário do Auth vinculado (`auth_user_id`), com senha aleatória descartada: a senha real é a temporária que o Jordan gera. E-mail, cadastro e vínculo de acesso são independentes: um falhar nunca bloqueia os outros.
 - **Sessões:** token HMAC-SHA256 (Web Crypto, segredo em `SESSION_SECRET`) num cookie `HttpOnly; Secure; SameSite=Lax`. Estúdio 7 dias, casal 30 dias. Sem tabela de sessões.
-- **Modelo de segurança aceito:** CPF + data do casamento é credencial fraca de propósito (conhecidos próximos podem saber). O que a área expõe é menos do que o questionário coletou, e as fotos são as que o casal compartilharia. Mitigações: espera de ~800ms e erro genérico em falha de login, throttle best-effort por IP, RLS ligado sem policies (anon key não faz nada), bucket privado com URLs assinadas de 1h.
+- **Mitigações:** espera de ~800ms e erro genérico em falha de login, throttle best-effort por IP, RLS ligado sem policies (anon key não faz nada), bucket privado com URLs assinadas de 1h.
 
 ### Setup do Supabase (uma vez)
 
 1. Criar projeto em https://supabase.com (free tier), região `sa-east-1` (São Paulo).
-2. SQL Editor → rodar o conteúdo de `supabase/schema.sql`.
+2. SQL Editor → rodar o conteúdo de `supabase/schema.sql` (banco já criado antes de 2026-07-11: rodar também `supabase/migracao-auth-email.sql`).
 3. Storage → New bucket → nome `fotos-clientes`, **privado** (public off).
-4. Settings → API: copiar a Project URL e a `service_role` key pras env vars abaixo.
+4. Authentication → Users → **Add user**: e-mail do Jordan + senha dele, com auto-confirm. Esse e-mail vai na env `ADMIN_EMAIL`.
+5. Settings → API: copiar a Project URL e a `service_role` key pras env vars abaixo.
 
 ### Variáveis de ambiente (Vercel)
 
@@ -71,7 +74,7 @@ Além das duas páginas públicas, o site tem uma camada de contas em cima do **
 | `SUPABASE_URL` | Project URL do Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | service role key; só as functions leem, nunca vai pro browser |
 | `SESSION_SECRET` | segredo dos tokens de sessão (`openssl rand -hex 32`) |
-| `ADMIN_PASSWORD` | senha do painel `/estudio` |
+| `ADMIN_EMAIL` | e-mail do usuário do Jordan no Supabase Auth (login do `/estudio`) |
 
 Sem as vars do Supabase, o site público continua 100% funcional: o questionário só envia o e-mail (`cadastroOk:false`) e as áreas logadas avisam que o banco não está configurado.
 

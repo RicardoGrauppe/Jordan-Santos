@@ -152,20 +152,20 @@
   <section class="intro miolo">
     <span class="dica">&Aacute;rea do casal</span>
     <h1>Bem-vindos</h1>
-    <p class="sub">Entrem com os dados usados no contrato.</p>
+    <p class="sub">Entrem com o e-mail do contrato e a senha que o Jordan enviou.</p>
   </section>
   <form class="login" id="form-login">
     <div class="campo-form">
-      <label for="cpf">CPF de um dos noivos</label>
-      <input id="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required>
+      <label for="email">E-mail</label>
+      <input id="email" type="email" autocomplete="email" required>
     </div>
     <div class="campo-form">
-      <label for="data">Data do casamento</label>
-      <input id="data" type="date" required>
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" required>
     </div>
     <button class="cta" type="submit">Entrar</button>
     <p class="msg-erro" id="erro-login"></p>
-    <p class="nota-login">N&atilde;o conseguem entrar? Falem com o Jordan no WhatsApp, (45) 99907-7874.</p>
+    <p class="nota-login">Esqueceram a senha? Falem com o Jordan no WhatsApp, (45) 99907-7874, que ele envia uma nova na hora.</p>
   </form>
 </div>
 
@@ -203,6 +203,22 @@
     <button class="baixar-todas" id="baixar-todas" type="button" hidden>Baixar todas</button>
   </div>
 
+  <div class="cartao">
+    <h2>Trocar senha</h2>
+    <form id="form-senha">
+      <div class="campo-form">
+        <label for="senha-atual">Senha atual</label>
+        <input id="senha-atual" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="campo-form">
+        <label for="senha-nova">Nova senha (m&iacute;nimo 8 caracteres)</label>
+        <input id="senha-nova" type="password" autocomplete="new-password" minlength="8" required>
+      </div>
+      <button class="cta" type="submit">Salvar nova senha</button>
+      <p class="msg-erro" id="msg-senha"></p>
+    </form>
+  </div>
+
   <div class="rodape">
     Qualquer d&uacute;vida, &eacute; s&oacute; chamar o Jordan no WhatsApp.
     <br><button class="sair" id="sair" type="button">Sair</button>
@@ -223,16 +239,6 @@
     window.scrollTo(0, 0);
   }
 
-  /* máscara leve do CPF */
-  el("cpf").addEventListener("input", function(){
-    var d = el("cpf").value.replace(/\D/g, "").slice(0, 11);
-    var fmt = d;
-    if (d.length > 9) fmt = d.slice(0,3) + "." + d.slice(3,6) + "." + d.slice(6,9) + "-" + d.slice(9);
-    else if (d.length > 6) fmt = d.slice(0,3) + "." + d.slice(3,6) + "." + d.slice(6);
-    else if (d.length > 3) fmt = d.slice(0,3) + "." + d.slice(3);
-    el("cpf").value = fmt;
-  });
-
   el("form-login").addEventListener("submit", function(ev){
     ev.preventDefault();
     var botao = ev.target.querySelector(".cta");
@@ -242,16 +248,48 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        acao: "entrar-casal",
-        cpf: el("cpf").value,
-        dataEvento: el("data").value
+        acao: "entrar",
+        email: el("email").value,
+        senha: el("senha").value
       })
     }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
       .then(function(resp){
         if (!resp.ok) throw new Error(resp.j.erro || "não foi possível entrar");
+        if (resp.j.role !== "cliente") throw new Error("este acesso é do estúdio, usem /estudio");
+        el("senha").value = "";
         carregarHub();
       })
       .catch(function(e){ el("erro-login").textContent = e.message; })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  /* troca de senha dentro do hub */
+  el("form-senha").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var botao = ev.target.querySelector(".cta");
+    var msg = el("msg-senha");
+    botao.disabled = true;
+    msg.textContent = "";
+    fetch("/api/sessao", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acao: "trocar-senha",
+        senhaAtual: el("senha-atual").value,
+        senhaNova: el("senha-nova").value
+      })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(resp){
+        if (!resp.ok) throw new Error(resp.j.erro || "não foi possível trocar a senha");
+        el("senha-atual").value = "";
+        el("senha-nova").value = "";
+        msg.style.color = "var(--accent)";
+        msg.textContent = "Senha trocada. Vale a partir do próximo login.";
+      })
+      .catch(function(e){
+        msg.style.color = "var(--erro)";
+        msg.textContent = e.message;
+      })
       .finally(function(){ botao.disabled = false; });
   });
 

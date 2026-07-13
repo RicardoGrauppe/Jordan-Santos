@@ -80,3 +80,79 @@ export async function assinarFotos(clienteId, nomes, expiresIn) {
 export function urlStorage(caminho) {
   return BASE + "/storage/v1" + caminho;
 }
+
+/* ---------- Supabase Auth (GoTrue) ---------- */
+
+/* Login por e-mail + senha. Devolve o usuário ou null (credencial inválida). */
+export async function loginSenha(email, senha) {
+  const r = await fetch(BASE + "/auth/v1/token?grant_type=password", {
+    method: "POST",
+    headers: cabecalhos(),
+    body: JSON.stringify({ email: email, password: senha })
+  });
+  if (r.status === 400 || r.status === 401 || r.status === 403) return null;
+  if (!r.ok) {
+    console.error("supabase auth login falhou:", r.status);
+    throw new Error("auth " + r.status);
+  }
+  const dados = await r.json();
+  return dados.user || null;
+}
+
+/* Cria usuário confirmado; devolve {id} ou null se o e-mail já existe. */
+export async function criarUsuarioAuth(email, senha) {
+  const r = await fetch(BASE + "/auth/v1/admin/users", {
+    method: "POST",
+    headers: cabecalhos(),
+    body: JSON.stringify({ email: email, password: senha, email_confirm: true })
+  });
+  if (r.status === 422) return null; /* e-mail já cadastrado */
+  if (!r.ok) {
+    console.error("supabase auth criar falhou:", r.status);
+    throw new Error("auth " + r.status);
+  }
+  return r.json();
+}
+
+/* Troca a senha de um usuário existente (admin API). */
+export async function definirSenhaAuth(userId, senha) {
+  const r = await fetch(BASE + "/auth/v1/admin/users/" + userId, {
+    method: "PUT",
+    headers: cabecalhos(),
+    body: JSON.stringify({ password: senha })
+  });
+  if (!r.ok) {
+    console.error("supabase auth senha falhou:", r.status);
+    throw new Error("auth " + r.status);
+  }
+  return r.json();
+}
+
+/* Procura um usuário pelo e-mail (fallback quando criar devolve 422). */
+export async function buscarUsuarioAuth(email) {
+  const alvo = String(email || "").toLowerCase();
+  const r = await fetch(BASE + "/auth/v1/admin/users?per_page=1000", {
+    method: "GET",
+    headers: cabecalhos()
+  });
+  if (!r.ok) {
+    console.error("supabase auth busca falhou:", r.status);
+    throw new Error("auth " + r.status);
+  }
+  const dados = await r.json();
+  const lista = dados.users || dados || [];
+  return lista.find(function (u) { return (u.email || "").toLowerCase() === alvo; }) || null;
+}
+
+/* Senha temporária legível (ex.: "fjq2-m8xk-4tpn") gerada no servidor. */
+export function senhaTemporaria() {
+  const abc = "abcdefghjkmnpqrstuvwxyz23456789"; /* sem 0/O, 1/l/i */
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  let s = "";
+  for (let i = 0; i < 12; i++) {
+    if (i === 4 || i === 8) s += "-";
+    s += abc[bytes[i] % abc.length];
+  }
+  return s;
+}

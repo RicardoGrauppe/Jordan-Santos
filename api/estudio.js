@@ -12,7 +12,8 @@
 */
 
 import {
-  rest, storage, listarFotos, assinarFotos, urlStorage, BUCKET
+  rest, storage, listarFotos, assinarFotos, urlStorage, BUCKET,
+  criarUsuarioAuth, buscarUsuarioAuth, definirSenhaAuth, senhaTemporaria
 } from "./_lib/supabase.js";
 import { sessaoDe, normalizarCpf } from "./_lib/sessao.js";
 
@@ -116,6 +117,42 @@ export default async function handler(req, res) {
         urls.push({ nome: nome, url: urlStorage(assinada.url) });
       }
       return res.status(200).json({ ok: true, urls: urls });
+    }
+
+    /* cria (ou reseta) o acesso do casal: usuário no Supabase Auth + senha
+       temporária, mostrada UMA vez pro Jordan repassar no WhatsApp */
+    if (acao === "acesso-casal") {
+      const linhas = await rest("clientes?id=eq." + id + "&select=email,auth_user_id&limit=1");
+      const cliente = linhas && linhas[0];
+      if (!cliente) return res.status(404).json({ erro: "cliente não encontrado" });
+      if (!cliente.email) {
+        return res.status(400).json({ erro: "cadastre o e-mail do casal antes de gerar o acesso" });
+      }
+
+      const senha = senhaTemporaria();
+      let userId = cliente.auth_user_id;
+
+      if (userId) {
+        await definirSenhaAuth(userId, senha);
+      } else {
+        const criado = await criarUsuarioAuth(cliente.email, senha);
+        if (criado) {
+          userId = criado.id;
+        } else {
+          /* e-mail já existe no Auth (ex.: recadastro): reaproveita o usuário */
+          const existente = await buscarUsuarioAuth(cliente.email);
+          if (!existente) {
+            return res.status(409).json({ erro: "e-mail já usado por outro acesso, confira o cadastro" });
+          }
+          userId = existente.id;
+          await definirSenhaAuth(userId, senha);
+        }
+        await rest("clientes?id=eq." + id, {
+          method: "PATCH", body: { auth_user_id: userId }
+        });
+      }
+
+      return res.status(200).json({ ok: true, email: cliente.email, senha: senha });
     }
 
     if (acao === "excluir-foto") {

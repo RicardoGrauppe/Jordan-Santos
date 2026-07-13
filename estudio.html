@@ -2,7 +2,8 @@
 <!--
   Estúdio · Jordan Santos Fotografia
   Painel do Jordan (/estudio, não linkado em lugar nenhum do site público).
-  Login por senha (env ADMIN_PASSWORD, validada em /api/sessao) → CRUD de clientes
+  Login por e-mail + senha via Supabase Auth (o e-mail do Jordan é o env ADMIN_EMAIL,
+  validado em /api/sessao) → CRUD de clientes, acesso do casal (senha temporária)
   (/api/estudio) + upload das fotos entregues (browser → Supabase Storage direto,
   via signed upload URLs, contornando o limite de 4.5MB da Vercel).
   Single-file, sem build, sem dependências: mesmo padrão do resto do site.
@@ -172,6 +173,10 @@
   <p class="sub">&Aacute;rea do Jordan</p>
   <form class="login" id="form-login">
     <div class="campo-form">
+      <label for="email-login">E-mail</label>
+      <input id="email-login" type="email" autocomplete="email" required>
+    </div>
+    <div class="campo-form">
       <label for="senha">Senha</label>
       <input id="senha" type="password" autocomplete="current-password" required>
     </div>
@@ -286,6 +291,18 @@
     </div>
   </form>
 
+  <fieldset id="bloco-acesso" hidden>
+    <legend>Acesso do casal</legend>
+    <p class="sub" style="text-align:left;margin-bottom:12px" id="acesso-status"></p>
+    <button class="botao-linha" type="button" id="gerar-senha">Gerar senha tempor&aacute;ria</button>
+    <div id="acesso-resultado" hidden style="margin-top:16px">
+      <p style="font-size:14.5px">Envie no WhatsApp do casal (a senha aparece <strong>s&oacute; agora</strong>; se perder, gere outra):</p>
+      <p style="font-family:var(--serif);font-size:18px;color:var(--accent);margin-top:8px" id="acesso-credenciais"></p>
+      <button class="botao-linha" type="button" id="copiar-acesso" style="margin-top:12px">Copiar mensagem pronta</button>
+      <span class="aviso-salvo" id="aviso-copia"></span>
+    </div>
+  </fieldset>
+
   <fieldset id="bloco-fotos" hidden>
     <legend>Fotos da entrega</legend>
     <p class="sub" style="text-align:left;margin-bottom:10px">
@@ -333,8 +350,12 @@
     var botao = ev.target.querySelector(".cta");
     botao.disabled = true;
     el("erro-login").textContent = "";
-    api("/api/sessao", { acao: "entrar-estudio", senha: el("senha").value })
-      .then(function(){ el("senha").value = ""; carregarLista(); })
+    api("/api/sessao", { acao: "entrar", email: el("email-login").value, senha: el("senha").value })
+      .then(function(r){
+        if (r.role !== "admin") throw new Error("este acesso é do casal, use /cliente");
+        el("senha").value = "";
+        carregarLista();
+      })
       .catch(function(e){
         if (e.message !== "sessao") el("erro-login").textContent = e.message;
       })
@@ -443,10 +464,51 @@
       el("arquivar").hidden = r.cliente.status === "arquivado";
       el("excluir").hidden = false;
       el("bloco-fotos").hidden = false;
+      el("bloco-acesso").hidden = false;
+      el("acesso-resultado").hidden = true;
+      el("acesso-status").textContent = !r.cliente.email
+        ? "O casal ainda não tem e-mail cadastrado. Preencha e salve antes de gerar o acesso."
+        : (r.cliente.auth_user_id
+          ? "Acesso ativo para " + r.cliente.email + ". Gerar uma senha nova invalida a anterior."
+          : "Sem acesso ainda. Gere a primeira senha e envie com o link /cliente.");
       desenharFotos(r.fotos);
       mostrar("detalhe");
     }).catch(function(){});
   }
+
+  el("gerar-senha").addEventListener("click", function(){
+    if (!clienteAtual) return;
+    el("gerar-senha").disabled = true;
+    api("/api/estudio", { acao: "acesso-casal", id: clienteAtual })
+      .then(function(r){
+        el("acesso-resultado").hidden = false;
+        el("acesso-credenciais").textContent = r.email + " · " + r.senha;
+        el("acesso-credenciais").dataset.email = r.email;
+        el("acesso-credenciais").dataset.senha = r.senha;
+        el("acesso-status").textContent = "Acesso ativo para " + r.email + ". Gerar uma senha nova invalida a anterior.";
+      })
+      .catch(function(e){
+        if (e.message !== "sessao") avisar(e.message, true);
+      })
+      .finally(function(){ el("gerar-senha").disabled = false; });
+  });
+
+  el("copiar-acesso").addEventListener("click", function(){
+    var cred = el("acesso-credenciais");
+    var msg = "Oi! Aqui é o Jordan. A área de vocês no site já está no ar:\n" +
+      "https://jordan-santos.vercel.app/cliente\n" +
+      "E-mail: " + cred.dataset.email + "\nSenha: " + cred.dataset.senha +
+      "\nDá pra trocar a senha lá dentro quando quiserem.";
+    function ok(){
+      el("aviso-copia").textContent = "Copiado.";
+      setTimeout(function(){ el("aviso-copia").textContent = ""; }, 3000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg).then(ok, function(){ window.prompt("Copie a mensagem:", msg); });
+    } else {
+      window.prompt("Copie a mensagem:", msg);
+    }
+  });
 
   el("novo-cliente").addEventListener("click", function(){
     clienteAtual = null;
@@ -454,7 +516,8 @@
     preencher(null);
     el("arquivar").hidden = true;
     el("excluir").hidden = true;
-    el("bloco-fotos").hidden = true;   /* fotos só depois de salvar */
+    el("bloco-fotos").hidden = true;   /* fotos e acesso só depois de salvar */
+    el("bloco-acesso").hidden = true;
     el("fotos-grade").innerHTML = "";
     mostrar("detalhe");
   });

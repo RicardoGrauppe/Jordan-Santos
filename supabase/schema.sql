@@ -25,8 +25,13 @@ create table public.clientes (
   total    numeric(10,2),
   entrada  numeric(10,2),
 
-  origem text, observacoes text
+  origem text, observacoes text,
+
+  -- vínculo com o usuário do Supabase Auth (login por e-mail + senha)
+  auth_user_id uuid
 );
+
+create index clientes_auth_user_idx on public.clientes (auth_user_id);
 
 -- lookups do login do casal (cpf de qualquer um dos dois + data do casamento)
 create index clientes_cpf_noivo_idx on public.clientes (cpf_noivo, data_evento);
