@@ -109,6 +109,22 @@
   #sucesso{text-align:center;padding:60px 0}
   #sucesso h1{font-size:32px}
   #sucesso .cta{margin-top:34px}
+
+  /* ---------- mobile: nada de zoom ao focar campo ----------
+     O Safari do iOS dá zoom automático em qualquer input/select/textarea com
+     fonte menor que 16px assim que ele recebe foco — e depois não volta, o que
+     deixa a página deslocada e com rolagem lateral. A correção é a fonte ter
+     16px no toque; NÃO usar maximum-scale/user-scalable=no no viewport, que
+     mata o zoom de pinça e é problema de acessibilidade.
+     Só no mobile: no desktop os tamanhos desenhados continuam valendo. */
+  @media (max-width: 820px){
+    /* !important de propósito: regras mais específicas (ex.: ".campo-busca
+       input{font-size:14px}") venceriam, e aí o zoom voltaria naquele campo.
+       Isto não é estilo, é contorno de comportamento do iOS — tem que ganhar. */
+    input, select, textarea { font-size: 16px !important; }
+  }
+  /* impede o iOS de inflar fonte ao girar a tela */
+  html { -webkit-text-size-adjust: 100%; }
 </style>
 </head>
 <body>

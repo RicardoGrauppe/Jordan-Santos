@@ -58,7 +58,9 @@ function emailDoContrato(c) {
   return (c.snapshot && c.snapshot.email) || (c.clientes && c.clientes.email) || null;
 }
 
-/* assinatura do Jordan salva no /configuracoes (tabela config) */
+/* Assinatura padrão do Jordan (tabela config). A página que a editava
+   (/configuracoes) saiu em 2026-07-28; isto é só fallback pra contrato sem a
+   assinatura própria da revisão. Nada escreve mais nesta chave. */
 async function preferenciasEstudio() {
   try {
     const linhas = await rest("config?chave=eq.assinatura_jordan&select=valor&limit=1");

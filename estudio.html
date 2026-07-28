@@ -149,8 +149,13 @@
     .lateral.colapsada .nav-lateral button span,
     .lateral.colapsada .lateral-toggle span{display:none}
     /* busca no centro EXATO da tela (50vw ignora o offset da barra de rolagem);
-       logo e ações fixadas nas colunas das pontas pra não auto-posicionar no meio */
-    .busca-topo{
+       logo e ações fixadas nas colunas das pontas pra não auto-posicionar no meio.
+       Quem é posicionado é o WRAPPER, não a label: ele precisa ter altura real
+       pra o dropdown de resultados ancorar embaixo do campo. */
+    /* seletor com o pai de propósito: este @media aparece ANTES da regra base
+       de .busca-topo-wrap no arquivo, então sem especificidade extra a base
+       (position:relative) venceria por ordem de fonte */
+    .topo-estudio .busca-topo-wrap{
       position:absolute;left:50vw;top:50%;transform:translate(-50%,-50%);
       width:min(420px,42vw);justify-self:auto;
     }
@@ -165,10 +170,19 @@
     position:sticky;top:0;background:var(--paper);z-index:20;
   }
   .topo-logo{height:28px;width:auto;justify-self:start}
+  /* o wrapper é que vira o item central do grid — o dropdown de resultados
+     precisa de um pai posicionado pra ancorar embaixo do campo */
+  .busca-topo-wrap{position:relative;justify-self:stretch;min-width:0}
   .busca-topo{
-    display:flex;align-items:center;gap:10px;justify-self:stretch;
+    display:flex;align-items:center;gap:10px;
     background:var(--soft);border-radius:999px;padding:8px 16px;
   }
+  .busca-topo-resultados{
+    position:absolute;top:calc(100% + 8px);left:0;right:0;
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--sombra);z-index:30;overflow:hidden auto;max-height:min(60vh,420px);
+  }
+  .busca-topo-resultados[hidden]{display:none}
   .busca-topo svg{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
   .busca-topo input{
     border:none;background:none;padding:0;flex:1;
@@ -598,15 +612,9 @@
   .pill-item.ativo .preco{opacity:.9}
 
   @media (max-width:820px){
+    /* a sidebar sai de cena no mobile — quem navega é a .navbar-mobile */
     .app-corpo{flex-direction:column;align-items:stretch}
-    .lateral{
-      width:100%;height:auto;position:static;flex-direction:row;align-items:center;
-      padding:12px 16px;gap:10px;overflow-x:auto;
-    }
-    .lateral-toggle{display:none}
-    .nav-lateral{flex-direction:row;justify-content:flex-start;flex:none;gap:6px}
-    .nav-lateral button{padding:9px 12px;white-space:nowrap}
-    .lateral .sair{margin-left:auto;white-space:nowrap;padding:9px 12px}
+    .lateral{display:none}
   }
   @media (max-width:720px){
     .grade{grid-template-columns:1fr 1fr}
@@ -625,6 +633,176 @@
     .grade{grid-template-columns:1fr}
     .col-status{display:none}
   }
+
+  /* ---------- telas cheias do mobile (busca, notificações) ----------
+     Sobem de baixo pra cima até 100%, no padrão de app. Ficam fora de media
+     query porque quem decide abrir é o JS (só botões da navbar, que só existe
+     no mobile); a media query lá embaixo garante que nunca apareçam no desktop. */
+  .tela-mobile{
+    position:fixed;inset:0;z-index:60;background:var(--paper);
+    display:flex;flex-direction:column;
+    transform:translateY(100%);transition:transform .26s ease;
+    padding-top:env(safe-area-inset-top);
+  }
+  .tela-mobile[hidden]{display:none}
+  .tela-mobile.aberta{transform:translateY(0)}
+  .tela-mobile-topo{
+    display:flex;align-items:center;gap:10px;padding:12px 14px;
+    border-bottom:1px solid var(--line);flex-shrink:0;
+  }
+  .tela-mobile-titulo{
+    flex:1;font-family:var(--sans);font-size:17px;font-weight:500;color:var(--ink);
+  }
+  .tela-mobile-fechar{
+    flex-shrink:0;font-size:14px;color:var(--accent);padding:8px 4px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tela-mobile-corpo{
+    flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding:10px 14px calc(20px + env(safe-area-inset-bottom));
+  }
+  .busca-mobile-campo{
+    display:flex;align-items:center;gap:10px;flex:1;min-width:0;
+    background:var(--soft);border-radius:999px;padding:10px 16px;
+  }
+  .busca-mobile-campo svg{width:17px;height:17px;color:var(--ink-soft);flex-shrink:0}
+  .busca-mobile-campo input{border:none;background:none;padding:0;flex:1;min-width:0;color:var(--ink)}
+  .busca-mobile-campo input:focus{outline:none;box-shadow:none}
+  /* notificações em tela cheia: itens maiores que no dropdown do desktop */
+  .tela-mobile-corpo .notif-item{
+    width:100%;padding:14px 4px;border-bottom:1px solid var(--line);
+  }
+  .tela-mobile-corpo .notif-item:last-child{border-bottom:none}
+  .busca-res{
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;
+    width:100%;text-align:left;padding:12px 4px;border-bottom:1px solid var(--line);
+  }
+  .busca-res:last-child{border-bottom:none}
+  .busca-res .avatar-inicial{margin:0}
+  .busca-res-nome{font-weight:500;font-size:15.5px;color:var(--ink)}
+  .busca-res-sub{font-size:13px;color:var(--ink-soft);margin-top:2px}
+  .busca-res-valor{font-size:13.5px;font-weight:600;color:var(--accent-deep);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .busca-aviso{padding:40px 10px;text-align:center;color:var(--ink-soft);font-size:14px}
+  @media (min-width:821px){
+    .tela-mobile{display:none !important}
+  }
+
+  /* ---------- clientes em cartão (≤720px) ----------
+     Abaixo de 720px a tabela não cabe, e o desenho antigo resolvia isso
+     ESCONDENDO Status (≤520) e Total (≤720) — ou seja, o celular via menos
+     informação justamente onde ela é mais difícil de recuperar. Aqui a mesma
+     <table> vira cartão só na apresentação: o DOM e o desenharLista() ficam
+     idênticos (a linha continua sendo <tr> clicável), e as duas colunas voltam.
+
+     Layout de cada cartão:
+       [AB] Ana & Bruno              [excluir]
+            10/03/2027       [Confirmado]
+            R$ 18.600,00                        */
+  @media (max-width:720px){
+    .tabela-card{border:none;background:none;box-shadow:none;overflow:visible}
+    table,tbody{display:block;width:100%}
+    thead{display:none}
+    tbody tr{
+      display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 12px;
+      position:relative;padding:14px 46px 14px 14px;margin-bottom:10px;
+      border:1px solid var(--line);border-radius:14px;background:var(--paper);
+    }
+    tbody tr:last-child{margin-bottom:0}
+    tbody tr:hover{background:var(--paper)}
+    tbody td{display:block;padding:0;border:none}
+
+    /* de volta ao ar: no cartão cabe (vence as regras de 720/520 por vir depois) */
+    .col-status,.col-total{display:block}
+
+    tbody td:nth-child(1){grid-area:1 / 1 / 2 / 3}                                       /* casal  */
+    tbody td:nth-child(2){grid-area:2 / 1 / 3 / 2;color:var(--ink-soft);font-size:13.5px} /* data   */
+    tbody td:nth-child(4){grid-area:3 / 1 / 4 / 2}                                       /* total  */
+    tbody td:nth-child(3){grid-area:2 / 2 / 4 / 3;justify-self:end;align-self:center}    /* status */
+    tbody td.num{text-align:left}
+    .celula-nome span{font-size:16px}
+    .col-acao{position:absolute;top:6px;right:6px;width:auto}
+    /* alvo de toque decente: o ícone continua 15px, quem cresce é a área
+       clicável (28x28 era pequeno demais pra dedo) */
+    .col-acao .btn-apagar-linha{
+      width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+    }
+
+    /* a linha de "nenhum cliente" não vira cartão */
+    tbody tr.linha-vazia{
+      display:block;padding:0;margin:0;border:1px dashed var(--line);background:none;
+    }
+  }
+
+  /* ---------- navbar mobile ----------
+     Até 820px o estúdio troca "header cheio + sidebar" por "header só com a
+     logo + navbar de 5 ícones no rodapé". Vem depois das outras media queries
+     de propósito: precisa vencer as regras de 720px/520px por ordem de fonte. */
+  .navbar-mobile{display:none}
+
+  @media (max-width:820px){
+    /* header: só a logo, centralizada (o justify-self:start da regra base
+       vence o justify-items do grid, então sobrescrevo na própria logo) */
+    .topo-estudio{grid-template-columns:1fr;padding:0 16px;z-index:50}
+    .topo-estudio .topo-logo{justify-self:center}
+    .topo-estudio .busca-topo{display:none}
+    /* Os botões do header somem, mas o CONTAINER fica no DOM: os dropdowns de
+       notificação e perfil vivem dentro dele e continuam sendo controlados
+       pelo mesmo JS. Eles são reposicionados como folha acima da navbar. */
+    .topo-estudio-acoes{position:absolute;width:0;height:0;gap:0;pointer-events:none}
+    .topo-estudio-acoes .botao-notificacao,
+    .menu-avatar > button{display:none}
+
+    .conteudo{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+
+    .navbar-mobile{
+      display:grid;grid-template-columns:repeat(5,1fr);
+      position:fixed;left:0;right:0;bottom:0;z-index:40;
+      background:var(--paper);border-top:1px solid var(--line);
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    }
+    .navbar-mobile button{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+      padding:7px 2px;color:var(--ink-soft);border-radius:10px;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .navbar-mobile button svg{width:21px;height:21px}
+    .navbar-mobile button > span{font-size:10px;letter-spacing:.02em;line-height:1}
+    .navbar-mobile button.ativo{color:var(--accent)}
+    .nav-icone-wrap{position:relative;display:flex}
+    .nav-ponto{
+      position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;padding:0 4px;
+      display:flex;align-items:center;justify-content:center;border-radius:999px;
+      background:var(--erro);color:#fff;font-size:9.5px;font-weight:600;line-height:1;
+      border:1.5px solid var(--paper);
+    }
+    .nav-ponto[hidden]{display:none}
+    .nav-avatar{width:21px;height:21px;border-radius:50%;object-fit:cover}
+    .navbar-mobile button.ativo .nav-avatar{box-shadow:0 0 0 2px var(--accent)}
+
+    /* dropdowns viram folha ancorada acima da navbar */
+    .dropdown-notificacao,
+    .dropdown-avatar{
+      position:fixed;top:auto;left:12px;right:12px;width:auto;max-width:none;
+      bottom:calc(84px + env(safe-area-inset-bottom));
+      max-height:60vh;overflow-y:auto;pointer-events:auto;
+    }
+  }
+
+  /* ---------- mobile: nada de zoom ao focar campo ----------
+     O Safari do iOS dá zoom automático em qualquer input/select/textarea com
+     fonte menor que 16px assim que ele recebe foco — e depois não volta, o que
+     deixa a página deslocada e com rolagem lateral. A correção é a fonte ter
+     16px no toque; NÃO usar maximum-scale/user-scalable=no no viewport, que
+     mata o zoom de pinça e é problema de acessibilidade.
+     Só no mobile: no desktop os tamanhos desenhados continuam valendo. */
+  @media (max-width: 820px){
+    /* !important de propósito: regras mais específicas (ex.: ".campo-busca
+       input{font-size:14px}") venceriam, e aí o zoom voltaria naquele campo.
+       Isto não é estilo, é contorno de comportamento do iOS — tem que ganhar. */
+    input, select, textarea { font-size: 16px !important; }
+  }
+  /* impede o iOS de inflar fonte ao girar a tela */
+  html { -webkit-text-size-adjust: 100%; }
 </style>
 </head>
 <body>
@@ -657,10 +835,14 @@
 <div id="app" class="app" hidden>
   <header class="topo-estudio">
     <img class="topo-logo" src="img/logo-principal-petroleo.png" alt="Jordan Santos">
-    <label class="busca-topo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
-      <input type="search" id="busca-topo" placeholder="Buscar">
-    </label>
+    <div class="busca-topo-wrap">
+      <label class="busca-topo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+        <input type="search" id="busca-topo" placeholder="Buscar" autocomplete="off">
+      </label>
+      <!-- resultados caem aqui embaixo, sem trocar a página que está aberta -->
+      <div class="busca-topo-resultados" id="busca-topo-resultados" hidden></div>
+    </div>
     <div class="topo-estudio-acoes">
         <div class="menu-notificacao">
           <button type="button" class="botao-notificacao" id="botao-notificacao" aria-label="Notifica&ccedil;&otilde;es" aria-haspopup="true" aria-expanded="false">
@@ -677,10 +859,6 @@
             <img class="avatar-topo" src="img/jordan-perfil.webp" alt="Jordan Santos">
           </button>
           <div class="dropdown-avatar" id="dropdown-avatar" hidden>
-            <a href="/configuracoes.html" data-config>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-              Configura&ccedil;&otilde;es
-            </a>
             <button type="button" id="sair" class="item-sair">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
               Sair
@@ -919,6 +1097,59 @@
 
     </div>
   </div>
+
+  <!-- Busca em tela cheia (mobile). Sobe de baixo pra cima ocupando 100% e
+       filtra o cache `clientes` a cada tecla — sem ida ao servidor. -->
+  <div class="tela-mobile" id="busca-mobile" hidden role="dialog" aria-modal="true" aria-label="Buscar cliente">
+    <div class="tela-mobile-topo">
+      <label class="busca-mobile-campo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+        <input type="search" id="busca-mobile-input" placeholder="Buscar casal" autocomplete="off" enterkeyhint="search">
+      </label>
+      <button type="button" class="tela-mobile-fechar" id="busca-mobile-fechar">Cancelar</button>
+    </div>
+    <div class="tela-mobile-corpo" id="busca-mobile-resultados"></div>
+  </div>
+
+  <!-- Notificações em tela cheia (mobile), mesmo padrão da busca. No desktop
+       continua sendo o dropdown do sino, no header. -->
+  <div class="tela-mobile" id="notif-mobile" hidden role="dialog" aria-modal="true" aria-label="Notificações">
+    <div class="tela-mobile-topo">
+      <h2 class="tela-mobile-titulo">Notificações</h2>
+      <button type="button" class="tela-mobile-fechar" id="notif-mobile-fechar">Fechar</button>
+    </div>
+    <div class="tela-mobile-corpo" id="notif-mobile-lista"></div>
+  </div>
+
+  <!-- Navbar mobile (só até 820px; a sidebar some e o header fica só com a logo).
+       Nenhum botão aqui é funcionalidade nova: os cinco apontam pro que já
+       existe no desktop. Notificação e perfil disparam .click() nos botões do
+       header — assim abrir/fechar, clique fora e aria continuam num lugar só. -->
+  <nav class="navbar-mobile" id="navbar-mobile" aria-label="Navegação">
+    <button type="button" data-nav="home" aria-label="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>
+      <span>Home</span>
+    </button>
+    <button type="button" data-nav="clientes" aria-label="Clientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <span>Clientes</span>
+    </button>
+    <button type="button" data-nav="notificacoes" aria-label="Notificações">
+      <span class="nav-icone-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span class="nav-ponto" id="nav-ponto-notificacao" hidden></span>
+      </span>
+      <span>Avisos</span>
+    </button>
+    <button type="button" data-nav="busca" aria-label="Buscar cliente">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+      <span>Buscar</span>
+    </button>
+    <button type="button" data-nav="perfil" aria-label="Perfil">
+      <img class="nav-avatar" src="img/jordan-perfil.webp" alt="">
+      <span>Perfil</span>
+    </button>
+  </nav>
 </div>
 
 <!-- pop-up de confirmação (arquivar / excluir) -->
@@ -999,6 +1230,9 @@
     Array.prototype.slice.call(document.querySelectorAll(".nav-lateral button")).forEach(function(b){
       b.classList.toggle("ativo", b.dataset.pagina === grupo);
     });
+    Array.prototype.slice.call(document.querySelectorAll("#navbar-mobile [data-nav]")).forEach(function(b){
+      b.classList.toggle("ativo", b.dataset.nav === grupo);
+    });
   }
 
   function mostrar(nome){
@@ -1022,6 +1256,26 @@
 
   Array.prototype.slice.call(document.querySelectorAll(".nav-lateral button")).forEach(function(b){
     b.addEventListener("click", function(){ irPara(b.dataset.pagina); });
+  });
+
+  /* ---------- navbar mobile ----------
+     Home e Clientes chamam o mesmo irPara da sidebar; Buscar abre a tela cheia
+     de busca; Avisos e Perfil clicam nos botões do header, que seguem donos do
+     abrir/fechar, do clique-fora e do aria-expanded. */
+  Array.prototype.slice.call(document.querySelectorAll("#navbar-mobile [data-nav]")).forEach(function(b){
+    b.addEventListener("click", function(ev){
+      var alvo = b.dataset.nav;
+      if (alvo === "home" || alvo === "clientes"){ irPara(alvo); return; }
+      if (alvo === "busca"){ abrirBuscaMobile(); return; }
+      /* stopPropagation é obrigatório aqui: sem ele o clique segue subindo até
+         o document, onde o handler de "clicou fora" fecharia na mesma hora o
+         dropdown que o .click() acabou de abrir. */
+      if (alvo === "notificacoes"){ abrirNotifMobile(); return; }
+      /* stopPropagation só pro perfil: sem ele o clique sobe até o document,
+         onde o handler de "clicou fora" fecharia o dropdown recém-aberto */
+      ev.stopPropagation();
+      if (alvo === "perfil"){ el("botao-avatar").click(); }
+    });
   });
 
   function api(url, corpo){
@@ -1074,16 +1328,21 @@
       dropdown.hidden = !abrir;
       botao.setAttribute("aria-expanded", abrir ? "true" : "false");
     });
-    /* fecha ao tocar/clicar fora — pointerdown funciona no toque (iOS), o click não */
+    /* fecha ao tocar/clicar fora — pointerdown funciona no toque (iOS), o click não.
+       O botão Perfil da navbar mobile conta como DENTRO: ele é um gatilho legítimo
+       deste dropdown e quem alterna é o click dele. Sem esta exceção o segundo
+       toque fechava aqui (pointerdown vem antes) e o click logo reabria — dava a
+       impressão de que o dropdown nunca fechava no mobile. */
+    var gatilhoPerfilMobile = document.querySelector('#navbar-mobile [data-nav="perfil"]');
     document.addEventListener("pointerdown", function(ev){
-      if (!dropdown.hidden && !dropdown.contains(ev.target) && !botao.contains(ev.target)) fechar();
+      if (dropdown.hidden) return;
+      if (dropdown.contains(ev.target)) return;
+      if (botao.contains(ev.target)) return;
+      if (gatilhoPerfilMobile && gatilhoPerfilMobile.contains(ev.target)) return;
+      fechar();
     });
     document.addEventListener("keydown", function(ev){
       if (ev.key === "Escape") fechar();
-    });
-    /* Configurações: navega normalmente pra /configuracoes.html */
-    dropdown.querySelector("[data-config]").addEventListener("click", function(){
-      fechar();
     });
   })();
 
@@ -1123,33 +1382,41 @@
     return lista;
   }
 
+  /* Pinta a MESMA lista nos dois lugares: o dropdown do sino (desktop) e a tela
+     cheia da navbar (mobile). Os badges também são dois pro mesmo número. */
   function renderNotificacoes(lista){
-    var cont = el("notif-lista");
-    var ponto = el("ponto-notificacao");
-    cont.innerHTML = "";
-    if (!lista.length){
-      ponto.hidden = true;
-      var vazio = document.createElement("div"); vazio.className = "notif-vazio";
-      vazio.textContent = "Tudo em dia. Nenhuma novidade por aqui.";
-      cont.appendChild(vazio);
-      return;
-    }
-    ponto.hidden = false;
-    ponto.textContent = lista.length > 9 ? "9+" : String(lista.length);
+    var pontos = [el("ponto-notificacao"), el("nav-ponto-notificacao")];
+    pontos.forEach(function(p){
+      if (!p) return;
+      p.hidden = !lista.length;
+      if (lista.length) p.textContent = lista.length > 9 ? "9+" : String(lista.length);
+    });
+
     var ICONE = { proposta: ICON_PROPOSTA, prazo: ICON_CAL, contrato: ICON_CONTRATO };
-    lista.forEach(function(n){
-      var item = document.createElement("button"); item.type = "button"; item.className = "notif-item";
-      var ic = document.createElement("div"); ic.className = "notif-icone " + n.tipo; ic.innerHTML = ICONE[n.tipo] || ICON_CAL;
-      var tx = document.createElement("div"); tx.className = "notif-texto";
-      var t = document.createElement("div"); t.className = "notif-titulo"; t.textContent = n.titulo;
-      var s = document.createElement("div"); s.className = "notif-sub"; s.textContent = n.sub;
-      tx.appendChild(t); tx.appendChild(s);
-      item.appendChild(ic); item.appendChild(tx);
-      item.addEventListener("click", function(){
-        fecharNotif();
-        if (n.cid) abrirDetalhe(n.cid);
+    [el("notif-lista"), el("notif-mobile-lista")].forEach(function(cont){
+      if (!cont) return;
+      cont.innerHTML = "";
+      if (!lista.length){
+        var vazio = document.createElement("div"); vazio.className = "notif-vazio";
+        vazio.textContent = "Tudo em dia. Nenhuma novidade por aqui.";
+        cont.appendChild(vazio);
+        return;
+      }
+      lista.forEach(function(n){
+        var item = document.createElement("button"); item.type = "button"; item.className = "notif-item";
+        var ic = document.createElement("div"); ic.className = "notif-icone " + n.tipo; ic.innerHTML = ICONE[n.tipo] || ICON_CAL;
+        var tx = document.createElement("div"); tx.className = "notif-texto";
+        var t = document.createElement("div"); t.className = "notif-titulo"; t.textContent = n.titulo;
+        var s = document.createElement("div"); s.className = "notif-sub"; s.textContent = n.sub;
+        tx.appendChild(t); tx.appendChild(s);
+        item.appendChild(ic); item.appendChild(tx);
+        item.addEventListener("click", function(){
+          fecharNotif();               /* dropdown do desktop */
+          fecharNotifMobile(true);     /* tela cheia do mobile */
+          if (n.cid) abrirDetalhe(n.cid);
+        });
+        cont.appendChild(item);
       });
-      cont.appendChild(item);
     });
   }
 
@@ -1613,6 +1880,7 @@
     el("contagem-clientes").textContent = visiveis.length || "";
     if (!visiveis.length){
       var tr = document.createElement("tr");
+      tr.className = "linha-vazia";  /* no mobile ela não vira cartão */
       var td = document.createElement("td");
       td.colSpan = 5; td.className = "vazio";
       td.textContent = clientes.length ? "Nenhum cliente com esse filtro." : "Nenhum cliente ainda. O primeiro chega pelo questionário do contrato, ou crie manualmente.";
@@ -1659,6 +1927,171 @@
   }
 
   el("busca").addEventListener("input", desenharLista);
+
+  /* ---------- busca ----------
+     Até 2026-07-28 o campo do header (#busca-topo) não tinha handler nenhum:
+     era decorativo. Agora ele filtra de verdade no desktop, e no mobile o botão
+     Buscar da navbar abre uma tela cheia que sobe de baixo. Os dois filtram o
+     MESMO cache `clientes` em memória — nenhuma ida ao servidor por tecla. */
+
+  function garantirClientes(){
+    if (clientes.length) return Promise.resolve();
+    return api("/api/estudio?lista=1").then(function(r){ clientes = r.clientes || []; });
+  }
+
+  function filtrarClientes(termo){
+    var t = String(termo || "").trim().toLowerCase();
+    if (!t) return [];
+    return clientes.filter(function(c){
+      if (c.status === "arquivado") return false;
+      return (((c.noivo || "") + " " + (c.noiva || "")).toLowerCase()).indexOf(t) !== -1;
+    });
+  }
+
+  function avisoBusca(texto){
+    var d = document.createElement("div");
+    d.className = "busca-aviso";
+    d.textContent = texto;
+    return d;
+  }
+
+  /* uma linha de resultado, usada pelo dropdown do desktop e pela tela do mobile */
+  function linhaResultado(c, aoClicar){
+    var nomeCasal = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "(sem nome)";
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "busca-res";
+    var av = document.createElement("div"); av.className = "avatar-inicial";
+    av.textContent = iniciais(c.noivo, c.noiva);
+    var meio = document.createElement("div");
+    var nm = document.createElement("div"); nm.className = "busca-res-nome"; nm.textContent = nomeCasal;
+    var sub = document.createElement("div"); sub.className = "busca-res-sub";
+    sub.textContent = [dataBr(c.data_evento), ROTULO_STATUS[c.status] || ""].filter(Boolean).join(" · ");
+    meio.appendChild(nm); meio.appendChild(sub);
+    var val = document.createElement("div"); val.className = "busca-res-valor";
+    val.textContent = c.total != null ? brl.format(c.total) : "";
+    b.appendChild(av); b.appendChild(meio); b.appendChild(val);
+    b.addEventListener("click", aoClicar);
+    return b;
+  }
+
+  function pintarResultados(container, termo, opts){
+    opts = opts || {};
+    container.innerHTML = "";
+    if (!String(termo || "").trim()){
+      if (opts.avisoVazio) container.appendChild(avisoBusca(opts.avisoVazio));
+      return 0;
+    }
+    var achados = filtrarClientes(termo);
+    if (!achados.length){ container.appendChild(avisoBusca("Nenhum casal encontrado.")); return 0; }
+    achados.forEach(function(c){
+      container.appendChild(linhaResultado(c, function(){
+        if (opts.aoEscolher) opts.aoEscolher();
+        abrirDetalhe(c.id);
+      }));
+    });
+    return achados.length;
+  }
+
+  /* --- desktop: resultados caem num dropdown sob o campo ---
+     Não troca a página que está aberta nem mexe no filtro da lista: a busca é
+     independente, igual à do mobile. */
+  var buscaTopo = el("busca-topo");
+  var buscaTopoRes = el("busca-topo-resultados");
+  function fecharBuscaTopo(){ buscaTopoRes.hidden = true; }
+
+  buscaTopo.addEventListener("input", function(){
+    var termo = buscaTopo.value;
+    if (!termo.trim()){ fecharBuscaTopo(); return; }
+    garantirClientes().then(function(){
+      pintarResultados(buscaTopoRes, termo, {
+        aoEscolher: function(){ buscaTopo.value = ""; fecharBuscaTopo(); }
+      });
+      buscaTopoRes.hidden = false;
+    }).catch(function(){});
+  });
+  buscaTopo.addEventListener("focus", function(){
+    if (buscaTopo.value.trim()) buscaTopoRes.hidden = false;
+  });
+  document.addEventListener("click", function(ev){
+    if (!buscaTopoRes.hidden && !buscaTopoRes.contains(ev.target) && !buscaTopo.contains(ev.target)) fecharBuscaTopo();
+  });
+  document.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape" && !buscaTopoRes.hidden){ fecharBuscaTopo(); buscaTopo.blur(); }
+  });
+
+  /* --- mobile: tela cheia de baixo pra cima, resultado a cada tecla --- */
+  var buscaMob = el("busca-mobile");
+  var buscaMobInput = el("busca-mobile-input");
+  var buscaMobRes = el("busca-mobile-resultados");
+
+  function renderBuscaMobile(){
+    pintarResultados(buscaMobRes, buscaMobInput.value, {
+      avisoVazio: "Digite o nome do casal.",
+      aoEscolher: function(){ fecharBuscaMobile(true); }
+    });
+  }
+
+  /* --- abrir/fechar das telas cheias do mobile (busca e notificações) --- */
+  var scrollAntesDaTela = 0;
+
+  function abrirTelaMobile(elemento){
+    scrollAntesDaTela = window.pageYOffset || document.documentElement.scrollTop || 0;
+    elemento.hidden = false;
+    /* O browser precisa "enxergar" o estado inicial (translateY(100%)) antes da
+       classe que anima, senão pula direto pro final sem transição. Leitura de
+       offsetWidth força o reflow na hora — mais confiável que
+       requestAnimationFrame, que não dispara com a aba em segundo plano. */
+    void elemento.offsetWidth;
+    elemento.classList.add("aberta");
+  }
+
+  /* manterScroll = está fechando por causa de um clique num item; quem manda na
+     rolagem daí em diante é o abrirDetalhe, então não devolvemos a antiga */
+  function fecharTelaMobile(elemento, manterScroll){
+    elemento.classList.remove("aberta");
+    setTimeout(function(){
+      elemento.hidden = true;
+      if (manterScroll !== true) window.scrollTo(0, scrollAntesDaTela);
+    }, 260);
+  }
+
+  function abrirBuscaMobile(){
+    buscaMobInput.value = "";
+    renderBuscaMobile();
+    abrirTelaMobile(buscaMob);
+    /* preventScroll conserta o "a página sobe lá pra cima": sem ele o browser
+       rola pra trazer o campo à vista, e nesse instante o overlay ainda está em
+       translateY(100%), fora da tela. E o focus precisa ser SÍNCRONO dentro do
+       gesto — adiar pro fim da animação faria o iOS não abrir o teclado. */
+    buscaMobInput.focus({ preventScroll: true });
+    /* a lista pode ainda não ter sido carregada (o login cai na Home) */
+    garantirClientes().then(renderBuscaMobile).catch(function(){});
+  }
+
+  function fecharBuscaMobile(manterScroll){
+    buscaMobInput.blur();
+    fecharTelaMobile(buscaMob, manterScroll);
+  }
+
+  /* --- notificações em tela cheia (mobile) --- */
+  function abrirNotifMobile(){
+    abrirTelaMobile(el("notif-mobile"));
+    carregarNotificacoes();
+  }
+  function fecharNotifMobile(manterScroll){
+    var tela = el("notif-mobile");
+    if (!tela || tela.hidden) return;
+    fecharTelaMobile(tela, manterScroll);
+  }
+  el("notif-mobile-fechar").addEventListener("click", function(){ fecharNotifMobile(); });
+
+  buscaMobInput.addEventListener("input", renderBuscaMobile);
+  el("busca-mobile-fechar").addEventListener("click", fecharBuscaMobile);
+  document.addEventListener("keydown", function(ev){
+    if (ev.key !== "Escape") return;
+    if (!buscaMob.hidden) fecharBuscaMobile();
+    fecharNotifMobile();
+  });
   el("filtro-status").addEventListener("change", desenharLista);
 
   /* ---------- clientes · detalhe ---------- */

@@ -7,8 +7,9 @@
   signature_pad e o PDF é gerado com html2pdf.js.
 
   O TEXTO DO CONTRATO abaixo (#documento) é fixo, com os dados do casal preenchidos
-  a partir do backend (data-campo). A assinatura do Jordan vem de /configuracoes
-  (tabela config, resp.j.estudio.assinatura_jordan) — funciona cross-device.
+  a partir do backend (data-campo). A assinatura do Jordan é a que ele fez NESTE
+  contrato, na revisão em /revisar-contrato (contratos.jordan_assinatura_dataurl)
+  — server-side, funciona cross-device.
 -->
 <html lang="pt-BR">
 <head>
@@ -106,6 +107,22 @@
   .aviso.erro{color:var(--erro)}
   .aviso.ok{color:var(--ok)}
   .selo-seg{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:16px;line-height:1.6}
+
+  /* ---------- mobile: nada de zoom ao focar campo ----------
+     O Safari do iOS dá zoom automático em qualquer input/select/textarea com
+     fonte menor que 16px assim que ele recebe foco — e depois não volta, o que
+     deixa a página deslocada e com rolagem lateral. A correção é a fonte ter
+     16px no toque; NÃO usar maximum-scale/user-scalable=no no viewport, que
+     mata o zoom de pinça e é problema de acessibilidade.
+     Só no mobile: no desktop os tamanhos desenhados continuam valendo. */
+  @media (max-width: 820px){
+    /* !important de propósito: regras mais específicas (ex.: ".campo-busca
+       input{font-size:14px}") venceriam, e aí o zoom voltaria naquele campo.
+       Isto não é estilo, é contorno de comportamento do iOS — tem que ganhar. */
+    input, select, textarea { font-size: 16px !important; }
+  }
+  /* impede o iOS de inflar fonte ao girar a tela */
+  html { -webkit-text-size-adjust: 100%; }
 </style>
 </head>
 <body>
@@ -355,8 +372,10 @@
   /* preferências do estúdio vindas do backend (config): a assinatura padrão do Jordan.
      Server-side, então funciona no navegador do casal também. */
   var estudioCfg = {};
-  /* assinatura feita NESTE contrato específico (revisão em /revisar-contrato) —
-     tem prioridade sobre a padrão do /configuracoes */
+  /* assinatura feita NESTE contrato específico (revisão em /revisar-contrato).
+     É sempre ela na prática: o fluxo exige a revisão do Jordan antes de liberar
+     o link pro casal. A da tabela config abaixo é só rede de segurança — a
+     página que a definia (/configuracoes) foi removida em 2026-07-28. */
   var assinaturaJordanContrato = null;
 
   /* assinatura do Jordan (CONTRATADA) no lugar do texto fixo */
