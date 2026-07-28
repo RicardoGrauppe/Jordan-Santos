@@ -78,6 +78,24 @@
   }
   textarea{min-height:72px;resize:vertical}
 
+  /* ---------- data e hora ----------
+     Controles NATIVOS: calculam a própria altura mínima e desenham o valor num
+     shadow element (::-webkit-date-and-time-value) que não herda alinhamento
+     nem margem, então destoam dos campos de texto vizinhos. Medido: 2px a mais
+     já no Chromium, e no Safari do iOS a diferença é bem maior.
+     Só `height` fixa iguala — `min-height` não limita a altura intrínseca do
+     controle pra baixo. No mobile o valor é maior (fonte 16px + alvo de toque),
+     ver o @media lá embaixo. */
+  .campo-form input{height:44px}
+  input[type="date"],
+  input[type="time"]{
+    -webkit-appearance:none;appearance:none;text-align:left;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0}
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="time"]::-webkit-datetime-edit{padding:0}
+
   /* campo de telefone com botão de abrir no WhatsApp */
   .campo-tel{display:flex;gap:8px;align-items:stretch}
   .campo-tel input{flex:1;min-width:0}
@@ -800,6 +818,8 @@
        input{font-size:14px}") venceriam, e aí o zoom voltaria naquele campo.
        Isto não é estilo, é contorno de comportamento do iOS — tem que ganhar. */
     input, select, textarea { font-size: 16px !important; }
+    /* no toque a fonte sobe pra 16px, então o campo precisa de mais altura */
+    .campo-form input{height:46px}
   }
   /* impede o iOS de inflar fonte ao girar a tela */
   html { -webkit-text-size-adjust: 100%; }
@@ -953,11 +973,11 @@
           </div>
           <div class="grade">
             <div class="campo-form"><label for="f-noivo">Noivo</label><input id="f-noivo" data-campo="noivo"></div>
-            <div class="campo-form"><label for="f-cpf-noivo">CPF do noivo</label><input id="f-cpf-noivo" data-campo="cpf_noivo" inputmode="numeric"></div>
-            <div class="campo-form"><label for="f-tel-noivo">Telefone do noivo</label><div class="campo-tel"><input id="f-tel-noivo" data-campo="tel_noivo" inputmode="tel"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noivo" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
+            <div class="campo-form"><label for="f-cpf-noivo">CPF do noivo</label><input id="f-cpf-noivo" data-campo="cpf_noivo" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"></div>
+            <div class="campo-form"><label for="f-tel-noivo">Telefone do noivo</label><div class="campo-tel"><input id="f-tel-noivo" data-campo="tel_noivo" inputmode="tel" placeholder="(00) 00000-0000"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noivo" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
             <div class="campo-form"><label for="f-noiva">Noiva</label><input id="f-noiva" data-campo="noiva"></div>
-            <div class="campo-form"><label for="f-cpf-noiva">CPF da noiva</label><input id="f-cpf-noiva" data-campo="cpf_noiva" inputmode="numeric"></div>
-            <div class="campo-form"><label for="f-tel-noiva">Telefone da noiva</label><div class="campo-tel"><input id="f-tel-noiva" data-campo="tel_noiva" inputmode="tel"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noiva" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
+            <div class="campo-form"><label for="f-cpf-noiva">CPF da noiva</label><input id="f-cpf-noiva" data-campo="cpf_noiva" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"></div>
+            <div class="campo-form"><label for="f-tel-noiva">Telefone da noiva</label><div class="campo-tel"><input id="f-tel-noiva" data-campo="tel_noiva" inputmode="tel" placeholder="(00) 00000-0000"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noiva" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
             <div class="campo-form largo"><label for="f-email">E-mail do casal</label><input id="f-email" data-campo="email" type="email"></div>
           </div>
         </fieldset>
@@ -984,13 +1004,13 @@
             </button>
           </div>
           <div class="grade">
-            <div class="campo-form"><label for="f-cep">CEP</label><input id="f-cep" data-campo="cep" inputmode="numeric"></div>
+            <div class="campo-form"><label for="f-cep">CEP</label><input id="f-cep" data-campo="cep" inputmode="numeric" placeholder="00000-000" maxlength="9"></div>
             <div class="campo-form"><label for="f-endereco">Endere&ccedil;o</label><input id="f-endereco" data-campo="endereco"></div>
             <div class="campo-form"><label for="f-numero">N&uacute;mero</label><input id="f-numero" data-campo="numero"></div>
             <div class="campo-form"><label for="f-complemento">Complemento</label><input id="f-complemento" data-campo="complemento"></div>
             <div class="campo-form"><label for="f-bairro">Bairro</label><input id="f-bairro" data-campo="bairro"></div>
             <div class="campo-form"><label for="f-cidade">Cidade</label><input id="f-cidade" data-campo="cidade"></div>
-            <div class="campo-form"><label for="f-estado">Estado</label><input id="f-estado" data-campo="estado"></div>
+            <div class="campo-form"><label for="f-estado">Estado</label><input id="f-estado" data-campo="estado" placeholder="UF" maxlength="2"></div>
           </div>
         </fieldset>
 
@@ -1735,6 +1755,22 @@
     return faltando;
   }
 
+  /* Abre a revisão do contrato.
+     O window.open aqui roda DOIS fetches depois do clique (salvar + gerar), e o
+     Safari do iOS só permite abrir aba nova dentro do gesto do usuário — fora
+     dele, bloqueia. No mobile navegamos na mesma aba, que é o comportamento
+     natural no celular de qualquer jeito; no desktop tentamos a aba nova e
+     caímos pra mesma aba se o browser bloquear. */
+  function abrirRevisao(link){
+    if (!link) return;
+    if (window.matchMedia && window.matchMedia("(max-width: 820px)").matches){
+      location.href = link;
+      return;
+    }
+    var aba = window.open(link, "_blank", "noopener");
+    if (!aba) location.href = link;
+  }
+
   function enviarParaAssinatura(){
     if (!clienteAtual) return;
 
@@ -1754,7 +1790,7 @@
       salvarClienteAtual()
         .then(function(){ return api("/api/estudio", { acao: "gerar-contrato", id: clienteAtual }); })
         .then(function(r){
-          window.open(r.link, "_blank", "noopener");
+          abrirRevisao(r.link);
           /* recarrega o cliente+contrato pra timeline refletir o estado real */
           return api("/api/estudio?id=" + clienteAtual);
         })
@@ -2126,12 +2162,93 @@
     });
   });
 
+  /* ---------- máscaras da ficha (mesmo comportamento do /orcamento) ----------
+     Três pontas precisam combinar, senão o dado sai torto:
+       1. ao digitar   → máscara ao vivo;
+       2. ao exibir    → o banco guarda CPF/CEP só com dígitos, então formata na
+                         hora de mostrar (antes aparecia "12345678901" cru);
+       3. ao salvar    → volta pra só dígitos. Isto NÃO é cosmético: o
+                         /api/orcamento grava dígitos e o índice único do banco é
+                         (cpf_noivo, data_evento) — salvar "123.456.789-01" aqui
+                         criaria um segundo registro pro mesmo casal. */
+  function soDigitos(v){ return String(v == null ? "" : v).replace(/\D/g, ""); }
+
+  function mascarar(valor, padrao){
+    /* padrao usa "9" pra cada dígito, o resto é literal: "999.999.999-99" */
+    var digitos = soDigitos(valor), out = "", di = 0;
+    for (var i = 0; i < padrao.length && di < digitos.length; i++){
+      if (padrao[i] === "9"){ out += digitos[di]; di++; }
+      else out += padrao[i];
+    }
+    return out;
+  }
+
+  /* telefone: só formata número nacional. Valor que já vem com DDI ("+55 45...",
+     como o /orcamento grava via intl-tel-input) fica intacto. */
+  function formatarTelefone(v){
+    var s = String(v == null ? "" : v);
+    if (s.indexOf("+") !== -1) return s;
+    var d = soDigitos(s).slice(0, 11);
+    if (!d.length) return "";
+    if (d.length <= 2) return "(" + d;
+    var ddd = d.slice(0, 2), resto = d.slice(2);
+    if (d.length <= 10) return "(" + ddd + ") " + resto.slice(0, 4) + (resto.length > 4 ? "-" + resto.slice(4) : "");
+    return "(" + ddd + ") " + resto.slice(0, 5) + "-" + resto.slice(5);
+  }
+
+  var MASCARAS = {
+    "f-cpf-noivo": function(v){ return mascarar(v, "999.999.999-99"); },
+    "f-cpf-noiva": function(v){ return mascarar(v, "999.999.999-99"); },
+    "f-cep":       function(v){ return mascarar(v, "99999-999"); },
+    "f-tel-noivo": formatarTelefone,
+    "f-tel-noiva": formatarTelefone
+  };
+  /* o que volta pro backend só com dígitos (telefone não: guarda o DDI) */
+  var SO_DIGITOS_AO_SALVAR = ["cpf_noivo", "cpf_noiva", "cep"];
+
+  Object.keys(MASCARAS).forEach(function(id){
+    var campo = el(id);
+    if (!campo) return;
+    campo.addEventListener("input", function(){
+      var pos = this.selectionStart, antes = this.value.length;
+      this.value = MASCARAS[id](this.value);
+      /* mantém o cursor no lugar quando a máscara insere separador */
+      if (pos !== null && pos < antes) this.setSelectionRange(pos + (this.value.length - antes), pos + (this.value.length - antes));
+    });
+  });
+
+  /* CEP preenche o endereço (ViaCEP, gratuito e sem chave) — mesmo comportamento
+     do /orcamento. Só dispara ao DIGITAR: o preencher() abaixo seta .value
+     direto, o que não emite "input", então abrir uma ficha não gera requisição. */
+  (function(){
+    var campoCep = el("f-cep");
+    if (!campoCep) return;
+    var ultimoBuscado = "";
+    campoCep.addEventListener("input", function(){
+      var cep = soDigitos(this.value);
+      if (cep.length !== 8 || cep === ultimoBuscado) return;
+      ultimoBuscado = cep;
+      fetch("https://viacep.com.br/ws/" + cep + "/json/")
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (j.erro) return;
+          if (!el("f-endereco").value) el("f-endereco").value = j.logradouro || "";
+          el("f-bairro").value = j.bairro || "";
+          el("f-cidade").value = j.localidade || "";
+          el("f-estado").value = j.uf || "";
+        })
+        .catch(function(){});
+    });
+  })();
+
   function preencher(cliente){
     /* cliente novo abre liberado pra digitar; cliente existente abre travado */
     travarSecoes(!!cliente);
     campos().forEach(function(c){
       var v = cliente ? cliente[c.dataset.campo] : null;
       c.value = v == null ? "" : v;
+      /* o banco guarda cru; a tela mostra formatado */
+      if (MASCARAS[c.id]) c.value = MASCARAS[c.id](c.value);
     });
     itensAtuais = (cliente && Array.isArray(cliente.itens))
       ? cliente.itens.map(function(i){
@@ -2324,6 +2441,12 @@
     campos().forEach(function(c){ cliente[c.dataset.campo] = c.value; });
     ["total", "entrada"].forEach(function(k){
       if (cliente[k]) cliente[k] = cliente[k].replace(/\./g, "").replace(",", ".");
+    });
+    /* desfaz a máscara: o banco guarda CPF e CEP só com dígitos, igual ao que o
+       /api/orcamento grava. Sem isto o índice único (cpf_noivo, data_evento)
+       trataria "123.456.789-01" e "12345678901" como casais diferentes. */
+    SO_DIGITOS_AO_SALVAR.forEach(function(k){
+      if (cliente[k]) cliente[k] = soDigitos(cliente[k]);
     });
     cliente.itens = itensAtuais;
     return cliente;

@@ -38,9 +38,29 @@ const CAMPOS_SNAPSHOT = [
   "data_evento", "horario", "local_evento", "itens", "total", "entrada"
 ];
 
+/* Endereços que NÃO são a internet pública: servidor de dev, seja pelo localhost
+   ou pelo IP da rede local (testar no celular usa o segundo). Antes só
+   "localhost" contava, então acessando por http://192.168.1.183:8020 o link
+   saía como https://192.168.1.183:8020 — e o Safari não abre HTTPS num servidor
+   que só fala HTTP. Era o "link que o Safari não consegue abrir". */
+function ehHostLocal(host) {
+  const semPorta = String(host || "").split(":")[0];
+  return (
+    semPorta === "localhost" ||
+    semPorta === "127.0.0.1" ||
+    semPorta === "0.0.0.0" ||
+    semPorta.endsWith(".local") ||
+    /^10\./.test(semPorta) ||
+    /^192\.168\./.test(semPorta) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(semPorta)
+  );
+}
+
 function baseUrlDe(req) {
   const host = req.headers["x-forwarded-host"] || req.headers.host;
-  const proto = host.includes("localhost") ? "http" : (req.headers["x-forwarded-proto"] || "https").split(",")[0];
+  const encaminhado = (req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  /* na Vercel o x-forwarded-proto manda; sem ele, http só em rede local */
+  const proto = encaminhado || (ehHostLocal(host) ? "http" : "https");
   return proto + "://" + host;
 }
 

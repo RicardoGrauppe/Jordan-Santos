@@ -83,6 +83,24 @@
     -webkit-appearance:none;transition:border-color .15s ease,box-shadow .15s ease;
   }
   .campo input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
+
+  /* ---------- data e hora ----------
+     <input type="date"|"time"> é um controle NATIVO: ele calcula a própria
+     altura mínima e desenha o valor num shadow element
+     (::-webkit-date-and-time-value) que não herda alinhamento nem margem. Sem
+     tratar, sai diferente dos campos de texto vizinhos — medido: 2px a mais já
+     no Chromium, e no Safari do iOS a diferença é bem maior.
+     Altura fixa é o único jeito determinístico de igualar: min-height não
+     resolve porque não limita a altura intrínseca do controle pra baixo. */
+  .campo input{height:50px}
+  .campo input[type="date"],
+  .campo input[type="time"]{
+    -webkit-appearance:none;appearance:none;text-align:left;
+  }
+  .campo input[type="date"]::-webkit-date-and-time-value,
+  .campo input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0}
+  .campo input[type="date"]::-webkit-datetime-edit,
+  .campo input[type="time"]::-webkit-datetime-edit{padding:0}
   .campo-linha{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
   .campo-linha .campo{margin-bottom:0}
   @media (max-width:480px){.campo-linha{grid-template-columns:1fr}}
