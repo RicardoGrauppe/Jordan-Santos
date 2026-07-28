@@ -111,37 +111,15 @@
   <div id="fluxo" hidden>
     <div class="doc-card">
       <div class="doc-scroll">
-        <article id="documento">
-          <h2>Contrato de Prestação de Serviços de Fotografia</h2>
-          <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endereço na rua Jesuítas, Carimã Nº390, Foz do Iguaçu &ndash; Paraná, CEP: 85855700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de serviços relacionados à fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>
-          <p>
-            NOIVO: <span class="campo" data-campo="noivo"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noivo"></span><br>
-            NOIVA: <span class="campo" data-campo="noiva"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noiva"></span><br>
-            ENDEREÇO: <span class="campo" data-campo="endereco"></span> &nbsp; Nº: <span class="campo" data-campo="numero"></span> &nbsp; BAIRRO: <span class="campo" data-campo="bairro"></span><br>
-            CIDADE: <span class="campo" data-campo="cidade"></span> &nbsp; COMPLEMENTO: <span class="campo" data-campo="complemento"></span> &nbsp; ESTADO: <span class="campo" data-campo="estado"></span> &nbsp; CEP: <span class="campo" data-campo="cep"></span><br>
-            TELEFONE NOIVO: <span class="campo" data-campo="tel-noivo"></span> &nbsp; TELEFONE NOIVA: <span class="campo" data-campo="tel-noiva"></span>
-          </p>
-          <p>Tem entre si como certo e ajustado o presente contrato de prestação de serviços que será regido pelas seguintes cláusulas: <em>(texto completo das cláusulas igual ao que o casal vê em /assinar &mdash; omitido aqui só pra revisão ficar mais rápida de rolar; os valores e itens abaixo são os que valem).</em></p>
-          <p>
-            DESCRIÇÃO DO EVENTO: Casamento<br>
-            DATA DO EVENTO: <span class="campo" data-campo="data-formatada"></span><br>
-            LOCAL DO EVENTO: <span class="campo" data-campo="local"></span><br>
-            HORÁRIO: <span class="campo" data-campo="horario"></span>
-          </p>
-          <table aria-label="Serviços contratados">
-            <thead><tr><th>Qtd</th><th>Descrição dos serviços</th><th>Valor total</th></tr></thead>
-            <tbody id="tabela-servicos"></tbody>
-          </table>
-          <p>Valor total: <span class="campo" data-campo="valor-total"></span> &nbsp; Entrada (30%): <span class="campo" data-campo="valor-entrada"></span></p>
-
-          <div class="assinaturas" id="bloco-assinaturas">
-            <p><span class="campo" data-campo="cidade-assinatura"></span>, <span class="campo" data-campo="data-assinatura"></span>.</p>
-            <p class="linha-ass">Assinatura do(a) contratante (o casal assina depois, em /assinar)</p>
-            <div id="assinatura-jordan-area">
-              <p class="linha-ass">Jordan Santos &ndash; CONTRATADA</p>
-            </div>
-          </div>
-        </article>
+        <!-- O texto do contrato vem de /contrato-template.js (fonte única: o que o
+             Jordan revisa aqui é exatamente o que o casal assina). Os dados do casal
+             entram depois, via [data-campo]. -->
+        <article id="documento"></article>
+        <script src="/contrato-template.js"></script>
+        <script>
+          document.getElementById("documento").innerHTML =
+            CONTRATO_TEMPLATE.html({ modo: "revisar" });
+        </script>
       </div>
     </div>
 

@@ -4,12 +4,14 @@ Site do fotógrafo Jordan Santos: portfólio + calculadora de orçamento (públi
 
 Produção: https://jordan-santos.vercel.app (deploy automático a cada push na `main`).
 
-Site estático, sem build: HTML/CSS/JS vanilla, um arquivo por página. Bibliotecas via CDN: `html2pdf.js` + `signature_pad` (assinar.html) e `intl-tel-input` (index.html, campo de WhatsApp com DDI por país). Os dados vivem no **Supabase** (Postgres), acessado só pelas Vercel Functions com a service role key.
+Site estático, sem build: HTML/CSS/JS vanilla, um arquivo por página. Bibliotecas via CDN: `html2pdf.js` + `signature_pad` (assinar.html) e `intl-tel-input` (orcamento.html, campo de WhatsApp com DDI por país). Os dados vivem no **Supabase** (Postgres), acessado só pelas Vercel Functions com a service role key.
 
 ## Estrutura
 
 ```
 index.html               Portfólio + calculadora de orçamento (página inicial)
+orcamento.html           Formulário de fechamento (/orcamento) — exige seleção vinda do index
+contrato-template.js     FONTE ÚNICA do texto do contrato, usada por assinar e revisar-contrato
 estudio.html             Painel do Jordan (/estudio): clientes + gerar contrato
 configuracoes.html       Preferências do estúdio: assinatura do Jordan (aparece no contrato)
 revisar-contrato.html    Revisão/"assinatura" do Jordan antes de liberar (/revisar-contrato?id=…), admin-only
@@ -32,7 +34,7 @@ vercel.json              cleanUrls (URLs sem .html)
 
 Sem estágio de prospecção (decisão de 2026-07-24): o link do site geralmente só é mandado **depois de uma reunião**, pra quem já quer fechar — então o formulário público já pede tudo que o contrato precisa.
 
-1. **Orçamento** (`/`): o casal escolhe pacote (Eternal/Heritage) + adicionais/álbum/pré-wedding e, no CTA **"Enviar orçamento"**, preenche um formulário completo (nome + CPF dos dois, WhatsApp, e-mail, endereço com autocomplete de CEP via ViaCEP, data/horário/local do evento). Isso cria o **CLIENTE** direto (`/api/orcamento`, upsert por `cpf_noivo+data_evento`), com os itens e o total salvos. Preços e nomes vêm do `catalogo.js`. O Jordan recebe um e-mail (template com a paleta da marca) avisando do cliente novo.
+1. **Orçamento** (`/`): o casal escolhe pacote (Eternal/Heritage) + adicionais/álbum/pré-wedding e o CTA **"Enviar nossa data"** guarda os ids escolhidos no `sessionStorage` (`JSF_ORCAMENTO`) e leva pra **`/orcamento`** (`orcamento.html`), o formulário completo (nome + CPF dos dois, WhatsApp, e-mail, endereço com autocomplete de CEP via ViaCEP, data/horário/local do evento). Só os **ids** viajam entre as páginas — nome e preço são reconstruídos do `catalogo.js`. Quem abre `/orcamento` sem seleção é mandado de volta pra `/`. Era um modal dentro do index até 2026-07-28; virou página porque, como overlay de ~1.780px no celular, a rolagem vazava pra home atrás e o botão voltar saía do site. Isso cria o **CLIENTE** direto (`/api/orcamento`, upsert por `cpf_noivo+data_evento`), com os itens e o total salvos. Preços e nomes vêm do `catalogo.js`. O Jordan recebe um e-mail (template com a paleta da marca) avisando do cliente novo.
 2. **Ficha do cliente** (`/estudio`): o Jordan confere/completa os dados e ajusta o pacote/adicionais no seletor. Clica em **"Gerar contrato"** (ícone no topo ou botão dentro do fieldset "Contrato") → valida os campos obrigatórios, salva, gera o contrato (status `rascunho`, já salvo mesmo sem assinatura nenhuma) e abre em outra aba a página de revisão.
 3. **Revisão do Jordan** (`/revisar-contrato?id=…`, admin-only): ele confere o contrato inteiro e confirma com uma assinatura (cursiva com o nome, padrão, ou desenhada na mão) — isso não manda nada ao casal, só libera o botão **"Pegar link pro cliente"** de volta no `/estudio`, que marca o contrato como enviado e abre um modal com o link + a mensagem pronta pra copiar ou abrir direto na conversa do WhatsApp. O mesmo botão recupera o link depois ("Ver link de novo"), sem gerar contrato novo.
 4. **Assinatura do casal** (`/assinar?token=…`): o casal revisa o contrato (já com a assinatura do Jordan deste contrato específico), preenche nome + CPF, marca o aceite e assina de um dos **dois jeitos** (mesma escolha que o Jordan tem na revisão): o nome em cursiva (padrão, desenhado num canvas com a fonte Dancing Script) ou o traço na mão (`signature_pad`). O PDF é gerado no navegador (`html2pdf`), guardado e enviado pras partes (`/api/assinatura`). Depois de assinar, o casal tem um botão pra **baixar a via em PDF** — na hora, direto da memória da aba, e também quando voltar no link depois (aí busca em `GET /api/assinatura?token=…&pdf=1`).

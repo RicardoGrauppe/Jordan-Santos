@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<!--
+  Formulário de fechamento · Jordan Santos Fotografia   (/orcamento)
+
+  Era um modal em tela cheia dentro do index.html. Virou página própria em
+  2026-07-28 porque o formulário tem ~1.780px de conteúdo (2,2 telas no
+  celular) e, como overlay, a rolagem vazava pra home atrás (scroll chaining),
+  o botão voltar do iPhone saía do site em vez de fechar o form, e o
+  height:100% congelava um viewport errado quando a barra do Safari some.
+  Como página, nada disso existe: rolagem nativa, voltar funciona, teclado
+  tratado pelo browser.
+
+  DEPENDE DE SELEÇÃO PRÉVIA (decisão do Ricardo, 2026-07-28): quem chega aqui
+  sem ter escolhido pacote na calculadora é mandado pra home. A seleção viaja
+  pelo sessionStorage em JSF_ORCAMENTO — só os IDS; nome e preço são
+  reconstruídos do catalogo.js (fonte única), então não há preço duplicado
+  atravessando páginas.
+
+  ESTA PÁGINA É SÓ O CADASTRO (regra do Ricardo, 2026-07-28): só os campos que
+  o contrato precisa. Nada de resumo da escolha, nada de preço — o valor
+  aparece uma única vez no site, no resumo da calculadora em "/". Os itens e o
+  total seguem sendo enviados pro backend; o que não existe aqui é exibição.
+
+  Envia pra /api/orcamento, que cria o CLIENTE direto (sem estágio de
+  prospecção) e avisa o Jordan por e-mail.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmar nossa data | Jordan Santos Fotografia</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.min.css">
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --ink:#1D1D1B;
+    --ink-soft:#706F6F;
+    --accent:#003646;
+    --accent-deep:#4F6278;
+    --noir:#1D1D1B;
+    --line:#E8E1DC;
+    --sombra:0 10px 34px rgba(29,29,27,.14);
+    --serif:"Bodoni Moda", "Didot", Georgia, serif;
+    --sans:"Jost", "Helvetica Neue", sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+  body{
+    background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-weight:300;font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;
+  }
+  img{display:block;max-width:100%}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+  .pagina{
+    max-width:520px;margin:0 auto;
+    padding:calc(38px + env(safe-area-inset-top)) 22px calc(48px + env(safe-area-inset-bottom));
+  }
+  .voltar{
+    display:block;width:fit-content;font-size:12.5px;color:var(--ink-soft);
+    text-decoration:none;letter-spacing:.04em;margin-bottom:26px;
+  }
+  .voltar:hover{color:var(--accent)}
+  .dica{
+    display:inline-block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:6px 14px;
+  }
+  h1{font-family:var(--serif);font-weight:500;font-size:30px;line-height:1.25;color:var(--accent);margin:14px 0 0}
+  .sub{color:var(--ink-soft);font-size:14.5px;line-height:1.55;margin-top:12px}
+
+  form{margin-top:30px}
+  .form-secao{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px}
+  .form-secao:first-of-type{margin-top:0}
+  .campo{display:block;font-size:12.5px;letter-spacing:.04em;color:var(--ink-soft);margin-bottom:16px}
+  .campo .opc{text-transform:none;letter-spacing:0;opacity:.7}
+  .campo input{
+    display:block;width:100%;margin-top:7px;padding:12px 14px;
+    font-family:inherit;font-size:16px;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    -webkit-appearance:none;transition:border-color .15s ease,box-shadow .15s ease;
+  }
+  .campo input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
+  .campo-linha{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .campo-linha .campo{margin-bottom:0}
+  @media (max-width:480px){.campo-linha{grid-template-columns:1fr}}
+  .campo-cep{position:relative}
+  .cep-status{position:absolute;right:14px;top:34px;font-size:11px;color:var(--ink-soft)}
+  .campo-invalido input{border-color:#A33B3B}
+  .campo-invalido input:focus{box-shadow:0 0 0 3px rgba(163,59,59,.12)}
+  .campo-erro-msg{display:block;color:#A33B3B;font-size:11.5px;margin-top:5px;letter-spacing:0}
+  .campo .iti{width:100%;margin-top:7px;display:block}
+  .campo .iti input{margin-top:0}
+  .iti__country-list{font-family:var(--sans);font-size:14px;z-index:200}
+
+  .cta{
+    display:block;width:100%;margin-top:34px;padding:19px 24px;
+    background:var(--noir);color:#fff;text-align:center;text-decoration:none;
+    font-size:13px;letter-spacing:.22em;text-transform:uppercase;border-radius:999px;
+    transition:opacity .2s ease;
+  }
+  .cta:hover{opacity:.85}
+  .cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+  #o-enviar:disabled{opacity:.5;pointer-events:none}
+  .erro{color:#A33B3B;font-size:13.5px;text-align:center;margin-top:14px;min-height:18px}
+
+  #sucesso{text-align:center;padding:60px 0}
+  #sucesso h1{font-size:32px}
+  #sucesso .cta{margin-top:34px}
+</style>
+</head>
+<body>
+
+<main class="pagina">
+  <div id="area-form">
+    <a class="voltar" href="/">&larr; Voltar pro orçamento</a>
+    <span class="dica">Último passo</span>
+    <h1>Vamos confirmar nossa data</h1>
+    <p class="sub">Preencha os dados de vocês dois. Assim que eu confirmar, já te mando o contrato pra assinar.</p>
+
+    <form id="form-orcamento" novalidate>
+      <div class="form-secao">Vocês dois</div>
+      <label class="campo">Nome do noivo
+        <input id="o-noivo" type="text" autocomplete="given-name" required>
+      </label>
+      <label class="campo">Nome da noiva
+        <input id="o-noiva" type="text" autocomplete="given-name" required>
+      </label>
+      <div class="campo-linha">
+        <label class="campo">CPF do noivo
+          <input id="o-cpf-noivo" type="text" inputmode="numeric" placeholder="000.000.000-00" required>
+        </label>
+        <label class="campo">CPF da noiva
+          <input id="o-cpf-noiva" type="text" inputmode="numeric" placeholder="000.000.000-00" required>
+        </label>
+      </div>
+      <label class="campo">WhatsApp
+        <input id="o-contato" type="tel" inputmode="tel" autocomplete="tel" required>
+      </label>
+      <label class="campo">E-mail
+        <input id="o-email" type="email" autocomplete="email" required>
+      </label>
+
+      <div class="form-secao">Endereço</div>
+      <div class="campo-linha">
+        <label class="campo campo-cep">CEP
+          <input id="o-cep" type="text" inputmode="numeric" placeholder="00000-000" autocomplete="postal-code" required>
+          <span class="cep-status" id="o-cep-status"></span>
+        </label>
+        <label class="campo">Número
+          <input id="o-numero" type="text" inputmode="numeric" autocomplete="address-line2" required>
+        </label>
+      </div>
+      <label class="campo">Endereço
+        <input id="o-endereco" type="text" autocomplete="address-line1" placeholder="Rua, avenida..." required>
+      </label>
+      <label class="campo">Complemento <span class="opc">(opcional)</span>
+        <input id="o-complemento" type="text">
+      </label>
+      <div class="campo-linha">
+        <label class="campo">Bairro
+          <input id="o-bairro" type="text" autocomplete="address-level3" required>
+        </label>
+        <label class="campo">Cidade
+          <input id="o-cidade" type="text" autocomplete="address-level2" required>
+        </label>
+      </div>
+      <label class="campo">Estado
+        <input id="o-estado" type="text" inputmode="text" maxlength="2" placeholder="UF" autocomplete="address-level1" required>
+      </label>
+
+      <div class="form-secao">O evento</div>
+      <div class="campo-linha">
+        <label class="campo">Data do casamento
+          <input id="o-data" type="date" required>
+        </label>
+        <label class="campo">Horário
+          <input id="o-horario" type="time" required>
+        </label>
+      </div>
+      <label class="campo">Local do evento
+        <input id="o-local" type="text" placeholder="Nome do espaço ou endereço" required>
+      </label>
+
+      <button class="cta" type="submit" id="o-enviar">Confirmar nossa data</button>
+      <p class="erro" id="o-erro" role="alert"></p>
+    </form>
+  </div>
+
+  <div id="sucesso" hidden>
+    <h1>Recebido!</h1>
+    <p class="sub">Vou revisar seus dados e já te mando o contrato pra assinar. Será uma honra eternizar esse momento.</p>
+    <a class="cta" href="/">Voltar pro início</a>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+<script src="/catalogo.js"></script>
+<script>
+(function(){
+  function el(id){ return document.getElementById(id); }
+
+  /* ---------- seleção vinda da home ----------
+     Só os ids viajam; nome e preço saem do catalogo.js. Sem seleção válida
+     não há o que contratar, então volta pra calculadora (replace pra não
+     empilhar no histórico e prender o botão voltar). */
+  var CHAVE = "JSF_ORCAMENTO";
+  var itens = [];
+  try {
+    var bruto = sessionStorage.getItem(CHAVE);
+    var ids = bruto ? (JSON.parse(bruto) || {}).ids : null;
+    if (Array.isArray(ids)) {
+      itens = ids
+        .filter(function(id){ return window.CATALOGO && window.CATALOGO[id]; })
+        .map(function(id){
+          var p = window.CATALOGO[id];
+          return { id: id, nome: p.nome, valor: p.preco };
+        });
+    }
+  } catch (e) { itens = []; }
+
+  var temPacote = itens.some(function(i){ return window.CATALOGO[i.id].grupo === "pacote"; });
+  if (!temPacote) { location.replace("/"); return; }
+
+  var total = itens.reduce(function(s, i){ return s + i.valor; }, 0);
+
+  /* ---------- WhatsApp com DDI ---------- */
+  var itiContato = null;
+  var inputContato = el("o-contato");
+  if (window.intlTelInput){
+    itiContato = window.intlTelInput(inputContato, {
+      initialCountry: "br",
+      preferredCountries: ["br", "us", "pt", "ar", "py", "es", "it"],
+      separateDialCode: true,
+      dropdownContainer: document.body,
+      utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
+    });
+  }
+  /* o intl-tel-input não formata ao vivo enquanto digita (só em getNumber/blur);
+     pra maioria dos clientes do Jordan (BR) aplicamos nossa própria máscara */
+  function formatarTelefoneBr(v){
+    var d = v.replace(/\D/g, "").slice(0, 11);
+    if (!d.length) return "";
+    if (d.length <= 2) return "(" + d;
+    var ddd = d.slice(0, 2), resto = d.slice(2);
+    if (d.length <= 10) return "(" + ddd + ") " + resto.slice(0, 4) + (resto.length > 4 ? "-" + resto.slice(4) : "");
+    return "(" + ddd + ") " + resto.slice(0, 5) + "-" + resto.slice(5);
+  }
+  inputContato.addEventListener("input", function(){
+    var pais = itiContato && itiContato.getSelectedCountryData();
+    if (!pais || pais.iso2 === "br") this.value = formatarTelefoneBr(this.value);
+  });
+  function valorContato(){
+    if (itiContato){
+      var completo = (itiContato.getNumber() || "").trim();
+      if (completo) return completo;
+      var nac = inputContato.value.trim();
+      if (!nac) return "";
+      var pais = itiContato.getSelectedCountryData();
+      return pais && pais.dialCode ? "+" + pais.dialCode + " " + nac : nac;
+    }
+    return inputContato.value.trim();
+  }
+
+  /* ---------- máscaras (CPF, CEP) ---------- */
+  function mascarar(valor, padrao){
+    var digitos = valor.replace(/\D/g, "");
+    var out = "", di = 0;
+    for (var i = 0; i < padrao.length && di < digitos.length; i++){
+      if (padrao[i] === "9") { out += digitos[di]; di++; }
+      else out += padrao[i];
+    }
+    return out;
+  }
+  function aplicarMascara(id, padrao){
+    el(id).addEventListener("input", function(){ this.value = mascarar(this.value, padrao); });
+  }
+  aplicarMascara("o-cpf-noivo", "999.999.999-99");
+  aplicarMascara("o-cpf-noiva", "999.999.999-99");
+  aplicarMascara("o-cep", "99999-999");
+
+  /* ---------- endereço via ViaCEP (gratuito, sem chave) ----------
+     Bairro/cidade/estado ficam SEMPRE visíveis (2026-07-28) — o link
+     "Confirmar bairro e cidade" que os revelava deixou de existir. O CEP só
+     adianta o preenchimento; os campos continuam editáveis à mão. */
+  var inputEndereco = el("o-endereco");
+  var cepStatus = el("o-cep-status");
+  var ultimoCepBuscado = "";
+
+  el("o-cep").addEventListener("input", function(){
+    var cep = this.value.replace(/\D/g, "");
+    if (cep.length !== 8 || cep === ultimoCepBuscado) return;
+    ultimoCepBuscado = cep;
+    cepStatus.textContent = "Buscando...";
+    fetch("https://viacep.com.br/ws/" + cep + "/json/")
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        cepStatus.textContent = "";
+        if (j.erro) return;
+        if (!inputEndereco.value) inputEndereco.value = j.logradouro || "";
+        el("o-bairro").value = j.bairro || "";
+        el("o-cidade").value = j.localidade || "";
+        el("o-estado").value = j.uf || "";
+        el("o-numero").focus();
+      })
+      .catch(function(){ cepStatus.textContent = ""; });
+  });
+
+  /* ---------- validação ---------- */
+  var formOrc = el("form-orcamento");
+  function soDigitos(v){ return String(v || "").replace(/\D/g, ""); }
+  function valorCampo(id){ return el(id).value.trim(); }
+
+  var CAMPOS_VALIDACAO = [
+    { id: "o-noivo", teste: function(v){ return !!v; }, msg: "Preencha o nome do noivo." },
+    { id: "o-noiva", teste: function(v){ return !!v; }, msg: "Preencha o nome da noiva." },
+    { id: "o-cpf-noivo", teste: function(v){ return soDigitos(v).length === 11; }, msg: "Confira o CPF (11 dígitos)." },
+    { id: "o-cpf-noiva", teste: function(v){ return soDigitos(v).length === 11; }, msg: "Confira o CPF (11 dígitos)." },
+    { id: "o-contato", teste: function(){ return !!valorContato(); }, msg: "Preencha o WhatsApp." },
+    { id: "o-email", teste: function(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }, msg: "Digite um e-mail válido." },
+    { id: "o-cep", teste: function(v){ return soDigitos(v).length === 8; }, msg: "Confira o CEP (8 dígitos)." },
+    { id: "o-numero", teste: function(v){ return !!v; }, msg: "Preencha o número." },
+    { id: "o-endereco", teste: function(v){ return !!v; }, msg: "Preencha o endereço." },
+    { id: "o-bairro", teste: function(v){ return !!v; }, msg: "Preencha o bairro." },
+    { id: "o-cidade", teste: function(v){ return !!v; }, msg: "Preencha a cidade." },
+    { id: "o-estado", teste: function(v){ return !!v; }, msg: "Preencha o estado." },
+    { id: "o-data", teste: function(v){ return !!v; }, msg: "Escolha a data do casamento." },
+    { id: "o-horario", teste: function(v){ return !!v; }, msg: "Escolha o horário." },
+    { id: "o-local", teste: function(v){ return !!v; }, msg: "Preencha o local do evento." }
+  ];
+
+  function limparErrosCampos(){
+    Array.prototype.forEach.call(formOrc.querySelectorAll(".campo-invalido"), function(l){ l.classList.remove("campo-invalido"); });
+    Array.prototype.forEach.call(formOrc.querySelectorAll(".campo-erro-msg"), function(m){ m.remove(); });
+  }
+  function marcarErroCampo(id, msg){
+    var campo = el(id);
+    var label = campo.closest(".campo");
+    label.classList.add("campo-invalido");
+    var msgEl = document.createElement("span");
+    msgEl.className = "campo-erro-msg";
+    msgEl.textContent = msg;
+    label.appendChild(msgEl);
+    campo.scrollIntoView({ block: "center", behavior: "smooth" });
+    setTimeout(function(){ campo.focus(); }, 280);
+  }
+  function validarFormulario(){
+    limparErrosCampos();
+    for (var i = 0; i < CAMPOS_VALIDACAO.length; i++){
+      var c = CAMPOS_VALIDACAO[i];
+      if (!c.teste(valorCampo(c.id))){ marcarErroCampo(c.id, c.msg); return false; }
+    }
+    return true;
+  }
+  formOrc.addEventListener("input", function(ev){
+    var label = ev.target.closest && ev.target.closest(".campo-invalido");
+    if (!label) return;
+    label.classList.remove("campo-invalido");
+    var msg = label.querySelector(".campo-erro-msg");
+    if (msg) msg.remove();
+  });
+
+  /* ---------- envio ---------- */
+  formOrc.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var erro = el("o-erro");
+    erro.textContent = "";
+    if (!validarFormulario()) return;
+
+    var botao = el("o-enviar");
+    botao.disabled = true;
+    botao.textContent = "Confirmando...";
+
+    fetch("/api/orcamento", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        noivo: valorCampo("o-noivo"),
+        noiva: valorCampo("o-noiva"),
+        cpfNoivo: soDigitos(valorCampo("o-cpf-noivo")),
+        cpfNoiva: soDigitos(valorCampo("o-cpf-noiva")),
+        contato: valorContato(),
+        email: valorCampo("o-email"),
+        cep: soDigitos(valorCampo("o-cep")),
+        endereco: valorCampo("o-endereco"),
+        numero: valorCampo("o-numero"),
+        complemento: valorCampo("o-complemento"),
+        bairro: valorCampo("o-bairro"),
+        cidade: valorCampo("o-cidade"),
+        estado: valorCampo("o-estado"),
+        dataEvento: valorCampo("o-data"),
+        horario: valorCampo("o-horario"),
+        local: valorCampo("o-local"),
+        itens: itens,
+        totalNumero: total,
+        entradaNumero: total * 0.3
+      })
+    }).then(function(r){
+      return r.json().then(function(j){ if (!r.ok) throw new Error(j.erro || "falha"); return j; });
+    }).then(function(){
+      /* a seleção já virou cliente: limpa pra um F5 não reenviar o mesmo orçamento */
+      try { sessionStorage.removeItem(CHAVE); } catch (e) {}
+      el("area-form").hidden = true;
+      el("sucesso").hidden = false;
+      window.scrollTo(0, 0);
+    }).catch(function(e){
+      erro.textContent = e.message === "falha"
+        ? "Não deu pra enviar agora. Tente de novo em instantes."
+        : e.message;
+    }).finally(function(){
+      botao.disabled = false;
+      botao.textContent = "Confirmar nossa data";
+    });
+  });
+})();
+</script>
+</body>
+</html>

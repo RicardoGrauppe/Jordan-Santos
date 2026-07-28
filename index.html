@@ -5,11 +5,13 @@
 
   PLACEHOLDERS / PENDÊNCIAS:
   - Telefone: usando +55 45 99907-7874 (link tel: no rodapé). Jordan vai migrar pro DDD 41 (Curitiba).
-  - CTA do resumo: "Enviar nossa data" abre um modal completo (casal, endereço com autocomplete de
-    CEP via ViaCEP, evento), em tela cheia no mobile, que cria o CLIENTE direto via /api/orcamento
-    (sem estágio de prospecção no meio; decisão de 2026-07-24: o link do site geralmente só é mandado
-    DEPOIS de uma reunião, pra quem já quer fechar). O Jordan só completa o que faltar e clica em
-    "enviar contrato" no /estudio.
+  - CTA do resumo: "Enviar nossa data" guarda os IDS escolhidos no sessionStorage (JSF_ORCAMENTO) e
+    manda pra /orcamento, que é o formulário completo (casal, endereço com autocomplete de CEP via
+    ViaCEP, evento) e cria o CLIENTE direto via /api/orcamento — sem estágio de prospecção no meio
+    (decisão de 2026-07-24: o link do site geralmente só é mandado DEPOIS de uma reunião, pra quem já
+    quer fechar). Era um modal aqui dentro até 2026-07-28; virou página porque como overlay a rolagem
+    vazava pra esta página atrás no celular e o botão voltar saía do site. O Jordan só completa o que
+    faltar e clica em "enviar contrato" no /estudio.
   - Contrato: dados vêm preenchidos pelo casal aqui; o Jordan confere na ficha do cliente em /estudio
     e gera o link de assinatura. O casal assina em /assinar (link tokenizado, revisão final + OTP).
   - Catálogo de produtos (preços/nomes): fonte única em /catalogo.js, também usada pelo /estudio.
@@ -29,7 +31,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.min.css">
 <style>
   :root{
     /* paleta oficial da marca (Diogo, 2026-07) */
@@ -588,6 +589,17 @@
   .cta.desativado{opacity:.35;pointer-events:none}
   button.cta{border:0;cursor:pointer;font-family:inherit;width:100%}
 
+  /* WhatsApp: ação secundária, sempre ativa (dá pra tirar dúvida sem ter
+     escolhido pacote). Contorno em vez de preenchido, pra não competir com o
+     CTA principal logo acima. */
+  .cta-whats{
+    background:none;
+    color:var(--accent);
+    border:1px solid var(--line);
+    margin-top:14px;
+  }
+  .cta-whats:hover{opacity:1;border-color:var(--accent)}
+
   .limpar{
     display:block;
     margin:22px auto 0;
@@ -599,76 +611,6 @@
   }
   .limpar:hover{border-color:var(--ink-soft)}
 
-  /* ---------- modal: enviar orçamento ---------- */
-  .modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
-  .modal[hidden]{display:none}
-  .modal-fundo{position:absolute;inset:0;background:rgba(29,29,27,.55);backdrop-filter:blur(2px)}
-  .modal-caixa{
-    position:relative;z-index:1;width:100%;max-width:500px;
-    background:var(--paper);border-radius:18px;padding:38px 34px 34px;
-    box-shadow:var(--sombra);max-height:calc(100vh - 40px);overflow-y:auto;
-  }
-  /* mobile: o formulário é longo (form de fechamento), ocupa a tela inteira em
-     vez de flutuar como cartão pequeno com fundo visível ao redor */
-  @media (max-width:640px){
-    .modal{padding:0}
-    .modal-caixa{
-      max-width:none;width:100%;height:100%;
-      border-radius:0;max-height:none;
-      padding:calc(30px + env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom));
-    }
-    .modal-x{top:calc(14px + env(safe-area-inset-top))}
-  }
-  .form-secao{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:22px 0 10px}
-  .form-secao:first-of-type{margin-top:0}
-  .campo-linha{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
-  .campo-linha .campo{margin-bottom:0}
-  @media (max-width:480px){.campo-linha{grid-template-columns:1fr}}
-  .campo-cep{position:relative}
-  .cep-status{position:absolute;right:14px;top:34px;font-size:11px;color:var(--ink-soft)}
-  .modal-x{
-    position:absolute;top:16px;right:18px;width:34px;height:34px;border-radius:50%;
-    font-size:22px;line-height:1;color:var(--ink-soft);background:none;border:0;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease;
-  }
-  .modal-x:hover{background:var(--line);color:var(--ink)}
-  .modal-caixa h2{font-family:var(--serif);color:var(--accent);margin:6px 0 0}
-  .modal-sub{color:var(--ink-soft);font-size:14.5px;line-height:1.55;margin-top:12px}
-  #form-orcamento{margin-top:24px}
-  .campo{display:block;font-size:12.5px;letter-spacing:.04em;color:var(--ink-soft);margin-bottom:16px}
-  .campo .opc{text-transform:none;letter-spacing:0;opacity:.7}
-  .campo input{
-    display:block;width:100%;margin-top:7px;padding:12px 14px;
-    font-family:inherit;font-size:15px;color:var(--ink);
-    background:var(--paper);border:1px solid var(--line);border-radius:10px;
-    -webkit-appearance:none;transition:border-color .15s ease,box-shadow .15s ease;
-  }
-  .campo input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
-  /* campo com erro: borda vermelha + mensagem embaixo, aparece só no submit */
-  .campo-invalido input{border-color:#A33B3B}
-  .campo-invalido input:focus{box-shadow:0 0 0 3px rgba(163,59,59,.12)}
-  .campo-erro-msg{display:block;color:#A33B3B;font-size:11.5px;margin-top:5px;letter-spacing:0}
-  /* link que revela bairro/cidade/CEP pra edição manual (some por padrão, o
-     autocomplete do endereço já preenche; abre sozinho se algo faltar) */
-  .link-detalhes{
-    display:inline-block;font-size:12px;color:var(--accent);text-decoration:underline;
-    text-underline-offset:2px;margin:-6px 0 16px;cursor:pointer;
-  }
-  .link-detalhes:hover{color:var(--accent-deep)}
-  /* input internacional de telefone (intl-tel-input) dentro do modal */
-  .campo .iti{width:100%;margin-top:7px;display:block}
-  .campo .iti input{margin-top:0}
-  .iti__country-list{font-family:var(--sans);font-size:14px;z-index:200}
-  #o-enviar{margin-top:6px}
-  #o-enviar:disabled{opacity:.5;pointer-events:none}
-  .modal-erro{color:#A33B3B;font-size:13.5px;text-align:center;margin-top:14px;min-height:18px}
-  #modal-sucesso{
-    text-align:center;min-height:100%;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-  }
-  #modal-sucesso[hidden]{display:none}
-  #modal-sucesso h2{font-size:30px}
-  #modal-sucesso .cta{margin-top:28px}
   .limpar:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 
   /* ---------- rodapé ---------- */
@@ -943,6 +885,9 @@
         Confirmo a disponibilidade da data direto com voc&ecirc;.
       </div>
       <button class="cta desativado" id="cta-enviar" type="button" aria-disabled="true">Enviar nossa data</button>
+      <a class="cta cta-whats" id="cta-whats"
+         href="https://wa.me/5545999077874?text=Oi%20Jordan!%20Vim%20pelo%20site%20e%20queria%20falar%20sobre%20o%20casamento."
+         target="_blank" rel="noopener">Chamar no WhatsApp</a>
       <button class="limpar" type="button" id="limpar">Limpar escolhas</button>
     </div>
   </div>
@@ -1006,97 +951,6 @@
   <p class="ano">&copy; <span id="ano"></span> Jordan Santos Fotografia</p>
 </footer>
 
-<!-- modal: enviar orçamento (cria o cliente já com os dados do contrato) -->
-<div class="modal" id="modal-orcamento" hidden>
-  <div class="modal-fundo" data-fechar></div>
-  <div class="modal-caixa" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
-    <button class="modal-x" type="button" data-fechar aria-label="Fechar">&times;</button>
-
-    <div id="modal-form-area">
-      <span class="dica">&Uacute;ltimo passo</span>
-      <h2 id="modal-titulo">Vamos confirmar nossa data</h2>
-      <p class="modal-sub">Preencha os dados de voc&ecirc;s dois. Assim que eu confirmar, j&aacute; te mando o contrato pra assinar.</p>
-      <form id="form-orcamento" novalidate>
-        <div class="form-secao">Voc&ecirc;s dois</div>
-        <label class="campo">Nome do noivo
-          <input id="o-noivo" type="text" autocomplete="given-name" required>
-        </label>
-        <label class="campo">Nome da noiva
-          <input id="o-noiva" type="text" autocomplete="given-name" required>
-        </label>
-        <div class="campo-linha">
-          <label class="campo">CPF do noivo
-            <input id="o-cpf-noivo" type="text" inputmode="numeric" placeholder="000.000.000-00" required>
-          </label>
-          <label class="campo">CPF da noiva
-            <input id="o-cpf-noiva" type="text" inputmode="numeric" placeholder="000.000.000-00" required>
-          </label>
-        </div>
-        <label class="campo">WhatsApp
-          <input id="o-contato" type="tel" inputmode="tel" autocomplete="tel" required>
-        </label>
-        <label class="campo">E-mail
-          <input id="o-email" type="email" autocomplete="email" required>
-        </label>
-
-        <div class="form-secao">Endere&ccedil;o</div>
-        <div class="campo-linha">
-          <label class="campo campo-cep">CEP
-            <input id="o-cep" type="text" inputmode="numeric" placeholder="00000-000" autocomplete="postal-code" required>
-            <span class="cep-status" id="o-cep-status"></span>
-          </label>
-          <label class="campo">N&uacute;mero
-            <input id="o-numero" type="text" inputmode="numeric" autocomplete="address-line2" required>
-          </label>
-        </div>
-        <label class="campo">Endere&ccedil;o
-          <input id="o-endereco" type="text" autocomplete="address-line1" placeholder="Rua, avenida..." required>
-        </label>
-        <label class="campo">Complemento <span class="opc">(opcional)</span>
-          <input id="o-complemento" type="text">
-        </label>
-        <button type="button" class="link-detalhes" id="btn-endereco-detalhes">Confirmar bairro e cidade</button>
-        <div id="endereco-detalhes" hidden>
-          <div class="campo-linha">
-            <label class="campo">Bairro
-              <input id="o-bairro" type="text" required>
-            </label>
-            <label class="campo">Cidade
-              <input id="o-cidade" type="text" autocomplete="address-level2" required>
-            </label>
-          </div>
-          <label class="campo">Estado
-            <input id="o-estado" type="text" inputmode="text" maxlength="2" placeholder="UF" autocomplete="address-level1" required>
-          </label>
-        </div>
-
-        <div class="form-secao">O evento</div>
-        <div class="campo-linha">
-          <label class="campo">Data do casamento
-            <input id="o-data" type="date" required>
-          </label>
-          <label class="campo">Hor&aacute;rio
-            <input id="o-horario" type="time" required>
-          </label>
-        </div>
-        <label class="campo">Local do evento
-          <input id="o-local" type="text" placeholder="Nome do espa&ccedil;o ou endere&ccedil;o" required>
-        </label>
-
-        <button class="cta" type="submit" id="o-enviar">Confirmar nossa data</button>
-        <p class="modal-erro" id="o-erro" role="alert"></p>
-      </form>
-    </div>
-
-    <div id="modal-sucesso" hidden>
-      <h2>Recebido!</h2>
-      <p class="modal-sub">Vou revisar seus dados e j&aacute; te mando o contrato pra assinar. Ser&aacute; uma honra eternizar esse momento.</p>
-      <button class="cta" type="button" data-fechar>Fechar</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
 <script src="/catalogo.js"></script>
 <script>
 (function(){
@@ -1283,255 +1137,21 @@
     document.querySelectorAll(".reveal").forEach(function(el){ el.classList.add("in"); });
   }
 
-  /* ---------- modal: enviar orçamento → cria o cliente já com os dados do contrato ---------- */
-  var modal = document.getElementById("modal-orcamento");
-  var formOrc = document.getElementById("form-orcamento");
-  var areaForm = document.getElementById("modal-form-area");
-  var areaSucesso = document.getElementById("modal-sucesso");
-
-  /* telefone internacional com bandeirinha + formato por país */
-  var itiContato = null;
-  var inputContato = document.getElementById("o-contato");
-  if (window.intlTelInput){
-    itiContato = window.intlTelInput(inputContato, {
-      initialCountry: "br",
-      preferredCountries: ["br", "us", "pt", "ar", "py", "es", "it"],
-      separateDialCode: true,
-      dropdownContainer: document.body,
-      utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js"
-    });
-  }
-  /* o intl-tel-input não formata ao vivo enquanto digita (só em getNumber/blur);
-     pra maioria dos clientes do Jordan (BR) aplicamos nossa própria máscara
-     "(99) 99999-9999", sem mexer na seleção de país/DDI ao lado */
-  function formatarTelefoneBr(v){
-    var d = v.replace(/\D/g, "").slice(0, 11);
-    if (!d.length) return "";
-    if (d.length <= 2) return "(" + d;
-    var ddd = d.slice(0, 2), resto = d.slice(2);
-    if (d.length <= 10) return "(" + ddd + ") " + resto.slice(0, 4) + (resto.length > 4 ? "-" + resto.slice(4) : "");
-    return "(" + ddd + ") " + resto.slice(0, 5) + "-" + resto.slice(5);
-  }
-  inputContato.addEventListener("input", function(){
-    var pais = itiContato && itiContato.getSelectedCountryData();
-    if (!pais || pais.iso2 === "br") this.value = formatarTelefoneBr(this.value);
-  });
-  function valorContato(){
-    if (itiContato){
-      var completo = (itiContato.getNumber() || "").trim();
-      if (completo) return completo;
-      var nac = inputContato.value.trim();
-      if (!nac) return "";
-      var pais = itiContato.getSelectedCountryData();
-      return pais && pais.dialCode ? "+" + pais.dialCode + " " + nac : nac;
-    }
-    return inputContato.value.trim();
-  }
-
-  /* ---------- máscaras ao vivo (CPF, CEP) ---------- */
-  function mascarar(valor, padrao){
-    /* padrao usa "9" pra cada dígito, o resto é literal: "999.999.999-99" */
-    var digitos = valor.replace(/\D/g, "");
-    var out = "", di = 0;
-    for (var i = 0; i < padrao.length && di < digitos.length; i++){
-      if (padrao[i] === "9") { out += digitos[di]; di++; }
-      else out += padrao[i];
-    }
-    return out;
-  }
-  function aplicarMascara(id, padrao){
-    document.getElementById(id).addEventListener("input", function(){
-      this.value = mascarar(this.value, padrao);
-    });
-  }
-  aplicarMascara("o-cpf-noivo", "999.999.999-99");
-  aplicarMascara("o-cpf-noiva", "999.999.999-99");
-  aplicarMascara("o-cep", "99999-999");
-
-  /* ---------- endereço: CEP guia o preenchimento via ViaCEP (gratuito, sem
-     chave, base oficial dos Correios). Bairro/Cidade/Estado ficam escondidos
-     até o CEP preencher ou o casal pedir pra digitar na mão (link abaixo). */
-  function el(id){ return document.getElementById(id); }
-  function revelarDetalhesEndereco(){ el("endereco-detalhes").hidden = false; }
-
-  var inputEndereco = el("o-endereco");
-  var cepStatus = el("o-cep-status");
-  var ultimoCepBuscado = "";
-
-  el("o-cep").addEventListener("input", function(){
-    var cep = this.value.replace(/\D/g, "");
-    if (cep.length !== 8 || cep === ultimoCepBuscado) return;
-    ultimoCepBuscado = cep;
-    cepStatus.textContent = "Buscando...";
-    fetch("https://viacep.com.br/ws/" + cep + "/json/")
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        cepStatus.textContent = "";
-        if (j.erro){ revelarDetalhesEndereco(); return; }
-        if (!inputEndereco.value) inputEndereco.value = j.logradouro || "";
-        el("o-bairro").value = j.bairro || "";
-        el("o-cidade").value = j.localidade || "";
-        el("o-estado").value = j.uf || "";
-        revelarDetalhesEndereco();
-        el("o-numero").focus();
-      })
-      .catch(function(){ cepStatus.textContent = ""; });
-  });
-
-  document.getElementById("btn-endereco-detalhes").addEventListener("click", function(){
-    revelarDetalhesEndereco();
-    document.getElementById("o-bairro").focus();
-  });
-
-  function abrirModal(){
-    document.getElementById("o-erro").textContent = "";
-    areaForm.hidden = false;
-    areaSucesso.hidden = true;
-    modal.hidden = false;
-    document.body.style.overflow = "hidden";
-    setTimeout(function(){ document.getElementById("o-noivo").focus(); }, 60);
-  }
-  function fecharModal(){
-    modal.hidden = true;
-    document.body.style.overflow = "";
-    formOrc.reset();
-    limparErrosCampos();
-    document.getElementById("endereco-detalhes").hidden = true;
-  }
-
+  /* ---------- CTA: leva a seleção pro formulário em /orcamento ----------
+     O formulário virou página própria (2026-07-28). Só os IDS viajam pelo
+     sessionStorage; /orcamento reconstrói nome e preço do catalogo.js, então
+     não há preço duplicado atravessando páginas. */
   document.getElementById("cta-enviar").addEventListener("click", function(){
-    if (!estado.pacote) return;
-    abrirModal();
-  });
-  modal.querySelectorAll("[data-fechar]").forEach(function(el){
-    el.addEventListener("click", fecharModal);
-  });
-  document.addEventListener("keydown", function(ev){
-    if (ev.key === "Escape" && !modal.hidden) fecharModal();
-  });
-
-  function soDigitos(v){ return String(v || "").replace(/\D/g, ""); }
-  function valorCampo(id){ return document.getElementById(id).value.trim(); }
-
-  /* validação campo a campo: no erro, foca + rola até o primeiro campo que falta
-     e mostra uma mensagem vermelha ali, em vez de só um aviso genérico embaixo */
-  var CAMPOS_ENDERECO_OCULTOS = ["o-bairro", "o-cidade", "o-estado"];
-  var CAMPOS_VALIDACAO = [
-    { id: "o-noivo", teste: function(v){ return !!v; }, msg: "Preencha o nome do noivo." },
-    { id: "o-noiva", teste: function(v){ return !!v; }, msg: "Preencha o nome da noiva." },
-    { id: "o-cpf-noivo", teste: function(v){ return soDigitos(v).length === 11; }, msg: "Confira o CPF (11 dígitos)." },
-    { id: "o-cpf-noiva", teste: function(v){ return soDigitos(v).length === 11; }, msg: "Confira o CPF (11 dígitos)." },
-    { id: "o-contato", teste: function(){ return !!valorContato(); }, msg: "Preencha o WhatsApp." },
-    { id: "o-email", teste: function(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }, msg: "Digite um e-mail válido." },
-    { id: "o-cep", teste: function(v){ return soDigitos(v).length === 8; }, msg: "Confira o CEP (8 dígitos)." },
-    { id: "o-numero", teste: function(v){ return !!v; }, msg: "Preencha o número." },
-    { id: "o-endereco", teste: function(v){ return !!v; }, msg: "Preencha o endereço." },
-    { id: "o-bairro", teste: function(v){ return !!v; }, msg: "Preencha o bairro." },
-    { id: "o-cidade", teste: function(v){ return !!v; }, msg: "Preencha a cidade." },
-    { id: "o-estado", teste: function(v){ return !!v; }, msg: "Preencha o estado." },
-    { id: "o-data", teste: function(v){ return !!v; }, msg: "Escolha a data do casamento." },
-    { id: "o-horario", teste: function(v){ return !!v; }, msg: "Escolha o horário." },
-    { id: "o-local", teste: function(v){ return !!v; }, msg: "Preencha o local do evento." }
-  ];
-
-  function limparErrosCampos(){
-    Array.prototype.forEach.call(formOrc.querySelectorAll(".campo-invalido"), function(l){ l.classList.remove("campo-invalido"); });
-    Array.prototype.forEach.call(formOrc.querySelectorAll(".campo-erro-msg"), function(m){ m.remove(); });
-  }
-  function marcarErroCampo(id, msg){
-    var campo = document.getElementById(id);
-    if (CAMPOS_ENDERECO_OCULTOS.indexOf(id) !== -1) revelarDetalhesEndereco();
-    var label = campo.closest(".campo");
-    label.classList.add("campo-invalido");
-    var msgEl = document.createElement("span");
-    msgEl.className = "campo-erro-msg";
-    msgEl.textContent = msg;
-    label.appendChild(msgEl);
-    campo.scrollIntoView({ block: "center", behavior: "smooth" });
-    setTimeout(function(){ campo.focus(); }, 280);
-  }
-  function validarFormulario(){
-    limparErrosCampos();
-    for (var i = 0; i < CAMPOS_VALIDACAO.length; i++){
-      var c = CAMPOS_VALIDACAO[i];
-      if (!c.teste(valorCampo(c.id))){
-        marcarErroCampo(c.id, c.msg);
-        return false;
-      }
-    }
-    return true;
-  }
-  /* some com o vermelho assim que o casal começa a corrigir aquele campo */
-  formOrc.addEventListener("input", function(ev){
-    var label = ev.target.closest && ev.target.closest(".campo-invalido");
-    if (!label) return;
-    label.classList.remove("campo-invalido");
-    var msg = label.querySelector(".campo-erro-msg");
-    if (msg) msg.remove();
-  });
-
-  formOrc.addEventListener("submit", function(ev){
-    ev.preventDefault();
-    var erro = document.getElementById("o-erro");
-    erro.textContent = "";
-
-    if (!validarFormulario()) return;
-
-    var dados = {
-      noivo: valorCampo("o-noivo"),
-      noiva: valorCampo("o-noiva"),
-      cpfNoivo: soDigitos(valorCampo("o-cpf-noivo")),
-      cpfNoiva: soDigitos(valorCampo("o-cpf-noiva")),
-      contato: valorContato(),
-      email: valorCampo("o-email"),
-      cep: soDigitos(valorCampo("o-cep")),
-      endereco: valorCampo("o-endereco"),
-      numero: valorCampo("o-numero"),
-      complemento: valorCampo("o-complemento"),
-      bairro: valorCampo("o-bairro"),
-      cidade: valorCampo("o-cidade"),
-      estado: valorCampo("o-estado"),
-      dataEvento: valorCampo("o-data"),
-      horario: valorCampo("o-horario"),
-      local: valorCampo("o-local")
-    };
-
     var resumo = montarResumo();
-    if (!resumo){ erro.textContent = "Escolha um pacote antes de enviar."; return; }
-
-    var botao = document.getElementById("o-enviar");
-    botao.disabled = true;
-    botao.textContent = "Confirmando...";
-    erro.textContent = "";
-
-    fetch("/api/orcamento", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        noivo: dados.noivo, noiva: dados.noiva,
-        cpfNoivo: dados.cpfNoivo, cpfNoiva: dados.cpfNoiva,
-        contato: dados.contato, email: dados.email,
-        cep: dados.cep, endereco: dados.endereco, numero: dados.numero,
-        complemento: dados.complemento, bairro: dados.bairro, cidade: dados.cidade, estado: dados.estado,
-        dataEvento: dados.dataEvento, horario: dados.horario, local: dados.local,
-        itens: resumo.itens,
-        totalNumero: resumo.total,
-        entradaNumero: resumo.total * 0.3
-      })
-    }).then(function(r){
-      return r.json().then(function(j){ if (!r.ok) throw new Error(j.erro || "falha"); return j; });
-    }).then(function(){
-      areaForm.hidden = true;
-      areaSucesso.hidden = false;
-    }).catch(function(e){
-      erro.textContent = e.message === "falha"
-        ? "Não deu pra enviar agora. Tente de novo em instantes."
-        : e.message;
-    }).finally(function(){
-      botao.disabled = false;
-      botao.textContent = "Confirmar nossa data";
-    });
+    if (!resumo) return;
+    try {
+      sessionStorage.setItem("JSF_ORCAMENTO", JSON.stringify({
+        ids: resumo.itens.map(function(i){ return i.id; })
+      }));
+    } catch (e) { /* sessionStorage bloqueado: /orcamento manda de volta pra cá */ }
+    location.href = "/orcamento";
   });
+
 
   document.getElementById("ano").textContent = new Date().getFullYear();
   render();
