@@ -27,7 +27,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="/img/icone-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/img/icone-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="/img/icone-180.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#003646">
+<meta name="apple-mobile-web-app-title" content="Jordan Santos">
 <title>Confirmar nossa data | Jordan Santos Fotografia</title>
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,6 +42,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.min.css">
 <style>
   :root{
+    /* faixas seguras do iPhone (notch em cima, barrinha de home embaixo).
+       Só devolvem valor porque o viewport usa viewport-fit=cover. Em variável
+       pra ficarem legíveis e testáveis num só lugar. */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
     --paper:#FFFFFF;
     --ink:#1D1D1B;
     --ink-soft:#706F6F;
@@ -57,7 +68,7 @@
 
   .pagina{
     max-width:520px;margin:0 auto;
-    padding:calc(38px + env(safe-area-inset-top)) 22px calc(48px + env(safe-area-inset-bottom));
+    padding:calc(38px + var(--sat)) 22px calc(48px + var(--sab));
   }
   .voltar{
     display:block;width:fit-content;font-size:12.5px;color:var(--ink-soft);

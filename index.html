@@ -26,13 +26,24 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="/img/icone-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/img/icone-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="/img/icone-180.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#003646">
+<meta name="apple-mobile-web-app-title" content="Jordan Santos">
 <title>Portf&oacute;lio | Jordan Santos Fotografia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root{
+    /* faixas seguras do iPhone (notch em cima, barrinha de home embaixo).
+       Só devolvem valor porque o viewport usa viewport-fit=cover. Em variável
+       pra ficarem legíveis e testáveis num só lugar. */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
     /* paleta oficial da marca (Diogo, 2026-07) */
     --paper:#FFFFFF;
     --ink:#1D1D1B;
@@ -618,7 +629,7 @@
     background:var(--noir);
     color:#D8D4CE;
     text-align:center;
-    padding:110px 24px 70px;
+    padding:110px 24px calc(70px + var(--sab));
   }
   .fim img{width:270px;margin:0 auto 44px}
   .fim p{font-size:15px;max-width:440px;margin:0 auto 40px;line-height:2}

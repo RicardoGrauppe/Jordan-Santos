@@ -213,10 +213,18 @@ export default async function handler(req, res) {
       }
       const ativos = await rest(
         "contratos?cliente_id=eq." + id +
-        "&status=eq.rascunho&select=id&order=criado_em.desc&limit=1"
+        "&status=eq.rascunho&select=id,jordan_confirmado_em&order=criado_em.desc&limit=1"
       );
       const contrato = ativos && ativos[0];
       if (!contrato) return res.status(404).json({ erro: "gere o contrato antes de confirmar" });
+      /* UMA assinatura do Jordan por contrato. Trocar a assinatura depois de
+         assinado mudaria o documento que a trilha de auditoria já registra —
+         pra assinar de novo, cancele o contrato e gere outro. (A trava
+         equivalente do casal vive em api/assinatura.js: 409 "contrato já
+         assinado".) */
+      if (contrato.jordan_confirmado_em) {
+        return res.status(409).json({ erro: "este contrato já foi assinado por você" });
+      }
 
       await rest("contratos?id=eq." + contrato.id, {
         method: "PATCH",

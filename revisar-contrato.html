@@ -17,7 +17,13 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="/img/icone-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/img/icone-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="/img/icone-180.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#003646">
+<meta name="apple-mobile-web-app-title" content="Jordan Santos">
 <meta name="robots" content="noindex, nofollow">
 <title>Revisar contrato | Jordan Santos Fotografia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,6 +31,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600&family=Jost:wght@300;400;500&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
 <style>
   :root{
+    /* faixas seguras do iPhone (notch em cima, barrinha de home embaixo).
+       Só devolvem valor porque o viewport usa viewport-fit=cover. Em variável
+       pra ficarem legíveis e testáveis num só lugar. */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
     --paper:#FFFFFF; --ink:#1D1D1B; --ink-soft:#706F6F;
     --accent:#003646; --accent-deep:#4F6278; --noir:#1D1D1B;
     --line:#E8E1DC; --soft:#F6F3F0; --erro:#A33B3B; --ok:#2E6B4F;
@@ -35,7 +46,7 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--soft);color:var(--ink);font-family:var(--sans);font-weight:400;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
-  .envelope{max-width:820px;margin:0 auto;padding:28px 18px 80px}
+  .envelope{max-width:820px;margin:0 auto;padding:calc(28px + var(--sat)) 18px calc(80px + var(--sab))}
   .topo{text-align:center;margin-bottom:18px}
   .topo h1{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);letter-spacing:.02em}
   .topo p{color:var(--ink-soft);font-size:14px;margin-top:6px}
@@ -96,6 +107,18 @@
   .ja-confirmado{border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;background:#FBFAF8}
   .ja-confirmado img{max-height:80px;max-width:280px}
 
+  /* link pro casal, logo abaixo da assinatura */
+  #link-casal{
+    width:100%;margin-top:18px;padding:12px 14px;
+    border:1px solid var(--line);border-radius:10px;background:var(--soft);
+    font:inherit;font-size:13px;color:var(--ink-soft);
+  }
+  .voltar-estudio{
+    display:block;text-align:center;margin-top:18px;
+    font-size:13px;color:var(--ink-soft);text-decoration:none;
+  }
+  .voltar-estudio:hover{color:var(--accent)}
+
   /* ---------- mobile: nada de zoom ao focar campo ----------
      O Safari do iOS dá zoom automático em qualquer input/select/textarea com
      fonte menor que 16px assim que ele recebe foco — e depois não volta, o que
@@ -139,13 +162,21 @@
       </div>
     </div>
 
-    <!-- já confirmado nesta sessão de rascunho -->
+    <!-- assinado: o link pro casal sai aqui mesmo, sem passar pelo Estúdio.
+         Não existe "assinar de novo": um contrato aceita UMA assinatura do
+         Jordan e UMA do casal (o servidor recusa a segunda). -->
     <div class="painel" id="painel-ja-confirmado" hidden>
-      <h2>Você já confirmou este contrato ✓</h2>
-      <p class="sub">Pode reabrir e assinar de novo se quiser trocar. Pra mandar pro casal, volte pro Estúdio e clique em "Enviar pro cliente".</p>
+      <h2 id="titulo-assinado">Contrato assinado ✓</h2>
+      <p class="sub" id="sub-assinado">Agora é só mandar o link pro casal. Quem tem o link consegue assinar, então mande direto pra eles.</p>
       <div class="ja-confirmado" id="preview-confirmado"></div>
-      <button type="button" class="botao botao-1" id="btn-refazer" style="background:none;color:var(--accent);border:1px solid var(--accent)">Assinar de novo</button>
-      <p style="margin-top:16px;text-align:center"><a href="/estudio">&larr; Voltar pro Estúdio</a></p>
+
+      <div id="bloco-link" hidden>
+        <input type="text" id="link-casal" readonly aria-label="Link pro casal assinar">
+        <button type="button" class="botao botao-1" id="btn-copiar-link">Copiar mensagem</button>
+        <p class="aviso" id="aviso-link"></p>
+      </div>
+
+      <a class="voltar-estudio" href="/estudio">&larr; Voltar pro Estúdio</a>
     </div>
 
     <!-- painel de assinatura do Jordan -->
@@ -302,16 +333,106 @@
     return canvas.toDataURL("image/png");
   }
 
-  function mostrarJaConfirmado(dataurl){
+  function mostrarJaConfirmado(dataurl, statusContrato){
     el("painel-assinar").hidden = true;
     el("painel-ja-confirmado").hidden = false;
     el("preview-confirmado").innerHTML = '<img src="' + dataurl + '" alt="assinatura do Jordan">';
     var area = el("assinatura-jordan-area");
     area.innerHTML = '<img src="' + dataurl + '" alt="assinatura Jordan Santos" style="max-height:80px;max-width:280px;display:block;margin:0 auto 6px"><p class="linha-ass" style="margin-top:0">Jordan Santos &ndash; CONTRATADA</p>';
+
+    /* casal já assinou: não há link pra mandar, e a ação de liberar nem aceita
+       contrato nesse status */
+    if (statusContrato === "assinado"){
+      el("titulo-assinado").textContent = "Contrato assinado pelos dois ✓";
+      el("sub-assinado").textContent = "O casal já assinou. A via em PDF fica com vocês e com eles.";
+      el("bloco-link").hidden = true;
+      return;
+    }
+    carregarLinkDoCasal();
   }
-  el("btn-refazer").addEventListener("click", function(){
-    el("painel-ja-confirmado").hidden = true;
-    el("painel-assinar").hidden = false;
+
+  /* ---------- link pro casal ----------
+     Sai aqui mesmo, logo depois de assinar — antes era preciso voltar pro
+     Estúdio pra pegar. Usa a mesma ação do Estúdio ("liberar-contrato-cliente"),
+     que é idempotente: na primeira vez marca o contrato como enviado, e nas
+     seguintes só devolve o link de novo. */
+  var mensagemDoCasal = "";
+
+  function carregarLinkDoCasal(){
+    var aviso = el("aviso-link");
+    aviso.className = "aviso"; aviso.textContent = "Gerando o link...";
+    fetch("/api/estudio", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acao: "liberar-contrato-cliente", id: clienteId })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(resp){
+        if (!resp.ok) throw new Error(resp.j.erro || "falha");
+        mensagemDoCasal = resp.j.mensagem || resp.j.link;
+        el("link-casal").value = resp.j.link;
+        el("bloco-link").hidden = false;
+        aviso.textContent = "";
+      })
+      .catch(function(e){
+        aviso.className = "aviso erro";
+        aviso.textContent = e.message === "falha"
+          ? "Não deu pra gerar o link agora. Volte pro Estúdio e tente por lá."
+          : e.message;
+      });
+  }
+
+  /* Copia de verdade em qualquer cenário.
+     navigator.clipboard só existe em contexto seguro (HTTPS ou localhost) — no
+     celular, testando por http://192.168.1.183, ele simplesmente não está lá. Daí
+     o caminho legado com execCommand, que exige um elemento selecionável no DOM
+     e, no Safari do iOS, que ele seja editável (readOnly bloqueia a seleção).
+     Roda tudo de forma SÍNCRONA: execCommand só funciona dentro do gesto. */
+  function copiarTexto(texto){
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(texto).then(function(){ return true; },
+                                                       function(){ return copiaLegado(texto); });
+    }
+    return Promise.resolve(copiaLegado(texto));
+  }
+
+  function copiaLegado(texto){
+    var ta = document.createElement("textarea");
+    ta.value = texto;
+    ta.setAttribute("aria-hidden", "true");
+    /* fora da tela sem display:none nem visibility:hidden — os dois impedem a
+       seleção. E sem readOnly: o Safari do iOS não seleciona campo somente-leitura. */
+    ta.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:0;opacity:0";
+    document.body.appendChild(ta);
+
+    var focoAnterior = document.activeElement;
+    /* campo de formulário usa a seleção PRÓPRIA dele (focus + select), não
+       Range/Selection do documento — Range só enxerga nós de texto, e o valor
+       de um textarea não é um deles. */
+    ta.focus({ preventScroll: true });
+    ta.select();
+    ta.setSelectionRange(0, texto.length);   /* o iOS ignora select() sozinho */
+
+    var copiou = false;
+    try { copiou = document.execCommand("copy"); } catch (e) { copiou = false; }
+
+    document.body.removeChild(ta);
+    if (focoAnterior && focoAnterior.focus) focoAnterior.focus({ preventScroll: true });
+    return copiou;
+  }
+
+  el("btn-copiar-link").addEventListener("click", function(){
+    var aviso = el("aviso-link");
+    copiarTexto(mensagemDoCasal).then(function(copiou){
+      if (copiou){
+        aviso.className = "aviso ok";
+        aviso.textContent = "Mensagem copiada. É só colar pro casal.";
+      } else {
+        /* último recurso: deixa o link selecionado pra copiar na mão */
+        el("link-casal").focus();
+        el("link-casal").setSelectionRange(0, el("link-casal").value.length);
+        aviso.className = "aviso";
+        aviso.textContent = "Não consegui copiar sozinho — o link está selecionado aí em cima.";
+      }
+    });
   });
 
   el("btn-confirmar").addEventListener("click", function(){
@@ -340,7 +461,7 @@
     }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
       .then(function(resp){
         if (!resp.ok) throw new Error(resp.j.erro || "falha");
-        aviso.className = "aviso ok"; aviso.textContent = "Confirmado! Pode voltar pro Estúdio e enviar pro cliente.";
+        aviso.className = "aviso"; aviso.textContent = "";
         mostrarJaConfirmado(dataurl);
       }).catch(function(e){
         aviso.className = "aviso erro";
@@ -361,8 +482,12 @@
     .then(function(resp){
       if (!resp.ok) { mostrarEstado("estado-erro", resp.j.erro || "Não foi possível abrir este contrato."); return; }
       var contrato = resp.j.contrato;
-      if (!contrato || contrato.status !== "rascunho"){
-        mostrarEstado("estado-erro", "Não há um contrato em rascunho pra revisar. Gere um novo em \"Gerar contrato\", no Estúdio.");
+      /* Reabrir a página depois de assinar precisa funcionar: ao liberar o link
+         o contrato deixa de ser "rascunho" e vira "enviado". Antes só rascunho
+         passava aqui, então o Jordan perderia a tela onde está o link. */
+      var ABERTOS = ["rascunho", "enviado", "visualizado", "assinado"];
+      if (!contrato || ABERTOS.indexOf(contrato.status) === -1){
+        mostrarEstado("estado-erro", "Não há contrato ativo pra revisar. Gere um novo em \"Gerar contrato\", no Estúdio.");
         return;
       }
       renderContrato(contrato.snapshot || {});
@@ -370,7 +495,10 @@
       if (contrato.jordan_confirmado_em && contrato.jordan_assinatura_dataurl){
         el("nome-cursiva").value = contrato.jordan_assinatura_nome || "Jordan Santos";
         el("preview-cursiva-texto").textContent = el("nome-cursiva").value;
-        mostrarJaConfirmado(contrato.jordan_assinatura_dataurl);
+        mostrarJaConfirmado(contrato.jordan_assinatura_dataurl, contrato.status);
+      } else if (contrato.status !== "rascunho"){
+        /* estado impossível pelo fluxo normal (liberado sem assinatura) */
+        mostrarEstado("estado-erro", "Este contrato foi liberado sem a sua assinatura. Cancele e gere outro no Estúdio.");
       }
     })
     .catch(function(e){ if (e.message !== "parar") mostrarEstado("estado-erro", "Não foi possível abrir este contrato. Tente de novo."); });

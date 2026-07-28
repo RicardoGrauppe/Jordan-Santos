@@ -11,7 +11,21 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="/img/icone-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/img/icone-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="/img/icone-180.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#003646">
+<meta name="apple-mobile-web-app-title" content="Jordan Santos">
+<!-- Salvo na tela de início, o Estúdio abre SEM a barra do Safari — é o que dá
+     cara de app. Só aqui: nas páginas do casal (/orcamento, /assinar) a barra do
+     navegador é útil, o botão voltar dela faz parte da navegação deles.
+     status-bar-style "default" (texto escuro): o header é claro, então
+     "black-translucent" deixaria a hora branca sobre fundo branco. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex, nofollow">
 <title>Estúdio | Jordan Santos Fotografia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,6 +33,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
+    /* faixas seguras do iPhone (notch em cima, barrinha de home embaixo).
+       Só devolvem valor porque o viewport usa viewport-fit=cover. Em variável
+       pra ficarem legíveis e testáveis num só lugar. */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
     --paper:#FFFFFF;
     --ink:#1F2329;
     --ink-soft:#6B7280;
@@ -184,7 +203,7 @@
   /* ---------- topo do estúdio (header fino, full-width, no topo) ---------- */
   .topo-estudio{
     display:grid;grid-template-columns:1fr minmax(0,420px) 1fr;align-items:center;gap:16px;
-    height:var(--topo-altura);padding:0 20px;border-bottom:1px solid var(--line);
+    min-height:var(--topo-altura);padding:var(--sat) 20px 0;border-bottom:1px solid var(--line);
     position:sticky;top:0;background:var(--paper);z-index:20;
   }
   .topo-logo{height:28px;width:auto;justify-self:start}
@@ -299,6 +318,62 @@
   .botao-fantasma:hover{background:var(--soft);color:var(--ink)}
   .botao-primario.perigo{background:var(--erro);box-shadow:0 1px 2px rgba(163,59,59,.25)}
   .botao-primario.perigo:hover{background:#8F3333}
+
+  /* ---------- ações do contrato (ficha do cliente) ----------
+     Os dois botões tinham peso visual diferente (um fantasma, um primário) e
+     alturas que não batiam. Agora dividem a linha em partes iguais, mesma
+     altura e mesmo raio; no celular empilham. */
+  .acoes-contrato{display:flex;gap:10px;flex-wrap:wrap}
+  .acoes-contrato > *{
+    flex:1 1 150px;justify-content:center;min-height:42px;margin:0;
+    /* borda transparente no primário: sem ela ele fica 1px mais baixo que o
+       secundário, que tem borda de verdade */
+    border:1px solid transparent;
+  }
+  .botao-secundario{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 16px;border-radius:10px;
+    background:var(--paper);color:var(--accent);border:1px solid var(--line);
+    font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap;
+    transition:border-color .15s ease,background .15s ease;cursor:pointer;
+  }
+  .botao-secundario:hover{border-color:var(--accent);background:var(--soft)}
+  .acoes-contrato svg{width:16px;height:16px;flex-shrink:0}
+  @media (max-width:520px){
+    .acoes-contrato > *{flex:1 1 100%}
+  }
+
+  /* ---------- pop-up do link pro casal ----------
+     Fechar virou X no canto; copiar virou ícone dentro do próprio campo. */
+  .modal-x{
+    position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;line-height:1;color:var(--ink-soft);background:none;border:0;cursor:pointer;
+    transition:background .15s ease,color .15s ease;
+  }
+  .modal-x:hover{background:var(--soft);color:var(--ink)}
+  /* espaço pro X não encostar no título */
+  #modal-link h3{padding-right:34px}
+
+  .campo-copiavel{position:relative;margin-top:16px}
+  #ml-link{
+    width:100%;padding:12px 48px 12px 13px;   /* folga à direita pro botão */
+    border:1px solid var(--line);border-radius:10px;background:var(--soft);
+    font:inherit;font-size:13px;color:var(--ink-soft);
+    text-overflow:ellipsis;
+  }
+  .btn-copiar{
+    position:absolute;top:50%;right:6px;transform:translateY(-50%);
+    width:34px;height:34px;border-radius:8px;border:0;background:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink-soft);transition:background .15s ease,color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-copiar:hover{background:var(--paper);color:var(--accent)}
+  .btn-copiar svg{width:17px;height:17px}
+  .btn-copiar.copiou{color:var(--ok)}
+  .btn-copiar svg[hidden]{display:none}
+  #ml-aviso{display:block;margin:10px 0 0;min-height:18px;color:var(--ok);font-weight:600}
   .dropdown-avatar a svg,
   .dropdown-avatar button svg{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
   .dropdown-avatar .item-sair svg{color:var(--erro)}
@@ -660,7 +735,7 @@
     position:fixed;inset:0;z-index:60;background:var(--paper);
     display:flex;flex-direction:column;
     transform:translateY(100%);transition:transform .26s ease;
-    padding-top:env(safe-area-inset-top);
+    padding-top:var(--sat);
   }
   .tela-mobile[hidden]{display:none}
   .tela-mobile.aberta{transform:translateY(0)}
@@ -677,7 +752,7 @@
   }
   .tela-mobile-corpo{
     flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-    padding:10px 14px calc(20px + env(safe-area-inset-bottom));
+    padding:10px 14px calc(20px + var(--sab));
   }
   .busca-mobile-campo{
     display:flex;align-items:center;gap:10px;flex:1;min-width:0;
@@ -751,6 +826,42 @@
     }
   }
 
+  /* ---------- comportamento de app no toque (≤820px) ----------
+     Quatro coisas que denunciam "site" quando se usa no celular:
+       1. o flash cinza do toque em cada botão;
+       2. a página balançando (bounce) e o pull-to-refresh recarregando sem querer;
+       3. o texto da moldura sendo selecionado / a lupa aparecendo ao segurar;
+       4. nenhum retorno visual ao tocar, porque :hover não existe no toque.
+     Nada disso vale pro conteúdo: campos, valores e nomes seguem selecionáveis
+     — copiar o telefone de um cliente tem que continuar funcionando. */
+  @media (max-width:820px){
+    *{-webkit-tap-highlight-color:transparent}
+    html{overscroll-behavior:none}
+
+    .topo-estudio,
+    .navbar-mobile,
+    .tela-mobile-topo,
+    .pagina-topo,
+    .botao-primario,
+    .botao-secundario,
+    .botao-fantasma,
+    .aba{
+      -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    }
+
+    /* retorno de toque: no celular quem confirma o clique é o :active */
+    .navbar-mobile button svg{transition:transform .12s ease}
+    .navbar-mobile button:active{background:var(--soft)}
+    .navbar-mobile button:active svg{transform:scale(.9)}
+    tbody tr:active{background:var(--soft)}
+    .botao-primario:active,
+    .botao-secundario:active,
+    .botao-fantasma:active,
+    .busca-res:active,
+    .notif-item:active{transform:scale(.985);opacity:.9}
+    .btn-copiar:active{background:var(--soft)}
+  }
+
   /* ---------- navbar mobile ----------
      Até 820px o estúdio troca "header cheio + sidebar" por "header só com a
      logo + navbar de 5 ícones no rodapé". Vem depois das outras media queries
@@ -760,7 +871,9 @@
   @media (max-width:820px){
     /* header: só a logo, centralizada (o justify-self:start da regra base
        vence o justify-items do grid, então sobrescrevo na própria logo) */
-    .topo-estudio{grid-template-columns:1fr;padding:0 16px;z-index:50}
+    /* padding-top com --sat: com viewport-fit=cover o header fica sob a barra
+       de status do iPhone se não reservar a faixa */
+    .topo-estudio{grid-template-columns:1fr;padding:var(--sat) 16px 0;z-index:50}
     .topo-estudio .topo-logo{justify-self:center}
     .topo-estudio .busca-topo{display:none}
     /* Os botões do header somem, mas o CONTAINER fica no DOM: os dropdowns de
@@ -770,13 +883,17 @@
     .topo-estudio-acoes .botao-notificacao,
     .menu-avatar > button{display:none}
 
-    .conteudo{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+    /* --sab é a faixa do indicador de home do iPhone (a "barrinha"). Só vale
+       diferente de zero porque o viewport tem viewport-fit=cover; sem ele o
+       env() devolve 0 e a navbar encosta na borda. Fica em variável pra dar
+       pra conferir o espaçamento fora de um iPhone. */
+    .conteudo{padding-bottom:calc(78px + var(--sab))}
 
     .navbar-mobile{
       display:grid;grid-template-columns:repeat(5,1fr);
       position:fixed;left:0;right:0;bottom:0;z-index:40;
       background:var(--paper);border-top:1px solid var(--line);
-      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+      padding:6px 4px calc(10px + var(--sab));
     }
     .navbar-mobile button{
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -801,7 +918,7 @@
     .dropdown-notificacao,
     .dropdown-avatar{
       position:fixed;top:auto;left:12px;right:12px;width:auto;max-width:none;
-      bottom:calc(84px + env(safe-area-inset-bottom));
+      bottom:calc(84px + var(--sab));
       max-height:60vh;overflow-y:auto;pointer-events:auto;
     }
   }
@@ -1094,11 +1211,17 @@
         </div>
         <div id="acoes-contrato-pendente" hidden style="margin-top:18px">
           <p id="aviso-assine-primeiro" hidden style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.5">
-            Abra a revis&atilde;o e assine pra liberar o envio ao casal.
+            Abra o contrato e assine pra liberar o link do casal.
           </p>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <a href="#" id="link-revisar-contrato" target="_blank" rel="noopener" class="botao-fantasma link">Abrir revisão</a>
-            <button type="button" class="botao-primario" id="btn-enviar-cliente" hidden>Pegar link pro cliente</button>
+          <div class="acoes-contrato">
+            <button type="button" class="botao-primario" id="btn-enviar-cliente" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
+              Copiar link
+            </button>
+            <a href="#" id="link-revisar-contrato" class="botao-secundario">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"></path><path d="M21 3l-9 9"></path><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"></path></svg>
+              Abrir contrato
+            </a>
           </div>
         </div>
       </div>
@@ -1189,15 +1312,17 @@
 <div class="modal-confirm" id="modal-link" hidden>
   <div class="modal-confirm-fundo" data-fechar-link></div>
   <div class="modal-confirm-caixa" role="dialog" aria-modal="true" aria-labelledby="ml-titulo">
+    <button type="button" class="modal-x" data-fechar-link aria-label="Fechar">&times;</button>
     <h3 id="ml-titulo">Link pro casal assinar</h3>
     <p>Mande este link pro casal. Quem tem o link consegue assinar, ent&atilde;o mande direto pra eles.</p>
-    <input type="text" id="ml-link" readonly style="width:100%;margin:16px 0 4px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13px;color:var(--ink-soft);background:var(--soft)">
-    <div class="modal-confirm-acoes">
-      <button type="button" class="botao-fantasma" data-fechar-link>Fechar</button>
-      <button type="button" class="botao-fantasma" id="ml-copiar">Copiar mensagem</button>
-      <a href="#" id="ml-whats" target="_blank" rel="noopener" class="botao-primario">Abrir no WhatsApp</a>
+    <div class="campo-copiavel">
+      <input type="text" id="ml-link" readonly aria-label="Link pro casal assinar">
+      <button type="button" id="ml-copiar" class="btn-copiar" aria-label="Copiar mensagem" title="Copiar mensagem">
+        <svg class="icone-copiar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
+        <svg class="icone-copiado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M20 6 9 17l-5-5"></path></svg>
+      </button>
     </div>
-    <span class="aviso-salvo" id="ml-aviso" style="display:block;text-align:right;margin-top:8px"></span>
+    <span class="aviso-salvo" id="ml-aviso"></span>
   </div>
 </div>
 
@@ -1255,6 +1380,32 @@
     });
   }
 
+  /* ---------- histórico ----------
+     Salvo na tela de início o app abre sem a barra do Safari, e aí o gesto de
+     arrastar da borda (e o botão voltar do Android) é a ÚNICA forma de voltar.
+     Sem registrar as telas no histórico esse gesto sairia do app em vez de
+     voltar pra lista. Cada tela vira uma entrada; as telas cheias de busca e
+     avisos também, pra o voltar fechá-las em vez de navegar. */
+  var _voltandoPeloHistorico = false;
+
+  function registrarNoHistorico(estado){
+    if (_voltandoPeloHistorico) return;
+    var atual = history.state;
+    if (atual && atual.tela === estado.tela && atual.id === estado.id) return;
+    history.pushState(estado, "");
+  }
+
+  window.addEventListener("popstate", function(ev){
+    _voltandoPeloHistorico = true;
+    var e = ev.state || { tela: "home" };
+    /* overlay aberto: voltar fecha ele e para por aí */
+    if (!el("busca-mobile").hidden){ fecharBuscaMobile(true); _voltandoPeloHistorico = false; return; }
+    if (!el("notif-mobile").hidden){ fecharNotifMobile(true); _voltandoPeloHistorico = false; return; }
+    if (e.tela === "detalhe" && e.id) abrirDetalhe(e.id);
+    else if (e.tela === "lista") irPara("clientes");
+    else irPara("home");
+  });
+
   function mostrar(nome){
     if (nome === "login"){
       el("tela-login").hidden = false;
@@ -1267,6 +1418,8 @@
     Object.keys(telas).forEach(function(t){ telas[t].hidden = t !== nome; });
     marcarNavAtiva(nome);
     window.scrollTo(0, 0);
+    if (_voltandoPeloHistorico) _voltandoPeloHistorico = false;
+    else registrarNoHistorico({ tela: nome, id: nome === "detalhe" ? clienteAtual : null });
   }
 
   function irPara(pagina){
@@ -1402,14 +1555,41 @@
     return lista;
   }
 
+  /* ---------- avisos já vistos ----------
+     O contador some quando o Jordan abre os avisos, e volta quando aparece algo
+     novo — pra isso é preciso lembrar QUAIS já foram vistos, não só zerar.
+     A chave ignora o "sub" do tipo prazo, senão a contagem regressiva ("faltam
+     8 dias" → "faltam 7 dias") viraria aviso novo todo dia pro mesmo casamento.
+     No contrato o sub entra de propósito: "já abriu o link" é novidade real. */
+  var CHAVE_VISTOS = "JSF_AVISOS_VISTOS";
+
+  function chaveAviso(n){
+    return n.tipo + "|" + (n.cid || "") + "|" + (n.tipo === "prazo" ? "" : (n.sub || ""));
+  }
+  function lerVistos(){
+    try { return JSON.parse(localStorage.getItem(CHAVE_VISTOS)) || []; } catch (e) { return []; }
+  }
+  function gravarVistos(chaves){
+    try { localStorage.setItem(CHAVE_VISTOS, JSON.stringify(chaves)); } catch (e) {}
+  }
+
   /* Pinta a MESMA lista nos dois lugares: o dropdown do sino (desktop) e a tela
-     cheia da navbar (mobile). Os badges também são dois pro mesmo número. */
-  function renderNotificacoes(lista){
+     cheia da navbar (mobile). Os badges também são dois pro mesmo número.
+     marcarVistas = veio de uma abertura dos avisos; grava o que existe agora
+     como visto (isso também poda chaves de avisos que já sumiram). */
+  function renderNotificacoes(lista, marcarVistas){
+    var vistos = marcarVistas ? lista.map(chaveAviso) : lerVistos();
+    if (marcarVistas) gravarVistos(vistos);
+
+    var jaVisto = {};
+    vistos.forEach(function(k){ jaVisto[k] = 1; });
+    var novos = lista.filter(function(n){ return !jaVisto[chaveAviso(n)]; }).length;
+
     var pontos = [el("ponto-notificacao"), el("nav-ponto-notificacao")];
     pontos.forEach(function(p){
       if (!p) return;
-      p.hidden = !lista.length;
-      if (lista.length) p.textContent = lista.length > 9 ? "9+" : String(lista.length);
+      p.hidden = !novos;
+      if (novos) p.textContent = novos > 9 ? "9+" : String(novos);
     });
 
     var ICONE = { proposta: ICON_PROPOSTA, prazo: ICON_CAL, contrato: ICON_CONTRATO };
@@ -1440,9 +1620,11 @@
     });
   }
 
-  function carregarNotificacoes(){
+  /* marcarVistas só quando o Jordan ABRE os avisos. No boot (login) a carga é
+     silenciosa: se marcasse ali, o contador nunca apareceria. */
+  function carregarNotificacoes(marcarVistas){
     api("/api/estudio?lista=1").then(function(r){
-      renderNotificacoes(montarNotificacoes(r.clientes || []));
+      renderNotificacoes(montarNotificacoes(r.clientes || []), marcarVistas === true);
     }).catch(function(){});
   }
 
@@ -1456,7 +1638,7 @@
       var abrir = dropdown.hidden;
       dropdown.hidden = !abrir;
       botao.setAttribute("aria-expanded", abrir ? "true" : "false");
-      if (abrir) carregarNotificacoes();
+      if (abrir) carregarNotificacoes(true);   /* abriu = viu; o contador zera */
     });
     /* fecha ao tocar/clicar fora — pointerdown funciona no toque (iOS), o click não */
     document.addEventListener("pointerdown", function(ev){
@@ -1803,43 +1985,97 @@
     });
   }
 
-  function enviarContratoAoCliente(){
-    if (!clienteAtual) return;
-    confirmar({
-      titulo: "Liberar contrato pro casal?",
-      texto: "Gera o link de assinatura pra você mandar pelo WhatsApp. A partir daí o casal já consegue abrir e assinar.",
-      rotuloOk: "Gerar link"
-    }).then(function(ok){
-      if (!ok) return;
-      api("/api/estudio", { acao: "liberar-contrato-cliente", id: clienteAtual })
-        .then(function(r){
-          abrirModalLink(r);
-          return api("/api/estudio?id=" + clienteAtual);
-        })
-        .then(function(r2){
-          contratoAtual = r2.contrato || null;
-          renderHeroCliente(r2.cliente);
-          preencherTimelineContrato(contratoAtual);
-        })
-        .catch(function(e){ if (e.message !== "sessao") alert(e.message); });
-    });
+  /* cópia sem depender de HTTPS: navigator.clipboard só existe em contexto
+     seguro, e testando pelo IP da rede (http://192.168.x) ele não está lá */
+  function copiaLegado(texto){
+    var ta = document.createElement("textarea");
+    ta.value = texto;
+    ta.setAttribute("aria-hidden", "true");
+    ta.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:0;opacity:0";
+    document.body.appendChild(ta);
+    var focoAnterior = document.activeElement;
+    /* campo de formulário usa a seleção própria (focus + select); o iOS ignora
+       select() sozinho, daí o setSelectionRange */
+    ta.focus({ preventScroll: true });
+    ta.select();
+    ta.setSelectionRange(0, texto.length);
+    var copiou = false;
+    try { copiou = document.execCommand("copy"); } catch (e) { copiou = false; }
+    document.body.removeChild(ta);
+    if (focoAnterior && focoAnterior.focus) focoAnterior.focus({ preventScroll: true });
+    return copiou;
   }
-  el("btn-enviar-cliente").addEventListener("click", enviarContratoAoCliente);
 
-  /* modal do link: copiar a mensagem pronta ou abrir direto a conversa no WhatsApp */
-  function abrirModalLink(r){
+  /* "Copiar link": libera o contrato, já deixa a mensagem no clipboard e abre o
+     pop-up com o link.
+     O pulo do gato é o ClipboardItem com Promise: o Safari do iOS exige que a
+     escrita COMECE dentro do gesto, mas o texto só existe depois do fetch —
+     criando o item já no clique, ele aceita o texto chegando depois. */
+  function copiarLinkDoContrato(){
+    if (!clienteAtual) return;
+    var pedido = api("/api/estudio", { acao: "liberar-contrato-cliente", id: clienteAtual });
+
+    var copiando = Promise.resolve(false);
+    if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem){
+      var blob = pedido.then(function(r){
+        return new Blob([r.mensagem || r.link], { type: "text/plain" });
+      });
+      copiando = navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })])
+        .then(function(){ return true; }, function(){ return false; });
+    }
+
+    Promise.all([pedido, copiando])
+      .then(function(res){
+        var r = res[0], copiou = res[1];
+        /* 2ª tentativa: writeText (desktop costuma aceitar) e depois execCommand */
+        if (!copiou && navigator.clipboard && navigator.clipboard.writeText){
+          return navigator.clipboard.writeText(r.mensagem || r.link)
+            .then(function(){ return [r, true]; }, function(){ return [r, copiaLegado(r.mensagem || r.link)]; });
+        }
+        if (!copiou) copiou = copiaLegado(r.mensagem || r.link);
+        return [r, copiou];
+      })
+      .then(function(par){
+        abrirModalLink(par[0], par[1]);
+        return api("/api/estudio?id=" + clienteAtual);
+      })
+      .then(function(r2){
+        contratoAtual = r2.contrato || null;
+        renderHeroCliente(r2.cliente);
+        preencherTimelineContrato(contratoAtual);
+      })
+      .catch(function(e){ if (e.message !== "sessao") alert(e.message); });
+  }
+  el("btn-enviar-cliente").addEventListener("click", copiarLinkDoContrato);
+
+  /* modal do link: já abre avisando que a mensagem foi copiada (o botão de
+     copiar continua ali como segunda chance, se o navegador tiver barrado) */
+  /* feedback do copiar: o ícone vira um ✓ por alguns segundos e volta */
+  var _timerCopiado = null;
+  function marcarCopiado(copiou){
+    var btn = el("ml-copiar");
+    el("ml-aviso").textContent = copiou ? "Mensagem copiada ✓" : "Não consegui copiar — selecione o link e copie na mão.";
+    el("ml-aviso").style.color = copiou ? "" : "var(--ink-soft)";
+    if (!copiou){ el("ml-link").focus(); el("ml-link").select(); return; }
+    btn.classList.add("copiou");
+    btn.querySelector(".icone-copiar").hidden = true;
+    btn.querySelector(".icone-copiado").hidden = false;
+    clearTimeout(_timerCopiado);
+    _timerCopiado = setTimeout(function(){
+      btn.classList.remove("copiou");
+      btn.querySelector(".icone-copiar").hidden = false;
+      btn.querySelector(".icone-copiado").hidden = true;
+      el("ml-aviso").textContent = "";
+    }, 2500);
+  }
+
+  function abrirModalLink(r, jaCopiou){
     el("ml-link").value = r.link;
     el("ml-link").dataset.mensagem = r.mensagem || r.link;
-    var wpp = el("ml-whats");
-    if (r.telefone && r.telefone.length >= 8){
-      wpp.href = "https://wa.me/" + r.telefone + "?text=" + encodeURIComponent(r.mensagem || r.link);
-      wpp.hidden = false;
-    } else {
-      /* sem telefone cadastrado não dá pra abrir a conversa; sobra copiar */
-      wpp.hidden = true;
-    }
-    el("ml-aviso").textContent = "";
     el("modal-link").hidden = false;
+    /* por último: o feedback tem que sobreviver ao resto da montagem */
+    if (jaCopiou) marcarCopiado(true);
+    else el("ml-aviso").textContent = "";
   }
 
   (function(){
@@ -1848,13 +2084,14 @@
       .forEach(function(b){ b.addEventListener("click", function(){ modal.hidden = true; }); });
     el("ml-copiar").addEventListener("click", function(){
       var msg = el("ml-link").dataset.mensagem || el("ml-link").value;
-      function ok(){
-        el("ml-aviso").textContent = "Mensagem copiada.";
-        setTimeout(function(){ el("ml-aviso").textContent = ""; }, 3000);
-      }
       if (navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(msg).then(ok, function(){ window.prompt("Copie a mensagem:", msg); });
-      } else { window.prompt("Copie a mensagem:", msg); }
+        navigator.clipboard.writeText(msg).then(
+          function(){ marcarCopiado(true); },
+          function(){ marcarCopiado(copiaLegado(msg)); }
+        );
+      } else {
+        marcarCopiado(copiaLegado(msg));
+      }
     });
     document.addEventListener("keydown", function(ev){ if (ev.key === "Escape" && !modal.hidden) modal.hidden = true; });
   })();
@@ -2072,6 +2309,9 @@
 
   function abrirTelaMobile(elemento){
     scrollAntesDaTela = window.pageYOffset || document.documentElement.scrollTop || 0;
+    /* entrada própria no histórico: o gesto de voltar fecha a tela cheia em vez
+       de sair dela direto pra tela anterior do app */
+    registrarNoHistorico({ tela: "overlay", id: elemento.id });
     elemento.hidden = false;
     /* O browser precisa "enxergar" o estado inicial (translateY(100%)) antes da
        classe que anima, senão pula direto pro final sem transição. Leitura de
@@ -2112,7 +2352,7 @@
   /* --- notificações em tela cheia (mobile) --- */
   function abrirNotifMobile(){
     abrirTelaMobile(el("notif-mobile"));
-    carregarNotificacoes();
+    carregarNotificacoes(true);   /* abriu = viu; o contador zera */
   }
   function fecharNotifMobile(manterScroll){
     var tela = el("notif-mobile");
@@ -2306,28 +2546,22 @@
     var btnEnviar = el("btn-enviar-cliente");
     var jaAssinado = contrato.status === "assinado";
     var jaLiberado = contrato.status === "enviado" || contrato.status === "visualizado";
-    if (contrato.status === "rascunho") {
-      /* liberar pro casal só existe depois que o Jordan assinou na revisão
-         (o backend também barra: "confirmar-contrato" antes, senão 409) */
-      var assinadoJordan = !!contrato.jordan_confirmado_em;
-      acoes.hidden = false;
-      el("link-revisar-contrato").hidden = false;
-      el("link-revisar-contrato").href = "/revisar-contrato?id=" + clienteAtual;
-      btnEnviar.hidden = !assinadoJordan;
-      btnEnviar.textContent = "Pegar link pro cliente";
-      el("aviso-assine-primeiro").hidden = assinadoJordan;
-    } else if (jaLiberado) {
-      /* já liberado: a revisão não abre mais (ela exige rascunho), mas o Jordan
-         precisa conseguir recuperar o link pra reenviar pelo WhatsApp */
-      acoes.hidden = false;
-      el("link-revisar-contrato").hidden = true;
-      btnEnviar.hidden = false;
-      btnEnviar.textContent = "Ver link de novo";
-      el("aviso-assine-primeiro").hidden = true;
-    } else {
-      acoes.hidden = true; /* assinado ou cancelado: nada a fazer aqui */
-      if (jaAssinado) el("link-revisar-contrato").hidden = true;
+    /* "Abrir contrato" vale em qualquer estado vivo: a página de revisão passou
+       a aceitar rascunho, enviado, visualizado e assinado. "Copiar link" só
+       existe quando há link pra mandar — ou seja, depois que o Jordan assinou e
+       antes de o casal assinar. */
+    var link = el("link-revisar-contrato");
+    var assinadoJordan = !!contrato.jordan_confirmado_em;
+    if (contrato.status === "cancelado") {
+      acoes.hidden = true;
+      return;
     }
+    acoes.hidden = false;
+    link.hidden = false;
+    link.href = "/revisar-contrato?id=" + clienteAtual;
+    btnEnviar.hidden = jaAssinado || !(assinadoJordan || jaLiberado);
+    /* o aviso só aparece enquanto falta a assinatura dele */
+    el("aviso-assine-primeiro").hidden = assinadoJordan || jaLiberado || jaAssinado;
   }
 
   function itemSelecionado(id){ return itensAtuais.some(function(i){ return i.id === id; }); }
