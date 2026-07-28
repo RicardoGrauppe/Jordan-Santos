@@ -2,10 +2,10 @@
 <!--
   Estúdio · Jordan Santos Fotografia
   Painel do Jordan (/estudio, não linkado em lugar nenhum do site público).
-  Login por e-mail + senha via Supabase Auth (o e-mail do Jordan é o env ADMIN_EMAIL,
-  validado em /api/sessao) → CRUD de clientes, acesso do casal (senha temporária)
-  (/api/estudio) + upload das fotos entregues (browser → Supabase Storage direto,
-  via signed upload URLs, contornando o limite de 4.5MB da Vercel).
+  Login por e-mail + senha via Supabase Auth, validado em /api/sessao.
+  Shell com sidebar + 2 páginas: Home (visão geral) e Clientes (CRUD via
+  /api/estudio). Sem estágio de prospecção (decisão de 2026-07-24): o cliente
+  já chega pronto pra contrato direto do orçamento do site (/api/orcamento).
   Single-file, sem build, sem dependências: mesmo padrão do resto do site.
 -->
 <html lang="pt-BR">
@@ -16,26 +16,28 @@
 <title>Estúdio | Jordan Santos Fotografia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#FFFFFF;
-    --ink:#1D1D1B;
-    --ink-soft:#706F6F;
+    --ink:#1F2329;
+    --ink-soft:#6B7280;
     --accent:#003646;
     --accent-deep:#4F6278;
     --noir:#1D1D1B;
-    --line:#E8E1DC;
+    --line:#E4E6EA;
+    --soft:#F6F7F9;
     --sombra:0 10px 34px rgba(29,29,27,.14);
-    --serif:"Bodoni Moda","Didot",Georgia,serif;
-    --sans:"Jost","Helvetica Neue",sans-serif;
+    --sans:"Plus Jakarta Sans","Inter","Helvetica Neue",sans-serif;
     --ok:#2E6B4F;
     --erro:#A33B3B;
+    --topo-altura:56px;
+    --serif:"Playfair Display",Georgia,serif;
   }
   *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
   body{
     background:var(--paper);color:var(--ink);
-    font-family:var(--sans);font-weight:300;font-size:16px;line-height:1.6;
+    font-family:var(--sans);font-weight:400;font-size:14.5px;line-height:1.55;
     -webkit-font-smoothing:antialiased;
   }
   img{display:block;max-width:100%}
@@ -43,30 +45,60 @@
   a{color:var(--accent)}
   .miolo{max-width:980px;margin:0 auto;padding:0 24px}
 
-  .topo{padding:36px 24px 0;text-align:center}
+  #tela-login{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;
+  }
+  #tela-login[hidden]{display:none}
+  .topo{padding:0;text-align:center}
   .topo img{width:min(200px,50vw);margin:0 auto}
 
   h1{
-    font-family:var(--serif);font-weight:500;
-    font-size:clamp(24px,4vw,32px);letter-spacing:.12em;text-transform:uppercase;
-    color:var(--accent);text-align:center;margin:32px 0 6px;
+    font-weight:600;font-size:22px;letter-spacing:-.01em;
+    color:var(--ink);margin:36px 0 6px;
   }
+  #tela-login h1{text-align:center;color:var(--accent);margin-top:32px}
   .sub{color:var(--ink-soft);text-align:center;font-size:14px}
 
   /* ---------- login ---------- */
-  .login{max-width:360px;margin:48px auto 120px;padding:0 24px}
-  .campo-form{display:flex;flex-direction:column;margin-bottom:22px}
+  .login{width:100%;max-width:360px;margin:32px auto 0;padding:0 24px}
+  .campo-form{display:flex;flex-direction:column;margin-bottom:18px}
   .campo-form label{
-    font-size:11px;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--ink-soft);margin-bottom:7px;
+    font-size:12.5px;font-weight:500;
+    color:var(--ink-soft);margin-bottom:6px;
   }
   input,select,textarea{
-    font:inherit;color:var(--ink);background:transparent;
-    border:none;border-bottom:1px solid var(--line);
-    padding:9px 2px;border-radius:0;-webkit-appearance:none;
+    font:inherit;color:var(--ink);background:var(--paper);
+    border:1px solid var(--line);border-radius:8px;
+    padding:9px 12px;-webkit-appearance:none;
   }
-  input:focus,select:focus,textarea:focus{outline:none;border-bottom-color:var(--accent)}
+  input:focus,select:focus,textarea:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(0,54,70,.10);
+  }
   textarea{min-height:72px;resize:vertical}
+
+  /* campo de telefone com botão de abrir no WhatsApp */
+  .campo-tel{display:flex;gap:8px;align-items:stretch}
+  .campo-tel input{flex:1;min-width:0}
+  .btn-wpp{
+    flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+    width:40px;border:1px solid var(--line);border-radius:8px;
+    background:var(--paper);color:#1EA34E;cursor:pointer;transition:all .15s;
+  }
+  .btn-wpp:hover{background:#1EA34E;color:#fff;border-color:#1EA34E}
+  .btn-wpp:disabled{opacity:.4;cursor:not-allowed;color:var(--ink-soft)}
+  .btn-wpp:disabled:hover{background:var(--paper);color:var(--ink-soft);border-color:var(--line)}
+  .btn-wpp svg{width:18px;height:18px}
+
+  .campo-senha{position:relative}
+  .campo-senha input{width:100%;padding-right:32px}
+  .alternar-senha{
+    position:absolute;right:0;top:50%;transform:translateY(-50%);
+    padding:4px;color:var(--ink-soft);display:flex;align-items:center;
+  }
+  .alternar-senha:hover{color:var(--accent)}
+  .alternar-senha svg{width:18px;height:18px;display:block}
 
   .cta{
     display:block;width:100%;padding:16px 24px;margin-top:8px;
@@ -78,44 +110,284 @@
   .cta:disabled{opacity:.4;cursor:default}
   .msg-erro{color:var(--erro);font-size:13.5px;text-align:center;margin-top:16px;min-height:20px}
 
-  /* ---------- painel ---------- */
-  .barra{
-    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-    margin:36px 0 20px;
+  /* ---------- shell autenticado (header no topo + sidebar) ---------- */
+  .app{display:flex;flex-direction:column;min-height:100vh}
+  .app[hidden]{display:none}
+  .app-corpo{display:flex;align-items:flex-start;flex:1;min-height:0}
+  .lateral{
+    width:190px;flex-shrink:0;background:var(--noir);color:#fff;
+    display:flex;flex-direction:column;gap:14px;
+    padding:16px 12px;position:sticky;top:var(--topo-altura);
+    height:calc(100vh - var(--topo-altura));
+    transition:width .2s ease,padding .2s ease;
   }
-  .barra input[type="search"]{flex:1;min-width:180px}
-  .barra select{width:auto}
+  .nav-lateral{display:flex;flex-direction:column;justify-content:center;gap:3px;flex:1}
+  .nav-lateral button{
+    display:flex;align-items:center;gap:11px;
+    text-align:left;padding:9px 12px;border-radius:8px;white-space:nowrap;overflow:hidden;
+    font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+    color:rgba(255,255,255,.6);transition:background .15s ease,color .15s ease;
+  }
+  .nav-icone{width:15px;height:15px;flex-shrink:0;display:block;stroke-width:1.4}
+  .nav-lateral button:hover{background:rgba(255,255,255,.08);color:#fff}
+  .nav-lateral button.ativo{background:var(--accent);color:#fff}
+  .lateral-toggle{
+    display:flex;align-items:center;gap:11px;flex-shrink:0;cursor:pointer;
+    text-align:left;padding:9px 12px;border-radius:8px;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:rgba(255,255,255,.45);white-space:nowrap;overflow:hidden;
+    transition:background .15s ease,color .15s ease;
+  }
+  .lateral-toggle svg{width:15px;height:15px;flex-shrink:0;stroke-width:1.5}
+  .lateral-toggle:hover{background:rgba(255,255,255,.08);color:#fff}
+  .conteudo{flex:1;min-width:0;padding-bottom:60px}
+
+  /* sidebar recolhida (só desktop) */
+  @media (min-width:821px){
+    .lateral.colapsada{width:62px;padding-left:11px;padding-right:11px}
+    .lateral.colapsada .nav-lateral button,
+    .lateral.colapsada .lateral-toggle{justify-content:center;gap:0;padding-left:0;padding-right:0}
+    .lateral.colapsada .nav-lateral button span,
+    .lateral.colapsada .lateral-toggle span{display:none}
+    /* busca no centro EXATO da tela (50vw ignora o offset da barra de rolagem);
+       logo e ações fixadas nas colunas das pontas pra não auto-posicionar no meio */
+    .busca-topo{
+      position:absolute;left:50vw;top:50%;transform:translate(-50%,-50%);
+      width:min(420px,42vw);justify-self:auto;
+    }
+    .topo-logo{grid-column:1}
+    .topo-estudio-acoes{grid-column:3}
+  }
+
+  /* ---------- topo do estúdio (header fino, full-width, no topo) ---------- */
+  .topo-estudio{
+    display:grid;grid-template-columns:1fr minmax(0,420px) 1fr;align-items:center;gap:16px;
+    height:var(--topo-altura);padding:0 20px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--paper);z-index:20;
+  }
+  .topo-logo{height:28px;width:auto;justify-self:start}
+  .busca-topo{
+    display:flex;align-items:center;gap:10px;justify-self:stretch;
+    background:var(--soft);border-radius:999px;padding:8px 16px;
+  }
+  .busca-topo svg{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
+  .busca-topo input{
+    border:none;background:none;padding:0;flex:1;
+    font-size:13.5px;color:var(--ink);
+  }
+  .busca-topo input:focus{outline:none;box-shadow:none}
+  .topo-estudio-acoes{display:flex;align-items:center;gap:14px;justify-self:end}
+  .botao-notificacao{
+    position:relative;width:38px;height:38px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink-soft);transition:background .15s ease,color .15s ease;
+  }
+  .botao-notificacao:hover{background:var(--soft);color:var(--ink)}
+  .botao-notificacao[aria-expanded="true"]{background:var(--soft);color:var(--ink)}
+  .botao-notificacao svg{width:19px;height:19px}
+  .ponto-notificacao{
+    position:absolute;top:3px;right:2px;min-width:16px;height:16px;padding:0 4px;
+    display:flex;align-items:center;justify-content:center;border-radius:999px;
+    background:var(--erro);color:#fff;font-size:10px;font-weight:600;line-height:1;
+    border:1.5px solid var(--paper);
+  }
+  .ponto-notificacao[hidden]{display:none}
+  .menu-notificacao{position:relative}
+  .dropdown-notificacao{
+    position:absolute;top:calc(100% + 10px);right:0;width:340px;max-width:88vw;
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--sombra);z-index:30;overflow:hidden;
+  }
+  .dropdown-notificacao[hidden]{display:none}
+  .notif-topo{
+    padding:14px 16px 12px;font-size:13px;font-weight:600;color:var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+  .notif-lista{max-height:min(60vh,440px);overflow-y:auto;padding:6px}
+  .notif-item{
+    display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;
+    padding:11px 12px;border-radius:10px;background:none;cursor:pointer;
+    transition:background .12s ease;
+  }
+  .notif-item:hover{background:var(--soft)}
+  .notif-icone{
+    width:32px;height:32px;border-radius:9px;flex-shrink:0;margin-top:1px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .notif-icone svg{width:16px;height:16px}
+  .notif-icone.proposta{background:#E3EDF0;color:var(--accent)}
+  .notif-icone.prazo{background:#FBEBD0;color:#C08A2D}
+  .notif-icone.contrato{background:#E7F1EC;color:var(--ok)}
+  .notif-texto{min-width:0}
+  .notif-titulo{font-size:13.5px;font-weight:500;color:var(--ink);line-height:1.35}
+  .notif-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;line-height:1.4}
+  .notif-vazio{padding:34px 16px;text-align:center;color:var(--ink-soft);font-size:13.5px}
+  .menu-avatar{position:relative}
+  .avatar-topo{
+    width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;
+    display:block;transition:box-shadow .15s ease;
+  }
+  .menu-avatar button:hover .avatar-topo,
+  .menu-avatar button[aria-expanded="true"] .avatar-topo{
+    box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--accent);
+  }
+  .dropdown-avatar{
+    position:absolute;top:calc(100% + 10px);right:0;min-width:190px;
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--sombra);padding:6px;z-index:20;
+  }
+  .dropdown-avatar[hidden]{display:none}
+  .dropdown-avatar a,
+  .dropdown-avatar button{
+    display:flex;align-items:center;gap:10px;width:100%;
+    padding:10px 12px;border-radius:8px;
+    font:inherit;font-size:13.5px;text-align:left;color:var(--ink);text-decoration:none;
+    background:none;cursor:pointer;transition:background .15s ease,color .15s ease;
+  }
+  .dropdown-avatar a:hover,
+  .dropdown-avatar button:hover{background:var(--soft)}
+  .dropdown-avatar .item-sair{color:var(--erro);margin-top:4px;border-top:1px solid var(--line);border-radius:0 0 8px 8px;padding-top:12px}
+  .dropdown-avatar .item-sair:hover{background:rgba(163,59,59,.07)}
+
+  /* ---------- pop-up de confirmação ---------- */
+  .modal-confirm{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-confirm[hidden]{display:none}
+  .modal-confirm-fundo{position:absolute;inset:0;background:rgba(29,29,27,.5);backdrop-filter:blur(2px)}
+  .modal-confirm-caixa{
+    position:relative;z-index:1;width:100%;max-width:400px;
+    background:var(--paper);border-radius:16px;padding:28px 28px 22px;box-shadow:var(--sombra);
+  }
+  .modal-confirm-caixa h3{font-family:var(--serif);font-weight:600;font-size:22px;color:var(--ink);margin:0 0 10px}
+  .modal-confirm-caixa p{font-size:14.5px;color:var(--ink-soft);line-height:1.55;margin:0}
+  .modal-confirm-acoes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:24px}
+  .botao-fantasma.link{text-decoration:none;display:inline-flex;align-items:center}
+  .botao-fantasma{
+    padding:10px 18px;border-radius:10px;font-size:13.5px;font-weight:600;
+    color:var(--ink-soft);background:none;transition:background .15s ease,color .15s ease;
+  }
+  .botao-fantasma:hover{background:var(--soft);color:var(--ink)}
+  .botao-primario.perigo{background:var(--erro);box-shadow:0 1px 2px rgba(163,59,59,.25)}
+  .botao-primario.perigo:hover{background:#8F3333}
+  .dropdown-avatar a svg,
+  .dropdown-avatar button svg{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
+  .dropdown-avatar .item-sair svg{color:var(--erro)}
+
+  /* ---------- home ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:22px 0 28px}
+  .kpi{
+    border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--paper);
+    box-shadow:0 1px 2px rgba(29,29,27,.04);
+  }
+  .kpi-num{font-size:28px;font-weight:600;color:var(--accent);letter-spacing:-.01em;line-height:1.1;font-variant-numeric:tabular-nums}
+  .kpi-rotulo{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:8px;line-height:1.4}
+
+  /* ---------- painel (listas: clientes, prospecção) ---------- */
+  .pagina-topo{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    flex-wrap:wrap;margin:40px 0 22px;
+  }
+  .pagina-topo h1{margin:0;display:flex;align-items:center;gap:12px}
+  .contagem{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:24px;height:22px;padding:0 8px;border-radius:999px;
+    background:var(--soft);color:var(--ink-soft);
+    font-size:12.5px;font-weight:600;letter-spacing:0;
+  }
+  .contagem:empty{display:none}
+  .botao-primario{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 16px;border-radius:10px;
+    background:var(--accent);color:#fff;
+    font-size:13.5px;font-weight:600;letter-spacing:0;
+    box-shadow:0 1px 2px rgba(0,54,70,.22);
+    transition:background .15s ease,transform .05s ease;white-space:nowrap;
+  }
+  .botao-primario:hover{background:#00485c}
+  .botao-primario:active{transform:translateY(1px)}
+  .botao-primario svg{width:16px;height:16px}
+
+  .barra{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 18px;
+  }
+  .campo-busca{
+    display:flex;align-items:center;gap:9px;flex:1;min-width:200px;
+    background:var(--paper);border:1px solid var(--line);border-radius:10px;
+    padding:0 12px;transition:border-color .15s ease,box-shadow .15s ease;
+  }
+  .campo-busca:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
+  .campo-busca svg{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
+  .campo-busca input{border:none;background:none;padding:10px 0;flex:1;font-size:14px}
+  .campo-busca input:focus{outline:none;box-shadow:none}
+  .barra select{
+    width:auto;border-radius:10px;padding:10px 36px 10px 13px;font-size:14px;cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+
+  /* mesma família visual do botao-primario (raio, padding, tamanho de fonte,
+     texto normal) só que outline em vez de preenchido — lado a lado eles lêem
+     como par primário/secundário, não como dois sistemas de botão diferentes */
   .botao-linha{
-    padding:10px 22px;border:1px solid var(--accent);border-radius:999px;
-    color:var(--accent);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
-    transition:background .2s ease,color .2s ease;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:10px 16px;border:1px solid var(--accent);border-radius:10px;
+    background:none;color:var(--accent);font-size:13.5px;font-weight:600;letter-spacing:0;
+    transition:background .15s ease,color .15s ease;white-space:nowrap;
   }
   .botao-linha:hover{background:var(--accent);color:#fff}
   .botao-linha.perigo{border-color:var(--erro);color:var(--erro)}
   .botao-linha.perigo:hover{background:var(--erro);color:#fff}
-  .sair{margin-left:auto;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
 
-  table{width:100%;border-collapse:collapse;margin-bottom:90px}
-  th{
-    font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:500;
-    color:var(--ink-soft);text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);
+  .tabela-card{
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper);
+    box-shadow:0 1px 2px rgba(29,29,27,.05);margin-bottom:60px;
   }
-  td{padding:14px 10px;border-bottom:1px solid var(--line);font-size:15px}
-  tbody tr{cursor:pointer;transition:background .15s ease}
-  tbody tr:hover{background:#FBF9F6}
-  td.num{text-align:right;font-family:var(--serif);color:var(--accent-deep);white-space:nowrap}
-  .vazio{padding:60px 10px;text-align:center;color:var(--ink-soft)}
+  table{width:100%;border-collapse:collapse}
+  thead th{
+    background:var(--soft);
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+    color:var(--ink-soft);text-align:left;padding:12px 18px;border-bottom:1px solid var(--line);
+  }
+  td{padding:13px 18px;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--ink)}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr{cursor:pointer;transition:background .12s ease}
+  tbody tr:hover{background:var(--soft)}
+  td.num{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .vazio{padding:64px 18px;text-align:center;color:var(--ink-soft)}
+
+  .celula-nome{display:flex;align-items:center;gap:12px}
+  .avatar-inicial{
+    width:32px;height:32px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--soft);color:var(--accent);border:1px solid var(--line);
+    font-size:12px;font-weight:600;letter-spacing:.02em;
+  }
+  .celula-nome span{font-weight:500}
+
+  /* ícone sutil de apagar no fim de cada linha da tabela */
+  .col-acao{width:44px;text-align:right;white-space:nowrap}
+  .btn-apagar-linha{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:6px;color:var(--ink-soft);
+    opacity:.28;cursor:pointer;transition:opacity .15s,color .15s,background .15s;
+  }
+  tr:hover .btn-apagar-linha{opacity:.65}
+  .btn-apagar-linha:hover{opacity:1;color:var(--erro);background:rgba(163,59,59,.08)}
+  .btn-apagar-linha svg{width:15px;height:15px}
 
   .badge{
-    display:inline-block;padding:4px 12px;border-radius:999px;
-    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-    border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap;
+    display:inline-flex;align-items:center;gap:7px;
+    padding:4px 11px 4px 10px;border-radius:999px;
+    font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;
+    background:var(--soft);border:1px solid transparent;color:var(--ink-soft);white-space:nowrap;
   }
-  .badge.novo{border-color:var(--accent-deep);color:var(--accent-deep)}
-  .badge.confirmado{border-color:var(--accent);color:var(--accent)}
-  .badge.realizado{border-color:var(--ok);color:var(--ok)}
-  .badge.fotos_entregues{background:var(--accent);border-color:var(--accent);color:#fff}
-  .badge.arquivado{opacity:.55}
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+  .badge.novo{color:var(--accent-deep);background:#EEF1F5}
+  .badge.confirmado{color:var(--accent);background:#E3EDF0}
+  .badge.realizado{color:var(--ok);background:#E7F1EC}
+  .badge.arquivado{color:var(--ink-soft);background:var(--soft)}
+
+  /* ---------- listas (clientes) ---------- */
+  .painel-largo{max-width:1320px;margin:0 auto;padding:0 24px}
+  .campo-busca-topo{flex:0 0 280px;min-width:0}
 
   /* ---------- detalhe ---------- */
   .detalhe-topo{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:36px 0 8px}
@@ -123,7 +395,110 @@
     font-family:var(--serif);font-weight:500;font-size:24px;
     letter-spacing:.06em;color:var(--accent);
   }
-  .voltar{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .voltar{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);transition:color .15s ease}
+  .voltar:hover{color:var(--accent)}
+  #tela-detalhe > .voltar{display:inline-block;margin:30px 0 2px}
+
+  /* detalhe em 2 colunas: dados do casal à esquerda, contrato + status à direita
+     (a direita acompanha a rolagem, porque é de onde saem as ações) */
+  .detalhe-largo{max-width:1280px}
+  .detalhe-colunas{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);gap:20px;align-items:start}
+  .detalhe-col-dir{position:sticky;top:22px}
+  .detalhe-col-dir #painel-contrato-status{margin-top:0}
+  /* na coluna estreita, pacote lado a lado quebra o nome em 3 linhas — empilha.
+     Ocupando a largura toda, sobra espaço: o preço volta pra mesma linha, à direita
+     (margin-left:auto em vez de space-between, senão o check descola do nome) */
+  .detalhe-col-dir .seletor-pills.pacotes{grid-template-columns:1fr}
+  .detalhe-col-dir .seletor-pills.pacotes .pill-item{flex-wrap:nowrap}
+  .detalhe-col-dir .seletor-pills.pacotes .pill-item .preco{
+    flex-basis:auto;margin:0 0 0 auto;padding-left:14px;font-size:14px;white-space:nowrap;
+  }
+  @media (max-width:1080px){
+    .detalhe-colunas{grid-template-columns:1fr}
+    .detalhe-col-dir{position:static}
+  }
+
+  /* hero do casal */
+  .hero-cliente{
+    position:relative;overflow:hidden;color:#fff;
+    border-radius:20px;margin:12px 0 26px;padding:30px 32px 28px;
+    background:linear-gradient(135deg,#013243 0%,#003646 46%,#0b4d61 100%);
+    box-shadow:0 16px 44px rgba(0,54,70,.28);
+  }
+  .hero-cliente::after{
+    content:"";position:absolute;right:-70px;top:-80px;width:250px;height:250px;
+    border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none;
+  }
+  .hero-topo{display:flex;align-items:center;justify-content:flex-end;gap:10px;position:relative;z-index:5;min-height:32px}
+  .hero-icone{
+    position:relative;
+    width:32px;height:32px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:rgba(255,255,255,.78);background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.20);cursor:pointer;
+    transition:background .15s ease,color .15s ease,border-color .15s ease;
+  }
+  .hero-icone:hover{background:rgba(255,255,255,.22);color:#fff}
+  .hero-icone.perigo:hover{background:#A33B3B;border-color:transparent;color:#fff}
+  .hero-icone svg{width:15px;height:15px}
+  /* tooltip próprio (ancorado à direita/abaixo pra não ser cortado pelo overflow do hero) */
+  .hero-icone[data-tt]::after{
+    content:attr(data-tt);
+    position:absolute;top:calc(100% + 9px);right:0;
+    background:#1D1D1B;color:#fff;font-size:11.5px;font-weight:500;line-height:1.2;
+    white-space:nowrap;padding:6px 9px;border-radius:6px;letter-spacing:.01em;
+    opacity:0;pointer-events:none;transition:opacity .14s ease;z-index:40;
+    box-shadow:0 6px 18px rgba(0,0,0,.22);
+  }
+  .hero-icone[data-tt]::before{
+    content:"";position:absolute;top:calc(100% + 4px);right:12px;
+    border:5px solid transparent;border-bottom-color:#1D1D1B;
+    opacity:0;pointer-events:none;transition:opacity .14s ease;z-index:40;
+  }
+  .hero-icone[data-tt]:hover::after,.hero-icone[data-tt]:hover::before{opacity:1}
+  .hero-corpo{display:flex;align-items:center;gap:22px;position:relative;z-index:1;margin-top:6px}
+  .hero-avatar{
+    width:74px;height:74px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.30);
+    font-family:var(--serif);font-size:23px;color:#fff;
+  }
+  .hero-avatar i{font-style:italic;opacity:.6;margin:0 3px;font-size:18px}
+  .hero-nomes{font-family:var(--serif);font-weight:600;font-size:32px;line-height:1.08;margin:0}
+  .hero-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .hero-chip{
+    display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;
+    background:rgba(255,255,255,.13);font-size:13px;color:rgba(255,255,255,.94);white-space:nowrap;
+  }
+  .hero-chip svg{width:14px;height:14px;opacity:.8;flex-shrink:0}
+  .hero-chip.destaque{background:#fff;color:var(--accent);font-weight:600}
+  .hero-chip.destaque svg{opacity:1}
+  .hero-badge{
+    display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:999px;
+    background:rgba(255,255,255,.16);font-size:11.5px;font-weight:600;color:#fff;
+    letter-spacing:.04em;text-transform:uppercase;
+  }
+  .hero-badge .ponto{width:7px;height:7px;border-radius:50%;background:#fff;flex-shrink:0}
+
+  /* seções do detalhe viram cards */
+  #tela-detalhe fieldset,
+  #pagina-home fieldset{
+    border:1px solid var(--line);border-radius:14px;background:var(--paper);
+    padding:22px 24px 24px;margin:0 0 16px;box-shadow:0 1px 2px rgba(29,29,27,.04);
+  }
+  #tela-detalhe legend,
+  #pagina-home legend{
+    float:left;width:100%;font-family:var(--sans);font-weight:600;font-size:13px;
+    letter-spacing:.02em;text-transform:none;color:var(--ink);margin:0 0 18px;padding:0;
+  }
+  #tela-detalhe legend + *,
+  #pagina-home legend + *{clear:both}
+  #tela-detalhe legend::before,
+  #pagina-home legend::before{
+    content:"";display:inline-block;width:4px;height:13px;border-radius:2px;
+    background:var(--accent);margin-right:9px;vertical-align:-2px;
+  }
+
   fieldset{border:none;margin:26px 0 6px}
   legend{
     font-family:var(--serif);font-weight:500;font-size:19px;letter-spacing:.12em;
@@ -131,29 +506,120 @@
   }
   .grade{display:grid;grid-template-columns:repeat(3,1fr);gap:20px 24px}
   .grade .largo{grid-column:1 / -1}
+  .legend-acao{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .legend-acao legend{margin-bottom:0}
+  .btn-editar-secao{
+    flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border:1px solid var(--line);border-radius:7px;
+    background:var(--paper);color:var(--ink-soft);cursor:pointer;transition:all .15s;
+  }
+  .btn-editar-secao:hover{color:var(--accent);border-color:var(--accent)}
+  .btn-editar-secao svg{width:14px;height:14px}
+  /* tooltip próprio (o title nativo demora ~1s pra aparecer), igual ao do hero */
+  .btn-editar-secao[data-tt]{position:relative}
+  .btn-editar-secao[data-tt]::after{
+    content:attr(data-tt);
+    position:absolute;top:calc(100% + 9px);right:0;
+    background:#1D1D1B;color:#fff;font-size:11.5px;font-weight:500;line-height:1.2;
+    white-space:nowrap;padding:6px 9px;border-radius:6px;letter-spacing:.01em;
+    opacity:0;pointer-events:none;transition:opacity .14s ease;z-index:40;
+    box-shadow:0 6px 18px rgba(0,0,0,.22);
+  }
+  .btn-editar-secao[data-tt]::before{
+    content:"";position:absolute;top:calc(100% + 4px);right:8px;
+    border:5px solid transparent;border-bottom-color:#1D1D1B;
+    opacity:0;pointer-events:none;transition:opacity .14s ease;z-index:40;
+  }
+  .btn-editar-secao[data-tt]:hover::after,.btn-editar-secao[data-tt]:hover::before{opacity:1}
+  fieldset.secao-bloqueada input:not([type=checkbox]),
+  fieldset.secao-bloqueada select,
+  fieldset.secao-bloqueada textarea{
+    background:var(--soft);border-color:transparent;color:var(--ink-soft);pointer-events:none;
+  }
+  fieldset.secao-bloqueada .btn-wpp{pointer-events:auto}
+  /* esconde o seletor de data/hora nativo enquanto travado (ele ignora pointer-events) */
+  fieldset.secao-bloqueada input::-webkit-calendar-picker-indicator{display:none}
   .acoes{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:30px 0 60px}
   .aviso-salvo{font-size:13px;color:var(--ok);min-height:18px;margin-left:6px}
 
-  /* itens do contrato no detalhe */
+  /* itens do contrato / listas rápidas (home, contrato) */
   .itens-lista{list-style:none;font-size:14.5px;margin-bottom:8px}
-  .itens-lista li{display:flex;justify-content:space-between;gap:14px;padding:6px 0;border-bottom:1px solid var(--line)}
-  .itens-lista .valor{font-family:var(--serif);color:var(--accent-deep);white-space:nowrap}
+  .itens-lista li{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .itens-lista li:last-child{border-bottom:none}
+  .itens-lista .valor{color:var(--accent-deep);font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+  #pagina-home .itens-lista li{padding:10px 10px;margin:0 -10px;border-radius:8px;transition:background .12s ease}
+  #pagina-home .itens-lista li[style*="pointer"]:hover{background:var(--soft)}
 
-  /* ---------- fotos ---------- */
-  .fotos-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin:16px 0}
-  .foto{position:relative;aspect-ratio:1/1;overflow:hidden;border-radius:6px;background:#F2EEE9}
-  .foto img{width:100%;height:100%;object-fit:cover}
-  .foto button{
-    position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
-    background:rgba(29,29,27,.75);color:#fff;font-size:14px;line-height:1;
+  /* seletor de pacote/adicionais (contrato) */
+  .seletor-itens{margin-bottom:14px}
+
+  /* resumo compacto (substitui a lista repetida — os pills já mostram o que tá ativo) */
+  .resumo-contrato{
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    margin:18px 0;padding:12px 16px;border-radius:10px;background:var(--soft);
+    font-size:13.5px;color:var(--ink-soft);
   }
-  .progresso{font-size:13px;color:var(--ink-soft);min-height:18px;margin-top:8px}
-  input[type="file"]{border:none;padding:0;font-size:13.5px}
+  .resumo-contrato .qtd{font-weight:500;color:var(--ink)}
+  .resumo-contrato .total{font-weight:700;font-size:16px;color:var(--accent-deep);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .resumo-contrato.vazio{color:var(--ink-soft);font-style:italic}
 
+  /* Total/Entrada — só os dois, lado a lado, tipografia de valor monetário */
+  .valores-contrato{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  .valores-contrato input{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--accent-deep)}
+  .seletor-grupo{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:18px 0 9px}
+  .seletor-grupo:first-child{margin-top:0}
+  .seletor-pills{display:flex;flex-wrap:wrap;gap:8px}
+
+  /* pacotes = cards em 2 colunas (seleção única) */
+  .seletor-pills.pacotes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+  /* pacote: nome (com o check) em cima, preço numa linha própria embaixo */
+  .seletor-pills.pacotes .pill-item{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;
+    padding:14px 16px;border-radius:12px;font-size:14px;font-weight:500;text-align:left;
+  }
+  .seletor-pills.pacotes .pill-item .preco{flex-basis:100%;margin-top:5px;font-size:15px;opacity:.75}
+  .seletor-pills.pacotes .pill-item.ativo .preco{opacity:1}
+
+  /* chip / card base */
+  .pill-item{
+    display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;
+    border:1px solid var(--line);background:var(--paper);font-size:13px;color:var(--ink);
+    cursor:pointer;transition:border-color .15s ease,background .15s ease,color .15s ease,box-shadow .15s ease;
+  }
+  .pill-item:hover{border-color:var(--accent);background:var(--soft)}
+  .pill-item.ativo{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(0,54,70,.18)}
+  .pill-item.ativo:hover{background:var(--accent-deep)}
+  /* check no item ativo */
+  .pill-item.ativo::before{
+    content:"";width:14px;height:14px;flex-shrink:0;
+    background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  }
+  .pill-item .preco{opacity:.6;font-size:12px;font-variant-numeric:tabular-nums}
+  .pill-item.ativo .preco{opacity:.9}
+
+  @media (max-width:820px){
+    .app-corpo{flex-direction:column;align-items:stretch}
+    .lateral{
+      width:100%;height:auto;position:static;flex-direction:row;align-items:center;
+      padding:12px 16px;gap:10px;overflow-x:auto;
+    }
+    .lateral-toggle{display:none}
+    .nav-lateral{flex-direction:row;justify-content:flex-start;flex:none;gap:6px}
+    .nav-lateral button{padding:9px 12px;white-space:nowrap}
+    .lateral .sair{margin-left:auto;white-space:nowrap;padding:9px 12px}
+  }
   @media (max-width:720px){
     .grade{grid-template-columns:1fr 1fr}
     .col-total{display:none}
     td,th{padding:12px 6px}
+    .topo-estudio{grid-template-columns:auto 1fr auto;gap:10px;padding:0 14px}
+    .topo-logo{height:24px}
+    .hero-cliente{padding:24px 22px;border-radius:16px}
+    .hero-corpo{gap:16px}
+    .hero-avatar{width:60px;height:60px;font-size:19px}
+    .hero-nomes{font-size:25px}
+    .hero-chip{white-space:normal}
+    .hero-chip svg{align-self:flex-start;margin-top:2px}
   }
   @media (max-width:520px){
     .grade{grid-template-columns:1fr}
@@ -163,12 +629,11 @@
 </head>
 <body>
 
-<header class="topo">
-  <img src="img/logo-principal-petroleo.png" alt="Jordan Santos">
-</header>
-
-<!-- estado 1: login -->
+<!-- estado: login (fora do shell, sem sidebar) -->
 <div id="tela-login" hidden>
+  <header class="topo">
+    <img src="img/logo-principal-petroleo.png" alt="Jordan Santos">
+  </header>
   <h1>Est&uacute;dio</h1>
   <p class="sub">&Aacute;rea do Jordan</p>
   <form class="login" id="form-login">
@@ -178,157 +643,386 @@
     </div>
     <div class="campo-form">
       <label for="senha">Senha</label>
-      <input id="senha" type="password" autocomplete="current-password" required>
+      <div class="campo-senha">
+        <input id="senha" type="password" autocomplete="current-password" required>
+        <button type="button" class="alternar-senha" id="alternar-senha" aria-label="Mostrar senha"></button>
+      </div>
     </div>
     <button class="cta" type="submit">Entrar</button>
     <p class="msg-erro" id="erro-login"></p>
   </form>
 </div>
 
-<!-- estado 2: lista -->
-<div id="tela-lista" class="miolo" hidden>
-  <h1>Clientes</h1>
-  <div class="barra">
-    <input type="search" id="busca" placeholder="Buscar casal">
-    <select id="filtro-status">
-      <option value="">Todos os status</option>
-      <option value="novo">Novo</option>
-      <option value="confirmado">Confirmado</option>
-      <option value="realizado">Realizado</option>
-      <option value="fotos_entregues">Fotos entregues</option>
-      <option value="arquivado">Arquivado</option>
-    </select>
-    <button class="botao-linha" id="novo-cliente" type="button">Novo cliente</button>
-    <button class="sair" id="sair" type="button">Sair</button>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Casal</th><th>Data</th>
-        <th class="col-status">Status</th>
-        <th class="col-total" style="text-align:right">Total</th>
-      </tr>
-    </thead>
-    <tbody id="linhas"></tbody>
-  </table>
-</div>
-
-<!-- estado 3: detalhe / novo -->
-<div id="tela-detalhe" class="miolo" hidden>
-  <div class="detalhe-topo">
-    <button class="voltar" id="voltar" type="button">&larr; Clientes</button>
-    <h2 id="detalhe-titulo">Novo cliente</h2>
-  </div>
-
-  <form id="form-cliente">
-    <fieldset>
-      <legend>Status</legend>
-      <div class="grade">
-        <div class="campo-form">
-          <label for="f-status">Status</label>
-          <select id="f-status" data-campo="status">
-            <option value="novo">Novo</option>
-            <option value="confirmado">Confirmado</option>
-            <option value="realizado">Realizado</option>
-            <option value="fotos_entregues">Fotos entregues</option>
-            <option value="arquivado">Arquivado</option>
-          </select>
+<!-- shell autenticado: sidebar + conteúdo -->
+<div id="app" class="app" hidden>
+  <header class="topo-estudio">
+    <img class="topo-logo" src="img/logo-principal-petroleo.png" alt="Jordan Santos">
+    <label class="busca-topo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+      <input type="search" id="busca-topo" placeholder="Buscar">
+    </label>
+    <div class="topo-estudio-acoes">
+        <div class="menu-notificacao">
+          <button type="button" class="botao-notificacao" id="botao-notificacao" aria-label="Notifica&ccedil;&otilde;es" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="ponto-notificacao" id="ponto-notificacao" hidden></span>
+          </button>
+          <div class="dropdown-notificacao" id="dropdown-notificacao" hidden>
+            <div class="notif-topo">Notifica&ccedil;&otilde;es</div>
+            <div class="notif-lista" id="notif-lista"></div>
+          </div>
+        </div>
+        <div class="menu-avatar">
+          <button type="button" id="botao-avatar" aria-label="Menu da conta" aria-haspopup="true" aria-expanded="false">
+            <img class="avatar-topo" src="img/jordan-perfil.webp" alt="Jordan Santos">
+          </button>
+          <div class="dropdown-avatar" id="dropdown-avatar" hidden>
+            <a href="/configuracoes.html" data-config>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              Configura&ccedil;&otilde;es
+            </a>
+            <button type="button" id="sair" class="item-sair">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+              Sair
+            </button>
+          </div>
         </div>
       </div>
-    </fieldset>
+  </header>
 
-    <fieldset>
-      <legend>O casal</legend>
-      <div class="grade">
-        <div class="campo-form"><label for="f-noivo">Noivo</label><input id="f-noivo" data-campo="noivo"></div>
-        <div class="campo-form"><label for="f-cpf-noivo">CPF do noivo</label><input id="f-cpf-noivo" data-campo="cpf_noivo" inputmode="numeric"></div>
-        <div class="campo-form"><label for="f-tel-noivo">Telefone do noivo</label><input id="f-tel-noivo" data-campo="tel_noivo" inputmode="tel"></div>
-        <div class="campo-form"><label for="f-noiva">Noiva</label><input id="f-noiva" data-campo="noiva"></div>
-        <div class="campo-form"><label for="f-cpf-noiva">CPF da noiva</label><input id="f-cpf-noiva" data-campo="cpf_noiva" inputmode="numeric"></div>
-        <div class="campo-form"><label for="f-tel-noiva">Telefone da noiva</label><input id="f-tel-noiva" data-campo="tel_noiva" inputmode="tel"></div>
-        <div class="campo-form largo"><label for="f-email">E-mail do casal</label><input id="f-email" data-campo="email" type="email"></div>
-      </div>
-    </fieldset>
+  <div class="app-corpo">
+    <aside class="lateral" id="lateral">
+      <nav class="nav-lateral">
+        <button type="button" data-pagina="home">
+          <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>
+          <span>Home</span>
+        </button>
+        <button type="button" data-pagina="clientes">
+          <svg class="nav-icone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Clientes</span>
+        </button>
+      </nav>
+      <button type="button" class="lateral-toggle" id="toggle-sidebar" aria-label="Recolher menu" title="Recolher menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="9" y1="4" x2="9" y2="20"></line></svg>
+        <span>Recolher</span>
+      </button>
+    </aside>
 
-    <fieldset>
-      <legend>O evento</legend>
-      <div class="grade">
-        <div class="campo-form"><label for="f-data">Data do casamento</label><input id="f-data" data-campo="data_evento" type="date"></div>
-        <div class="campo-form"><label for="f-horario">Hor&aacute;rio</label><input id="f-horario" data-campo="horario" type="time"></div>
-        <div class="campo-form largo"><label for="f-local">Local</label><input id="f-local" data-campo="local_evento"></div>
-      </div>
-    </fieldset>
+    <div class="conteudo">
 
-    <fieldset>
-      <legend>Endere&ccedil;o</legend>
-      <div class="grade">
-        <div class="campo-form"><label for="f-cep">CEP</label><input id="f-cep" data-campo="cep" inputmode="numeric"></div>
-        <div class="campo-form"><label for="f-endereco">Endere&ccedil;o</label><input id="f-endereco" data-campo="endereco"></div>
-        <div class="campo-form"><label for="f-numero">N&uacute;mero</label><input id="f-numero" data-campo="numero"></div>
-        <div class="campo-form"><label for="f-complemento">Complemento</label><input id="f-complemento" data-campo="complemento"></div>
-        <div class="campo-form"><label for="f-bairro">Bairro</label><input id="f-bairro" data-campo="bairro"></div>
-        <div class="campo-form"><label for="f-cidade">Cidade</label><input id="f-cidade" data-campo="cidade"></div>
-        <div class="campo-form"><label for="f-estado">Estado</label><input id="f-estado" data-campo="estado"></div>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Contrato</legend>
-      <ul class="itens-lista" id="itens-lista"></ul>
-      <div class="grade">
-        <div class="campo-form"><label for="f-total">Total (R$)</label><input id="f-total" data-campo="total" inputmode="decimal"></div>
-        <div class="campo-form"><label for="f-entrada">Entrada (R$)</label><input id="f-entrada" data-campo="entrada" inputmode="decimal"></div>
-        <div class="campo-form"><label for="f-origem">Como conheceu</label><input id="f-origem" data-campo="origem"></div>
-        <div class="campo-form largo"><label for="f-observacoes">Observa&ccedil;&otilde;es</label><textarea id="f-observacoes" data-campo="observacoes"></textarea></div>
-      </div>
-    </fieldset>
-
-    <div class="acoes">
-      <button class="botao-linha" type="submit" id="salvar">Salvar</button>
-      <button class="botao-linha perigo" type="button" id="arquivar" hidden>Arquivar</button>
-      <button class="botao-linha perigo" type="button" id="excluir" hidden>Excluir de vez</button>
-      <span class="aviso-salvo" id="aviso-salvo"></span>
+    <!-- página: home -->
+    <div id="pagina-home" class="miolo" hidden>
+      <div class="pagina-topo"><h1>Home</h1></div>
+      <div class="kpis" id="kpis"></div>
+      <fieldset>
+        <legend>Pr&oacute;ximos eventos</legend>
+        <ul class="itens-lista" id="home-proximos"></ul>
+      </fieldset>
     </div>
-  </form>
 
-  <fieldset id="bloco-acesso" hidden>
-    <legend>Acesso do casal</legend>
-    <p class="sub" style="text-align:left;margin-bottom:12px" id="acesso-status"></p>
-    <button class="botao-linha" type="button" id="gerar-senha">Gerar senha tempor&aacute;ria</button>
-    <div id="acesso-resultado" hidden style="margin-top:16px">
-      <p style="font-size:14.5px">Envie no WhatsApp do casal (a senha aparece <strong>s&oacute; agora</strong>; se perder, gere outra):</p>
-      <p style="font-family:var(--serif);font-size:18px;color:var(--accent);margin-top:8px" id="acesso-credenciais"></p>
-      <button class="botao-linha" type="button" id="copiar-acesso" style="margin-top:12px">Copiar mensagem pronta</button>
-      <span class="aviso-salvo" id="aviso-copia"></span>
+    <!-- página: clientes · lista -->
+    <div id="tela-lista" class="miolo" hidden>
+      <div class="pagina-topo">
+        <h1>Clientes <span class="contagem" id="contagem-clientes"></span></h1>
+        <button class="botao-primario" id="novo-cliente" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Novo cliente
+        </button>
+      </div>
+      <div class="barra">
+        <label class="campo-busca">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+          <input type="search" id="busca" placeholder="Buscar casal">
+        </label>
+        <select id="filtro-status">
+          <option value="">Todos os status</option>
+          <option value="novo">Novo</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="realizado">Realizado</option>
+          <option value="arquivado">Arquivado</option>
+        </select>
+      </div>
+      <div class="tabela-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Casal</th><th>Data</th>
+              <th class="col-status">Status</th>
+              <th class="col-total" style="text-align:right">Total</th>
+              <th class="col-acao" aria-label="Ações"></th>
+            </tr>
+          </thead>
+          <tbody id="linhas"></tbody>
+        </table>
+      </div>
     </div>
-  </fieldset>
 
-  <fieldset id="bloco-fotos" hidden>
-    <legend>Fotos da entrega</legend>
-    <p class="sub" style="text-align:left;margin-bottom:10px">
-      Envie as fotos finais em resolu&ccedil;&atilde;o web (1 a 3MB por foto). O casal v&ecirc; e baixa tudo na p&aacute;gina dele.
-    </p>
-    <input type="file" id="arquivos" multiple accept="image/*">
-    <p class="progresso" id="progresso"></p>
-    <div class="fotos-grade" id="fotos-grade"></div>
-  </fieldset>
-  <div style="height:80px"></div>
+    <!-- página: clientes · detalhe / novo -->
+    <div id="tela-detalhe" class="miolo detalhe-largo" hidden>
+      <button class="voltar" id="voltar" type="button">&larr; Clientes</button>
+      <div id="detalhe-hero" class="hero-cliente"></div>
+
+      <form id="form-cliente">
+        <div class="detalhe-colunas">
+        <div class="detalhe-col">
+
+        <fieldset id="fieldset-casal" class="secao-bloqueada">
+          <div class="legend-acao">
+            <legend>O casal</legend>
+            <button type="button" class="btn-editar-secao" data-secao="fieldset-casal" data-tt="Editar dados do casal" aria-label="Editar dados do casal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </button>
+          </div>
+          <div class="grade">
+            <div class="campo-form"><label for="f-noivo">Noivo</label><input id="f-noivo" data-campo="noivo"></div>
+            <div class="campo-form"><label for="f-cpf-noivo">CPF do noivo</label><input id="f-cpf-noivo" data-campo="cpf_noivo" inputmode="numeric"></div>
+            <div class="campo-form"><label for="f-tel-noivo">Telefone do noivo</label><div class="campo-tel"><input id="f-tel-noivo" data-campo="tel_noivo" inputmode="tel"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noivo" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
+            <div class="campo-form"><label for="f-noiva">Noiva</label><input id="f-noiva" data-campo="noiva"></div>
+            <div class="campo-form"><label for="f-cpf-noiva">CPF da noiva</label><input id="f-cpf-noiva" data-campo="cpf_noiva" inputmode="numeric"></div>
+            <div class="campo-form"><label for="f-tel-noiva">Telefone da noiva</label><div class="campo-tel"><input id="f-tel-noiva" data-campo="tel_noiva" inputmode="tel"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noiva" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
+            <div class="campo-form largo"><label for="f-email">E-mail do casal</label><input id="f-email" data-campo="email" type="email"></div>
+          </div>
+        </fieldset>
+
+        <fieldset id="fieldset-evento" class="secao-bloqueada">
+          <div class="legend-acao">
+            <legend>O evento</legend>
+            <button type="button" class="btn-editar-secao" data-secao="fieldset-evento" data-tt="Editar dados do evento" aria-label="Editar dados do evento">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </button>
+          </div>
+          <div class="grade">
+            <div class="campo-form"><label for="f-data">Data do casamento</label><input id="f-data" data-campo="data_evento" type="date"></div>
+            <div class="campo-form"><label for="f-horario">Hor&aacute;rio</label><input id="f-horario" data-campo="horario" type="time"></div>
+            <div class="campo-form largo"><label for="f-local">Local</label><input id="f-local" data-campo="local_evento"></div>
+          </div>
+        </fieldset>
+
+        <fieldset id="fieldset-endereco" class="secao-bloqueada">
+          <div class="legend-acao">
+            <legend>Endere&ccedil;o</legend>
+            <button type="button" class="btn-editar-secao" data-secao="fieldset-endereco" data-tt="Editar endere&ccedil;o" aria-label="Editar endere&ccedil;o">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            </button>
+          </div>
+          <div class="grade">
+            <div class="campo-form"><label for="f-cep">CEP</label><input id="f-cep" data-campo="cep" inputmode="numeric"></div>
+            <div class="campo-form"><label for="f-endereco">Endere&ccedil;o</label><input id="f-endereco" data-campo="endereco"></div>
+            <div class="campo-form"><label for="f-numero">N&uacute;mero</label><input id="f-numero" data-campo="numero"></div>
+            <div class="campo-form"><label for="f-complemento">Complemento</label><input id="f-complemento" data-campo="complemento"></div>
+            <div class="campo-form"><label for="f-bairro">Bairro</label><input id="f-bairro" data-campo="bairro"></div>
+            <div class="campo-form"><label for="f-cidade">Cidade</label><input id="f-cidade" data-campo="cidade"></div>
+            <div class="campo-form"><label for="f-estado">Estado</label><input id="f-estado" data-campo="estado"></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Outras informa&ccedil;&otilde;es</legend>
+          <div class="grade">
+            <div class="campo-form"><label for="f-origem">Como conheceu</label>
+              <select id="f-origem" data-campo="origem">
+                <option value="">Selecione</option>
+                <option value="Orçamento do site">Orçamento do site</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Indicação">Indicação</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Google">Google</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </div>
+            <div class="campo-form largo"><label for="f-observacoes">Observa&ccedil;&otilde;es (internas)</label><textarea id="f-observacoes" data-campo="observacoes" placeholder="Anota&ccedil;&otilde;es internas &mdash; s&oacute; voc&ecirc; v&ecirc;."></textarea></div>
+          </div>
+        </fieldset>
+
+        </div><!-- /coluna esquerda -->
+
+        <div class="detalhe-col detalhe-col-dir">
+
+        <fieldset>
+          <div class="legend-acao">
+            <legend>Contrato</legend>
+            <button type="button" class="btn-editar-secao" id="gerar-contrato-form" data-tt="Gerar contrato e abrir a revis&atilde;o" aria-label="Gerar contrato">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line><line x1="9" y1="11" x2="12" y2="11"></line></svg>
+            </button>
+          </div>
+          <div class="seletor-itens" id="seletor-itens"></div>
+          <div class="resumo-contrato" id="resumo-itens"></div>
+          <div class="valores-contrato">
+            <div class="campo-form"><label for="f-total">Total (R$)</label><input id="f-total" data-campo="total" inputmode="decimal"></div>
+            <div class="campo-form"><label for="f-entrada">Entrada (R$)</label><input id="f-entrada" data-campo="entrada" inputmode="decimal"></div>
+          </div>
+        </fieldset>
+
+      <!-- status do contrato: só aparece quando um contrato de verdade existe pra
+           este cliente (gerado pelo botão de gerar, que valida os campos antes) -->
+      <div id="painel-contrato-status" hidden style="padding:20px;background:var(--soft);border-radius:12px;">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--accent)">Assinatura do Contrato</h3>
+        <div id="timeline-contrato" style="font-size:13.5px;">
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">✓</div>
+            <div>
+              <div style="font-weight:500;color:var(--ink);">Contrato criado</div>
+              <div style="color:var(--ink-soft);font-size:12.5px;" id="data-criado"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--ink-soft);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;" id="badge-confirmado">○</div>
+            <div>
+              <div style="font-weight:500;color:var(--ink);">Confirmado pelo Jordan</div>
+              <div style="color:var(--ink-soft);font-size:12.5px;" id="data-confirmado">Pendente</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--ink-soft);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;" id="badge-enviado">○</div>
+            <div>
+              <div style="font-weight:500;color:var(--ink);">Enviado ao casal</div>
+              <div style="color:var(--ink-soft);font-size:12.5px;" id="data-enviado">Pendente</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--ink-soft);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;" id="badge-visualizado">○</div>
+            <div>
+              <div style="font-weight:500;color:var(--ink);">Visualizado</div>
+              <div style="color:var(--ink-soft);font-size:12.5px;" id="data-visualizado">Pendente</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <div style="width:24px;height:24px;border-radius:50%;background:var(--ink-soft);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;" id="badge-assinado">○</div>
+            <div>
+              <div style="font-weight:500;color:var(--ink);">Assinado</div>
+              <div style="color:var(--ink-soft);font-size:12.5px;" id="data-assinado">Pendente</div>
+            </div>
+          </div>
+        </div>
+        <div id="acoes-contrato-pendente" hidden style="margin-top:18px">
+          <p id="aviso-assine-primeiro" hidden style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.5">
+            Abra a revis&atilde;o e assine pra liberar o envio ao casal.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="#" id="link-revisar-contrato" target="_blank" rel="noopener" class="botao-fantasma link">Abrir revisão</a>
+            <button type="button" class="botao-primario" id="btn-enviar-cliente" hidden>Pegar link pro cliente</button>
+          </div>
+        </div>
+      </div>
+
+        </div><!-- /coluna direita -->
+        </div><!-- /detalhe-colunas -->
+
+        <div class="acoes">
+          <button class="botao-primario" type="submit" id="salvar">Salvar altera&ccedil;&otilde;es</button>
+          <span class="aviso-salvo" id="aviso-salvo"></span>
+        </div>
+      </form>
+
+      <div style="height:80px"></div>
+    </div>
+
+    </div>
+  </div>
 </div>
 
+<!-- pop-up de confirmação (arquivar / excluir) -->
+<div class="modal-confirm" id="modal-confirm" hidden>
+  <div class="modal-confirm-fundo" data-cancelar></div>
+  <div class="modal-confirm-caixa" role="alertdialog" aria-modal="true" aria-labelledby="mc-titulo" aria-describedby="mc-texto">
+    <h3 id="mc-titulo"></h3>
+    <p id="mc-texto"></p>
+    <div class="modal-confirm-acoes">
+      <button type="button" class="botao-fantasma" id="mc-cancelar" data-cancelar>Cancelar</button>
+      <button type="button" class="botao-primario" id="mc-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- link do contrato pro casal (vai pelo WhatsApp, na mão do Jordan) -->
+<div class="modal-confirm" id="modal-link" hidden>
+  <div class="modal-confirm-fundo" data-fechar-link></div>
+  <div class="modal-confirm-caixa" role="dialog" aria-modal="true" aria-labelledby="ml-titulo">
+    <h3 id="ml-titulo">Link pro casal assinar</h3>
+    <p>Mande este link pro casal. Quem tem o link consegue assinar, ent&atilde;o mande direto pra eles.</p>
+    <input type="text" id="ml-link" readonly style="width:100%;margin:16px 0 4px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:13px;color:var(--ink-soft);background:var(--soft)">
+    <div class="modal-confirm-acoes">
+      <button type="button" class="botao-fantasma" data-fechar-link>Fechar</button>
+      <button type="button" class="botao-fantasma" id="ml-copiar">Copiar mensagem</button>
+      <a href="#" id="ml-whats" target="_blank" rel="noopener" class="botao-primario">Abrir no WhatsApp</a>
+    </div>
+    <span class="aviso-salvo" id="ml-aviso" style="display:block;text-align:right;margin-top:8px"></span>
+  </div>
+</div>
+
+<script src="/catalogo.js"></script>
 <script>
 (function(){
   "use strict";
 
   var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
-  var telas = { login: el("tela-login"), lista: el("tela-lista"), detalhe: el("tela-detalhe") };
-  var clientes = [];          /* cache da lista */
-  var clienteAtual = null;    /* id em edição; null = novo */
 
   function el(id){ return document.getElementById(id); }
+
+  /* ---------- pop-up de confirmação (Promise<boolean>) ---------- */
+  var _resolverConfirm = null;
+  function confirmar(opts){
+    opts = opts || {};
+    el("mc-titulo").textContent = opts.titulo || "Confirmar";
+    el("mc-texto").textContent = opts.texto || "";
+    var ok = el("mc-ok");
+    ok.textContent = opts.rotuloOk || "Confirmar";
+    ok.className = "botao-primario" + (opts.perigo ? " perigo" : "");
+    el("modal-confirm").hidden = false;
+    setTimeout(function(){ ok.focus(); }, 50);
+    return new Promise(function(resolve){ _resolverConfirm = resolve; });
+  }
+  function _fecharConfirm(valor){
+    el("modal-confirm").hidden = true;
+    if (_resolverConfirm){ var r = _resolverConfirm; _resolverConfirm = null; r(valor); }
+  }
+  el("mc-ok").addEventListener("click", function(){ _fecharConfirm(true); });
+  Array.prototype.slice.call(el("modal-confirm").querySelectorAll("[data-cancelar]"))
+    .forEach(function(b){ b.addEventListener("click", function(){ _fecharConfirm(false); }); });
+  document.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape" && !el("modal-confirm").hidden) _fecharConfirm(false);
+  });
+
+  /* ---------- navegação: shell (login vs app) + telas dentro do app ---------- */
+  var telas = {
+    home: el("pagina-home"),
+    lista: el("tela-lista"),
+    detalhe: el("tela-detalhe")
+  };
+  var GRUPO_DA_TELA = {
+    home: "home",
+    lista: "clientes", detalhe: "clientes"
+  };
+
+  function marcarNavAtiva(tela){
+    var grupo = GRUPO_DA_TELA[tela];
+    Array.prototype.slice.call(document.querySelectorAll(".nav-lateral button")).forEach(function(b){
+      b.classList.toggle("ativo", b.dataset.pagina === grupo);
+    });
+  }
+
   function mostrar(nome){
+    if (nome === "login"){
+      el("tela-login").hidden = false;
+      el("app").hidden = true;
+      window.scrollTo(0, 0);
+      return;
+    }
+    el("tela-login").hidden = true;
+    el("app").hidden = false;
     Object.keys(telas).forEach(function(t){ telas[t].hidden = t !== nome; });
+    marcarNavAtiva(nome);
     window.scrollTo(0, 0);
   }
+
+  function irPara(pagina){
+    if (pagina === "home") carregarHome();
+    else if (pagina === "clientes") carregarLista();
+  }
+
+  Array.prototype.slice.call(document.querySelectorAll(".nav-lateral button")).forEach(function(b){
+    b.addEventListener("click", function(){ irPara(b.dataset.pagina); });
+  });
 
   function api(url, corpo){
     var ehLogin = corpo && corpo.acao === "entrar";
@@ -347,6 +1041,169 @@
     });
   }
 
+  function avisar(idEl, texto, erro){
+    var aviso = el(idEl);
+    aviso.textContent = texto;
+    aviso.style.color = erro ? "var(--erro)" : "var(--ok)";
+    setTimeout(function(){ aviso.textContent = ""; }, 4000);
+  }
+
+  var ICONE_OLHO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+  var ICONE_OLHO_FECHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.5 10.5 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-3.22 4.36M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+  function alternarVisibilidadeSenha(botao, input){
+    var mostrando = input.type === "text";
+    input.type = mostrando ? "password" : "text";
+    botao.innerHTML = mostrando ? ICONE_OLHO : ICONE_OLHO_FECHADO;
+    botao.setAttribute("aria-label", mostrando ? "Mostrar senha" : "Ocultar senha");
+  }
+
+  el("alternar-senha").innerHTML = ICONE_OLHO;
+  el("alternar-senha").addEventListener("click", function(){
+    alternarVisibilidadeSenha(el("alternar-senha"), el("senha"));
+  });
+
+  /* ---------- dropdown do avatar (topo do estúdio) ---------- */
+  (function(){
+    var botao = el("botao-avatar");
+    var dropdown = el("dropdown-avatar");
+    function fechar(){ dropdown.hidden = true; botao.setAttribute("aria-expanded", "false"); }
+    botao.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var abrir = dropdown.hidden;
+      dropdown.hidden = !abrir;
+      botao.setAttribute("aria-expanded", abrir ? "true" : "false");
+    });
+    /* fecha ao tocar/clicar fora — pointerdown funciona no toque (iOS), o click não */
+    document.addEventListener("pointerdown", function(ev){
+      if (!dropdown.hidden && !dropdown.contains(ev.target) && !botao.contains(ev.target)) fechar();
+    });
+    document.addEventListener("keydown", function(ev){
+      if (ev.key === "Escape") fechar();
+    });
+    /* Configurações: navega normalmente pra /configuracoes.html */
+    dropdown.querySelector("[data-config]").addEventListener("click", function(){
+      fechar();
+    });
+  })();
+
+  /* ---------- notificações (sino do topo) ---------- */
+  var ICON_PROPOSTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>';
+  var _fecharNotif = null;
+  function fecharNotif(){ if (_fecharNotif) _fecharNotif(); }
+
+  function montarNotificacoes(clientes){
+    var lista = [];
+    (clientes || []).forEach(function(c){
+      if (c.status === "novo" && c.origem === "Orçamento do site"){
+        var nomeNovo = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "cliente";
+        lista.push({ tipo: "proposta", ordem: 0,
+          titulo: "Novo cliente: " + nomeNovo,
+          sub: c.tel_noivo || "Chegou pelo orçamento do site", cid: c.id });
+      }
+    });
+    (clientes || []).forEach(function(c){
+      if (c.contrato_status === "enviado" || c.contrato_status === "visualizado"){
+        var nome = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "cliente";
+        lista.push({ tipo: "contrato", ordem: 1, titulo: "Contrato aguardando assinatura",
+          sub: nome + (c.contrato_status === "visualizado" ? " · já abriu o link" : ""), cid: c.id });
+      }
+    });
+    (clientes || []).forEach(function(c){
+      if (c.status === "arquivado" || !c.data_evento) return;
+      var d = diasAte(c.data_evento);
+      if (d != null && d >= 0 && d <= 30){
+        var nome = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "cliente";
+        var quando = d === 0 ? "é hoje!" : d === 1 ? "é amanhã" : "faltam " + d + " dias";
+        lista.push({ tipo: "prazo", ordem: 2 + d / 1000, titulo: "Casamento de " + nome,
+          sub: quando + " · " + dataBr(c.data_evento), cid: c.id });
+      }
+    });
+    lista.sort(function(a, b){ return a.ordem - b.ordem; });
+    return lista;
+  }
+
+  function renderNotificacoes(lista){
+    var cont = el("notif-lista");
+    var ponto = el("ponto-notificacao");
+    cont.innerHTML = "";
+    if (!lista.length){
+      ponto.hidden = true;
+      var vazio = document.createElement("div"); vazio.className = "notif-vazio";
+      vazio.textContent = "Tudo em dia. Nenhuma novidade por aqui.";
+      cont.appendChild(vazio);
+      return;
+    }
+    ponto.hidden = false;
+    ponto.textContent = lista.length > 9 ? "9+" : String(lista.length);
+    var ICONE = { proposta: ICON_PROPOSTA, prazo: ICON_CAL, contrato: ICON_CONTRATO };
+    lista.forEach(function(n){
+      var item = document.createElement("button"); item.type = "button"; item.className = "notif-item";
+      var ic = document.createElement("div"); ic.className = "notif-icone " + n.tipo; ic.innerHTML = ICONE[n.tipo] || ICON_CAL;
+      var tx = document.createElement("div"); tx.className = "notif-texto";
+      var t = document.createElement("div"); t.className = "notif-titulo"; t.textContent = n.titulo;
+      var s = document.createElement("div"); s.className = "notif-sub"; s.textContent = n.sub;
+      tx.appendChild(t); tx.appendChild(s);
+      item.appendChild(ic); item.appendChild(tx);
+      item.addEventListener("click", function(){
+        fecharNotif();
+        if (n.cid) abrirDetalhe(n.cid);
+      });
+      cont.appendChild(item);
+    });
+  }
+
+  function carregarNotificacoes(){
+    api("/api/estudio?lista=1").then(function(r){
+      renderNotificacoes(montarNotificacoes(r.clientes || []));
+    }).catch(function(){});
+  }
+
+  (function(){
+    var botao = el("botao-notificacao");
+    var dropdown = el("dropdown-notificacao");
+    function fechar(){ dropdown.hidden = true; botao.setAttribute("aria-expanded", "false"); }
+    _fecharNotif = fechar;
+    botao.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var abrir = dropdown.hidden;
+      dropdown.hidden = !abrir;
+      botao.setAttribute("aria-expanded", abrir ? "true" : "false");
+      if (abrir) carregarNotificacoes();
+    });
+    /* fecha ao tocar/clicar fora — pointerdown funciona no toque (iOS), o click não */
+    document.addEventListener("pointerdown", function(ev){
+      if (!dropdown.hidden && !dropdown.contains(ev.target) && !botao.contains(ev.target)) fechar();
+    });
+    document.addEventListener("keydown", function(ev){ if (ev.key === "Escape") fechar(); });
+  })();
+
+  function dataBr(iso){
+    if (!iso) return "a definir";
+    var p = iso.split("-");
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+
+  /* ---------- botão "abrir no WhatsApp" nos campos de telefone ---------- */
+  function digitosWpp(v){ return String(v || "").replace(/\D/g, ""); }
+  function sincronizarBotoesWpp(){
+    Array.prototype.forEach.call(document.querySelectorAll(".btn-wpp"), function(b){
+      var alvo = el(b.dataset.wppPara);
+      b.disabled = !alvo || digitosWpp(alvo.value).length < 8;
+    });
+  }
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest && ev.target.closest(".btn-wpp");
+    if (!b) return;
+    var alvo = el(b.dataset.wppPara);
+    var num = digitosWpp(alvo && alvo.value);
+    if (num.length < 8){ if (alvo) alvo.focus(); return; }
+    window.open("https://wa.me/" + num, "_blank", "noopener");
+  });
+  document.addEventListener("input", function(ev){
+    if (ev.target.closest && ev.target.closest(".campo-tel")) sincronizarBotoesWpp();
+  });
+
   /* ---------- login ---------- */
   el("form-login").addEventListener("submit", function(ev){
     ev.preventDefault();
@@ -355,9 +1212,9 @@
     el("erro-login").textContent = "";
     api("/api/sessao", { acao: "entrar", email: el("email-login").value, senha: el("senha").value })
       .then(function(r){
-        if (r.role !== "admin") throw new Error("este acesso é do casal, use /cliente");
+        if (r.role !== "admin") throw new Error("acesso não autorizado");
         el("senha").value = "";
-        carregarLista();
+        irPara("home");
       })
       .catch(function(e){
         if (e.message !== "sessao") el("erro-login").textContent = e.message;
@@ -369,7 +1226,91 @@
     api("/api/sessao", { acao: "sair" }).then(function(){ mostrar("login"); });
   });
 
-  /* ---------- lista ---------- */
+  /* ---------- sidebar colapsável (estado guardado no navegador) ---------- */
+  (function(){
+    var lateral = el("lateral");
+    var toggle = el("toggle-sidebar");
+    var rotulo = toggle.querySelector("span");
+    function aplicar(colapsada){
+      lateral.classList.toggle("colapsada", colapsada);
+      var txt = colapsada ? "Expandir menu" : "Recolher menu";
+      toggle.setAttribute("aria-label", txt);
+      toggle.setAttribute("title", txt);
+      if (rotulo) rotulo.textContent = colapsada ? "Expandir" : "Recolher";
+    }
+    try { aplicar(localStorage.getItem("estudio-sidebar") === "colapsada"); } catch(e){}
+    toggle.addEventListener("click", function(){
+      var colapsada = !lateral.classList.contains("colapsada");
+      aplicar(colapsada);
+      try { localStorage.setItem("estudio-sidebar", colapsada ? "colapsada" : "aberta"); } catch(e){}
+    });
+  })();
+
+  /* ---------- home ---------- */
+  function carregarHome(){
+    api("/api/estudio?lista=1").then(function(r){
+      var cli = r.clientes || [];
+      desenharKpis(cli);
+      desenharProximosEventos(cli);
+      mostrar("home");
+    }).catch(function(){});
+  }
+
+  function proximosEventos(clientes){
+    var hoje = new Date().toISOString().slice(0, 10);
+    return clientes
+      .filter(function(c){ return c.data_evento && c.data_evento >= hoje && c.status !== "arquivado"; })
+      .sort(function(a, b){ return a.data_evento < b.data_evento ? -1 : 1; });
+  }
+
+  function desenharKpis(clientes){
+    var novos = clientes.filter(function(c){ return c.status === "novo"; }).length;
+    var confirmados = clientes.filter(function(c){ return c.status === "confirmado"; }).length;
+    var realizados = clientes.filter(function(c){ return c.status === "realizado"; }).length;
+    var proximos = proximosEventos(clientes);
+    var kpis = [
+      { num: novos, rotulo: "Clientes novos" },
+      { num: confirmados, rotulo: "Clientes confirmados" },
+      { num: realizados, rotulo: "Casamentos realizados" },
+      { num: proximos.length ? dataBr(proximos[0].data_evento) : "—", rotulo: "Próximo casamento" }
+    ];
+    var caixa = el("kpis");
+    caixa.innerHTML = "";
+    kpis.forEach(function(k){
+      var div = document.createElement("div"); div.className = "kpi";
+      var num = document.createElement("div"); num.className = "kpi-num"; num.textContent = k.num;
+      var rot = document.createElement("div"); rot.className = "kpi-rotulo"; rot.textContent = k.rotulo;
+      div.appendChild(num); div.appendChild(rot); caixa.appendChild(div);
+    });
+  }
+
+  function desenharProximosEventos(clientes){
+    var lista = proximosEventos(clientes).slice(0, 5);
+    var ul = el("home-proximos");
+    ul.innerHTML = "";
+    if (!lista.length){
+      var li = document.createElement("li");
+      li.textContent = "Nenhum evento confirmado à frente.";
+      ul.appendChild(li);
+      return;
+    }
+    lista.forEach(function(c){
+      var li = document.createElement("li");
+      li.style.cursor = "pointer";
+      var nome = document.createElement("span");
+      nome.textContent = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "(sem nome)";
+      var data = document.createElement("span");
+      data.className = "valor"; data.textContent = dataBr(c.data_evento);
+      li.appendChild(nome); li.appendChild(data);
+      li.addEventListener("click", function(){ abrirDetalhe(c.id); });
+      ul.appendChild(li);
+    });
+  }
+
+  /* ---------- clientes · lista ---------- */
+  var clientes = [];          /* cache da lista */
+  var clienteAtual = null;    /* id em edição; null = novo */
+
   function carregarLista(){
     api("/api/estudio?lista=1").then(function(r){
       clientes = r.clientes;
@@ -380,13 +1321,282 @@
 
   var ROTULO_STATUS = {
     novo: "Novo", confirmado: "Confirmado", realizado: "Realizado",
-    fotos_entregues: "Fotos entregues", arquivado: "Arquivado"
+    arquivado: "Arquivado"
   };
 
-  function dataBr(iso){
-    if (!iso) return "a definir";
-    var p = iso.split("-");
-    return p[2] + "/" + p[1] + "/" + p[0];
+  function iniciais(a, b){
+    var ini = "";
+    if (a && a.trim()) ini += a.trim()[0];
+    if (b && b.trim()) ini += b.trim()[0];
+    return (ini || "?").toUpperCase();
+  }
+
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function diasAte(iso){
+    if (!iso) return null;
+    var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    var d = new Date(iso + "T00:00:00");
+    if (isNaN(d.getTime())) return null;
+    return Math.round((d - hoje) / 86400000);
+  }
+
+  var COR_STATUS_HERO = {
+    novo: "#C7D2DE", confirmado: "#8FE0C0", realizado: "#7FE0A8",
+    arquivado: "rgba(255,255,255,.45)"
+  };
+  var ICON_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>';
+  var ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>';
+  var ICON_MONEY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>';
+  var ICON_ARQUIVAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"></path><line x1="10" y1="12" x2="14" y2="12"></line></svg>';
+  var ICON_EXCLUIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+  var ICON_CONTRATO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M9 13h6M9 17h4"></path></svg>';
+  var ROTULO_CONTRATO = {
+    enviado: "Contrato enviado", visualizado: "Contrato aberto pelo casal",
+    assinado: "Contrato assinado", cancelado: "Contrato cancelado"
+  };
+  var COR_CONTRATO = {
+    enviado: "#E9C06A", visualizado: "#9BD0E0", assinado: "#7FE0A8", cancelado: "rgba(255,255,255,.45)"
+  };
+
+  /* CATALOGO / PACOTES / ADICIONAIS vêm do catalogo.js (fonte única, mesmo do index) */
+
+  var contratoAtual = null;   /* último contrato do cliente aberto */
+  var itensAtuais = [];       /* itens do contrato em edição [{id,nome,valor}] */
+
+  function renderHeroCliente(cliente){
+    var hero = el("detalhe-hero");
+    if (!cliente){
+      hero.innerHTML =
+        '<div class="hero-corpo"><div class="hero-avatar">+</div>' +
+        '<div><h2 class="hero-nomes">Novo cliente</h2>' +
+        '<div class="hero-chips"><span class="hero-chip">Preencha os dados e salve para criar</span></div></div></div>';
+      return;
+    }
+    var noivo = (cliente.noivo || "").trim();
+    var noiva = (cliente.noiva || "").trim();
+    var nomes = [noivo, noiva].filter(Boolean).join(" & ") || "Cliente";
+    var avatar = (noivo && noiva)
+      ? esc(noivo[0].toUpperCase()) + '<i>&amp;</i>' + esc(noiva[0].toUpperCase())
+      : esc(iniciais(noivo, noiva));
+
+    var chips = [];
+    if (cliente.data_evento){
+      var d = diasAte(cliente.data_evento);
+      var texto = dataBr(cliente.data_evento);
+      if (d != null){
+        if (d > 1) texto += " · faltam " + d + " dias";
+        else if (d === 1) texto += " · é amanhã";
+        else if (d === 0) texto += " · é hoje!";
+        else if (d === -1) texto += " · foi ontem";
+        else texto += " · há " + Math.abs(d) + " dias";
+      }
+      var classe = (d != null && d >= 0) ? "hero-chip destaque" : "hero-chip";
+      chips.push('<span class="' + classe + '">' + ICON_CAL + esc(texto) + '</span>');
+    }
+    if (cliente.local_evento) chips.push('<span class="hero-chip">' + ICON_PIN + esc(cliente.local_evento) + '</span>');
+    if (cliente.total != null && cliente.total !== "") chips.push('<span class="hero-chip">' + ICON_MONEY + esc(brl.format(cliente.total)) + '</span>');
+    if (contratoAtual && contratoAtual.status && contratoAtual.status !== "cancelado"){
+      var rc = ROTULO_CONTRATO[contratoAtual.status] || "Contrato";
+      var clsc = contratoAtual.status === "assinado" ? "hero-chip destaque" : "hero-chip";
+      chips.push('<span class="' + clsc + '">' + ICON_CONTRATO + esc(rc) + '</span>');
+    }
+
+    var rotulo = ROTULO_STATUS[cliente.status] || cliente.status || "—";
+    var cor = COR_STATUS_HERO[cliente.status] || "#fff";
+
+    var acoes = "";
+    acoes += '<button type="button" id="enviar-contrato" class="hero-icone" data-tt="Gerar contrato e abrir revisão" aria-label="Gerar contrato">' + ICON_CONTRATO + '</button>';
+    if (cliente.status !== "arquivado"){
+      acoes += '<button type="button" id="arquivar" class="hero-icone" data-tt="Arquivar (some da lista de ativos)" aria-label="Arquivar">' + ICON_ARQUIVAR + '</button>';
+    }
+    acoes += '<button type="button" id="excluir" class="hero-icone perigo" data-tt="Excluir de vez (apaga permanentemente)" aria-label="Excluir de vez">' + ICON_EXCLUIR + '</button>';
+
+    hero.innerHTML =
+      '<div class="hero-topo">' +
+        '<span class="hero-badge"><span class="ponto" style="background:' + cor + '"></span>' + esc(rotulo) + '</span>' +
+        acoes +
+      '</div>' +
+      '<div class="hero-corpo">' +
+        '<div class="hero-avatar">' + avatar + '</div>' +
+        '<div><h2 class="hero-nomes">' + esc(nomes) + '</h2>' +
+        (chips.length ? '<div class="hero-chips">' + chips.join("") + '</div>' : '') +
+        '</div>' +
+      '</div>';
+
+    var btnArq = el("arquivar");
+    if (btnArq) btnArq.addEventListener("click", arquivarCliente);
+    el("excluir").addEventListener("click", excluirCliente);
+    el("enviar-contrato").addEventListener("click", enviarParaAssinatura);
+  }
+  el("gerar-contrato-form").addEventListener("click", enviarParaAssinatura);
+
+  /* ---------- contrato pra assinatura ---------- */
+
+  /* campos sem os quais o contrato sai incompleto ou o fluxo de assinatura quebra
+     (email é obrigatório pro código de verificação em /assinar) */
+  var CAMPOS_CONTRATO_OBRIGATORIOS = [
+    { campo: "noivo", rotulo: "Nome do noivo" },
+    { campo: "cpf_noivo", rotulo: "CPF do noivo" },
+    { campo: "noiva", rotulo: "Nome da noiva" },
+    { campo: "cpf_noiva", rotulo: "CPF da noiva" },
+    { campo: "email", rotulo: "E-mail (recebe o código de verificação)" },
+    { campo: "cep", rotulo: "CEP" },
+    { campo: "endereco", rotulo: "Endereço" },
+    { campo: "numero", rotulo: "Número" },
+    { campo: "bairro", rotulo: "Bairro" },
+    { campo: "cidade", rotulo: "Cidade" },
+    { campo: "estado", rotulo: "Estado" },
+    { campo: "data_evento", rotulo: "Data do evento" },
+    { campo: "local_evento", rotulo: "Local do evento" }
+  ];
+
+  function valorCampo(nome){
+    var input = document.querySelector('[data-campo="' + nome + '"]');
+    return input ? input.value.trim() : "";
+  }
+
+  function camposFaltando(){
+    var faltando = CAMPOS_CONTRATO_OBRIGATORIOS
+      .filter(function(c){ return !valorCampo(c.campo); })
+      .map(function(c){ return c.rotulo; });
+    if (!itensAtuais.length) faltando.push("Pelo menos um item do pacote/adicional");
+    return faltando;
+  }
+
+  function enviarParaAssinatura(){
+    if (!clienteAtual) return;
+
+    var faltando = camposFaltando();
+    if (faltando.length){
+      alert("Faltam dados pra gerar o contrato:\n\n— " + faltando.join("\n— ") +
+        "\n\nPreencha e salve antes de enviar pra assinatura.");
+      return;
+    }
+
+    confirmar({
+      titulo: "Gerar contrato?",
+      texto: "Salva os dados atuais, gera o contrato (já fica salvo, mesmo sem assinatura) e abre a página de revisão pra você conferir e confirmar antes de mandar pro casal.",
+      rotuloOk: "Gerar e abrir"
+    }).then(function(ok){
+      if (!ok) return;
+      salvarClienteAtual()
+        .then(function(){ return api("/api/estudio", { acao: "gerar-contrato", id: clienteAtual }); })
+        .then(function(r){
+          window.open(r.link, "_blank", "noopener");
+          /* recarrega o cliente+contrato pra timeline refletir o estado real */
+          return api("/api/estudio?id=" + clienteAtual);
+        })
+        .then(function(r2){
+          contratoAtual = r2.contrato || null;
+          renderHeroCliente(r2.cliente);
+          preencherTimelineContrato(contratoAtual);
+        })
+        .catch(function(e){ if (e.message !== "sessao") alert(e.message); });
+    });
+  }
+
+  function enviarContratoAoCliente(){
+    if (!clienteAtual) return;
+    confirmar({
+      titulo: "Liberar contrato pro casal?",
+      texto: "Gera o link de assinatura pra você mandar pelo WhatsApp. A partir daí o casal já consegue abrir e assinar.",
+      rotuloOk: "Gerar link"
+    }).then(function(ok){
+      if (!ok) return;
+      api("/api/estudio", { acao: "liberar-contrato-cliente", id: clienteAtual })
+        .then(function(r){
+          abrirModalLink(r);
+          return api("/api/estudio?id=" + clienteAtual);
+        })
+        .then(function(r2){
+          contratoAtual = r2.contrato || null;
+          renderHeroCliente(r2.cliente);
+          preencherTimelineContrato(contratoAtual);
+        })
+        .catch(function(e){ if (e.message !== "sessao") alert(e.message); });
+    });
+  }
+  el("btn-enviar-cliente").addEventListener("click", enviarContratoAoCliente);
+
+  /* modal do link: copiar a mensagem pronta ou abrir direto a conversa no WhatsApp */
+  function abrirModalLink(r){
+    el("ml-link").value = r.link;
+    el("ml-link").dataset.mensagem = r.mensagem || r.link;
+    var wpp = el("ml-whats");
+    if (r.telefone && r.telefone.length >= 8){
+      wpp.href = "https://wa.me/" + r.telefone + "?text=" + encodeURIComponent(r.mensagem || r.link);
+      wpp.hidden = false;
+    } else {
+      /* sem telefone cadastrado não dá pra abrir a conversa; sobra copiar */
+      wpp.hidden = true;
+    }
+    el("ml-aviso").textContent = "";
+    el("modal-link").hidden = false;
+  }
+
+  (function(){
+    var modal = el("modal-link");
+    Array.prototype.slice.call(modal.querySelectorAll("[data-fechar-link]"))
+      .forEach(function(b){ b.addEventListener("click", function(){ modal.hidden = true; }); });
+    el("ml-copiar").addEventListener("click", function(){
+      var msg = el("ml-link").dataset.mensagem || el("ml-link").value;
+      function ok(){
+        el("ml-aviso").textContent = "Mensagem copiada.";
+        setTimeout(function(){ el("ml-aviso").textContent = ""; }, 3000);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(msg).then(ok, function(){ window.prompt("Copie a mensagem:", msg); });
+      } else { window.prompt("Copie a mensagem:", msg); }
+    });
+    document.addEventListener("keydown", function(ev){ if (ev.key === "Escape" && !modal.hidden) modal.hidden = true; });
+  })();
+
+  function arquivarCliente(){
+    if (!clienteAtual) return;
+    confirmar({
+      titulo: "Arquivar cliente?",
+      texto: "Ele sai da lista padrão, mas continua acessível pelo filtro de status.",
+      rotuloOk: "Arquivar"
+    }).then(function(ok){
+      if (!ok) return;
+      api("/api/estudio", { acao: "arquivar", id: clienteAtual })
+        .then(carregarLista).catch(function(){});
+    });
+  }
+
+  function excluirCliente(){
+    if (!clienteAtual) return;
+    confirmar({
+      titulo: "Excluir de vez?",
+      texto: "Este cliente será apagado permanentemente. Não dá pra desfazer.",
+      rotuloOk: "Excluir",
+      perigo: true
+    }).then(function(ok){
+      if (!ok) return;
+      api("/api/estudio", { acao: "excluir", id: clienteAtual })
+        .then(carregarLista)
+        .catch(function(e){ if (e.message !== "sessao") alert("Não deu pra excluir o cliente. Tente de novo."); });
+    });
+  }
+
+  /* excluir direto pela lista (ícone de lixeira na linha) */
+  function excluirClientePorId(id, nome){
+    confirmar({
+      titulo: "Excluir de vez?",
+      texto: "“" + (nome || "Este cliente") + "” será apagado permanentemente. Não dá pra desfazer.",
+      rotuloOk: "Excluir",
+      perigo: true
+    }).then(function(ok){
+      if (!ok) return;
+      api("/api/estudio", { acao: "excluir", id: id })
+        .then(carregarLista)
+        .catch(function(e){ if (e.message !== "sessao") alert("Não deu pra excluir o cliente. Tente de novo."); });
+    });
   }
 
   function desenharLista(){
@@ -400,18 +1610,24 @@
       var nome = ((c.noivo || "") + " " + (c.noiva || "")).toLowerCase();
       return !termo || nome.indexOf(termo) !== -1;
     });
+    el("contagem-clientes").textContent = visiveis.length || "";
     if (!visiveis.length){
       var tr = document.createElement("tr");
       var td = document.createElement("td");
-      td.colSpan = 4; td.className = "vazio";
+      td.colSpan = 5; td.className = "vazio";
       td.textContent = clientes.length ? "Nenhum cliente com esse filtro." : "Nenhum cliente ainda. O primeiro chega pelo questionário do contrato, ou crie manualmente.";
       tr.appendChild(td); corpo.appendChild(tr);
       return;
     }
     visiveis.forEach(function(c){
       var tr = document.createElement("tr");
+      var nomeCasal = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "(sem nome)";
       var casal = document.createElement("td");
-      casal.textContent = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "(sem nome)";
+      var cel = document.createElement("div"); cel.className = "celula-nome";
+      var av = document.createElement("div"); av.className = "avatar-inicial";
+      av.textContent = iniciais(c.noivo, c.noiva);
+      var nm = document.createElement("span"); nm.textContent = nomeCasal;
+      cel.appendChild(av); cel.appendChild(nm); casal.appendChild(cel);
       var data = document.createElement("td");
       data.textContent = dataBr(c.data_evento);
       var st = document.createElement("td");
@@ -423,7 +1639,20 @@
       var total = document.createElement("td");
       total.className = "num col-total";
       total.textContent = c.total != null ? brl.format(c.total) : "";
-      tr.appendChild(casal); tr.appendChild(data); tr.appendChild(st); tr.appendChild(total);
+      var acao = document.createElement("td");
+      acao.className = "col-acao";
+      var btnDel = document.createElement("button");
+      btnDel.type = "button";
+      btnDel.className = "btn-apagar-linha";
+      btnDel.title = "Excluir cliente";
+      btnDel.setAttribute("aria-label", "Excluir " + nomeCasal);
+      btnDel.innerHTML = ICON_EXCLUIR;
+      btnDel.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        excluirClientePorId(c.id, nomeCasal);
+      });
+      acao.appendChild(btnDel);
+      tr.appendChild(casal); tr.appendChild(data); tr.appendChild(st); tr.appendChild(total); tr.appendChild(acao);
       tr.addEventListener("click", function(){ abrirDetalhe(c.id); });
       corpo.appendChild(tr);
     });
@@ -432,204 +1661,259 @@
   el("busca").addEventListener("input", desenharLista);
   el("filtro-status").addEventListener("change", desenharLista);
 
-  /* ---------- detalhe ---------- */
+  /* ---------- clientes · detalhe ---------- */
   function campos(){ return Array.prototype.slice.call(document.querySelectorAll("[data-campo]")); }
 
+  /* seções que abrem travadas (evita alterar dado do contrato sem querer);
+     o lápis na legenda destrava até trocar de cliente */
+  var SECOES_TRAVAVEIS = ["fieldset-casal", "fieldset-evento", "fieldset-endereco"];
+
+  function travarSecoes(travar){
+    SECOES_TRAVAVEIS.forEach(function(id){
+      var fs = el(id);
+      if (!fs) return;
+      fs.classList.toggle("secao-bloqueada", travar);
+      var btn = fs.querySelector(".btn-editar-secao");
+      if (btn) atualizarRotuloTrava(btn, travar);
+    });
+  }
+
+  function atualizarRotuloTrava(btn, travado){
+    btn.dataset.tt = travado ? (btn.dataset.ttEditar || "Editar") : "Travar edição";
+    btn.setAttribute("aria-label", btn.dataset.tt);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".btn-editar-secao[data-secao]"), function(btn){
+    btn.dataset.ttEditar = btn.dataset.tt;
+    btn.addEventListener("click", function(){
+      var fs = el(btn.dataset.secao);
+      var travar = !fs.classList.contains("secao-bloqueada");
+      fs.classList.toggle("secao-bloqueada", travar);
+      atualizarRotuloTrava(btn, travar);
+    });
+  });
+
   function preencher(cliente){
+    /* cliente novo abre liberado pra digitar; cliente existente abre travado */
+    travarSecoes(!!cliente);
     campos().forEach(function(c){
       var v = cliente ? cliente[c.dataset.campo] : null;
       c.value = v == null ? "" : v;
     });
-    if (!cliente) el("f-status").value = "novo";
-    var lista = el("itens-lista");
-    lista.innerHTML = "";
-    var itens = (cliente && Array.isArray(cliente.itens)) ? cliente.itens : [];
-    itens.forEach(function(i){
-      var li = document.createElement("li");
-      var nome = document.createElement("span"); nome.textContent = i.nome || i.id;
-      var valor = document.createElement("span"); valor.className = "valor";
-      valor.textContent = i.valor != null ? brl.format(i.valor) : "";
-      li.appendChild(nome); li.appendChild(valor); lista.appendChild(li);
+    itensAtuais = (cliente && Array.isArray(cliente.itens))
+      ? cliente.itens.map(function(i){
+          var cat = CATALOGO[i.id];
+          return { id: i.id, nome: cat ? cat.nome : i.nome, valor: cat ? cat.preco : i.valor };
+        })
+      : [];
+    desenharSeletorItens();
+    desenharResumoContrato();
+    /* total/entrada vêm crus do banco (18600); exibe formatado (18.600,00) */
+    ["total", "entrada"].forEach(function(k){
+      var input = document.querySelector('[data-campo="' + k + '"]');
+      if (input && cliente && cliente[k] != null && cliente[k] !== "") input.value = formatarMoeda(cliente[k]);
     });
-    if (!itens.length){
-      var li = document.createElement("li");
-      li.textContent = "Sem itens registrados (cliente criado manualmente).";
-      lista.appendChild(li);
+    sincronizarBotoesWpp();
+  }
+
+  function preencherTimelineContrato(contrato){
+    var painel = el("painel-contrato-status");
+    /* "enviar pro cliente" volta pro estado travado a cada render: nunca deve
+       sobrar visível de um contrato anterior só porque o container está escondido */
+    el("btn-enviar-cliente").hidden = true;
+    el("acoes-contrato-pendente").hidden = true;
+    el("link-revisar-contrato").hidden = false;
+    /* o painel só aparece quando existe mesmo um contrato pra este cliente —
+       sem contrato, não há "Contrato criado" pra mostrar (era o bug: o bloco
+       antigo mostrava esse passo sempre marcado, mesmo sem nada gerado ainda) */
+    if (!contrato) { painel.hidden = true; return; }
+    painel.hidden = false;
+
+    ["confirmado", "enviado", "visualizado", "assinado"].forEach(function(k){
+      el("data-" + k).textContent = "Pendente";
+      el("badge-" + k).style.background = "var(--ink-soft)";
+      el("badge-" + k).textContent = "○";
+    });
+
+    var fmt = function(d){ return new Date(d).toLocaleDateString("pt-BR") + " às " + new Date(d).toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"}); };
+    function marcar(chave, data, cor){
+      el("data-" + chave).textContent = fmt(data);
+      el("badge-" + chave).style.background = cor || "var(--accent)";
+      el("badge-" + chave).textContent = "✓";
     }
+
+    if (contrato.criado_em) el("data-criado").textContent = fmt(contrato.criado_em);
+    if (contrato.jordan_confirmado_em) marcar("confirmado", contrato.jordan_confirmado_em);
+    /* só marca "enviado" com a data real do disparo do e-mail — nunca deduzindo
+       do status nem reaproveitando criado_em (era o que fazia o card mentir) */
+    if (contrato.enviado_em) marcar("enviado", contrato.enviado_em);
+    if (contrato.visualizado_em) marcar("visualizado", contrato.visualizado_em);
+    if (contrato.assinado_em) marcar("assinado", contrato.assinado_em, "var(--ok)");
+
+    /* ações pendentes: só faz sentido enquanto o contrato ainda é um rascunho
+       (depois de enviado ao casal, o fluxo é todo pelo /assinar dele) */
+    var acoes = el("acoes-contrato-pendente");
+    var btnEnviar = el("btn-enviar-cliente");
+    var jaAssinado = contrato.status === "assinado";
+    var jaLiberado = contrato.status === "enviado" || contrato.status === "visualizado";
+    if (contrato.status === "rascunho") {
+      /* liberar pro casal só existe depois que o Jordan assinou na revisão
+         (o backend também barra: "confirmar-contrato" antes, senão 409) */
+      var assinadoJordan = !!contrato.jordan_confirmado_em;
+      acoes.hidden = false;
+      el("link-revisar-contrato").hidden = false;
+      el("link-revisar-contrato").href = "/revisar-contrato?id=" + clienteAtual;
+      btnEnviar.hidden = !assinadoJordan;
+      btnEnviar.textContent = "Pegar link pro cliente";
+      el("aviso-assine-primeiro").hidden = assinadoJordan;
+    } else if (jaLiberado) {
+      /* já liberado: a revisão não abre mais (ela exige rascunho), mas o Jordan
+         precisa conseguir recuperar o link pra reenviar pelo WhatsApp */
+      acoes.hidden = false;
+      el("link-revisar-contrato").hidden = true;
+      btnEnviar.hidden = false;
+      btnEnviar.textContent = "Ver link de novo";
+      el("aviso-assine-primeiro").hidden = true;
+    } else {
+      acoes.hidden = true; /* assinado ou cancelado: nada a fazer aqui */
+      if (jaAssinado) el("link-revisar-contrato").hidden = true;
+    }
+  }
+
+  function itemSelecionado(id){ return itensAtuais.some(function(i){ return i.id === id; }); }
+
+  function pillItem(id){
+    return '<button type="button" class="pill-item' + (itemSelecionado(id) ? " ativo" : "") +
+      '" data-id="' + id + '">' + esc(CATALOGO[id].curto) +
+      ' <span class="preco">' + brl.format(CATALOGO[id].preco) + '</span></button>';
+  }
+
+  function desenharSeletorItens(){
+    var box = el("seletor-itens");
+    var eternalOn = itemSelecionado("eternal");
+    var html = '<div class="seletor-grupo">Pacote</div><div class="seletor-pills pacotes">';
+    PACOTES.forEach(function(id){ html += pillItem(id); });
+    html += '</div><div class="seletor-grupo">Adicionais</div><div class="seletor-pills">';
+    ADICIONAIS.forEach(function(id){
+      if (id === "prewedding" && eternalOn) return; /* já incluso no Eternal */
+      html += pillItem(id);
+    });
+    html += '</div>';
+    box.innerHTML = html;
+    Array.prototype.slice.call(box.querySelectorAll(".pill-item")).forEach(function(p){
+      p.addEventListener("click", function(){ alternarItem(p.dataset.id); });
+    });
+  }
+
+  function alternarItem(id){
+    if (PACOTES.indexOf(id) !== -1){
+      var jaEra = itemSelecionado(id);
+      itensAtuais = itensAtuais.filter(function(i){ return PACOTES.indexOf(i.id) === -1; });
+      if (!jaEra) itensAtuais.unshift({ id: id, nome: CATALOGO[id].nome, valor: CATALOGO[id].preco });
+    } else if (itemSelecionado(id)){
+      itensAtuais = itensAtuais.filter(function(i){ return i.id !== id; });
+    } else {
+      itensAtuais.push({ id: id, nome: CATALOGO[id].nome, valor: CATALOGO[id].preco });
+    }
+    if (itemSelecionado("eternal")) itensAtuais = itensAtuais.filter(function(i){ return i.id !== "prewedding"; });
+    desenharSeletorItens();
+    desenharResumoContrato();
+    recalcTotaisContrato();
+  }
+
+  /* dinheiro em pt-BR (18600 → "18.600,00") e de volta (mesma lógica do submit) */
+  function formatarMoeda(n){
+    var num = Number(n);
+    return isFinite(num) ? num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+  }
+  function parseMoeda(v){
+    if (v == null || v === "") return null;
+    var num = parseFloat(String(v).replace(/\./g, "").replace(",", "."));
+    return isFinite(num) ? num : null;
+  }
+
+  function recalcTotaisContrato(){
+    if (!itensAtuais.length) return;
+    var total = itensAtuais.reduce(function(s, i){ return s + (Number(i.valor) || 0); }, 0);
+    el("f-total").value = formatarMoeda(total);
+    el("f-entrada").value = formatarMoeda(total * 0.3);
+  }
+
+  /* reformata o que o Jordan digitar à mão, ao sair do campo */
+  ["f-total", "f-entrada"].forEach(function(id){
+    el(id).addEventListener("blur", function(){
+      var n = parseMoeda(this.value);
+      this.value = n != null ? formatarMoeda(n) : "";
+    });
+  });
+
+  /* resumo compacto acima de Total/Entrada — os pills já mostram QUAIS itens
+     estão ativos, aqui só a contagem + soma, pra não repetir a lista inteira */
+  function desenharResumoContrato(){
+    var box = el("resumo-itens");
+    if (!itensAtuais.length){
+      box.className = "resumo-contrato vazio";
+      box.textContent = "Nenhum item selecionado. Escolha acima ou preencha o total à mão.";
+      return;
+    }
+    var total = itensAtuais.reduce(function(s, i){ return s + (Number(i.valor) || 0); }, 0);
+    box.className = "resumo-contrato";
+    box.innerHTML =
+      '<span class="qtd">' + itensAtuais.length + (itensAtuais.length === 1 ? " item selecionado" : " itens selecionados") + '</span>' +
+      '<span class="total">' + brl.format(total) + '</span>';
   }
 
   function abrirDetalhe(id){
     api("/api/estudio?id=" + id).then(function(r){
       clienteAtual = id;
-      el("detalhe-titulo").textContent =
-        [r.cliente.noivo, r.cliente.noiva].filter(Boolean).join(" & ") || "Cliente";
+      contratoAtual = r.contrato || null;
+      renderHeroCliente(r.cliente);
       preencher(r.cliente);
-      el("arquivar").hidden = r.cliente.status === "arquivado";
-      el("excluir").hidden = false;
-      el("bloco-fotos").hidden = false;
-      el("bloco-acesso").hidden = false;
-      el("acesso-resultado").hidden = true;
-      el("acesso-status").textContent = !r.cliente.email
-        ? "O casal ainda não tem e-mail cadastrado. Preencha e salve antes de gerar o acesso."
-        : (r.cliente.auth_user_id
-          ? "Acesso ativo para " + r.cliente.email + ". Gerar uma senha nova invalida a anterior."
-          : "Sem acesso ainda. Gere a primeira senha e envie com o link /cliente.");
-      desenharFotos(r.fotos);
+      preencherTimelineContrato(contratoAtual);
       mostrar("detalhe");
     }).catch(function(){});
   }
 
-  el("gerar-senha").addEventListener("click", function(){
-    if (!clienteAtual) return;
-    el("gerar-senha").disabled = true;
-    api("/api/estudio", { acao: "acesso-casal", id: clienteAtual })
-      .then(function(r){
-        el("acesso-resultado").hidden = false;
-        el("acesso-credenciais").textContent = r.email + " · " + r.senha;
-        el("acesso-credenciais").dataset.email = r.email;
-        el("acesso-credenciais").dataset.senha = r.senha;
-        el("acesso-status").textContent = "Acesso ativo para " + r.email + ". Gerar uma senha nova invalida a anterior.";
-      })
-      .catch(function(e){
-        if (e.message !== "sessao") avisar(e.message, true);
-      })
-      .finally(function(){ el("gerar-senha").disabled = false; });
-  });
-
-  el("copiar-acesso").addEventListener("click", function(){
-    var cred = el("acesso-credenciais");
-    var msg = "Oi! Aqui é o Jordan. A área de vocês no site já está no ar:\n" +
-      "https://jordan-santos.vercel.app/cliente\n" +
-      "E-mail: " + cred.dataset.email + "\nSenha: " + cred.dataset.senha +
-      "\nDá pra trocar a senha lá dentro quando quiserem.";
-    function ok(){
-      el("aviso-copia").textContent = "Copiado.";
-      setTimeout(function(){ el("aviso-copia").textContent = ""; }, 3000);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(msg).then(ok, function(){ window.prompt("Copie a mensagem:", msg); });
-    } else {
-      window.prompt("Copie a mensagem:", msg);
-    }
-  });
-
   el("novo-cliente").addEventListener("click", function(){
     clienteAtual = null;
-    el("detalhe-titulo").textContent = "Novo cliente";
+    contratoAtual = null;
+    renderHeroCliente(null);
     preencher(null);
-    el("arquivar").hidden = true;
-    el("excluir").hidden = true;
-    el("bloco-fotos").hidden = true;   /* fotos e acesso só depois de salvar */
-    el("bloco-acesso").hidden = true;
-    el("fotos-grade").innerHTML = "";
+    preencherTimelineContrato(null);
     mostrar("detalhe");
   });
 
   el("voltar").addEventListener("click", carregarLista);
 
-  el("form-cliente").addEventListener("submit", function(ev){
-    ev.preventDefault();
+  /* lê os campos do formulário como o backend espera (números formatados, itens) */
+  function montarClienteDoFormulario(){
     var cliente = {};
     campos().forEach(function(c){ cliente[c.dataset.campo] = c.value; });
     ["total", "entrada"].forEach(function(k){
       if (cliente[k]) cliente[k] = cliente[k].replace(/\./g, "").replace(",", ".");
     });
-    var chamada = clienteAtual
-      ? api("/api/estudio", { acao: "atualizar", id: clienteAtual, cliente: cliente })
-      : api("/api/estudio", { acao: "criar", cliente: cliente });
-    chamada.then(function(r){
-      if (!clienteAtual && r.cliente){ abrirDetalhe(r.cliente.id); return; }
-      avisar("Salvo.");
-    }).catch(function(e){
-      if (e.message !== "sessao") avisar(e.message, true);
-    });
-  });
-
-  function avisar(texto, erro){
-    var aviso = el("aviso-salvo");
-    aviso.textContent = texto;
-    aviso.style.color = erro ? "var(--erro)" : "var(--ok)";
-    setTimeout(function(){ aviso.textContent = ""; }, 4000);
+    cliente.itens = itensAtuais;
+    return cliente;
   }
 
-  el("arquivar").addEventListener("click", function(){
-    if (!clienteAtual) return;
-    if (!confirm("Arquivar este cliente? Ele some da lista padrão e perde o acesso à página do casal.")) return;
-    api("/api/estudio", { acao: "arquivar", id: clienteAtual })
-      .then(carregarLista).catch(function(){});
-  });
-
-  el("excluir").addEventListener("click", function(){
-    if (!clienteAtual) return;
-    if (!confirm("Excluir DE VEZ este cliente e todas as fotos? Não tem volta.")) return;
-    api("/api/estudio", { acao: "excluir", id: clienteAtual })
-      .then(carregarLista).catch(function(){});
-  });
-
-  /* ---------- fotos ---------- */
-  function desenharFotos(fotos){
-    var grade = el("fotos-grade");
-    grade.innerHTML = "";
-    (fotos || []).forEach(function(f){
-      var caixa = document.createElement("div");
-      caixa.className = "foto";
-      var img = document.createElement("img");
-      img.src = f.url; img.alt = f.nome; img.loading = "lazy";
-      var apagar = document.createElement("button");
-      apagar.type = "button"; apagar.textContent = "×";
-      apagar.setAttribute("aria-label", "Excluir " + f.nome);
-      apagar.addEventListener("click", function(){
-        if (!confirm("Excluir esta foto?")) return;
-        api("/api/estudio", { acao: "excluir-foto", id: clienteAtual, nome: f.nome })
-          .then(function(){ abrirDetalhe(clienteAtual); }).catch(function(){});
-      });
-      caixa.appendChild(img); caixa.appendChild(apagar);
-      grade.appendChild(caixa);
+  /* salva o cliente atual (cria se ainda não existir) com os valores do formulário */
+  function salvarClienteAtual(){
+    var cliente = montarClienteDoFormulario();
+    if (clienteAtual) return api("/api/estudio", { acao: "atualizar", id: clienteAtual, cliente: cliente });
+    return api("/api/estudio", { acao: "criar", cliente: cliente }).then(function(r){
+      if (r.cliente) clienteAtual = r.cliente.id;
+      return r;
     });
   }
 
-  el("arquivos").addEventListener("change", function(){
-    var arquivos = Array.prototype.slice.call(el("arquivos").files);
-    if (!arquivos.length || !clienteAtual) return;
-    var progresso = el("progresso");
-    progresso.textContent = "Preparando envio...";
-    api("/api/estudio", {
-      acao: "upload-urls", id: clienteAtual,
-      arquivos: arquivos.map(function(a){ return { nome: a.name }; })
-    }).then(function(r){
-      var fila = r.urls.map(function(u, i){ return { url: u.url, arquivo: arquivos[i] }; });
-      var feitos = 0, falhas = 0, ativos = 0;
-      return new Promise(function(resolver){
-        function proximo(){
-          if (!fila.length && !ativos){ resolver({ feitos: feitos, falhas: falhas }); return; }
-          while (fila.length && ativos < 3){
-            var item = fila.shift();
-            ativos++;
-            fetch(item.url, {
-              method: "PUT",
-              headers: { "Content-Type": item.arquivo.type || "application/octet-stream" },
-              body: item.arquivo
-            }).then(function(resp){
-              if (!resp.ok) falhas++; else feitos++;
-            }).catch(function(){ falhas++; })
-              .finally(function(){
-                ativos--;
-                progresso.textContent = "Enviando: " + feitos + " de " + arquivos.length +
-                  (falhas ? " (" + falhas + " falharam)" : "");
-                proximo();
-              });
-          }
-        }
-        proximo();
-      });
-    }).then(function(resultado){
-      progresso.textContent = resultado.falhas
-        ? "Envio concluído com " + resultado.falhas + " falha(s). Tente reenviar as que faltaram."
-        : "Envio concluído.";
-      el("arquivos").value = "";
-      abrirDetalhe(clienteAtual);
+  el("form-cliente").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var eraNovo = !clienteAtual;
+    salvarClienteAtual().then(function(){
+      if (eraNovo){ abrirDetalhe(clienteAtual); return; }
+      avisar("aviso-salvo", "Salvo.");
     }).catch(function(e){
-      if (e.message !== "sessao") progresso.textContent = "Falha no envio: " + e.message;
+      if (e.message !== "sessao") avisar("aviso-salvo", e.message, true);
     });
   });
 
@@ -638,7 +1922,7 @@
     if (!r.ok) throw 0;
     return r.json();
   }).then(function(j){
-    if (j.role === "admin") carregarLista(); else mostrar("login");
+    if (j.role === "admin"){ irPara("home"); carregarNotificacoes(); } else mostrar("login");
   }).catch(function(){ mostrar("login"); });
 })();
 </script>

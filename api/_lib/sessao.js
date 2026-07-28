@@ -1,6 +1,6 @@
 /*
-  Sessões sem estado: token = base64url(payload JSON) + "." + base64url(HMAC-SHA256).
-  Payload: { sub: "<uuid do cliente>" | "estudio", role: "cliente" | "admin", exp: <unix s> }.
+  Sessão sem estado do admin (Jordan): token = base64url(payload JSON) + "." + base64url(HMAC-SHA256).
+  Payload: { sub: "estudio", role: "admin", exp: <unix s> }.
   Vive num cookie HttpOnly; Secure; SameSite=Lax chamado "sessao".
 */
 
@@ -82,16 +82,6 @@ export async function sessaoDe(req, role) {
 
 export function normalizarCpf(s) {
   return String(s || "").replace(/\D/g, "");
-}
-
-/* Comparação em tempo constante (senha do estúdio) */
-export function comparaConstante(a, b) {
-  const x = enc.encode(String(a || ""));
-  const y = enc.encode(String(b || ""));
-  let dif = x.length ^ y.length;
-  const n = Math.max(x.length, y.length);
-  for (let i = 0; i < n; i++) dif |= (x[i] || 0) ^ (y[i] || 0);
-  return dif === 0;
 }
 
 export function esperar(ms) {

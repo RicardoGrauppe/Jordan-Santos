@@ -1,21 +1,27 @@
 /*
   Painel do Jordan (role "admin").
 
-  GET  ?lista=1            → linhas resumidas de todos os clientes
-  GET  ?id=<uuid>          → cliente completo + fotos (URLs assinadas de 1h)
+  GET  ?lista=1            → linhas resumidas de todos os clientes (+ status do contrato)
+  GET  ?id=<uuid>          → cliente completo (+ último contrato)
   POST {acao:"criar", cliente:{...}}          → insere, devolve a linha
   POST {acao:"atualizar", id, cliente:{...}}  → PATCH dos campos enviados
   POST {acao:"arquivar", id}                  → status = arquivado (o "excluir" da UI)
-  POST {acao:"excluir", id}                   → hard delete: linha + fotos do bucket
-  POST {acao:"upload-urls", id, arquivos:[{nome}]} → signed upload URLs (2h)
-  POST {acao:"excluir-foto", id, nome}        → apaga um arquivo do bucket
+  POST {acao:"excluir", id}                   → hard delete da linha
+  POST {acao:"gerar-contrato", id}            → cria/reaproveita um contrato (status "rascunho",
+                                                já salvo sem depender de assinatura nenhuma),
+                                                devolve {link} da página de revisão do Jordan
+  POST {acao:"confirmar-contrato", id, tipoAssinatura, assinaturaDataUrl, nomeAssinatura}
+                                               → grava a "assinatura" do Jordan no rascunho ativo
+                                                (não muda o status; só libera o envio ao casal)
+  POST {acao:"liberar-contrato-cliente", id}  → libera o contrato pro casal (marca "enviado") e
+                                                devolve {link, mensagem, telefone} pro Jordan mandar
+                                                pelo WhatsApp (só com um rascunho já confirmado)
+  POST {acao:"cancelar-contrato", id}         → cancela o contrato ativo do cliente
 */
 
-import {
-  rest, storage, listarFotos, assinarFotos, urlStorage, BUCKET,
-  criarUsuarioAuth, buscarUsuarioAuth, definirSenhaAuth, senhaTemporaria
-} from "./_lib/supabase.js";
+import { rest } from "./_lib/supabase.js";
 import { sessaoDe, normalizarCpf } from "./_lib/sessao.js";
+import { filtrarCampos, textoCurto } from "./_lib/util.js";
 
 /* campos que a UI pode gravar (whitelist contra colunas inesperadas) */
 const CAMPOS = [
@@ -25,22 +31,47 @@ const CAMPOS = [
   "origem", "observacoes"
 ];
 
-function filtrarCampos(cliente) {
-  const limpo = {};
-  CAMPOS.forEach(function (c) {
-    if (cliente[c] !== undefined) limpo[c] = cliente[c] === "" ? null : cliente[c];
-  });
-  if (limpo.cpf_noivo) limpo.cpf_noivo = normalizarCpf(limpo.cpf_noivo);
-  if (limpo.cpf_noiva) limpo.cpf_noiva = normalizarCpf(limpo.cpf_noiva);
-  return limpo;
+/* campos do cliente que viram o snapshot congelado do contrato */
+const CAMPOS_SNAPSHOT = [
+  "noivo", "cpf_noivo", "noiva", "cpf_noiva", "tel_noivo", "tel_noiva", "email",
+  "cep", "endereco", "numero", "complemento", "bairro", "cidade", "estado",
+  "data_evento", "horario", "local_evento", "itens", "total", "entrada"
+];
+
+function baseUrlDe(req) {
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  const proto = host.includes("localhost") ? "http" : (req.headers["x-forwarded-proto"] || "https").split(",")[0];
+  return proto + "://" + host;
 }
 
-function nomeSeguro(nome) {
-  return String(nome || "arquivo")
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]/g, "_")
-    .slice(0, 120);
+/* token forte (32 bytes → base64url), credencial do link de assinatura */
+function tokenForte() {
+  const b = new Uint8Array(32);
+  crypto.getRandomValues(b);
+  let bin = "";
+  for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
+
+/* último contrato do cliente (best-effort: se a tabela não existir, ignora) */
+async function ultimoContrato(clienteId) {
+  try {
+    const linhas = await rest(
+      "contratos?cliente_id=eq." + clienteId +
+      "&select=id,token,status,criado_em,enviado_em,visualizado_em,assinado_em,expira_em,snapshot," +
+      "jordan_confirmado_em,jordan_assinatura_tipo,jordan_assinatura_dataurl,jordan_assinatura_nome" +
+      "&order=criado_em.desc&limit=1"
+    );
+    return (linhas && linhas[0]) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+const limparCliente = (c) => filtrarCampos(CAMPOS, c, function (limpo) {
+  if (limpo.cpf_noivo) limpo.cpf_noivo = normalizarCpf(limpo.cpf_noivo);
+  if (limpo.cpf_noiva) limpo.cpf_noiva = normalizarCpf(limpo.cpf_noiva);
+});
 
 export default async function handler(req, res) {
   const sessao = await sessaoDe(req, "admin");
@@ -51,14 +82,26 @@ export default async function handler(req, res) {
       if (req.query.id) {
         const linhas = await rest("clientes?id=eq." + req.query.id + "&select=*");
         if (!linhas || !linhas.length) return res.status(404).json({ erro: "cliente não encontrado" });
-        const nomes = (await listarFotos(req.query.id)).map(function (f) { return f.name; });
-        const fotos = await assinarFotos(req.query.id, nomes, 3600);
-        return res.status(200).json({ cliente: linhas[0], fotos: fotos });
+        const contrato = await ultimoContrato(req.query.id);
+        return res.status(200).json({ cliente: linhas[0], contrato: contrato });
       }
       const lista = await rest(
-        "clientes?select=id,noivo,noiva,data_evento,status,total" +
+        "clientes?select=id,noivo,noiva,data_evento,status,total,tel_noivo,origem,local_evento" +
         "&order=data_evento.asc.nullslast"
       );
+      /* status do contrato por cliente (best-effort, uma consulta só) */
+      let porCliente = {};
+      try {
+        const cs = await rest(
+          "contratos?select=cliente_id,status,assinado_em&order=criado_em.desc"
+        );
+        (cs || []).forEach(function (c) {
+          if (!porCliente[c.cliente_id]) porCliente[c.cliente_id] = c; /* o mais recente */
+        });
+      } catch (_) { porCliente = {}; }
+      (lista || []).forEach(function (c) {
+        c.contrato_status = porCliente[c.id] ? porCliente[c.id].status : null;
+      });
       return res.status(200).json({ clientes: lista || [] });
     }
 
@@ -71,7 +114,7 @@ export default async function handler(req, res) {
     if (acao === "criar") {
       const linha = await rest("clientes", {
         method: "POST",
-        body: filtrarCampos(req.body.cliente || {}),
+        body: limparCliente(req.body.cliente || {}),
         prefer: "return=representation"
       });
       return res.status(200).json({ ok: true, cliente: linha[0] });
@@ -82,7 +125,7 @@ export default async function handler(req, res) {
     if (acao === "atualizar") {
       await rest("clientes?id=eq." + id, {
         method: "PATCH",
-        body: filtrarCampos(req.body.cliente || {})
+        body: limparCliente(req.body.cliente || {})
       });
       return res.status(200).json({ ok: true });
     }
@@ -95,70 +138,123 @@ export default async function handler(req, res) {
     }
 
     if (acao === "excluir") {
-      const nomes = (await listarFotos(id)).map(function (f) { return f.name; });
-      if (nomes.length) {
-        await storage("object/" + BUCKET, {
-          method: "DELETE",
-          body: { prefixes: nomes.map(function (n) { return id + "/" + n; }) }
-        });
-      }
+      /* se veio de conversão, o prospecto ainda referencia este cliente (FK):
+         desvincula antes, senão o DELETE é bloqueado (23503). O contrato tem
+         ON DELETE CASCADE, então some junto. */
+      await rest("prospectos?cliente_id=eq." + id, {
+        method: "PATCH", body: { cliente_id: null }
+      });
       await rest("clientes?id=eq." + id, { method: "DELETE" });
       return res.status(200).json({ ok: true });
     }
 
-    if (acao === "upload-urls") {
-      const arquivos = Array.isArray(req.body.arquivos) ? req.body.arquivos.slice(0, 200) : [];
-      const urls = [];
-      for (const a of arquivos) {
-        const nome = nomeSeguro(a.nome);
-        const assinada = await storage(
-          /* body {} obrigatório: o parser do Storage rejeita JSON vazio */
-          "object/upload/sign/" + BUCKET + "/" + id + "/" + nome, { method: "POST", body: {} }
-        );
-        urls.push({ nome: nome, url: urlStorage(assinada.url) });
-      }
-      return res.status(200).json({ ok: true, urls: urls });
-    }
-
-    /* cria (ou reseta) o acesso do casal: usuário no Supabase Auth + senha
-       temporária, mostrada UMA vez pro Jordan repassar no WhatsApp */
-    if (acao === "acesso-casal") {
-      const linhas = await rest("clientes?id=eq." + id + "&select=email,auth_user_id&limit=1");
+    if (acao === "gerar-contrato") {
+      const linhas = await rest("clientes?id=eq." + id + "&select=*");
       const cliente = linhas && linhas[0];
       if (!cliente) return res.status(404).json({ erro: "cliente não encontrado" });
-      if (!cliente.email) {
-        return res.status(400).json({ erro: "cadastre o e-mail do casal antes de gerar o acesso" });
-      }
 
-      const senha = senhaTemporaria();
-      let userId = cliente.auth_user_id;
+      const base = baseUrlDe(req);
 
-      if (userId) {
-        await definirSenhaAuth(userId, senha);
-      } else {
-        const criado = await criarUsuarioAuth(cliente.email, senha);
-        if (criado) {
-          userId = criado.id;
-        } else {
-          /* e-mail já existe no Auth (ex.: recadastro): reaproveita o usuário */
-          const existente = await buscarUsuarioAuth(cliente.email);
-          if (!existente) {
-            return res.status(409).json({ erro: "e-mail já usado por outro acesso, confira o cadastro" });
+      /* reaproveita um rascunho ainda não enviado ao casal (mesmo já confirmado
+         pelo Jordan) ou um contrato já enviado/visualizado não expirado */
+      const ativos = await rest(
+        "contratos?cliente_id=eq." + id +
+        "&status=in.(rascunho,enviado,visualizado)&select=id,expira_em&order=criado_em.desc&limit=1"
+      );
+      if (!(ativos && ativos.length && new Date(ativos[0].expira_em) > new Date())) {
+        const snapshot = {};
+        CAMPOS_SNAPSHOT.forEach(function (k) { snapshot[k] = cliente[k]; });
+        await rest("contratos", {
+          method: "POST",
+          body: {
+            cliente_id: id,
+            token: tokenForte(),
+            status: "rascunho",
+            expira_em: new Date(Date.now() + 30 * 86400000).toISOString(),
+            snapshot: snapshot
           }
-          userId = existente.id;
-          await definirSenhaAuth(userId, senha);
-        }
-        await rest("clientes?id=eq." + id, {
-          method: "PATCH", body: { auth_user_id: userId }
         });
       }
 
-      return res.status(200).json({ ok: true, email: cliente.email, senha: senha });
+      const link = base + "/revisar-contrato?id=" + id;
+      return res.status(200).json({ ok: true, link: link });
     }
 
-    if (acao === "excluir-foto") {
-      const nome = nomeSeguro(req.body.nome);
-      await storage("object/" + BUCKET + "/" + id + "/" + nome, { method: "DELETE" });
+    if (acao === "confirmar-contrato") {
+      const { tipoAssinatura, assinaturaDataUrl, nomeAssinatura } = req.body || {};
+      if (tipoAssinatura !== "cursiva" && tipoAssinatura !== "manual") {
+        return res.status(400).json({ erro: "tipo de assinatura inválido" });
+      }
+      if (typeof assinaturaDataUrl !== "string" || assinaturaDataUrl.length < 100) {
+        return res.status(400).json({ erro: "assinatura ausente" });
+      }
+      if (assinaturaDataUrl.length > 500_000) {
+        return res.status(413).json({ erro: "assinatura grande demais" });
+      }
+      const ativos = await rest(
+        "contratos?cliente_id=eq." + id +
+        "&status=eq.rascunho&select=id&order=criado_em.desc&limit=1"
+      );
+      const contrato = ativos && ativos[0];
+      if (!contrato) return res.status(404).json({ erro: "gere o contrato antes de confirmar" });
+
+      await rest("contratos?id=eq." + contrato.id, {
+        method: "PATCH",
+        body: {
+          jordan_confirmado_em: new Date().toISOString(),
+          jordan_assinatura_tipo: tipoAssinatura,
+          jordan_assinatura_dataurl: assinaturaDataUrl,
+          jordan_assinatura_nome: textoCurto(nomeAssinatura, 120) || "Jordan Santos"
+        }
+      });
+      return res.status(200).json({ ok: true });
+    }
+
+    if (acao === "liberar-contrato-cliente") {
+      const linhas = await rest("clientes?id=eq." + id + "&select=noivo,noiva,tel_noivo,tel_noiva");
+      const cliente = linhas && linhas[0];
+      if (!cliente) return res.status(404).json({ erro: "cliente não encontrado" });
+
+      /* aceita rascunho (1ª vez) e também já enviado/visualizado, pra o Jordan
+         conseguir recuperar o link e reenviar sem gerar contrato novo */
+      const ativos = await rest(
+        "contratos?cliente_id=eq." + id +
+        "&status=in.(rascunho,enviado,visualizado)" +
+        "&select=id,token,status,jordan_confirmado_em&order=criado_em.desc&limit=1"
+      );
+      const contrato = ativos && ativos[0];
+      if (!contrato) return res.status(404).json({ erro: "nenhum contrato pronto pra enviar" });
+      if (!contrato.jordan_confirmado_em) {
+        return res.status(409).json({ erro: "confirme (assine) o contrato antes de enviar ao cliente" });
+      }
+
+      /* o link vai pelo WhatsApp, na mão do Jordan (decisão de 2026-07-25: o domínio
+         do estúdio não existe, então o Resend não entrega pra ninguém além dele) */
+      const link = baseUrlDe(req) + "/assinar?token=" + contrato.token;
+      const primeiroNome = String(cliente.noivo || "").trim().split(/\s+/)[0] || "";
+      const mensagem =
+        "Oi" + (primeiroNome ? ", " + primeiroNome : "") + "! Aqui é o Jordan. Segue o contrato " +
+        "pra você revisar e assinar direto pelo link (dá pra fazer pelo celular, leva 1 minutinho):\n" +
+        link + "\nQualquer dúvida, é só me chamar por aqui.";
+
+      /* só marca na primeira liberação: pegar o link de novo não pode regredir um
+         contrato já "visualizado" nem reescrever a data real do primeiro envio */
+      if (contrato.status === "rascunho") {
+        await rest("contratos?id=eq." + contrato.id, {
+          method: "PATCH", body: { status: "enviado", enviado_em: new Date().toISOString() }
+        });
+      }
+      return res.status(200).json({
+        ok: true, link: link, mensagem: mensagem,
+        telefone: String(cliente.tel_noivo || cliente.tel_noiva || "").replace(/\D/g, "")
+      });
+    }
+
+    if (acao === "cancelar-contrato") {
+      await rest(
+        "contratos?cliente_id=eq." + id + "&status=in.(rascunho,enviado,visualizado)",
+        { method: "PATCH", body: { status: "cancelado" } }
+      );
       return res.status(200).json({ ok: true });
     }
 

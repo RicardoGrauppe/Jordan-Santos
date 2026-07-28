@@ -1,110 +1,92 @@
 # Site Jordan Santos Fotografia
 
-Site de proposta comercial do fotógrafo Jordan Santos: o casal monta o orçamento do casamento e, depois de confirmar a data com o Jordan no WhatsApp, recebe o link do questionário de contrato. Ao enviar as respostas, o contrato preenchido segue automaticamente em PDF por e-mail pro Jordan; o casal vê só uma confirmação.
+Site do fotógrafo Jordan Santos: portfólio + calculadora de orçamento (público), painel do estúdio (Jordan) e assinatura eletrônica de contrato dentro da plataforma.
 
-Produção: https://jordan-santos.vercel.app (deploy automático a cada push na branch `main`).
+Produção: https://jordan-santos.vercel.app (deploy automático a cada push na `main`).
+
+Site estático, sem build: HTML/CSS/JS vanilla, um arquivo por página. Bibliotecas via CDN: `html2pdf.js` + `signature_pad` (assinar.html) e `intl-tel-input` (index.html, campo de WhatsApp com DDI por país). Os dados vivem no **Supabase** (Postgres), acessado só pelas Vercel Functions com a service role key.
 
 ## Estrutura
 
 ```
-index.html               Orçamento interativo (página inicial)
-contrato.html            Questionário de fechamento (contrato invisível vira PDF)
-cliente.html             Área do casal (/cliente): datas, contrato e fotos entregues
-estudio.html             Painel do Jordan (/estudio): CRUD de clientes + upload de fotos
-api/enviar-contrato.js   Vercel Function: e-mail com PDF via Resend + cadastro no Supabase
-api/sessao.js            Vercel Function: logins (casal e estúdio) e logout
-api/portal.js            Vercel Function: dados da área do casal
-api/estudio.js           Vercel Function: CRUD do painel + URLs assinadas de upload
-api/_lib/                Helpers compartilhados (não viram functions)
-supabase/schema.sql      DDL do banco (rodar uma vez no SQL Editor do Supabase)
+index.html               Portfólio + calculadora de orçamento (página inicial)
+estudio.html             Painel do Jordan (/estudio): clientes + gerar contrato
+configuracoes.html       Preferências do estúdio: assinatura do Jordan (aparece no contrato)
+revisar-contrato.html    Revisão/"assinatura" do Jordan antes de liberar (/revisar-contrato?id=…), admin-only
+assinar.html             Assinatura pública do contrato (/assinar?token=…) — signature_pad + html2pdf
+catalogo.js              FONTE ÚNICA dos produtos (id → grupo/preço/nome/curto), usada por index e estudio
+
+api/sessao.js            Login/logout do estúdio (admin, sobre o Supabase Auth)
+api/estudio.js           CRUD de clientes + gerar/cancelar contrato p/ assinatura
+api/orcamento.js         Público: orçamento do site → cria o CLIENTE direto
+api/assinatura.js        Público: obter/assinar/baixar o contrato (link tokenizado)
+api/config.js            Preferências do estúdio (tabela config): assinatura do Jordan
+api/_lib/                Helpers compartilhados: supabase, sessao, email, util (não viram functions)
+
+supabase/schema.sql               DDL completo (setup do zero)
+supabase/migracao-*.sql           Migrações para banco já existente (contratos, config)
 vercel.json              cleanUrls (URLs sem .html)
-img/                     Fotos e logos usados nas páginas
 ```
 
-Site estático, sem build e sem dependências: HTML, CSS e JS vanilla em arquivo único por página. A única biblioteca externa é o `html2pdf.js`, carregado por CDN no `contrato.html`. Os dados das contas vivem no **Supabase** (Postgres + Storage), acessado só pelas functions com a service role key.
+## Fluxo completo (ponta a ponta)
 
-## Fluxo completo — duas páginas independentes
+Sem estágio de prospecção (decisão de 2026-07-24): o link do site geralmente só é mandado **depois de uma reunião**, pra quem já quer fechar — então o formulário público já pede tudo que o contrato precisa.
 
-O site trabalha com **duas páginas desconectadas** (decisão de 2026-07-06, revisada em 2026-07-09: nada passa de uma pra outra):
+1. **Orçamento** (`/`): o casal escolhe pacote (Eternal/Heritage) + adicionais/álbum/pré-wedding e, no CTA **"Enviar orçamento"**, preenche um formulário completo (nome + CPF dos dois, WhatsApp, e-mail, endereço com autocomplete de CEP via ViaCEP, data/horário/local do evento). Isso cria o **CLIENTE** direto (`/api/orcamento`, upsert por `cpf_noivo+data_evento`), com os itens e o total salvos. Preços e nomes vêm do `catalogo.js`. O Jordan recebe um e-mail (template com a paleta da marca) avisando do cliente novo.
+2. **Ficha do cliente** (`/estudio`): o Jordan confere/completa os dados e ajusta o pacote/adicionais no seletor. Clica em **"Gerar contrato"** (ícone no topo ou botão dentro do fieldset "Contrato") → valida os campos obrigatórios, salva, gera o contrato (status `rascunho`, já salvo mesmo sem assinatura nenhuma) e abre em outra aba a página de revisão.
+3. **Revisão do Jordan** (`/revisar-contrato?id=…`, admin-only): ele confere o contrato inteiro e confirma com uma assinatura (cursiva com o nome, padrão, ou desenhada na mão) — isso não manda nada ao casal, só libera o botão **"Pegar link pro cliente"** de volta no `/estudio`, que marca o contrato como enviado e abre um modal com o link + a mensagem pronta pra copiar ou abrir direto na conversa do WhatsApp. O mesmo botão recupera o link depois ("Ver link de novo"), sem gerar contrato novo.
+4. **Assinatura do casal** (`/assinar?token=…`): o casal revisa o contrato (já com a assinatura do Jordan deste contrato específico), preenche nome + CPF, marca o aceite e assina de um dos **dois jeitos** (mesma escolha que o Jordan tem na revisão): o nome em cursiva (padrão, desenhado num canvas com a fonte Dancing Script) ou o traço na mão (`signature_pad`). O PDF é gerado no navegador (`html2pdf`), guardado e enviado pras partes (`/api/assinatura`). Depois de assinar, o casal tem um botão pra **baixar a via em PDF** — na hora, direto da memória da aba, e também quando voltar no link depois (aí busca em `GET /api/assinatura?token=…&pdf=1`).
 
-- **Página 1 (pública, portfólio + calculadora):** `https://jordan-santos.vercel.app/` — o Jordan envia pra qualquer interessado ver o trabalho, calcular preços e chamar no WhatsApp pra verificar a disponibilidade da data. **Não leva ao contrato.**
-- **Página 2 (fechamento):** `https://jordan-santos.vercel.app/contrato` — URL fixa, sem parâmetros. O Jordan envia só depois que o casal confirmou a data com ele no WhatsApp. Não é linkada em lugar nenhum do site público (obscuridade, não segurança — suficiente aqui).
+O contrato é FIXO (template em `assinar.html`, `#documento`), com os dados do casal preenchidos a partir do backend. A **assinatura do Jordan** é definida em `/configuracoes`, salva na tabela `config` (server-side) e injetada no contrato do casal — funciona em qualquer dispositivo.
 
-Passo a passo:
+## Painel do Jordan (`/estudio`)
 
-1. **Orçamento** (`/`): o casal escolhe um pacote (Eternal ou Heritage), adicionais, álbum e pré-wedding só pra ver o preço. O total aparece uma única vez no resumo. O CTA é **"Enviar orçamento pro Jordan"** — abre o WhatsApp do Jordan com a seleção e o total pré-preenchidos. É nessa conversa que a data é verificada e confirmada.
-2. **Questionário** (`/contrato`, remodelado em 2026-07-09 no fluxo do site de referência yoshioyoneoka-contrato.netlify.app): o casal **reescolhe os serviços** na seção "Os serviços" (pacote obrigatório via rádio + adicionais, álbuns e pré-wedding opcionais; total e entrada de 30% atualizam ao vivo; escolher o Eternal trava o pré-wedding como "incluso") e preenche os dados que entram no contrato: casal (nomes, CPFs, celulares, e-mail), endereço (autocomplete por CEP via ViaCEP, gratuito e sem chave), evento (data, horário, local), origem e observações. Os ids e preços vêm do mesmo objeto `CATALOGO` do index (duplicado nos dois arquivos de propósito, já que não há build). O CTA é **"Enviar informações"**.
-3. **Envio**: ao enviar, o casal vê só a tela de confirmação ("Obrigado pela confiança"), sem o contrato. Por trás, sem bloquear nada:
-   - o contrato completo (texto integral do modelo docx do Jordan, com tabela de serviços, total e entrada de 30%) é montado num elemento fora da tela (`#documento`, `position:absolute; left:-10000px` — `display:none` quebraria a captura);
-   - o `html2pdf.js` converte esse elemento em PDF no próprio navegador (A4, ~1.7MB pra um contrato típico);
-   - o PDF vai em base64 num POST pra `/api/enviar-contrato`;
-   - a função dispara o e-mail pro Jordan via Resend, com o PDF anexado e um resumo no corpo (casal, telefones, e-mail, data, local, pacote, valores, origem, observações);
-   - o status aparece na tela de confirmação. Se o envio falhar, o aviso pede pra chamarem o Jordan por telefone. Falha nunca bloqueia a confirmação.
-4. **Próximo passo (com o Jordan)**: ele recebe o PDF pronto, revisa e retorna pro casal com o contrato pra assinatura (assinatura digital fica pra fase 2).
+Login **e-mail + senha via Supabase Auth** (a senha vive hasheada no Supabase, nunca aqui). Só admin entra: o usuário do Auth precisa de `app_metadata.role = "admin"` (ou casar com a env `ADMIN_EMAIL`). Sessão própria em cookie HMAC-SHA256 (`HttpOnly; Secure; SameSite=Lax`, 7 dias), sem tabela de sessões. Mitigações: espera ~800ms + erro genérico em falha de login, throttle por IP, RLS ligado sem policies (anon key não faz nada). Config: `/configuracoes` (link no dropdown do avatar).
 
-## URLs
+## Assinatura eletrônica — validade jurídica
 
-O `vercel.json` usa `"cleanUrls": true`: nenhuma URL leva `.html`. A raiz `/` serve o `index.html` (orçamento), `/contrato` o questionário, `/cliente` a área do casal e `/estudio` o painel do Jordan (não linkado em lugar nenhum do site público). Quem acessar com `.html` é redirecionado pela própria Vercel.
+Assinatura eletrônica simples, válida entre as partes (MP 2.200-2/2001 art. 10 §2º; Código Civil arts. 107 e 219; STJ reconhece assinatura sem ICP). **Não** tem a presunção automática da qualificada (ICP-Brasil) — se contestada, o ônus de provar é de quem apresenta, e é pra isso que serve a trilha de auditoria da tabela `contratos`: aceite expresso (texto + timestamp), nome + CPF do signatário, IP + user-agent (capturados no servidor), carimbo de tempo, hash SHA-256 do PDF, snapshot do que foi enviado, e uma **página de auditoria** anexada ao PDF. O PDF assinado fica em `contratos.pdf_base64` (imutável). Token de 32 bytes é a credencial do link (expira em 30 dias; vira read-only após assinado; cancelar invalida).
 
-## Contas e área logada (2026-07-11)
+**O fator de verificação é a posse do link** (token de 32 bytes aleatórios, entregue pelo Jordan direto no WhatsApp do casal). O **OTP por e-mail foi removido em 2026-07-25**: o estúdio não tem domínio, então o código nunca chegaria ao casal (ver abaixo). Foi descartada a alternativa de mandar o código junto na mensagem do WhatsApp — quem entrega passaria a conhecer o código, então ele não provaria autoria nenhuma e a página de auditoria estaria afirmando algo falso. Com domínio verificado, vale reintroduzir o OTP: ele é o que aproxima a assinatura da modalidade "avançada".
 
-Além das duas páginas públicas, o site tem uma camada de contas em cima do **Supabase**:
+⚠️ **E-mail só chega pro próprio Jordan.** O domínio `jordansantosfotografia.com.br` **não existe** (não registrado — verificado no registro.br em 2026-07-25), e sem domínio verificado o Resend só entrega pro e-mail dono da conta. Por isso o link do contrato vai por WhatsApp e a via assinada do casal é best-effort (o envio é feito em chamadas separadas justamente pra que a via do Jordan não falhe junto). Pra destravar: registrar o domínio, cadastrar em resend.com/domains, publicar SPF/DKIM e trocar `REMETENTE` em `api/_lib/email.js`.
 
-Os dois logins usam **e-mail + senha via Supabase Auth** (decisão de 2026-07-11; a senha vive hasheada no Supabase, nunca aqui). As functions validam a credencial no Auth e abrem a sessão própria do site (cookie HMAC), então o resto do sistema não conhece senhas.
+## Setup do Supabase
 
-- **`/estudio` (Jordan):** login com o e-mail dele (identificado pela env `ADMIN_EMAIL`; o usuário é criado à mão no painel do Supabase). CRUD completo de clientes (lista com busca e filtro, detalhe editável, criar manualmente, arquivar, excluir de vez), upload das fotos da entrega e o bloco **"Acesso do casal"**: gera a senha temporária do casal e copia uma mensagem pronta pro WhatsApp. O upload vai do navegador **direto pro Supabase Storage** via URLs assinadas geradas por `/api/estudio` (contorna o limite de 4.5MB de body da Vercel). Fotos em `fotos-clientes/{cliente_id}/`.
-- **`/cliente` (casal):** login com o e-mail do contrato + a senha que o Jordan enviou. Hub com o grande dia (data, horário, local, contagem regressiva), o combinado (itens, total, entrada de 30%), status, a galeria das fotos entregues com download, e **troca de senha** (senha atual + nova). Esqueceu a senha: o Jordan gera outra temporária no `/estudio` (reset por e-mail automático fica pra quando o domínio estiver verificado no Resend, que hoje só entrega pro e-mail do dono da conta). A área nunca mostra CPF nem endereço.
-- **Cadastro automático:** ao enviar o questionário (`/contrato`), além do e-mail com o PDF, a function faz upsert do casal na tabela `clientes` (chave `cpf_noivo + data_evento`; reenvio atualiza, não duplica) e cria o usuário do Auth vinculado (`auth_user_id`), com senha aleatória descartada: a senha real é a temporária que o Jordan gera. E-mail, cadastro e vínculo de acesso são independentes: um falhar nunca bloqueia os outros.
-- **Sessões:** token HMAC-SHA256 (Web Crypto, segredo em `SESSION_SECRET`) num cookie `HttpOnly; Secure; SameSite=Lax`. Estúdio 7 dias, casal 30 dias. Sem tabela de sessões.
-- **Mitigações:** espera de ~800ms e erro genérico em falha de login, throttle best-effort por IP, RLS ligado sem policies (anon key não faz nada), bucket privado com URLs assinadas de 1h.
+**Banco novo:** SQL Editor → rodar `supabase/schema.sql` (cria clientes, contratos, config; a tabela `prospectos` existe só em bancos antigos, não é mais usada pelo app).
 
-### Setup do Supabase (uma vez)
+**Banco já existente:** rodar as migrações que faltarem — `migracao-contratos.sql`, `migracao-config.sql` (esta última cria `config`, remove a coluna morta `auth_user_id` e realinha o CHECK de status), `migracao-revisao-jordan.sql` (estágio `rascunho` + colunas da assinatura do Jordan).
 
-1. Criar projeto em https://supabase.com (free tier), região `sa-east-1` (São Paulo).
-2. SQL Editor → rodar o conteúdo de `supabase/schema.sql` (banco já criado antes de 2026-07-11: rodar também `supabase/migracao-auth-email.sql`).
-3. Storage → New bucket → nome `fotos-clientes`, **privado** (public off).
-4. Authentication → Users → **Add user**: e-mail do Jordan + senha dele, com auto-confirm. Depois, marcar o usuário como admin no SQL Editor:
-   ```sql
-   update auth.users
-   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
-   where email = 'e-mail-do-jordan';
-   ```
-   (app_metadata só é gravável pelo servidor, então esse papel não é forjável pelo browser.)
-5. Settings → API: copiar a Project URL e a `service_role` key pras env vars abaixo.
+Depois: Authentication → Users → Add user (e-mail do Jordan + senha, auto-confirm) e marcar como admin:
+```sql
+update auth.users
+set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}'::jsonb
+where email = 'e-mail-do-jordan';
+```
 
 ### Variáveis de ambiente (Vercel)
 
 | Var | O que é |
 |---|---|
-| `RESEND_API_KEY` | chave do Resend (e-mail do contrato) |
+| `RESEND_API_KEY` | chave do Resend (aviso de cliente novo + via assinada por e-mail) |
 | `SUPABASE_URL` | Project URL do Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | service role key; só as functions leem, nunca vai pro browser |
-| `SESSION_SECRET` | opcional: segredo dos tokens de sessão (`openssl rand -hex 32`); sem ela, a chave deriva da service key |
-| `ADMIN_EMAIL` | opcional (fallback): e-mail tratado como admin; o caminho normal é o `app_metadata.role = "admin"` no usuário do Auth |
-
-Sem as vars do Supabase, o site público continua 100% funcional: o questionário só envia o e-mail (`cadastroOk:false`) e as áreas logadas avisam que o banco não está configurado.
+| `SESSION_SECRET` | opcional: segredo dos tokens de sessão (`openssl rand -hex 32`); sem ela, deriva da service key |
+| `ADMIN_EMAIL` | opcional (fallback): e-mail tratado como admin |
 
 ## E-mail (Resend)
 
-A chave fica **fora do código**, como variável de ambiente na Vercel. Configuração (uma vez):
-
-1. Criar conta em https://resend.com **com o e-mail do Jordan** (`jordansantosfotografia@gmail.com`). Sem domínio verificado, o Resend só entrega pro e-mail dono da conta, e é exatamente pra ele que o site envia. Plano grátis: 3.000 e-mails/mês.
-2. Gerar uma API Key no painel do Resend.
-3. Na Vercel, projeto Jordan-Santos: Settings > Environment Variables > criar `RESEND_API_KEY` com a chave > Redeploy.
-
-Enquanto a chave não existir, o site funciona normalmente e o envio cai no aviso de fallback.
-
-**Fase 2 (domínio verificado):** quando o domínio `jordansantosfotografia.com.br` for verificado no Resend, trocar a constante `REMETENTE` em `api/enviar-contrato.js` pra algo como `Contratos <contrato@jordansantosfotografia.com.br>`.
+Chave fora do código, como env na Vercel. Sem domínio verificado, o Resend só entrega pro e-mail dono da conta (`jordansantosfotografia@gmail.com`). Remetente atual em `api/_lib/email.js` (`onboarding@resend.dev`); quando o domínio for verificado, trocar a constante `REMETENTE` lá.
 
 ## Limites e decisões
 
-- O corpo do POST na Vercel aceita até 4.5MB; a função rejeita PDFs acima de ~4.5MB (base64 > 6M chars) com HTTP 413. O contrato é texto puro, fica bem abaixo disso.
-- O casal não vê o contrato na tela (decisão de 2026-07-09): a página é um questionário e o contrato segue direto pro Jordan, que revisa e retorna pro casal. Assinatura digital (Autentique, por exemplo) fica pra fase 2, por decisão de 2026-07-02.
-- E-mail (e não WhatsApp) porque o Jordan pediu isso pra tudo que é documentação/assinatura, na reunião de 23/04/2026.
-- Texto do contrato transcrito verbatim do docx do Jordan, inclusive as duas cláusulas numeradas como OITAVA e pequenos erros de digitação do original. Ajustes são do Jordan.
+- POST na Vercel aceita até ~4.5MB; a função rejeita PDF acima disso (base64 > 6M chars) com HTTP 413. Contrato é texto, fica bem abaixo.
+- Catálogo de produtos é **fonte única** em `catalogo.js` (id/preço/nome), consumido por index e estudio — evita rótulo divergente no contrato.
+- Entrega de fotos / área do casal: **removida** em 2026-07-13 (Storage não compensava). O vínculo de login do casal (`auth_user_id`) saiu do código e do banco.
+- Prospecção (kanban de leads): **removida** em 2026-07-24. O link do orçamento do site geralmente só é mandado depois de uma reunião, pra quem já quer fechar — então o formulário público já coleta tudo que o contrato precisa e cria o cliente direto. `api/prospectos.js` e a tela de kanban saíram do código; a tabela `prospectos` continua existindo em bancos antigos (não foi apagada), só não é mais lida nem escrita pelo app.
 - Contatos usando DDD 45: atualizar quando o Jordan migrar pro DDD 41.
 
 ## Desenvolvimento local
 
-- **Só páginas (visual):** qualquer servidor estático serve, ex.: `python3 -m http.server 8014`. Acesse com `.html`; tudo que depende de `/api` cai nos avisos de fallback.
-- **Com as functions:** `npx vercel dev` na raiz do repo (o npx baixa a CLI na hora; o repo continua sem package.json). Antes, `npx vercel link` e `npx vercel env pull .env.local` pra trazer as env vars (o `.gitignore` já cobre `.env*`). Alternativa sem tooling local: push numa branch e testar no preview deploy da Vercel.
+- **Só visual:** qualquer servidor estático (ex.: `python3 -m http.server 8014`); o que depende de `/api` cai nos avisos de fallback.
+- **Com as functions:** `node dev-server.mjs` (usa `.env.local`; porta em `$PORT`, default 8020). O server cacheia os handlers ESM — reinicie após editar arquivos de `api/`. Alternativa: `npx vercel dev`.

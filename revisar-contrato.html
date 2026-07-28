@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<!--
+  Revisão do contrato pelo Jordan (ADMIN, /revisar-contrato?id=<cliente>).
+  Aberta automaticamente ao clicar "Gerar contrato" no /estudio. Protegida pela
+  sessão do painel (cookie HttpOnly) — as chamadas em api/estudio.js já exigem
+  sessaoDe(req,"admin"), então esta página não precisa de token próprio.
+
+  O TEXTO DO CONTRATO abaixo (#documento) é a MESMA cópia de assinar.html (fonte
+  duplicada de propósito, projeto sem build) — qualquer alteração de cláusula
+  precisa espelhar nos dois arquivos.
+
+  Fluxo: o contrato já existe (status "rascunho", salvo desde o "Gerar contrato").
+  Aqui o Jordan só confere e "assina" (cursiva com o nome, padrão, ou traço manual)
+  — isso não manda nada ao casal ainda, só libera o botão "Enviar pro cliente" lá
+  no /estudio.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Revisar contrato | Jordan Santos Fotografia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600&family=Jost:wght@300;400;500&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#1D1D1B; --ink-soft:#706F6F;
+    --accent:#003646; --accent-deep:#4F6278; --noir:#1D1D1B;
+    --line:#E8E1DC; --soft:#F6F3F0; --erro:#A33B3B; --ok:#2E6B4F;
+    --sombra:0 10px 34px rgba(29,29,27,.14);
+    --serif:"Bodoni Moda","Didot",Georgia,serif;
+    --sans:"Jost","Helvetica Neue",sans-serif;
+    --cursiva:"Dancing Script","Segoe Script","Brush Script MT",cursive;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--soft);color:var(--ink);font-family:var(--sans);font-weight:400;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .envelope{max-width:820px;margin:0 auto;padding:28px 18px 80px}
+  .topo{text-align:center;margin-bottom:18px}
+  .topo h1{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);letter-spacing:.02em}
+  .topo p{color:var(--ink-soft);font-size:14px;margin-top:6px}
+
+  .estado{max-width:520px;margin:80px auto;text-align:center;padding:0 20px}
+  .estado h2{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);margin-bottom:12px}
+  .estado p{color:var(--ink-soft)}
+  .estado a{color:var(--accent)}
+  [hidden]{display:none !important}
+
+  .doc-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sombra);overflow:hidden}
+  .doc-scroll{max-height:56vh;overflow-y:auto;padding:6px 4px}
+
+  #documento{max-width:760px;margin:0 auto;padding:26px 30px}
+  #documento h2{font-family:var(--serif);font-weight:500;font-size:21px;letter-spacing:.06em;text-align:center;margin-bottom:26px}
+  #documento h3{font-size:14.5px;font-weight:500;letter-spacing:.05em;margin:24px 0 10px}
+  #documento p,#documento li{font-size:13.6px;line-height:1.8;margin-bottom:10px;text-align:justify}
+  #documento ol{padding-left:22px;margin-bottom:10px}
+  #documento .campo{font-weight:500;border-bottom:1px solid var(--line);padding:0 4px;white-space:pre-wrap}
+  #documento table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:13.6px}
+  #documento th,#documento td{border:1px solid #C9C4BD;padding:8px 10px;text-align:left}
+  #documento th{font-weight:500;letter-spacing:.08em;font-size:11.5px;text-transform:uppercase;background:#F6F3F0}
+  #documento td.num{text-align:right;white-space:nowrap}
+  #documento .assinaturas{margin-top:48px}
+  #documento .assinaturas p{text-align:center;margin-bottom:40px}
+  #documento .linha-ass{border-top:1px solid var(--ink);max-width:420px;margin:0 auto;padding-top:6px;text-align:center;font-size:12.5px}
+
+  .painel{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sombra);padding:26px 24px;margin-top:22px}
+  .painel h2{font-family:var(--serif);font-weight:500;font-size:20px;color:var(--accent);margin-bottom:4px}
+  .painel .sub{color:var(--ink-soft);font-size:13.5px;margin-bottom:20px}
+
+  .abas{display:flex;gap:8px;margin-bottom:18px}
+  .aba{flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink-soft);font:inherit;font-size:13px;letter-spacing:.03em;cursor:pointer;transition:all .15s}
+  .aba.ativa{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  .campo-form{display:flex;flex-direction:column;margin-bottom:14px}
+  .campo-form label{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+  .campo-form input{font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 13px;-webkit-appearance:none}
+  .campo-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
+
+  .preview-cursiva{border:1px dashed #C9C4BD;border-radius:12px;background:#FBFAF8;padding:22px;text-align:center;margin-bottom:16px}
+  .preview-cursiva span{font-family:var(--cursiva);font-size:38px;color:var(--ink)}
+
+  .assina-area{margin:0 0 8px}
+  .canvas-box{position:relative;border:1px dashed #C9C4BD;border-radius:12px;background:#FBFAF8;height:180px;overflow:hidden}
+  #pad{width:100%;height:100%;touch-action:none;display:block}
+  .limpar-ass{position:absolute;top:8px;right:10px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);background:none;border:0;cursor:pointer}
+  .limpar-ass:hover{color:var(--accent)}
+
+  .botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border:0;border-radius:999px;font:inherit;font-size:13px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .2s ease,background .2s ease}
+  .botao-1{background:var(--noir);color:#fff;width:100%;margin-top:14px}
+  .botao-1:hover{opacity:.88}
+  .botao:disabled{opacity:.4;cursor:default}
+  .aviso{font-size:13.5px;margin-top:12px;min-height:18px}
+  .aviso.erro{color:var(--erro)}
+  .aviso.ok{color:var(--ok)}
+
+  .ja-confirmado{border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;background:#FBFAF8}
+  .ja-confirmado img{max-height:80px;max-width:280px}
+</style>
+</head>
+<body>
+
+<div class="envelope">
+  <div class="topo">
+    <h1>Revisar contrato</h1>
+    <p>Confira os dados abaixo e confirme pra liberar o envio ao casal.</p>
+  </div>
+
+  <div class="estado" id="estado-carregando"><p>Carregando o contrato...</p></div>
+  <div class="estado" id="estado-erro" hidden><h2>Ops</h2><p id="erro-texto">Não foi possível abrir este contrato.</p><p style="margin-top:14px"><a href="/estudio">&larr; Voltar pro Estúdio</a></p></div>
+
+  <div id="fluxo" hidden>
+    <div class="doc-card">
+      <div class="doc-scroll">
+        <article id="documento">
+          <h2>Contrato de Prestação de Serviços de Fotografia</h2>
+          <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endereço na rua Jesuítas, Carimã Nº390, Foz do Iguaçu &ndash; Paraná, CEP: 85855700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de serviços relacionados à fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>
+          <p>
+            NOIVO: <span class="campo" data-campo="noivo"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noivo"></span><br>
+            NOIVA: <span class="campo" data-campo="noiva"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noiva"></span><br>
+            ENDEREÇO: <span class="campo" data-campo="endereco"></span> &nbsp; Nº: <span class="campo" data-campo="numero"></span> &nbsp; BAIRRO: <span class="campo" data-campo="bairro"></span><br>
+            CIDADE: <span class="campo" data-campo="cidade"></span> &nbsp; COMPLEMENTO: <span class="campo" data-campo="complemento"></span> &nbsp; ESTADO: <span class="campo" data-campo="estado"></span> &nbsp; CEP: <span class="campo" data-campo="cep"></span><br>
+            TELEFONE NOIVO: <span class="campo" data-campo="tel-noivo"></span> &nbsp; TELEFONE NOIVA: <span class="campo" data-campo="tel-noiva"></span>
+          </p>
+          <p>Tem entre si como certo e ajustado o presente contrato de prestação de serviços que será regido pelas seguintes cláusulas: <em>(texto completo das cláusulas igual ao que o casal vê em /assinar &mdash; omitido aqui só pra revisão ficar mais rápida de rolar; os valores e itens abaixo são os que valem).</em></p>
+          <p>
+            DESCRIÇÃO DO EVENTO: Casamento<br>
+            DATA DO EVENTO: <span class="campo" data-campo="data-formatada"></span><br>
+            LOCAL DO EVENTO: <span class="campo" data-campo="local"></span><br>
+            HORÁRIO: <span class="campo" data-campo="horario"></span>
+          </p>
+          <table aria-label="Serviços contratados">
+            <thead><tr><th>Qtd</th><th>Descrição dos serviços</th><th>Valor total</th></tr></thead>
+            <tbody id="tabela-servicos"></tbody>
+          </table>
+          <p>Valor total: <span class="campo" data-campo="valor-total"></span> &nbsp; Entrada (30%): <span class="campo" data-campo="valor-entrada"></span></p>
+
+          <div class="assinaturas" id="bloco-assinaturas">
+            <p><span class="campo" data-campo="cidade-assinatura"></span>, <span class="campo" data-campo="data-assinatura"></span>.</p>
+            <p class="linha-ass">Assinatura do(a) contratante (o casal assina depois, em /assinar)</p>
+            <div id="assinatura-jordan-area">
+              <p class="linha-ass">Jordan Santos &ndash; CONTRATADA</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- já confirmado nesta sessão de rascunho -->
+    <div class="painel" id="painel-ja-confirmado" hidden>
+      <h2>Você já confirmou este contrato ✓</h2>
+      <p class="sub">Pode reabrir e assinar de novo se quiser trocar. Pra mandar pro casal, volte pro Estúdio e clique em "Enviar pro cliente".</p>
+      <div class="ja-confirmado" id="preview-confirmado"></div>
+      <button type="button" class="botao botao-1" id="btn-refazer" style="background:none;color:var(--accent);border:1px solid var(--accent)">Assinar de novo</button>
+      <p style="margin-top:16px;text-align:center"><a href="/estudio">&larr; Voltar pro Estúdio</a></p>
+    </div>
+
+    <!-- painel de assinatura do Jordan -->
+    <div class="painel" id="painel-assinar">
+      <h2>Sua assinatura</h2>
+      <p class="sub">Por padrão, seu nome em cursiva. Se preferir, desenhe a assinatura na mão.</p>
+
+      <div class="abas">
+        <button type="button" class="aba ativa" id="aba-cursiva">Cursiva (nome)</button>
+        <button type="button" class="aba" id="aba-manual">Assinar manualmente</button>
+      </div>
+
+      <div id="modo-cursiva">
+        <div class="campo-form"><label for="nome-cursiva">Nome exibido na assinatura</label><input id="nome-cursiva" type="text" value="Jordan Santos"></div>
+        <div class="preview-cursiva"><span id="preview-cursiva-texto">Jordan Santos</span></div>
+      </div>
+
+      <div id="modo-manual" hidden>
+        <div class="assina-area">
+          <div class="canvas-box">
+            <canvas id="pad"></canvas>
+            <button type="button" class="limpar-ass" id="limpar-ass">Limpar</button>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="botao botao-1" id="btn-confirmar">Confirmar e liberar contrato</button>
+      <p class="aviso" id="aviso-confirmar"></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+  var el = function(id){ return document.getElementById(id); };
+  var clienteId = new URLSearchParams(location.search).get("id") || "";
+  var signaturePad = null;
+  var modo = "cursiva";
+
+  function mostrarEstado(id, texto){
+    ["estado-carregando","estado-erro","fluxo"].forEach(function(x){ el(x).hidden = true; });
+    el(id).hidden = false;
+    if (texto && el("erro-texto")) el("erro-texto").textContent = texto;
+  }
+
+  function formatarCpf(v){
+    var d = String(v || "").replace(/\D/g, "").slice(0, 11);
+    if (d.length !== 11) return d || "________________";
+    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  }
+  function dataExtenso(d){
+    var meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+    return d.getDate() + " de " + meses[d.getMonth()] + " de " + d.getFullYear();
+  }
+  function dataEventoExtenso(iso){
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "________________";
+    var p = iso.split("-");
+    return dataExtenso(new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])));
+  }
+  function preencherCampo(nome, valor){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-campo="' + nome + '"]'), function(span){
+      span.textContent = valor || "________________";
+    });
+  }
+  function montaTabela(itens, total){
+    var tbody = el("tabela-servicos");
+    tbody.innerHTML = "";
+    (itens || []).forEach(function(it){
+      var tr = document.createElement("tr");
+      var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
+      var desc = document.createElement("td"); desc.textContent = it.nome || it.id || "Serviço";
+      var val = document.createElement("td"); val.textContent = it.valor != null ? brl.format(it.valor) : ""; val.className = "num";
+      tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
+      tbody.appendChild(tr);
+    });
+    var trTotal = document.createElement("tr");
+    var v = document.createElement("td");
+    var r = document.createElement("td"); r.textContent = "VALOR TOTAL"; r.style.fontWeight = "500";
+    var t = document.createElement("td"); t.textContent = brl.format(total || 0); t.className = "num"; t.style.fontWeight = "500";
+    trTotal.appendChild(v); trTotal.appendChild(r); trTotal.appendChild(t);
+    tbody.appendChild(trTotal);
+  }
+  function renderContrato(c){
+    var total = Number(c.total) || 0;
+    var entrada = (c.entrada != null && c.entrada !== "") ? Number(c.entrada) : total * 0.3;
+    montaTabela(Array.isArray(c.itens) ? c.itens : [], total);
+    preencherCampo("noivo", c.noivo);
+    preencherCampo("noiva", c.noiva);
+    preencherCampo("cpf-noivo", c.cpf_noivo ? formatarCpf(c.cpf_noivo) : "");
+    preencherCampo("cpf-noiva", c.cpf_noiva ? formatarCpf(c.cpf_noiva) : "");
+    preencherCampo("endereco", c.endereco);
+    preencherCampo("numero", c.numero);
+    preencherCampo("bairro", c.bairro);
+    preencherCampo("cidade", c.cidade);
+    preencherCampo("complemento", c.complemento || "N/A");
+    preencherCampo("estado", c.estado);
+    preencherCampo("cep", c.cep);
+    preencherCampo("tel-noivo", c.tel_noivo);
+    preencherCampo("tel-noiva", c.tel_noiva);
+    preencherCampo("data-formatada", dataEventoExtenso(c.data_evento));
+    preencherCampo("local", c.local_evento);
+    preencherCampo("horario", c.horario ? String(c.horario).slice(0, 5) : "");
+    preencherCampo("valor-total", brl.format(total));
+    preencherCampo("valor-entrada", brl.format(entrada));
+    preencherCampo("cidade-assinatura", c.cidade);
+    preencherCampo("data-assinatura", dataExtenso(new Date()));
+  }
+
+  function iniciarPad(){
+    var canvas = el("pad");
+    function resize(){
+      var ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext("2d").scale(ratio, ratio);
+      if (signaturePad) signaturePad.clear();
+    }
+    signaturePad = new SignaturePad(canvas, { penColor: "#1D1D1B", backgroundColor: "rgba(0,0,0,0)" });
+    window.addEventListener("resize", resize);
+    resize();
+  }
+
+  function alternarModo(novo){
+    modo = novo;
+    el("aba-cursiva").classList.toggle("ativa", novo === "cursiva");
+    el("aba-manual").classList.toggle("ativa", novo === "manual");
+    el("modo-cursiva").hidden = novo !== "cursiva";
+    el("modo-manual").hidden = novo !== "manual";
+    if (novo === "manual" && !signaturePad) iniciarPad();
+  }
+  el("aba-cursiva").addEventListener("click", function(){ alternarModo("cursiva"); });
+  el("aba-manual").addEventListener("click", function(){ alternarModo("manual"); });
+  el("nome-cursiva").addEventListener("input", function(){
+    el("preview-cursiva-texto").textContent = el("nome-cursiva").value.trim() || "Jordan Santos";
+  });
+  el("limpar-ass").addEventListener("click", function(){ if (signaturePad) signaturePad.clear(); });
+
+  /* renderiza o texto em cursiva num canvas, pra virar uma imagem PNG igual
+     ao formato da assinatura desenhada (mesmo "shape" de dado, mais simples
+     de injetar no contrato depois) */
+  function cursivaParaDataUrl(nome){
+    var canvas = document.createElement("canvas");
+    canvas.width = 600; canvas.height = 160;
+    var ctx = canvas.getContext("2d");
+    ctx.font = "600 64px 'Dancing Script', cursive";
+    ctx.fillStyle = "#1D1D1B";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText(nome, canvas.width / 2, canvas.height / 2);
+    return canvas.toDataURL("image/png");
+  }
+
+  function mostrarJaConfirmado(dataurl){
+    el("painel-assinar").hidden = true;
+    el("painel-ja-confirmado").hidden = false;
+    el("preview-confirmado").innerHTML = '<img src="' + dataurl + '" alt="assinatura do Jordan">';
+    var area = el("assinatura-jordan-area");
+    area.innerHTML = '<img src="' + dataurl + '" alt="assinatura Jordan Santos" style="max-height:80px;max-width:280px;display:block;margin:0 auto 6px"><p class="linha-ass" style="margin-top:0">Jordan Santos &ndash; CONTRATADA</p>';
+  }
+  el("btn-refazer").addEventListener("click", function(){
+    el("painel-ja-confirmado").hidden = true;
+    el("painel-assinar").hidden = false;
+  });
+
+  el("btn-confirmar").addEventListener("click", function(){
+    var aviso = el("aviso-confirmar");
+    var dataurl, nome;
+    if (modo === "cursiva"){
+      nome = el("nome-cursiva").value.trim() || "Jordan Santos";
+      dataurl = cursivaParaDataUrl(nome);
+    } else {
+      if (!signaturePad || signaturePad.isEmpty()){
+        aviso.className = "aviso erro"; aviso.textContent = "Desenhe a assinatura antes de confirmar.";
+        return;
+      }
+      nome = "Jordan Santos";
+      dataurl = signaturePad.toDataURL("image/png");
+    }
+
+    el("btn-confirmar").disabled = true;
+    aviso.className = "aviso"; aviso.textContent = "Confirmando...";
+    fetch("/api/estudio", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acao: "confirmar-contrato", id: clienteId,
+        tipoAssinatura: modo, assinaturaDataUrl: dataurl, nomeAssinatura: nome
+      })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(resp){
+        if (!resp.ok) throw new Error(resp.j.erro || "falha");
+        aviso.className = "aviso ok"; aviso.textContent = "Confirmado! Pode voltar pro Estúdio e enviar pro cliente.";
+        mostrarJaConfirmado(dataurl);
+      }).catch(function(e){
+        aviso.className = "aviso erro";
+        aviso.textContent = e.message === "falha" ? "Não deu pra confirmar. Tente de novo." : e.message;
+      }).finally(function(){
+        el("btn-confirmar").disabled = false;
+      });
+  });
+
+  /* ---------- boot ---------- */
+  if (!clienteId){ mostrarEstado("estado-erro", "Link inválido."); return; }
+
+  fetch("/api/estudio?id=" + encodeURIComponent(clienteId))
+    .then(function(r){
+      if (r.status === 401){ mostrarEstado("estado-erro", "Sua sessão expirou. Entre de novo no Estúdio e clique em \"Gerar contrato\"."); throw new Error("parar"); }
+      return r.json().then(function(j){ return { ok: r.ok, j: j }; });
+    })
+    .then(function(resp){
+      if (!resp.ok) { mostrarEstado("estado-erro", resp.j.erro || "Não foi possível abrir este contrato."); return; }
+      var contrato = resp.j.contrato;
+      if (!contrato || contrato.status !== "rascunho"){
+        mostrarEstado("estado-erro", "Não há um contrato em rascunho pra revisar. Gere um novo em \"Gerar contrato\", no Estúdio.");
+        return;
+      }
+      renderContrato(contrato.snapshot || {});
+      mostrarEstado("fluxo");
+      if (contrato.jordan_confirmado_em && contrato.jordan_assinatura_dataurl){
+        el("nome-cursiva").value = contrato.jordan_assinatura_nome || "Jordan Santos";
+        el("preview-cursiva-texto").textContent = el("nome-cursiva").value;
+        mostrarJaConfirmado(contrato.jordan_assinatura_dataurl);
+      }
+    })
+    .catch(function(e){ if (e.message !== "parar") mostrarEstado("estado-erro", "Não foi possível abrir este contrato. Tente de novo."); });
+})();
+</script>
+</body>
+</html>

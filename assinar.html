@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<!--
+  Assinatura do contrato · Jordan Santos Fotografia  (/assinar?token=…)
+  Página PÚBLICA e tokenizada: o Jordan gera o link no /estudio, o casal revisa o
+  contrato e assina aqui. Assinatura eletrônica simples/avançada (MP 2.200-2/2001
+  art. 10 §2º). Dados vêm de /api/assinatura?token= ; a assinatura é capturada com
+  signature_pad e o PDF é gerado com html2pdf.js.
+
+  O TEXTO DO CONTRATO abaixo (#documento) é fixo, com os dados do casal preenchidos
+  a partir do backend (data-campo). A assinatura do Jordan vem de /configuracoes
+  (tabela config, resp.j.estudio.assinatura_jordan) — funciona cross-device.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Assinar contrato | Jordan Santos Fotografia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600&family=Jost:wght@300;400;500&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#1D1D1B; --ink-soft:#706F6F;
+    --accent:#003646; --accent-deep:#4F6278; --noir:#1D1D1B;
+    --line:#E8E1DC; --soft:#F6F3F0; --erro:#A33B3B; --ok:#2E6B4F;
+    --sombra:0 10px 34px rgba(29,29,27,.14);
+    --serif:"Bodoni Moda","Didot",Georgia,serif;
+    --sans:"Jost","Helvetica Neue",sans-serif;
+    --cursiva:"Dancing Script","Segoe Script","Brush Script MT",cursive;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--soft);color:var(--ink);font-family:var(--sans);font-weight:400;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .envelope{max-width:820px;margin:0 auto;padding:28px 18px 80px}
+  .topo{text-align:center;margin-bottom:18px}
+  .topo h1{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);letter-spacing:.02em}
+  .topo p{color:var(--ink-soft);font-size:14px;margin-top:6px}
+
+  /* estados */
+  .estado{max-width:520px;margin:80px auto;text-align:center;padding:0 20px}
+  .estado h2{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);margin-bottom:12px}
+  .estado p{color:var(--ink-soft)}
+  [hidden]{display:none !important}
+
+  /* cartão do contrato */
+  .doc-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sombra);overflow:hidden}
+  .doc-scroll{max-height:56vh;overflow-y:auto;padding:6px 4px}
+  @media print{.doc-scroll{max-height:none;overflow:visible}}
+
+  /* documento (contrato pra impressão/PDF) */
+  #documento{max-width:760px;margin:0 auto;padding:26px 30px}
+  #documento h2{font-family:var(--serif);font-weight:500;font-size:21px;letter-spacing:.06em;text-align:center;margin-bottom:26px}
+  #documento h3{font-size:14.5px;font-weight:500;letter-spacing:.05em;margin:24px 0 10px}
+  #documento p,#documento li{font-size:13.6px;line-height:1.8;margin-bottom:10px;text-align:justify}
+  #documento ol{padding-left:22px;margin-bottom:10px}
+  #documento .campo{font-weight:500;border-bottom:1px solid var(--line);padding:0 4px;white-space:pre-wrap}
+  #documento table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:13.6px}
+  #documento th,#documento td{border:1px solid #C9C4BD;padding:8px 10px;text-align:left}
+  #documento th{font-weight:500;letter-spacing:.08em;font-size:11.5px;text-transform:uppercase;background:#F6F3F0}
+  #documento td.num{text-align:right;white-space:nowrap}
+  #documento .assinaturas{margin-top:48px}
+  #documento .assinaturas p{text-align:center;margin-bottom:40px}
+  #documento .linha-ass{border-top:1px solid var(--ink);max-width:420px;margin:0 auto;padding-top:6px;text-align:center;font-size:12.5px}
+  #documento .auditoria{page-break-before:always;margin-top:40px;border-top:2px solid var(--line);padding-top:20px}
+  #documento .auditoria h3{text-align:center}
+  #documento .auditoria .linhas{font-size:12.5px;line-height:1.9}
+  #documento .auditoria .selo{font-size:11.5px;color:var(--ink-soft);margin-top:14px;text-align:center}
+
+  /* painel de assinatura */
+  .painel{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sombra);padding:26px 24px;margin-top:22px}
+  .painel h2{font-family:var(--serif);font-weight:500;font-size:20px;color:var(--accent);margin-bottom:4px}
+  .painel .sub{color:var(--ink-soft);font-size:13.5px;margin-bottom:20px}
+  .grade2{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+  @media (max-width:560px){.grade2{grid-template-columns:1fr}}
+  .campo-form{display:flex;flex-direction:column}
+  .campo-form label{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
+  .campo-form input{font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 13px;-webkit-appearance:none}
+  .campo-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
+
+  .aceite{display:flex;gap:10px;align-items:flex-start;margin:20px 0;font-size:13.5px;color:var(--ink);cursor:pointer;line-height:1.5}
+  .aceite input{margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)}
+
+  /* escolha do jeito de assinar: nome em cursiva ou desenhar na mão */
+  .abas{display:flex;gap:8px;margin:18px 0 14px}
+  .aba{flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink-soft);font:inherit;font-size:13px;letter-spacing:.03em;cursor:pointer;transition:all .15s}
+  .aba.ativa{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .preview-cursiva{border:1px dashed #C9C4BD;border-radius:12px;background:#FBFAF8;padding:22px;text-align:center;min-height:110px;display:flex;align-items:center;justify-content:center}
+  .preview-cursiva span{font-family:var(--cursiva);font-size:38px;color:var(--ink);line-height:1.3;word-break:break-word}
+  .preview-cursiva .vazio{font-family:var(--sans);font-size:13.5px;color:var(--ink-soft)}
+
+
+  .assina-area{margin:18px 0 8px}
+  .assina-rot{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px}
+  .canvas-box{position:relative;border:1px dashed #C9C4BD;border-radius:12px;background:#FBFAF8;height:180px;overflow:hidden}
+  #pad{width:100%;height:100%;touch-action:none;display:block}
+  .limpar-ass{position:absolute;top:8px;right:10px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);background:none;border:0;cursor:pointer}
+  .limpar-ass:hover{color:var(--accent)}
+
+  .botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border:0;border-radius:999px;font:inherit;font-size:13px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .2s ease,background .2s ease}
+  .botao-2{background:none;border:1px solid var(--accent);color:var(--accent)}
+  .botao-2:hover{background:var(--accent);color:#fff}
+  .botao-1{background:var(--noir);color:#fff;width:100%;margin-top:18px}
+  .botao-1:hover{opacity:.88}
+  .botao:disabled{opacity:.4;cursor:default}
+  .aviso{font-size:13.5px;margin-top:12px;min-height:18px}
+  .aviso.erro{color:var(--erro)}
+  .aviso.ok{color:var(--ok)}
+  .selo-seg{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:16px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="envelope">
+  <div class="topo">
+    <h1>Contrato de Fotografia</h1>
+    <p>Revise o contrato abaixo e assine ao final. Leva 1 minutinho.</p>
+  </div>
+
+  <!-- carregando -->
+  <div class="estado" id="estado-carregando">
+    <p>Carregando seu contrato...</p>
+  </div>
+
+  <!-- erro / expirado / cancelado -->
+  <div class="estado" id="estado-erro" hidden>
+    <h2>Ops</h2>
+    <p id="erro-texto">Não foi possível abrir este contrato.</p>
+  </div>
+
+  <!-- já assinado -->
+  <div class="estado" id="estado-assinado" hidden>
+    <h2>Contrato assinado ✓</h2>
+    <p>Este contrato já foi assinado e está guardado com o Jordan.</p>
+    <button type="button" class="botao botao-2" id="baixar-assinado" style="margin-top:20px">Baixar contrato assinado</button>
+    <p class="aviso" id="aviso-baixar-assinado"></p>
+  </div>
+
+  <!-- sucesso (acabou de assinar) -->
+  <div class="estado" id="estado-sucesso" hidden>
+    <h2>Assinado! 🤍</h2>
+    <p>Recebemos sua assinatura e o contrato já está guardado com o Jordan. Será uma honra eternizar seu momento.</p>
+    <button type="button" class="botao botao-2" id="baixar-agora" style="margin-top:20px">Baixar contrato assinado</button>
+    <p class="aviso" id="aviso-baixar-agora"></p>
+  </div>
+
+  <!-- fluxo principal -->
+  <div id="fluxo" hidden>
+    <div class="doc-card">
+      <div class="doc-scroll">
+        <!-- texto integral do contrato (fixo; dados do casal preenchidos via data-campo) -->
+        <article id="documento">
+          <h2>Contrato de Prestação de Serviços de Fotografia</h2>
+
+          <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endereço na rua Jesuítas, Carimã Nº390, Foz do Iguaçu &ndash; Paraná, CEP: 85855700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de serviços relacionados à fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>
+
+          <p>
+            NOIVO: <span class="campo" data-campo="noivo"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noivo"></span><br>
+            NOIVA: <span class="campo" data-campo="noiva"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noiva"></span><br>
+            ENDEREÇO: <span class="campo" data-campo="endereco"></span> &nbsp; Nº: <span class="campo" data-campo="numero"></span> &nbsp; BAIRRO: <span class="campo" data-campo="bairro"></span><br>
+            CIDADE: <span class="campo" data-campo="cidade"></span> &nbsp; COMPLEMENTO: <span class="campo" data-campo="complemento"></span> &nbsp; ESTADO: <span class="campo" data-campo="estado"></span> &nbsp; CEP: <span class="campo" data-campo="cep"></span><br>
+            TELEFONE NOIVO: <span class="campo" data-campo="tel-noivo"></span> &nbsp; TELEFONE NOIVA: <span class="campo" data-campo="tel-noiva"></span>
+          </p>
+
+          <p>Tem entre si como certo e ajustado o presente contrato de prestação de serviços que será regido pelas seguintes cláusulas:</p>
+
+          <h3>CLÁUSULA PRIMEIRA &ndash; OBJETO:</h3>
+          <p>Constitui o objeto do presente contrato a prestação de serviços fotográficos e/ou de vídeos, conforme descrito abaixo:</p>
+          <p>
+            DESCRIÇÃO DO EVENTO: Casamento<br>
+            DATA DO EVENTO: <span class="campo" data-campo="data-formatada"></span><br>
+            LOCAL DO EVENTO: <span class="campo" data-campo="local"></span><br>
+            HORÁRIO: <span class="campo" data-campo="horario"></span>
+          </p>
+          <table aria-label="Serviços contratados">
+            <thead>
+              <tr><th>Qtd</th><th>Descrição dos serviços</th><th>Valor total</th></tr>
+            </thead>
+            <tbody id="tabela-servicos"></tbody>
+          </table>
+
+          <h3>CLÁUSULA SEGUNDA &ndash; VALOR CONTRATUAL E CONDIÇÕES DE PAGAMENTO:</h3>
+          <ol>
+            <li>Pelo objeto ora contratado, a CONTRATANTE pagará à CONTRATADA o valor total de <span class="campo" data-campo="valor-total"></span> com entrada de 30% (<span class="campo" data-campo="valor-entrada"></span>) na assinatura do contrato mediante recibo ou depósito bancário, entendida como reserva de data. Chave Pix cel 45999077874 nome Jordan Sant.</li>
+            <li>Pagamentos antecipados não sofrem alterações de valores e nem acréscimos de juros em caso de parcelas, exceto por cartão de crédito via o sistema &ldquo;Pagseguro&rdquo; (ou outro meio que utilizar).</li>
+            <li>Os pagamentos devem ocorrer nas datas combinadas, sendo cabível multa de 2% calculados sobre o valor total deste contrato, mais multa moratória de 0,5% por dia de atraso após o evento.</li>
+            <li>O não cumprimento das obrigações financeiras do CONTRATANTE acarretará na nulidade do cumprimento dos prazos por parte CONTRATADO, a não entrega dos materiais até a regularização das obrigações, e em alguns casos específicos, a não realização do serviço contratado.</li>
+            <li>Para eventos em cidades com 100km de Foz do Iguaçu ou fora do estado do Paraná, fica estabelecido que os CONTRATANTES suportarão as despesas de transportes, terrestres ou aéreos, com o mínimo de uma diária de hospedagem para o CONTRATADO e sua equipe.</li>
+            <li>Eventuais acréscimos ao orçamento por conta de horas-extras, estacionamento, alimentação, taxas cobradas por Igrejas ou salões de eventos, deverão ser reembolsadas à CONTRATADA, em uma só parcela.</li>
+          </ol>
+
+          <h3>CLÁUSULA TERCEIRA &ndash; SOBRE O CANCELAMENTO DO EVENTO OU RESCISÃO DO CONTRATO:</h3>
+          <p>Diante da possibilidade de o evento ter sua data alterada, ser definitivamente cancelado ou as partes desejarem rescindir o presente contrato, as partes estabelecem o seguinte:</p>
+          <ol>
+            <li>No caso de falecimento de qualquer dos CONTRATANTES, ANTES DO INICIO DAS ATIVIDADES PARA O EVENTO, o presente contrato será rescindido de pleno direito, e ao CONTRATANTE supérstite será devolvido 100% do que já tenha sido pago, sem quaisquer acréscimos, APÓS O INÍCIO DAS ATIVIDADES será devolvido 80%. No caso de falecimento do CONTRATADO, os CONTRATANTES poderão optar pela continuação do contrato com a equipe do CONTRATADO ou pela rescisão do contrato com recebimento na mesma regra citada neste item. O falecimento de qualquer das partes após o evento não interferirá no cumprimento integral deste contrato.</li>
+            <li>Caso os CONTRATANTES decidam mudar a data do evento, havendo disponibilidade na agenda da CONTRATADA o contrato seguirá com a tabela de preços da nova data escolhida junto com uma multa de 10% sobre o valor do contrato atual, exceto por catástrofes naturais ou justificativas de força maior. Não havendo disponibilidade de agenda pela CONTRATADA, os CONTRATANTES deverão pedir a rescisão e o cálculo da multa obedecerá aos critérios percentuais fixados no item a seguir.</li>
+            <li>Em caso de rescisão, por ambas as partes, o DESISTENTE deverá comunicar com antecedência apresentando uma justificativa através do e-mail da outra parte, pagando multa contratual, além dos demais valores, fixada nos seguintes critérios:</li>
+          </ol>
+          <p>Multa Contratual sobre o valor total do contrato:</p>
+          <ol>
+            <li>Comunicação com antecedência de até 300 dias em relação ao evento &ndash; multa de 10%.</li>
+            <li>Comunicação com antecedência de 299 até 240 dias em relação ao evento &ndash; multa de 20%.</li>
+            <li>Comunicação com antecedência de 239 até 180 dias em relação ao evento &ndash; multa de 30%.</li>
+            <li>Comunicação com antecedência de 179 até 120 dias em relação ao evento &ndash; multa de 40%.</li>
+            <li>Comunicação com antecedência de 119 até 60 dias em relação ao evento &ndash; multa de 50%.</li>
+            <li>Comunicação com antecedência de 59 até 31 dias em relação ao evento &ndash; multa de 70%.</li>
+            <li>Comunicação com antecedência inferior a 30 dias em relação ao evento &ndash; multa de 80%.</li>
+          </ol>
+          <p>Reserva de data:</p>
+          <p>O valor de reserva de data não é passível de resgate e não tem relação com o valor da multa rescisória &ndash; Visto que trabalhamos com apenas um evento por dia.</p>
+          <p>Os gastos e prejuízos do CONTRATADO:</p>
+          <ol>
+            <li>Em caso de rescisão pelo CONTRATANTE, este se responsabilizará por todos os gastos e prejuízos que o CONTRATADO já teve em virtude do presente contrato, além das demais obrigações deste parágrafo.</li>
+            <li>Em caso do não comparecimento ao evento por parte da CONTRATADA, sujeitará aos CONTRATANTES o pagamento de multa em 100% (cem por cento) do valor deste contrato, mais 100% (cem por cento) do mesmo valor aos pelos danos morais e materiais.</li>
+            <li>Nas hipóteses de caso fortuito ou de força maior que o impeça de estar presente ao evento objeto deste contrato, a CONTRATADA poderá cumprir as obrigações assumidas neste contrato através da nomeação de outros profissionais que possuam as mesmas capacitações técnicas e as mesmas características estéticas, sem que isso represente infração contratual.</li>
+          </ol>
+
+          <h3>CLÁUSULA QUARTA &ndash; MATERIAL DE ESCOLHA E PRAZOS:</h3>
+          <ol>
+            <li>Todas as fotos serão editadas após passar por uma seleção, e enviadas para o site de escolha em até (20 dias úteis), podendo ser prorrogados por mais (15 dias úteis) em períodos sazonais com aviso prévio. ATENÇÃO: Contratantes do PACOTES DIGITAL estão isentos do item 2 ao 7 desta cláusula.</li>
+            <li>O CONTRATANTE terá um prazo de (30 dias) para selecionar as fotos, podendo ser prorrogado gratuitamente por mais (15 dias). Se ainda sim precisar de mais tempo, deverá escolher uma das seguintes opções: para mais 15 dias no site de escolha (R$ 50,00); para mais 30 dias no site de escolha (R$ 100,00); para mais 60 dias no site de escolha (R$ 150,00).</li>
+            <li>Após finalizada a seleção o CONTRATANTE deverá clicar no botão ENVIAR SELEÇÃO. A devolução da lista escolhida é feita automaticamente através do próprio sistema.</li>
+            <li>Após a seleção das fotos, uma amostra do álbum será apresentada ao CONTRATANTE em até (30 dias úteis) podendo ser prorrogado por mais (15 dias úteis) em períodos sazonais com aviso prévio. O mesmo terá um prazo de até (7 dias) para solicitar pequenos ajustes ou aprovar para a impressão.</li>
+            <li>A primeira alteração nas páginas do álbum é gratuita e irreversível. Após feitas as alterações, na segunda solicitação será cobrada uma taxa de R$ 50,00 pelos custos de diagramação não previstos no orçamento.</li>
+            <li>Após aprovado, o álbum é enviado para produção e entregue ao CONTRATANTE em até (45 dias úteis).</li>
+            <li>Não finalizada a seleção em (60 dias adicionais) após o período gratuito de (45 dias) anula o cumprimento de todos os prazos e passa a aguardar a vez até que outros trabalhos em dia passem a ser concluídos.</li>
+            <li>Após (6 meses) sem finalizar a seleção das fotos, o CONTRATANTE atribui à CONTRATADA a autorização para escolher e editar as fotos do álbum, além de possíveis reajustes nos produtos ainda não enviados para produção.</li>
+            <li>Caso não informado na CLÁUSULA 1 desse documento o fornecimento de todas as imagens, o material de escolha terá a marca d'água com os direitos autorais e o texto (PROIBIDO PUBLICAR). Significa que o pacote escolhido não inclui todas as imagens originais, e com base no art. 7º, inc. VII da Lei nº 9.610/98 o CONTRATANTE não possui autorização para imprimir/revelar o material em outro estabelecimento ou publicar imagens sem o consentimento da CONTRATADA. Sendo o único arquivo original a ser entregue sem as proteções de direitos autorais a quantidade de imagens escolhidas, conforme o pacote adquirido, sendo essas de livre utilização e sem fins comerciais.</li>
+            <li>Todas as fotos ficam arquivadas em suportes digitais pertencentes à CONTRATADA por um período de (18 meses) após a data do evento, ficando à disposição do CONTRATANTE mediante nova remuneração. Após esse período os arquivos serão apagados.</li>
+          </ol>
+
+          <h3>CLÁUSULA QUINTA &ndash; AS OBRIGAÇÕES DOS CONTRATANTES:</h3>
+          <ol>
+            <li>Os CONTRATANTES obrigam-se a apresentar à CONTRATADA, com antecedência, um roteiro completo com a sequência de fatos e horários do que acontecerá durante o evento, principalmente se qualquer atração especial e/ou não comum estiver prevista.</li>
+            <li>Deverão, os CONTRATANTES, no mesmo prazo, informar eventual desejo de ter fotografado algum momento específico (oração, discurso, homenagem, etc.). Esta exigência permitirá que a CONTRATADA se prepare e se posicione adequadamente de forma a não deixar de registrar tudo o que for relevante, respeitados os limites técnicos para troca de bateria ou cartões das câmeras. O não recebimento deste roteiro isentará a CONTRATADA da responsabilidade pela falta de registro de acontecimentos não usuais.</li>
+            <li>Os CONTRATANTES deverão comunicar inequivocamente, com antecedência, os locais e horários da preparação dos noivos, local e horário da cerimônia, local e horário da festa, endereço e horário de check in e check out do hotel, além dos contatos da assessoria e os demais envolvidos em relação ao evento. Caso as informações precisem ser alteradas, os CONTRATADOS também deverão ser comunicados com antecedência.</li>
+            <li>A não comunicação nos termos aqui estabelecidos isentará a CONTRATADA de quaisquer responsabilidades pela não realização de cada etapa do trabalho.</li>
+            <li>Para todos os efeitos, as partes pactuam como sendo obrigatório apenas o registro da preparação da noiva. A preparação do noivo e os detalhes da decoração da igreja e do salão antes do evento iniciar somente serão registrados caso os horários e as condições de trânsito permitam, quando serão incluídos no trabalho sem qualquer despesa extra para os CONTRATANTES.</li>
+            <li>Os CONTRATANTES se comprometem a não comparar a CONTRATADA com outras empresas em relação a prazos, formas de pagamento ou intervir nos fornecedores com a intenção de minimizar custos, cabendo à CONTRATADA decidir tais ações.</li>
+            <li>Os CONTRATANTES têm o livre direito de comunicar suas preferências e contribuir com ideias e dicas para que o trabalho fique satisfatório.</li>
+            <li>Os CONTRATANTES se comprometem a não exigir cópias idênticas de trabalhos já existentes no mercado, respeitando eticamente a propriedade autoral de cada profissional. Além de não solicitar ideias que inferiorize o estilo de trabalho da CONTRATADA.</li>
+          </ol>
+
+          <h3>CLÁUSULA SEXTA &ndash; AS OBRIGAÇÕES DA CONTRATADA:</h3>
+          <ol>
+            <li>Considerando a natureza do serviço e que seu produto é legalmente definido como obra intelectual, a CONTRATADA dispõe de ampla liberdade de criação, não havendo qualquer parâmetro norteador por parte dos CONTRATANTES.</li>
+            <li>A CONTRATADA diligenciará para que os serviços alcancem o nível técnico ideal, comprometendo-se a executar de forma regular e eficiente todas as atividades descritas na Cláusula Primeira (objeto). No entanto, cabe aos CONTRATANTES gerenciar ou contratar uma empresa responsável pela organização, espaço e ordem. Eventos tumultuados ou em locais desagradáveis não são garantias para obter boas imagens.</li>
+            <li>A CONTRATADA se compromete em estar à disposição dos CONTRATANTES durante todo o dia do evento, ficando até o término de todas as atividades do protocolo de acordo com o roteiro a ser enviado.</li>
+            <li>A CONTRATADA autoriza a permanência dos profissionais para fotografias e vídeos sociais (revistas, jornais, blogs e bandas, DJs, decoradores...) no dia do evento, desde que os mesmos se comprometam a não interferir ou obstruir o trabalho da CONTRATADA, e nem comercializar as imagens adquiridas, sendo de inteira responsabilidade dos mesmos o conteúdo produzido e publicado, podendo responder por seus atos.</li>
+            <li>Ao autorizar a permanência dos profissionais sociais, os CONTRATANTES assumem estar cientes de que poderão ocorrer possíveis obstruções nas cenas a serem gravadas ou fotografadas e de que a CONTRATADA não tem como removê-los na pós-produção/edição.</li>
+            <li>Os álbuns descritos nos pacotes são de qualidade profissional, produzidos por empresas brasileiras e portuguesas certificadas e conceituadas no mercado fotográfico. Em caso de possível alteração por parte dos fornecedores, a CONTRATADA se compromete em fornecer opções de substituição com mesmo nível de qualidade.</li>
+          </ol>
+
+          <h3>CLÁUSULA SÉTIMA &ndash; INFORMAÇÕES E CONDIÇÕES GERAIS:</h3>
+          <p>Os CONTRATANTES declaram-se cientes de que a correta prestação dos serviços depende de alguns fatores que fogem do controle da CONTRATADA. Desta forma, os CONTRATANTES obrigam-se a:</p>
+          <ol>
+            <li>Atuar pessoalmente, ou através de cerimonialistas, ajudando a identificar os principais convidados e familiares, de forma que a eles seja dada atenção especial durante o processo de fotografia e captação.</li>
+            <li>Orientar a assessoria do evento a consultar a CONTRATADA e equipe antes de autorizar qualquer ato da cerimônia ou da festa declarados no roteiro.</li>
+            <li>Disponibilizar refeição sem qualquer custo para a equipe CONTRATADA. Não sendo disponibilizada a alimentação, a equipe CONTRATADA poderá se ausentar do evento por (2 horas) para se alimentarem nos arredores, sendo depois reembolsados pelos CONTRATANTES.</li>
+            <li>Tratar com os locais da cerimônia e da festa, para que a CONTRATADA possa trabalhar livremente e sem que sejam cobradas quaisquer taxas, e que, se cobradas, serão depois reembolsadas pelos CONTRATANTES.</li>
+            <li>Disponibilizar vagas de estacionamento para os CONTRATADOS próximos aos portões de entrada da igreja e da recepção para maior agilidade na preparação dos equipamentos evitando os atrasos.</li>
+            <li>Orientar a equipe de som e iluminação para que utilizem com moderação efeitos de fumaça, evitar a utilização de strobos, e principalmente RAIOS LASER, pois estes recursos podem danificar os sensores das câmeras fotográficas, comprometendo seriamente a qualidade para captação das imagens.</li>
+            <li>Comunicar a empresa responsável pela montagem dos televisores, telões ou projetores a deixarem prontos os equipamentos no qual serão exibidos os possíveis vídeos e/ou slide show para os devidos testes com no mínimo de (4 horas) de antecedência. Não sendo possível testar por falta de montagem no horário combinado, ou a falta de qualidade nesses equipamentos coloca em risco o nome da CONTRATADA, a qual fica o poder de decidir exibir ou não os vídeos.</li>
+            <li>Alertar pessoalmente, ou através da assessoria do evento, os convidados e eventuais representantes da imprensa, que a CONTRATADA tem a máxima prioridade na captação, principalmente no que diz respeito a posicionamento e não obstrução da visibilidade.</li>
+          </ol>
+
+          <h3>CLÁUSULA OITAVA &ndash; SOBRE A LICENÇA PARA USO DE IMAGEM:</h3>
+          <ol>
+            <li>Os CONTRATANTES autorizam a CONTRATADA, na forma de cessão de direitos de imagem, a utilizar as fotos e os vídeos captados no decorrer do ensaio e do evento, a título gratuito, destinados à divulgação da CONTRATADA em qualquer material impresso ou audiovisual, tais como revistas, jornais, panfletos, televisão, sites e nas redes sociais. Expostos ao público em geral e/ou para uso interno como portfolio e que poderá ser inscrito em concursos nacionais e internacionais de fotografia.</li>
+            <li>A divulgação dos vídeos e das fotos é opcional da CONTRATADA e não será publicada caso o mesmo fuja dos padrões necessários na organização, estética e ordem do evento ou interesses do mesmo.</li>
+            <li>Os CONTRATANTES autorizam expressamente o uso da própria imagem e assumem a responsabilidade de comunicar aos seus convidados acerca deste possível uso pela CONTRATADA, respondendo aos CONTRATANTES pela reparação de danos que a CONTRATADA sofra caso algum convidado questione o tal uso.</li>
+            <li>A CONTRATADA autoriza as empresas fornecedoras e organizadoras do evento, com o consentimento dos CONTRATANTES, que se comprometem a avisar as mesmas, a utilizarem e compartilharem as imagens para fins publicitários apenas na internet, sempre atribuindo os devidos créditos da CONTRATADA no período de 12 meses após o evento.</li>
+            <li>A fotografia é considerada como obra intelectual, e como tal está protegida pelo art. 7º, inc. VII da Lei nº 9.610/98. De acordo com a lei, as empresas fornecedoras e organizadoras do evento que desejarem utilizar as imagens da CONTRATADA em mídias impressas ou audiovisuais deverão solicitar uma autorização por escrito, contendo a finalidade e o prazo de veiculação, mediante o pagamento de 10% do valor deste contrato por mês de utilização aos CONTRATANTES e à CONTRATADA.</li>
+            <li>Caso os CONTRATANTES desejem ver suspensa a divulgação deste material, no todo ou em partes, bastará que comuniquem por escrito e de forma inequívoca a CONTRATADA desta intenção, assinalando ao mesmo o prazo de 5 dias úteis que, se obedecido, afastará a caracterização de danos patrimoniais ou morais. Os CONTRATANTES obrigam-se a orientar seus convidados em relação a este procedimento, que também é aplicável a eles.</li>
+          </ol>
+          <p>Parágrafo Único: A autorização para a CONTRATADA é concedida a título gratuito, abrangendo o uso das imagens acima mencionadas, em todo território nacional e/ou exterior, sem limitação de tempo ou número de utilizações e de maneira alguma as imagens utilizadas poderão agredir a imagem pessoal e a personalidade dos CONTRATANTES e convidados.</p>
+
+          <h3>CLÁUSULA NONA &ndash; FORO DE ELEIÇÃO:</h3>
+          <ol>
+            <li>Na assinatura deste documento, os CONTRATANTES declaram estar cientes sobre o estilo de trabalho da CONTRATADA.</li>
+            <li>As partes elegem como competente para dirimir quaisquer questões relacionadas à interpretação ou aplicação deste contrato o foro da sede dos CONTRATANTES, em detrimento de qualquer outro por mais privilegiado que possa ser.</li>
+          </ol>
+
+          <h3>CLÁUSULA DÉCIMA &ndash; DA ASSINATURA ELETRÔNICA:</h3>
+          <ol>
+            <li>As partes reconhecem a validade, a autenticidade e a eficácia da assinatura eletrônica aposta neste instrumento, aceitando-a expressamente como meio válido de manifestação de vontade e de comprovação de autoria e integridade, nos termos do art. 10, §2º da Medida Provisória nº 2.200-2/2001.</li>
+            <li>O signatário é identificado por nome e CPF e acessa este instrumento por meio de link eletrônico exclusivo e não public&aacute;vel, gerado com identificador aleatório e enviado pela CONTRATADA diretamente ao CONTRATANTE, cuja posse constitui o elemento de vinculação do ato à sua pessoa. Ficam registrados, para fins de auditoria, a data e hora, o endereço IP e o dispositivo utilizados, além da impressão digital (hash) do documento assinado.</li>
+          </ol>
+
+          <p>E por estarem certos e ajustados, as partes declaram que o presente contrato foi objeto de ampla negociação em todas as suas cláusulas, notadamente aquelas que definem o objeto, o preço e as multas, assinando o mesmo em duas vias de igual forma e teor, na presença de testemunha:</p>
+
+          <div class="assinaturas" id="bloco-assinaturas">
+            <p><span class="campo" data-campo="cidade-assinatura"></span>, <span class="campo" data-campo="data-assinatura"></span>.</p>
+            <p class="linha-ass">Assinatura do(a) contratante</p>
+            <div id="assinatura-jordan-area">
+              <p class="linha-ass">Jordan Santos &ndash; CONTRATADA</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- painel de assinatura -->
+    <div class="painel">
+      <h2>Sua assinatura</h2>
+      <p class="sub">Confira seus dados, aceite os termos e assine no quadro.</p>
+
+      <div class="grade2">
+        <div class="campo-form"><label for="a-nome">Seu nome completo</label><input id="a-nome" type="text" autocomplete="name"></div>
+        <div class="campo-form"><label for="a-cpf">Seu CPF</label><input id="a-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00"></div>
+      </div>
+
+      <label class="aceite">
+        <input type="checkbox" id="a-aceite">
+        <span>Declaro que li e concordo com os termos deste contrato e reconheço a validade da minha assinatura eletrônica realizada por este meio (MP 2.200-2/2001, art. 10, §2º).</span>
+      </label>
+
+      <div class="abas">
+        <button type="button" class="aba ativa" id="aba-cursiva">Usar meu nome</button>
+        <button type="button" class="aba" id="aba-manual">Assinar na m&atilde;o</button>
+      </div>
+
+      <div id="modo-cursiva">
+        <div class="preview-cursiva"><span id="preview-cursiva-texto"><span class="vazio">Preencha seu nome completo acima pra ver a assinatura.</span></span></div>
+      </div>
+
+      <div class="assina-area" id="modo-manual" hidden>
+        <div class="assina-rot">Assine com o dedo ou o mouse:</div>
+        <div class="canvas-box">
+          <canvas id="pad"></canvas>
+          <button type="button" class="limpar-ass" id="limpar-ass">Limpar</button>
+        </div>
+      </div>
+
+      <button type="button" class="botao botao-1" id="btn-assinar" disabled>Assinar contrato</button>
+      <p class="aviso" id="aviso-assinar"></p>
+      <p class="selo-seg">🔒 Assinatura eletrônica com link exclusivo, registro de data/hora, IP e dispositivo, e impressão digital (hash) do documento &mdash; conforme a MP 2.200-2/2001.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
+  var el = function(id){ return document.getElementById(id); };
+  var token = new URLSearchParams(location.search).get("token") || "";
+  var dados = null;          /* snapshot do contrato */
+  var signaturePad = null;
+
+  function mostrarEstado(id, texto){
+    ["estado-carregando","estado-erro","estado-assinado","estado-sucesso","fluxo"].forEach(function(x){
+      el(x).hidden = true;
+    });
+    el(id).hidden = false;
+    if (texto && el("erro-texto")) el("erro-texto").textContent = texto;
+  }
+
+  function formatarCpf(v){
+    var d = String(v || "").replace(/\D/g, "").slice(0, 11);
+    if (d.length !== 11) return d || "________________";
+    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  }
+  function dataExtenso(d){
+    var meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+    return d.getDate() + " de " + meses[d.getMonth()] + " de " + d.getFullYear();
+  }
+  function dataEventoExtenso(iso){
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "________________";
+    var p = iso.split("-");
+    return dataExtenso(new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])));
+  }
+
+  function preencherCampo(nome, valor){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-campo="' + nome + '"]'), function(span){
+      span.textContent = valor || "________________";
+    });
+  }
+
+  function montaTabela(itens, total){
+    var tbody = el("tabela-servicos");
+    tbody.innerHTML = "";
+    (itens || []).forEach(function(it){
+      var tr = document.createElement("tr");
+      var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
+      var desc = document.createElement("td"); desc.textContent = it.nome || it.id || "Serviço";
+      var val = document.createElement("td"); val.textContent = it.valor != null ? brl.format(it.valor) : ""; val.className = "num";
+      tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
+      tbody.appendChild(tr);
+    });
+    var trTotal = document.createElement("tr");
+    var v = document.createElement("td");
+    var r = document.createElement("td"); r.textContent = "VALOR TOTAL"; r.style.fontWeight = "500";
+    var t = document.createElement("td"); t.textContent = brl.format(total || 0); t.className = "num"; t.style.fontWeight = "500";
+    trTotal.appendChild(v); trTotal.appendChild(r); trTotal.appendChild(t);
+    tbody.appendChild(trTotal);
+  }
+
+  function renderContrato(c){
+    var total = Number(c.total) || 0;
+    var entrada = (c.entrada != null && c.entrada !== "") ? Number(c.entrada) : total * 0.3;
+    montaTabela(Array.isArray(c.itens) ? c.itens : [], total);
+    preencherCampo("noivo", c.noivo);
+    preencherCampo("noiva", c.noiva);
+    preencherCampo("cpf-noivo", c.cpf_noivo ? formatarCpf(c.cpf_noivo) : "");
+    preencherCampo("cpf-noiva", c.cpf_noiva ? formatarCpf(c.cpf_noiva) : "");
+    preencherCampo("endereco", c.endereco);
+    preencherCampo("numero", c.numero);
+    preencherCampo("bairro", c.bairro);
+    preencherCampo("cidade", c.cidade);
+    preencherCampo("complemento", c.complemento || "N/A");
+    preencherCampo("estado", c.estado);
+    preencherCampo("cep", c.cep);
+    preencherCampo("tel-noivo", c.tel_noivo);
+    preencherCampo("tel-noiva", c.tel_noiva);
+    preencherCampo("data-formatada", dataEventoExtenso(c.data_evento));
+    preencherCampo("local", c.local_evento);
+    preencherCampo("horario", c.horario ? String(c.horario).slice(0, 5) : "");
+    preencherCampo("valor-total", brl.format(total));
+    preencherCampo("valor-entrada", brl.format(entrada));
+    preencherCampo("cidade-assinatura", c.cidade);
+    preencherCampo("data-assinatura", dataExtenso(new Date()));
+
+    /* pré-preenche o nome do signatário com o noivo, se houver */
+    if (c.noivo) el("a-nome").value = c.noivo;
+  }
+
+  function iniciarPad(){
+    var canvas = el("pad");
+    function resize(){
+      var ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext("2d").scale(ratio, ratio);
+      if (signaturePad) signaturePad.clear();
+    }
+    signaturePad = new SignaturePad(canvas, { penColor: "#1D1D1B", backgroundColor: "rgba(0,0,0,0)" });
+    window.addEventListener("resize", resize);
+    resize();
+    signaturePad.addEventListener("endStroke", avaliarBotao);
+  }
+
+  /* a assinatura pode ser o nome em cursiva (padrão) ou o traço feito na mão */
+  var modo = "cursiva";
+
+  function assinaturaPronta(){
+    if (modo === "cursiva") return !!el("a-nome").value.trim();
+    return !!(signaturePad && !signaturePad.isEmpty());
+  }
+
+  function avaliarBotao(){
+    var ok = el("a-aceite").checked &&
+             el("a-nome").value.trim() &&
+             el("a-cpf").value.replace(/\D/g, "").length === 11 &&
+             assinaturaPronta();
+    el("btn-assinar").disabled = !ok;
+  }
+
+  function atualizarPreviewCursiva(){
+    var nome = el("a-nome").value.trim();
+    el("preview-cursiva-texto").innerHTML = nome
+      ? ""
+      : '<span class="vazio">Preencha seu nome completo acima pra ver a assinatura.</span>';
+    if (nome) el("preview-cursiva-texto").textContent = nome;
+  }
+
+  function alternarModo(novo){
+    modo = novo;
+    el("aba-cursiva").classList.toggle("ativa", novo === "cursiva");
+    el("aba-manual").classList.toggle("ativa", novo === "manual");
+    el("modo-cursiva").hidden = novo !== "cursiva";
+    el("modo-manual").hidden = novo !== "manual";
+    /* o pad só é criado quando a aba aparece: num canvas escondido o
+       offsetWidth é 0 e a assinatura sairia deformada */
+    if (novo === "manual" && !signaturePad) iniciarPad();
+    avaliarBotao();
+  }
+
+  /* desenha o nome em cursiva num canvas, pro PDF receber uma imagem igual
+     à da assinatura feita à mão (mesmo formato de dado) */
+  function cursivaParaDataUrl(nome){
+    var canvas = document.createElement("canvas");
+    canvas.width = 600; canvas.height = 160;
+    var ctx = canvas.getContext("2d");
+    ctx.font = "600 64px 'Dancing Script', cursive";
+    ctx.fillStyle = "#1D1D1B";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText(nome, canvas.width / 2, canvas.height / 2, canvas.width - 40);
+    return canvas.toDataURL("image/png");
+  }
+
+  /* preferências do estúdio vindas do backend (config): a assinatura padrão do Jordan.
+     Server-side, então funciona no navegador do casal também. */
+  var estudioCfg = {};
+  /* assinatura feita NESTE contrato específico (revisão em /revisar-contrato) —
+     tem prioridade sobre a padrão do /configuracoes */
+  var assinaturaJordanContrato = null;
+
+  /* assinatura do Jordan (CONTRATADA) no lugar do texto fixo */
+  function aplicarAssinaturaJordan(){
+    var img = assinaturaJordanContrato || estudioCfg.assinatura_jordan;
+    var area = el("assinatura-jordan-area");
+    if (!img || !area) return;
+    area.innerHTML =
+      '<img src="' + img + '" alt="assinatura Jordan Santos" style="max-height:80px;max-width:280px;display:block;margin:0 auto 6px">' +
+      '<p class="linha-ass" style="margin-top:0">Jordan Santos &ndash; CONTRATADA</p>';
+  }
+
+  /* ---------- baixar a via assinada ---------- */
+  /* guardado em memória logo após assinar, pra baixar na hora sem ida ao servidor */
+  var pdfAssinadoBase64 = null;
+
+  function nomeArquivoPdf(){
+    var casal = [dados && dados.noivo, dados && dados.noiva].filter(Boolean).join(" e ");
+    return "Contrato assinado" + (casal ? " - " + casal : "") + ".pdf";
+  }
+
+  function baixarBase64(base64, nomeArquivo){
+    /* base64 -> Blob: evita o limite de tamanho de href com data: URI em alguns navegadores */
+    var bin = atob(base64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = nomeArquivo || nomeArquivoPdf();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+
+  function baixarDoServidor(idAviso, botao){
+    var aviso = el(idAviso);
+    botao.disabled = true;
+    aviso.className = "aviso"; aviso.textContent = "Preparando o arquivo...";
+    fetch("/api/assinatura?pdf=1&token=" + encodeURIComponent(token))
+      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(resp){
+        if (!resp.ok || !resp.j.pdf) throw new Error(resp.j.erro || "falha");
+        baixarBase64(resp.j.pdf, resp.j.arquivo);
+        aviso.textContent = "";
+      })
+      .catch(function(e){
+        aviso.className = "aviso erro";
+        aviso.textContent = e.message === "falha"
+          ? "Não deu pra baixar agora. Tente de novo ou peça a via pro Jordan."
+          : e.message;
+      })
+      .finally(function(){ botao.disabled = false; });
+  }
+
+  el("baixar-agora").addEventListener("click", function(){
+    /* acabou de assinar: o PDF ainda está na memória desta aba */
+    if (pdfAssinadoBase64) { baixarBase64(pdfAssinadoBase64); return; }
+    baixarDoServidor("aviso-baixar-agora", el("baixar-agora"));
+  });
+  el("baixar-assinado").addEventListener("click", function(){
+    baixarDoServidor("aviso-baixar-assinado", el("baixar-assinado"));
+  });
+
+  /* ---------- boot ---------- */
+  if (!token){ mostrarEstado("estado-erro", "Link inválido. Peça um novo ao Jordan."); return; }
+
+  fetch("/api/assinatura?token=" + encodeURIComponent(token))
+    .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+    .then(function(resp){
+      if (!resp.ok){ mostrarEstado("estado-erro", resp.j.erro || "Não foi possível abrir este contrato."); return; }
+      if (resp.j.status === "assinado"){ mostrarEstado("estado-assinado"); return; }
+      dados = resp.j.contrato || {};
+      estudioCfg = resp.j.estudio || {};
+      assinaturaJordanContrato = resp.j.jordanAssinatura || null;
+      renderContrato(dados);
+      aplicarAssinaturaJordan();
+      mostrarEstado("fluxo");
+      atualizarPreviewCursiva();
+      avaliarBotao();
+      /* garante a fonte carregada antes de alguém gerar a cursiva no canvas,
+         senão o primeiro traçado sairia com a fonte de fallback */
+      if (document.fonts && document.fonts.load) document.fonts.load("600 64px 'Dancing Script'");
+    })
+    .catch(function(){ mostrarEstado("estado-erro", "Não foi possível abrir este contrato. Tente de novo."); });
+
+  /* ---------- interações ---------- */
+  ["a-aceite","a-nome","a-cpf"].forEach(function(id){
+    el(id).addEventListener("input", avaliarBotao);
+    el(id).addEventListener("change", avaliarBotao);
+  });
+  el("a-nome").addEventListener("input", atualizarPreviewCursiva);
+
+  el("aba-cursiva").addEventListener("click", function(){ alternarModo("cursiva"); });
+  el("aba-manual").addEventListener("click", function(){ alternarModo("manual"); });
+
+  el("limpar-ass").addEventListener("click", function(){ if (signaturePad) signaturePad.clear(); avaliarBotao(); });
+
+  el("btn-assinar").addEventListener("click", function(){
+    var aviso = el("aviso-assinar");
+    if (typeof html2pdf === "undefined"){
+      aviso.className = "aviso erro";
+      aviso.textContent = "Não foi possível preparar o documento. Recarregue a página.";
+      return;
+    }
+    var nome = el("a-nome").value.trim();
+    var cpf = el("a-cpf").value.replace(/\D/g, "");
+    var assinaturaImg = modo === "cursiva"
+      ? cursivaParaDataUrl(nome)
+      : signaturePad.toDataURL("image/png");
+
+    /* injeta a assinatura + comprovante de auditoria no documento antes do PDF */
+    var agora = new Date();
+    var bloco = el("bloco-assinaturas");
+    var assinaturaJordanImg = assinaturaJordanContrato || estudioCfg.assinatura_jordan;
+    var contratadaHtml = assinaturaJordanImg
+      ? '<div style="text-align:center;margin-top:36px">' +
+          '<img src="' + assinaturaJordanImg + '" alt="assinatura Jordan Santos" style="max-height:80px;max-width:280px">' +
+          '<p class="linha-ass" style="margin-top:0">Jordan Santos &ndash; CONTRATADA</p>' +
+        '</div>'
+      : '<p class="linha-ass" style="margin-top:36px">Jordan Santos &ndash; CONTRATADA</p>';
+    bloco.innerHTML =
+      '<p><span>' + (dados.cidade || "") + '</span>, ' + dataExtenso(agora) + '.</p>' +
+      '<div style="text-align:center;margin-top:24px">' +
+        '<img src="' + assinaturaImg + '" alt="assinatura" style="max-height:90px;max-width:320px">' +
+        '<p class="linha-ass" style="margin-top:0">' + nome + ' &ndash; CPF ' + formatarCpf(cpf) + '<br>Assinado eletronicamente</p>' +
+      '</div>' +
+      contratadaHtml;
+
+    var doc = el("documento");
+    var auditoria = document.createElement("div");
+    auditoria.className = "auditoria";
+    auditoria.innerHTML =
+      '<h3>Comprovante de Assinatura Eletrônica</h3>' +
+      '<div class="linhas">' +
+        '<strong>Signatário:</strong> ' + nome + '<br>' +
+        '<strong>CPF:</strong> ' + formatarCpf(cpf) + '<br>' +
+        (dados.email ? '<strong>E-mail:</strong> ' + dados.email + '<br>' : '') +
+        '<strong>Data e hora:</strong> ' + agora.toLocaleString("pt-BR") + '<br>' +
+        '<strong>Verificação:</strong> acesso por link eletrônico exclusivo, entregue ao contratante<br>' +
+        '<strong>Aceite:</strong> os termos foram lidos e aceitos, com reconhecimento da validade da assinatura eletrônica (MP 2.200-2/2001, art. 10, §2º)' +
+      '</div>' +
+      '<p class="selo">O registro completo de auditoria (endereço IP, dispositivo e impressão digital SHA-256 do documento) fica preservado no sistema do fotógrafo e comprova a autoria e a integridade desta via.</p>';
+    doc.appendChild(auditoria);
+
+    el("btn-assinar").disabled = true;
+    aviso.className = "aviso"; aviso.textContent = "Registrando sua assinatura...";
+
+    html2pdf().set({
+      margin: [15, 15, 18, 15],
+      image: { type: "jpeg", quality: 0.82 },
+      html2canvas: { scale: 1.5, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4" },
+      pagebreak: { mode: ["css", "legacy"] }
+    }).from(doc).outputPdf("datauristring").then(function(dataUri){
+      pdfAssinadoBase64 = dataUri.split(",")[1];  /* guarda pro botão de baixar */
+      return fetch("/api/assinatura", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "assinar", token: token, aceite: true,
+          pdfBase64: pdfAssinadoBase64,
+          nomeSignatario: nome, cpfSignatario: cpf
+        })
+      });
+    }).then(function(r){
+      return r.json().then(function(j){ return { ok: r.ok, j: j }; });
+    }).then(function(resp){
+      if (!resp.ok) throw new Error(resp.j.erro || "falha");
+      mostrarEstado("estado-sucesso");
+      window.scrollTo(0, 0);
+    }).catch(function(e){
+      /* desfaz a injeção pra permitir nova tentativa */
+      if (auditoria.parentNode) auditoria.parentNode.removeChild(auditoria);
+      aviso.className = "aviso erro";
+      aviso.textContent = e.message === "falha" ? "Não deu pra assinar agora. Confira o código e tente de novo." : e.message;
+      el("btn-assinar").disabled = false;
+    });
+  });
+})();
+</script>
+</body>
+</html>
