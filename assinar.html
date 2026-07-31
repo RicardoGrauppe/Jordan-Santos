@@ -50,6 +50,19 @@
 
   /* estados */
   .estado{max-width:520px;margin:80px auto;text-align:center;padding:0 20px}
+
+  /* ---------- tela de desfecho (assinado) ----------
+     Centraliza de verdade na altura da tela e esconde o cabeçalho. 100dvh (e
+     não 100vh) porque no Safari do iOS o vh conta com a barra de endereço que
+     some ao rolar, o que jogaria a mensagem fora do centro. */
+  body.tela-final .topo{display:none}
+  body.tela-final .envelope{
+    min-height:100vh;              /* fallback pra Safari antigo, sem dvh */
+    min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding-top:calc(20px + var(--sat));padding-bottom:calc(20px + var(--sab));
+  }
+  body.tela-final .estado{margin:0}
   .estado h2{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);margin-bottom:12px}
   .estado p{color:var(--ink-soft)}
   [hidden]{display:none !important}
@@ -61,6 +74,7 @@
 
   /* documento (contrato pra impressão/PDF) */
   #documento{max-width:760px;margin:0 auto;padding:26px 30px}
+  #documento .logo-contrato{display:block;margin:0 auto 14px;width:190px;height:auto}
   #documento h2{font-family:var(--serif);font-weight:500;font-size:21px;letter-spacing:.06em;text-align:center;margin-bottom:26px}
   #documento h3{font-size:14.5px;font-weight:500;letter-spacing:.05em;margin:24px 0 10px}
   #documento p,#documento li{font-size:13.6px;line-height:1.8;margin-bottom:10px;text-align:justify}
@@ -238,11 +252,17 @@
   var dados = null;          /* snapshot do contrato */
   var signaturePad = null;
 
+  /* Telas de desfecho (assinou agora / já estava assinado) ocupam a tela toda,
+     centralizadas, e sem o cabeçalho "Contrato de Fotografia · Revise e assine":
+     acabou o que havia pra revisar, e o título mandaria a mensagem pro rodapé. */
+  var TELAS_FINAIS = ["estado-assinado", "estado-sucesso"];
+
   function mostrarEstado(id, texto){
     ["estado-carregando","estado-erro","estado-assinado","estado-sucesso","fluxo"].forEach(function(x){
       el(x).hidden = true;
     });
     el(id).hidden = false;
+    document.body.classList.toggle("tela-final", TELAS_FINAIS.indexOf(id) !== -1);
     if (texto && el("erro-texto")) el("erro-texto").textContent = texto;
   }
 
@@ -536,12 +556,32 @@
     el("btn-assinar").disabled = true;
     aviso.className = "aviso"; aviso.textContent = "Registrando sua assinatura...";
 
+    /* Página 1 saindo em branco: até aqui o casal rolou a tela inteira (o
+       contrato + o painel de assinatura) pra chegar no botão, então
+       window.scrollY está grande no momento do clique. Sem compensar isso,
+       html2canvas recorta o "retrato" da página a partir da posição de scroll
+       atual em vez do topo do documento — o espaço em branco equivalente ao
+       scroll vira a primeira página, e o contrato de verdade só aparece a
+       partir da página 2 (confirmado extraindo o PDF de um contrato real).
+       scrollTo(0,0) só ajuda se for síncrono a tempo; scrollX/scrollY:0 no
+       html2canvas é o que garante de verdade, independente de quando o
+       repaint do scroll termina. */
+    window.scrollTo(0, 0);
+
     html2pdf().set({
       margin: [15, 15, 18, 15],
       image: { type: "jpeg", quality: 0.82 },
-      html2canvas: { scale: 1.5, useCORS: true },
+      html2canvas: { scale: 1.5, useCORS: true, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: "mm", format: "a4" },
-      pagebreak: { mode: ["css", "legacy"] }
+      /* "legacy" fatia o canvas puramente por altura de pixel, sem noção de
+         onde termina uma linha de texto — uma linha que caísse bem na borda da
+         página saía cortada ao meio (a metade de cima numa página, a de baixo
+         na seguinte; confirmado renderizando um PDF real e ampliando a
+         transição entre páginas). "avoid-all" aplica page-break-inside:avoid
+         em todo elemento de bloco (parágrafo, item de lista, linha de tabela)
+         sem precisar marcar CSS um por um: se o bloco não cabe inteiro, ele
+         desce pra próxima página em vez de ser rasgado no meio. */
+      pagebreak: { mode: ["css", "avoid-all"] }
     }).from(doc).outputPdf("datauristring").then(function(dataUri){
       pdfAssinadoBase64 = dataUri.split(",")[1];  /* guarda pro botão de baixar */
       return fetch("/api/assinatura", {

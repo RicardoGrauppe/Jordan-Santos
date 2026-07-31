@@ -143,10 +143,39 @@ export default async function handler(req, res) {
     if (!id) return res.status(400).json({ erro: "id obrigatório" });
 
     if (acao === "atualizar") {
-      await rest("clientes?id=eq." + id, {
-        method: "PATCH",
-        body: limparCliente(req.body.cliente || {})
-      });
+      const limpo = limparCliente(req.body.cliente || {});
+      const contrato = await ultimoContrato(id);
+      const travado = !!(contrato && contrato.jordan_confirmado_em);
+      /* depois que o Jordan confirma a assinatura dele, o snapshot do contrato
+         já foi gerado (ver "gerar-contrato" e "confirmar-contrato") — aceitar
+         mudança de itens/total/entrada aqui criaria uma divergência silenciosa
+         entre a ficha do cliente e o documento que já saiu pra assinatura.
+         Reforça em código o que a UI já trava visualmente. */
+      if (travado) {
+        delete limpo.itens;
+        delete limpo.total;
+        delete limpo.entrada;
+      }
+
+      await rest("clientes?id=eq." + id, { method: "PATCH", body: limpo });
+
+      /* enquanto ainda é rascunho não confirmado, mantém o snapshot do
+         contrato em dia com o que o Jordan for ajustando — sem isso ele
+         assinaria (e o casal receberia) um valor que já ficou pra trás */
+      const mudouValores = "itens" in limpo || "total" in limpo || "entrada" in limpo;
+      if (!travado && contrato && contrato.status === "rascunho" && mudouValores) {
+        const linhas = await rest("clientes?id=eq." + id + "&select=*");
+        const clienteAtual = linhas && linhas[0];
+        if (clienteAtual) {
+          const snapshot = {};
+          CAMPOS_SNAPSHOT.forEach(function (k) { snapshot[k] = clienteAtual[k]; });
+          await rest("contratos?id=eq." + contrato.id, {
+            method: "PATCH",
+            body: { snapshot: snapshot }
+          });
+        }
+      }
+
       return res.status(200).json({ ok: true });
     }
 

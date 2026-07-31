@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Formulário de fechamento · Jordan Santos Fotografia   (/orcamento)
+  Formulário de fechamento · Jordan Santos Fotografia   (/cadastro)
 
   Era um modal em tela cheia dentro do index.html. Virou página própria em
   2026-07-28 porque o formulário tem ~1.780px de conteúdo (2,2 telas no
@@ -10,19 +10,18 @@
   Como página, nada disso existe: rolagem nativa, voltar funciona, teclado
   tratado pelo browser.
 
-  DEPENDE DE SELEÇÃO PRÉVIA (decisão do Ricardo, 2026-07-28): quem chega aqui
-  sem ter escolhido pacote na calculadora é mandado pra home. A seleção viaja
-  pelo sessionStorage em JSF_ORCAMENTO — só os IDS; nome e preço são
-  reconstruídos do catalogo.js (fonte única), então não há preço duplicado
-  atravessando páginas.
-
-  ESTA PÁGINA É SÓ O CADASTRO (regra do Ricardo, 2026-07-28): só os campos que
-  o contrato precisa. Nada de resumo da escolha, nada de preço — o valor
-  aparece uma única vez no site, no resumo da calculadora em "/". Os itens e o
-  total seguem sendo enviados pro backend; o que não existe aqui é exibição.
+  PÁGINA TOTALMENTE AUTÔNOMA (decisão de 2026-07-31): a home (/) virou um
+  portfólio 100% estático, sem calculadora e sem escolha de produto pelo
+  casal — quem escolhe pacote/adicionais agora é só o Jordan, depois, dentro
+  do /estudio. Esta página não recebe mais nada da home: não lê
+  sessionStorage, não carrega catalogo.js, não sabe nada de preço. É só o
+  cadastro do casal e do evento. O Jordan manda o link direto (por WhatsApp,
+  depois de uma conversa), do mesmo jeito que manda o link de assinatura do
+  contrato.
 
   Envia pra /api/orcamento, que cria o CLIENTE direto (sem estágio de
-  prospecção) e avisa o Jordan por e-mail.
+  prospecção, sem itens/total — isso o Jordan preenche depois no /estudio) e
+  avisa o Jordan por e-mail.
 -->
 <html lang="pt-BR">
 <head>
@@ -70,11 +69,6 @@
     max-width:520px;margin:0 auto;
     padding:calc(38px + var(--sat)) 22px calc(48px + var(--sab));
   }
-  .voltar{
-    display:block;width:fit-content;font-size:12.5px;color:var(--ink-soft);
-    text-decoration:none;letter-spacing:.04em;margin-bottom:26px;
-  }
-  .voltar:hover{color:var(--accent)}
   .dica{
     display:inline-block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;
     color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:6px 14px;
@@ -160,8 +154,7 @@
 
 <main class="pagina">
   <div id="area-form">
-    <a class="voltar" href="/">&larr; Voltar pro orçamento</a>
-    <span class="dica">Último passo</span>
+    <span class="dica">Cadastro</span>
     <h1>Vamos confirmar nossa data</h1>
     <p class="sub">Preencha os dados de vocês dois. Assim que eu confirmar, já te mando o contrato pra assinar.</p>
 
@@ -242,34 +235,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
-<script src="/catalogo.js"></script>
 <script>
 (function(){
   function el(id){ return document.getElementById(id); }
-
-  /* ---------- seleção vinda da home ----------
-     Só os ids viajam; nome e preço saem do catalogo.js. Sem seleção válida
-     não há o que contratar, então volta pra calculadora (replace pra não
-     empilhar no histórico e prender o botão voltar). */
-  var CHAVE = "JSF_ORCAMENTO";
-  var itens = [];
-  try {
-    var bruto = sessionStorage.getItem(CHAVE);
-    var ids = bruto ? (JSON.parse(bruto) || {}).ids : null;
-    if (Array.isArray(ids)) {
-      itens = ids
-        .filter(function(id){ return window.CATALOGO && window.CATALOGO[id]; })
-        .map(function(id){
-          var p = window.CATALOGO[id];
-          return { id: id, nome: p.nome, valor: p.preco };
-        });
-    }
-  } catch (e) { itens = []; }
-
-  var temPacote = itens.some(function(i){ return window.CATALOGO[i.id].grupo === "pacote"; });
-  if (!temPacote) { location.replace("/"); return; }
-
-  var total = itens.reduce(function(s, i){ return s + i.valor; }, 0);
 
   /* ---------- WhatsApp com DDI ---------- */
   var itiContato = null;
@@ -437,16 +405,13 @@
         estado: valorCampo("o-estado"),
         dataEvento: valorCampo("o-data"),
         horario: valorCampo("o-horario"),
-        local: valorCampo("o-local"),
-        itens: itens,
-        totalNumero: total,
-        entradaNumero: total * 0.3
+        local: valorCampo("o-local")
+        /* sem itens/total: o Jordan escolhe o pacote/adicionais depois, no
+           /estudio — a api/orcamento.js já trata a ausência disso de propósito */
       })
     }).then(function(r){
       return r.json().then(function(j){ if (!r.ok) throw new Error(j.erro || "falha"); return j; });
     }).then(function(){
-      /* a seleção já virou cliente: limpa pra um F5 não reenviar o mesmo orçamento */
-      try { sessionStorage.removeItem(CHAVE); } catch (e) {}
       el("area-form").hidden = true;
       el("sucesso").hidden = false;
       window.scrollTo(0, 0);

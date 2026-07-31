@@ -31,6 +31,13 @@
   O `modo` muda SÓ a legenda embaixo da linha de assinatura do casal (orientação
   de tela, não texto contratual). O corpo do contrato é idêntico nos dois.
 
+  A logo no topo (.logo-contrato) é a mesma nas duas páginas E no PDF: o PDF sai
+  de #documento via html2pdf/html2canvas em assinar.html, então o que aparece na
+  tela de assinatura é exatamente o que vira o arquivo baixado. O estilo do
+  ".logo-contrato" fica em cada página (este arquivo só devolve HTML, sem CSS) —
+  mexeu na logo aqui, confira o CSS de #documento em assinar.html e
+  revisar-contrato.html.
+
   Os valores são preenchidos depois, pelas páginas, via [data-campo="..."]:
     noivo, cpf-noivo, noiva, cpf-noiva, endereco, numero, bairro, cidade,
     complemento, estado, cep, tel-noivo, tel-noiva, data-formatada, local,
@@ -48,6 +55,7 @@
       : "Assinatura do(a) contratante";
 
     return `
+      <img class="logo-contrato" src="/img/logo-principal-petroleo.png" alt="Jordan Santos Fotografia">
       <h2>Contrato de Prestação de Serviços de Fotografia</h2>
 
       <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endereço na rua Jesuítas, Carimã Nº390, Foz do Iguaçu &ndash; Paraná, CEP: 85855700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de serviços relacionados à fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>

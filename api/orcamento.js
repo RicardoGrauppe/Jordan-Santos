@@ -42,6 +42,11 @@ function baseUrlDe(req) {
 /* e-mail de "novo cliente" pro Jordan, no estilo visual do site/painel
    (petróleo #003646, aço #4F6278, off-white #E8E1DC) */
 function templateNovoCliente(c, link) {
+  /* itens vem vazio SEMPRE, daqui pra frente (2026-07-31): o casal não escolhe
+     mais pacote/adicional no site — quem escolhe é o Jordan, depois, no
+     /estudio. Não é mais uma exceção rara, é o caso normal. O campo continua
+     opcional no payload (compat com uma integração futura), então o código
+     que lida com itens preenchido fica aqui, só o texto do vazio muda. */
   var linhaItens = c.itens.length
     ? c.itens.map(function (i) {
         return '<tr>' +
@@ -49,7 +54,7 @@ function templateNovoCliente(c, link) {
           '<td style="padding:9px 0;border-bottom:1px solid #E8E1DC;font-size:14px;color:#4F6278;font-weight:600;text-align:right;white-space:nowrap">' +
           (i.valor != null ? brl.format(i.valor) : "") + '</td></tr>';
       }).join("")
-    : '<tr><td style="padding:9px 0;font-size:14px;color:#706F6F" colspan="2">Sem itens (o casal não montou um orçamento no site).</td></tr>';
+    : '<tr><td style="padding:9px 0;font-size:14px;color:#706F6F" colspan="2">A definir com o Jordan no Estúdio.</td></tr>';
 
   var linhaTotal = c.total != null
     ? '<tr><td style="padding:14px 0 0;font-size:14px;font-weight:700;color:#1D1D1B">Total</td>' +
@@ -91,7 +96,7 @@ function templateNovoCliente(c, link) {
           '</table>' +
         '</div>' +
         '<div style="padding:4px 28px 24px">' +
-          '<div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#706F6F;font-family:Helvetica,Arial,sans-serif;margin:14px 0 4px">Orçamento escolhido</div>' +
+          '<div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#706F6F;font-family:Helvetica,Arial,sans-serif;margin:14px 0 4px">Itens do pacote</div>' +
           '<table style="width:100%;border-collapse:collapse;font-family:Helvetica,Arial,sans-serif" cellpadding="0" cellspacing="0">' +
             linhaItens + linhaTotal +
           '</table>' +
@@ -113,8 +118,8 @@ function templateNovoCliente(c, link) {
     "Local: " + c.local + "\n" +
     "Origem: Orçamento do site\n\n" +
     (c.itens.length
-      ? "Orçamento escolhido:\n" + c.itens.map(function (i) { return "- " + i.nome + (i.valor != null ? " (" + brl.format(i.valor) + ")" : ""); }).join("\n") + "\n"
-      : "Sem itens (o casal não montou um orçamento no site).\n") +
+      ? "Itens do pacote:\n" + c.itens.map(function (i) { return "- " + i.nome + (i.valor != null ? " (" + brl.format(i.valor) + ")" : ""); }).join("\n") + "\n"
+      : "Itens: a definir com o Jordan no Estúdio.\n") +
     (c.total != null ? "\nTotal: " + brl.format(c.total) + "\n" : "") +
     "\nAbrir no Estúdio: " + link;
 
