@@ -1424,7 +1424,8 @@
           <div class="acoes-contrato">
             <button type="button" class="botao-primario" id="btn-enviar-cliente" hidden>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
-              Copiar link
+              <!-- vira "Copiar link da via" depois que o casal assina -->
+              <span id="rotulo-enviar-cliente">Copiar link</span>
             </button>
             <a href="#" id="link-revisar-contrato" class="botao-secundario">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"></path><path d="M21 3l-9 9"></path><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"></path></svg>
@@ -1521,8 +1522,10 @@
   <div class="modal-confirm-fundo" data-fechar-link></div>
   <div class="modal-confirm-caixa" role="dialog" aria-modal="true" aria-labelledby="ml-titulo">
     <button type="button" class="modal-x" data-fechar-link aria-label="Fechar">&times;</button>
+    <!-- título e texto mudam conforme o contrato já esteja assinado (aí o
+         mesmo link vira a segunda via) — ver abrirModalLink -->
     <h3 id="ml-titulo">Link pro casal assinar</h3>
-    <p>Mande este link pro casal. Quem tem o link consegue assinar, ent&atilde;o mande direto pra eles.</p>
+    <p id="ml-texto">Mande este link pro casal. Quem tem o link consegue assinar, ent&atilde;o mande direto pra eles.</p>
     <div class="campo-copiavel">
       <input type="text" id="ml-link" readonly aria-label="Link pro casal assinar">
       <button type="button" id="ml-copiar" class="btn-copiar" aria-label="Copiar mensagem" title="Copiar mensagem">
@@ -2318,6 +2321,19 @@
   function abrirModalLink(r, jaCopiou){
     el("ml-link").value = r.link;
     el("ml-link").dataset.mensagem = r.mensagem || r.link;
+    /* depois de assinado o mesmo link deixa de ser "assine aqui" e passa a ser
+       a via do casal: abre a tela com o botão de baixar o PDF. O texto muda
+       junto pra o Jordan saber o que está mandando. */
+    if (r.assinado) {
+      el("ml-titulo").textContent = "Link da via assinada";
+      el("ml-texto").textContent =
+        "O contrato já está assinado. Mande este link se o casal pedir a via — " +
+        "por ele dá pra baixar o PDF assinado quantas vezes precisar.";
+    } else {
+      el("ml-titulo").textContent = "Link pro casal assinar";
+      el("ml-texto").textContent =
+        "Mande este link pro casal. Quem tem o link consegue assinar, então mande direto pra eles.";
+    }
     el("modal-link").hidden = false;
     /* por último: o feedback tem que sobreviver ao resto da montagem */
     if (jaCopiou) marcarCopiado(true);
@@ -2916,9 +2932,11 @@
     var jaAssinado = contrato.status === "assinado";
     var jaLiberado = contrato.status === "enviado" || contrato.status === "visualizado";
     /* "Abrir contrato" vale em qualquer estado vivo: a página de revisão passou
-       a aceitar rascunho, enviado, visualizado e assinado. "Copiar link" só
-       existe quando há link pra mandar — ou seja, depois que o Jordan assinou e
-       antes de o casal assinar. */
+       a aceitar rascunho, enviado, visualizado e assinado. "Copiar link" vale a
+       partir da assinatura do Jordan e CONTINUA valendo depois de o casal
+       assinar — aí o mesmo link deixa de ser "assine aqui" e vira a via deles,
+       que abre direto na tela de baixar o PDF. É por ele que o Jordan atende
+       um pedido de segunda via. */
     var link = el("link-revisar-contrato");
     var assinadoJordan = !!contrato.jordan_confirmado_em;
     if (contrato.status === "cancelado") {
@@ -2928,7 +2946,8 @@
     acoes.hidden = false;
     link.hidden = false;
     link.href = "/revisar-contrato?id=" + clienteAtual;
-    btnEnviar.hidden = jaAssinado || !(assinadoJordan || jaLiberado);
+    btnEnviar.hidden = !(assinadoJordan || jaLiberado || jaAssinado);
+    el("rotulo-enviar-cliente").textContent = jaAssinado ? "Copiar link da via" : "Copiar link";
     /* o aviso só aparece enquanto falta a assinatura dele */
     el("aviso-assine-primeiro").hidden = assinadoJordan || jaLiberado || jaAssinado;
   }

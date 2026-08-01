@@ -278,11 +278,13 @@ export default async function handler(req, res) {
       const cliente = linhas && linhas[0];
       if (!cliente) return res.status(404).json({ erro: "cliente não encontrado" });
 
-      /* aceita rascunho (1ª vez) e também já enviado/visualizado, pra o Jordan
-         conseguir recuperar o link e reenviar sem gerar contrato novo */
+      /* aceita rascunho (1ª vez), enviado/visualizado (recuperar o link sem
+         gerar contrato novo) e também ASSINADO: depois de assinado o mesmo
+         link abre a tela com o botão de baixar a via, então é por ele que o
+         casal pede a segunda via. */
       const ativos = await rest(
         "contratos?cliente_id=eq." + id +
-        "&status=in.(rascunho,enviado,visualizado)" +
+        "&status=in.(rascunho,enviado,visualizado,assinado)" +
         "&select=id,token,status,jordan_confirmado_em&order=criado_em.desc&limit=1"
       );
       const contrato = ativos && ativos[0];
@@ -295,10 +297,15 @@ export default async function handler(req, res) {
          do estúdio não existe, então o Resend não entrega pra ninguém além dele) */
       const link = baseUrlDe(req) + "/assinar?token=" + contrato.token;
       const primeiroNome = String(cliente.noivo || "").trim().split(/\s+/)[0] || "";
-      const mensagem =
-        "Oi" + (primeiroNome ? ", " + primeiroNome : "") + "! Aqui é o Jordan. Segue o contrato " +
-        "pra você revisar e assinar direto pelo link (dá pra fazer pelo celular, leva 1 minutinho):\n" +
-        link + "\nQualquer dúvida, é só me chamar por aqui.";
+      const jaAssinado = contrato.status === "assinado";
+      const saudacao = "Oi" + (primeiroNome ? ", " + primeiroNome : "") + "! Aqui é o Jordan. ";
+      const mensagem = jaAssinado
+        ? saudacao + "Segue o link da via assinada do contrato — é só abrir e " +
+          "baixar o PDF, fica sempre disponível aí:\n" +
+          link + "\nQualquer coisa, me chama por aqui."
+        : saudacao + "Segue o contrato pra você revisar e assinar direto pelo " +
+          "link (dá pra fazer pelo celular, leva 1 minutinho):\n" +
+          link + "\nQualquer dúvida, é só me chamar por aqui.";
 
       /* só marca na primeira liberação: pegar o link de novo não pode regredir um
          contrato já "visualizado" nem reescrever a data real do primeiro envio */
@@ -308,7 +315,7 @@ export default async function handler(req, res) {
         });
       }
       return res.status(200).json({
-        ok: true, link: link, mensagem: mensagem,
+        ok: true, link: link, mensagem: mensagem, assinado: jaAssinado,
         telefone: String(cliente.tel_noivo || cliente.tel_noiva || "").replace(/\D/g, "")
       });
     }
