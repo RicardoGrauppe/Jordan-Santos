@@ -171,6 +171,10 @@
       <p class="sub" id="sub-assinado">Agora é só mandar o link pro casal. Quem tem o link consegue assinar, então mande direto pra eles.</p>
       <div class="ja-confirmado" id="preview-confirmado"></div>
 
+      <!-- só aparece depois que o casal assina: aí existe PDF pra baixar -->
+      <button type="button" class="botao botao-1" id="btn-baixar-via" hidden>Baixar contrato assinado</button>
+      <p class="aviso" id="aviso-baixar-via"></p>
+
       <div id="bloco-link" hidden>
         <input type="text" id="link-casal" readonly aria-label="Link pro casal assinar">
         <button type="button" class="botao botao-1" id="btn-copiar-link">Copiar mensagem</button>
@@ -334,22 +338,73 @@
     return canvas.toDataURL("image/png");
   }
 
-  function mostrarJaConfirmado(dataurl, statusContrato){
+  function mostrarJaConfirmado(dataurl, contrato){
+    var statusContrato = contrato && contrato.status;
     el("painel-assinar").hidden = true;
     el("painel-ja-confirmado").hidden = false;
     el("preview-confirmado").innerHTML = '<img src="' + dataurl + '" alt="assinatura do Jordan">';
     var area = el("assinatura-jordan-area");
     area.innerHTML = '<img src="' + dataurl + '" alt="assinatura Jordan Santos" style="max-height:80px;max-width:280px;display:block;margin:0 auto 6px"><p class="linha-ass" style="margin-top:0">Jordan Santos &ndash; CONTRATADA</p>';
 
-    /* casal já assinou: não há link pra mandar, e a ação de liberar nem aceita
-       contrato nesse status */
     if (statusContrato === "assinado"){
       el("titulo-assinado").textContent = "Contrato assinado pelos dois ✓";
-      el("sub-assinado").textContent = "O casal já assinou. A via em PDF fica com vocês e com eles.";
-      el("bloco-link").hidden = true;
-      return;
+      el("sub-assinado").textContent = "O casal já assinou. Baixe a via em PDF ou mande o link pra eles baixarem.";
+      marcarAssinaturaDoCasal(contrato);
+      prepararDownloadDaVia(contrato.token);
     }
+    /* o link continua valendo depois de assinado: aí ele abre a tela de baixar
+       a via, e é assim que o casal pede a segunda via */
     carregarLinkDoCasal();
+  }
+
+  /* Mostra no documento que o casal assinou. A IMAGEM da assinatura deles não
+     é guardada em lugar nenhum — ela é carimbada no PDF e descartada (só a do
+     Jordan tem coluna própria, porque precisa ser reaproveitada a cada via).
+     Então aqui vai o que o banco tem de fato: nome, CPF e data. Quem quiser
+     ver o traço abre o PDF. */
+  function marcarAssinaturaDoCasal(contrato){
+    var bloco = el("bloco-assinaturas");
+    if (!bloco) return;
+    var legenda = bloco.querySelector(".linha-ass");
+    if (!legenda) return;
+    var nome = contrato.signatario_nome || "";
+    var cpf = contrato.signatario_cpf ? formatarCpf(contrato.signatario_cpf) : "";
+    var quando = contrato.assinado_em
+      ? new Date(contrato.assinado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+      : "";
+    legenda.innerHTML =
+      (nome ? nome : "Contratante") + (cpf ? " &ndash; CPF " + cpf : "") +
+      "<br>Assinado eletronicamente" + (quando ? " em " + quando : "");
+  }
+
+  function prepararDownloadDaVia(token){
+    var botao = el("btn-baixar-via");
+    if (!botao || !token) return;
+    botao.hidden = false;
+    botao.addEventListener("click", function(){
+      var aviso = el("aviso-baixar-via");
+      botao.disabled = true;
+      aviso.className = "aviso"; aviso.textContent = "Preparando o arquivo...";
+      fetch("/api/assinatura?pdf=1&token=" + encodeURIComponent(token))
+        .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+        .then(function(resp){
+          if (!resp.ok || !resp.j.pdf) throw new Error(resp.j.erro || "falha");
+          var bin = atob(resp.j.pdf);
+          var bytes = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          var url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+          var a = document.createElement("a");
+          a.href = url; a.download = resp.j.arquivo || "Contrato assinado.pdf";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+          aviso.textContent = "";
+        })
+        .catch(function(e){
+          aviso.className = "aviso erro";
+          aviso.textContent = e.message === "falha" ? "Não deu pra baixar agora. Tente de novo." : e.message;
+        })
+        .finally(function(){ botao.disabled = false; });
+    });
   }
 
   /* ---------- link pro casal ----------
@@ -370,6 +425,9 @@
         if (!resp.ok) throw new Error(resp.j.erro || "falha");
         mensagemDoCasal = resp.j.mensagem || resp.j.link;
         el("link-casal").value = resp.j.link;
+        /* depois de assinado a mensagem que vem do servidor é a de segunda
+           via, então o botão fala de entregar a via, não de assinar */
+        if (resp.j.assinado) el("btn-copiar-link").textContent = "Copiar link da via pro casal";
         el("bloco-link").hidden = false;
         aviso.textContent = "";
       })
@@ -496,7 +554,7 @@
       if (contrato.jordan_confirmado_em && contrato.jordan_assinatura_dataurl){
         el("nome-cursiva").value = contrato.jordan_assinatura_nome || "Jordan Santos";
         el("preview-cursiva-texto").textContent = el("nome-cursiva").value;
-        mostrarJaConfirmado(contrato.jordan_assinatura_dataurl, contrato.status);
+        mostrarJaConfirmado(contrato.jordan_assinatura_dataurl, contrato);
       } else if (contrato.status !== "rascunho"){
         /* estado impossível pelo fluxo normal (liberado sem assinatura) */
         mostrarEstado("estado-erro", "Este contrato foi liberado sem a sua assinatura. Cancele e gere outro no Estúdio.");
