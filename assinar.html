@@ -69,20 +69,6 @@
     padding-top:calc(20px + var(--sat));padding-bottom:calc(20px + var(--sab));
   }
   body.tela-final .estado{margin:0}
-  /* Com a prévia junto, a caixa estreita de mensagem não serve mais. O
-     width:100% é necessário porque na tela final o .estado é item de um flex
-     centralizado: sem ele encolhe pro tamanho do texto e ignora o max-width. */
-  body.com-previa .envelope{max-width:1080px}
-  body.com-previa .estado{max-width:1040px;width:100%}
-  #preview-via{width:100%;margin:24px auto 0}
-  #preview-quadro{
-    display:block;width:100%;height:min(68vh,860px);
-    border:1px solid var(--line);border-radius:12px;background:#fff;
-  }
-  .preview-sem-suporte{
-    display:flex;align-items:center;justify-content:center;height:100%;
-    margin:0;padding:24px;text-align:center;color:var(--ink-soft);font-size:14px;line-height:1.6;
-  }
   .estado h2{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);margin-bottom:12px}
   .estado p{color:var(--ink-soft)}
   [hidden]{display:none !important}
@@ -197,23 +183,6 @@
     <p class="aviso" id="aviso-baixar-assinado"></p>
   </div>
 
-  <!-- Prévia da via assinada. É UM só, movido pra dentro da tela final ativa
-       (assinado / sucesso) em vez de duplicado nas duas.
-
-       <object> em vez de <iframe> de propósito: quando o navegador não sabe
-       exibir PDF embutido ele mostra o conteúdo de dentro da tag, que aqui é
-       um aviso com saída — e é o caso do celular, justamente por onde o casal
-       costuma abrir o link. Com <iframe> o resultado seria um retângulo em
-       branco sem explicação. O botão de baixar, acima, nunca depende disto. -->
-  <div id="preview-via" hidden>
-    <object id="preview-quadro" type="application/pdf" aria-label="Contrato assinado">
-      <p class="preview-sem-suporte">
-        Seu navegador não abre PDF aqui dentro — use o botão
-        <strong>Baixar contrato assinado</strong> acima pra ver o documento.
-      </p>
-    </object>
-  </div>
-
   <!-- sucesso (acabou de assinar) -->
   <div class="estado" id="estado-sucesso" hidden>
     <h2>Assinado! 🤍</h2>
@@ -300,44 +269,6 @@
     el(id).hidden = false;
     document.body.classList.toggle("tela-final", TELAS_FINAIS.indexOf(id) !== -1);
     if (texto && el("erro-texto")) el("erro-texto").textContent = texto;
-    if (TELAS_FINAIS.indexOf(id) !== -1) mostrarPreviaDaVia(id);
-  }
-
-  /* Prévia da via assinada no visualizador nativo do navegador.
-     Quem decide se dá pra exibir é o próprio <object>: onde o navegador sabe
-     abrir PDF ele desenha o documento, onde não sabe (celular, sobretudo)
-     mostra o aviso que está dentro da tag. Testei `navigator.pdfViewerEnabled`
-     antes e NÃO serve como porteiro: existe navegador que responde `true` e
-     mesmo assim baixa o arquivo em vez de exibir. O botão de baixar continua
-     acima em qualquer cenário — a prévia é um extra, nunca o único caminho. */
-  var previaPronta = false;
-  function mostrarPreviaDaVia(idTela){
-    /* Só em tela larga. No celular o visualizador embutido é a exceção, não a
-       regra, e o resultado provável é um quadro vazio no lugar do contrato —
-       pior do que não ter prévia. Largura de tela é uma heurística grosseira,
-       mas mais confiável aqui do que perguntar ao navegador (ver acima). */
-    if (!window.matchMedia || !window.matchMedia("(min-width: 820px)").matches) return;
-    var caixa = el("preview-via");
-    el(idTela).appendChild(caixa);           /* um só, movido pra tela ativa */
-    if (previaPronta){ caixa.hidden = false; document.body.classList.add("com-previa"); return; }
-    previaPronta = true;                      /* não repete a busca a cada troca de tela */
-
-    fetch("/api/assinatura?pdf=1&token=" + encodeURIComponent(token))
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if (!j || !j.pdf) throw new Error("sem pdf");
-        var bin = atob(j.pdf);
-        var bytes = new Uint8Array(bin.length);
-        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        el("preview-quadro").data = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-        caixa.hidden = false;
-        document.body.classList.add("com-previa");
-      })
-      .catch(function(){
-        /* silencioso de propósito: a prévia é um extra, e o botão de baixar
-           continua ali fazendo o trabalho */
-        previaPronta = false;
-      });
   }
 
   function formatarCpf(v){
