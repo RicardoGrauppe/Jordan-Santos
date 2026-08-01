@@ -15,9 +15,15 @@
 <link rel="icon" href="/img/icone-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="/img/icone-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="/img/icone-180.png">
-<link rel="manifest" href="/site.webmanifest">
+<!-- Manifest PRÓPRIO, não o /site.webmanifest do site: ao salvar na tela de
+     início o iOS ignora a página aberta e usa o start_url do manifest, então
+     com o do site o atalho do Estúdio abria o portfólio. Aqui start_url é
+     "/estudio". O scope segue "/" de propósito — o Estúdio abre
+     /revisar-contrato, e um scope estreito jogaria isso pro Safari. -->
+<link rel="manifest" href="/estudio.webmanifest">
 <meta name="theme-color" content="#003646">
-<meta name="apple-mobile-web-app-title" content="Jordan Santos">
+<!-- nome do atalho: distingue do portfólio, que também pode estar salvo -->
+<meta name="apple-mobile-web-app-title" content="Estúdio">
 <!-- Salvo na tela de início, o Estúdio abre SEM a barra do Safari — é o que dá
      cara de app. Só aqui: nas páginas do casal (/cadastro, /assinar) a barra do
      navegador é útil, o botão voltar dela faz parte da navegação deles.

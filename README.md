@@ -27,6 +27,7 @@ tools/contrato-template/ Gerador dos templates (Chrome headless) — local, fora
 
 supabase/schema.sql               DDL completo (setup do zero)
 supabase/migracao-*.sql           Migrações para banco já existente (contratos, config)
+site.webmanifest         atalho do site (start_url `/`); estudio.webmanifest é o do Estúdio (`/estudio`)
 vercel.json              cleanUrls + includeFiles dos templates na function de assinatura
 ```
 

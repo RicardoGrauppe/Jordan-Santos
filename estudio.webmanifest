@@ -1,0 +1,14 @@
+{
+  "name": "Estúdio · Jordan Santos",
+  "short_name": "Estúdio",
+  "start_url": "/estudio",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#003646",
+  "theme_color": "#003646",
+  "icons": [
+    { "src": "/img/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/img/icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/img/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
