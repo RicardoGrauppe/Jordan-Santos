@@ -214,7 +214,7 @@
 
       <div class="grade2">
         <div class="campo-form"><label for="a-nome">Seu nome completo</label><input id="a-nome" type="text" autocomplete="name"></div>
-        <div class="campo-form"><label for="a-cpf">Seu CPF</label><input id="a-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00"></div>
+        <div class="campo-form"><label for="a-cpf">Seu CPF</label><input id="a-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off"></div>
       </div>
 
       <label class="aceite">
@@ -499,6 +499,30 @@
     .catch(function(){ mostrarEstado("estado-erro", "Não foi possível abrir este contrato. Tente de novo."); });
 
   /* ---------- interações ---------- */
+
+  /* CPF com máscara ao digitar, igual ao /cadastro e à ficha do /estudio —
+     esta era a única tela do fluxo onde o casal digitava CPF cru. O valor
+     enviado continua indo só com dígitos (o handler de assinar limpa), então
+     isto é mesmo só leitura. Registra o cursor antes de reescrever pra quem
+     edita no meio do número não ser jogado pro fim do campo. */
+  function mascararCpf(valor){
+    var digitos = String(valor).replace(/\D/g, "").slice(0, 11);
+    var padrao = "999.999.999-99", out = "", di = 0;
+    for (var i = 0; i < padrao.length && di < digitos.length; i++){
+      if (padrao[i] === "9"){ out += digitos[di]; di++; }
+      else out += padrao[i];
+    }
+    return out;
+  }
+  el("a-cpf").addEventListener("input", function(){
+    var pos = this.selectionStart, antes = this.value.length;
+    this.value = mascararCpf(this.value);
+    if (pos !== null && pos < antes){
+      var delta = this.value.length - antes;
+      this.setSelectionRange(pos + delta, pos + delta);
+    }
+  });
+
   ["a-aceite","a-nome","a-cpf"].forEach(function(id){
     el(id).addEventListener("input", avaliarBotao);
     el(id).addEventListener("change", avaliarBotao);
