@@ -167,7 +167,7 @@ export default async function handler(req, res) {
     /* ---------- assinar ---------- */
     if (acao === "assinar") {
       if (c.status === "assinado") return res.status(409).json({ erro: "contrato já assinado" });
-      if (estourou("assinar:" + ip, 10)) return res.status(429).json({ erro: "muitas tentativas, aguarde" });
+      if (estourou("assinar:" + (ip || "sem-ip"), 10)) return res.status(429).json({ erro: "muitas tentativas, aguarde" });
 
       const { aceite, assinaturaDataUrl, nomeSignatario, cpfSignatario } = req.body;
       if (aceite !== true) return res.status(400).json({ erro: "é preciso aceitar os termos para assinar" });

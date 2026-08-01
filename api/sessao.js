@@ -52,7 +52,7 @@ async function tratar(req, res) {
   }
 
   const ip = ipDe(req);
-  if (estourou(ip)) {
+  if (estourou(ip || "sem-ip")) {   /* ipDe devolve null quando não há proxy */
     await esperar(800);
     return res.status(429).json({ erro: "muitas tentativas, aguarde alguns minutos" });
   }

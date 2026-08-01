@@ -79,7 +79,13 @@ async function ultimoContrato(clienteId) {
     const linhas = await rest(
       "contratos?cliente_id=eq." + clienteId +
       "&select=id,token,status,criado_em,enviado_em,visualizado_em,assinado_em,expira_em,snapshot," +
-      "jordan_confirmado_em,jordan_assinatura_tipo,jordan_assinatura_dataurl,jordan_assinatura_nome" +
+      "jordan_confirmado_em,jordan_assinatura_tipo,jordan_assinatura_dataurl,jordan_assinatura_nome," +
+      /* trilha de auditoria da assinatura do casal — é o que o contrato diz
+         que "fica preservado no sistema do fotógrafo", então o Jordan precisa
+         conseguir ver isso no /estudio, não só via SQL no Supabase.
+         pdf_base64 fica de fora de propósito (blob grande; o schema avisa). */
+      "signatario_nome,signatario_cpf,signatario_email,assinante_ip,assinante_ua," +
+      "doc_sha256,aceite_texto,aceite_em,verificado_em,verificacao_metodo" +
       "&order=criado_em.desc&limit=1"
     );
     return (linhas && linhas[0]) || null;

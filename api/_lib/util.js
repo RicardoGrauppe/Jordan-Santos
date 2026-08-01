@@ -22,9 +22,17 @@ export function criarLimite(janelaMs, max) {
   };
 }
 
-/* IP do cliente a partir do cabeçalho de proxy (Vercel). */
+/* IP do cliente a partir dos cabeçalhos de proxy. A Vercel manda os dois;
+   o x-real-ip é a rede de segurança se o x-forwarded-for faltar.
+
+   Devolve null (não "?") quando não dá pra saber — é o caso do dev-server
+   local, que não é proxy nenhum. Isso importa porque o IP entra na trilha de
+   auditoria da assinatura, e o contrato afirma que ele fica registrado:
+   coluna vazia é honesta, um "?" gravado finge ser um valor que ninguém tem.
+   Quem usa isto como chave de throttle precisa tratar o null. */
 export function ipDe(req) {
-  return (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "?";
+  const encaminhado = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return encaminhado || (req.headers["x-real-ip"] || "").trim() || null;
 }
 
 /* Mantém só as colunas da whitelist; "" vira null. `ajustar` (opcional) recebe o

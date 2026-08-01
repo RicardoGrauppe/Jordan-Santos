@@ -748,6 +748,29 @@
   /* pacote/adicionais não são input/select/textarea, então o "cuidado" padrão
      acima não os pega — trava à parte, mesmo visual de esmaecido */
   fieldset.secao-bloqueada .seletor-itens{opacity:.55;pointer-events:none}
+  /* ---------- trilha de auditoria da assinatura ---------- */
+  #trilha-auditoria{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .btn-trilha{
+    display:flex;align-items:center;gap:9px;width:100%;padding:0;
+    background:none;border:0;cursor:pointer;
+    font-size:13px;font-weight:500;color:var(--accent);text-align:left;
+  }
+  .btn-trilha svg{width:15px;height:15px;flex-shrink:0}
+  .btn-trilha span{flex:1 1 auto}
+  .btn-trilha .chevron-trilha{transition:transform .18s ease}
+  .btn-trilha[aria-expanded="true"] .chevron-trilha{transform:rotate(180deg)}
+  .trilha-lista{margin-top:12px;font-size:12.5px;line-height:1.55}
+  .trilha-lista dt{color:var(--ink-soft);margin-top:9px}
+  .trilha-lista dt:first-of-type{margin-top:0}
+  .trilha-lista dd{color:var(--ink);word-break:break-word}
+  /* hash e user-agent são longos e sem espaços: monoespaçada e quebra livre */
+  .trilha-lista dd.tecnico{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px}
+  .trilha-lista dd.ausente{color:var(--ink-soft);font-style:italic}
+  .trilha-nota{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-top:10px}
+  /* o dimensionamento de ícone dos botões vive em .acoes-contrato svg, e este
+     botão está fora daquele container — sem isto o SVG ocupa a caixa inteira */
+  #btn-copiar-trilha svg{width:16px;height:16px;flex-shrink:0}
+
   .acoes{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin:30px 0 60px}
   /* aviso "Salvo ✓" à esquerda do botão (order:-1), botão encostado na direita */
   .aviso-salvo{font-size:13px;color:var(--ok);min-height:18px;order:-1}
@@ -1371,6 +1394,27 @@
               <div style="font-weight:500;color:var(--ink);">Assinado</div>
               <div style="color:var(--ink-soft);font-size:12.5px;" id="data-assinado">Pendente</div>
             </div>
+          </div>
+        </div>
+
+        <!-- Trilha de auditoria: o próprio contrato afirma que IP, dispositivo
+             e hash "ficam preservados no sistema do fotógrafo". Antes ficavam
+             só no banco, alcançáveis por SQL — ou seja, na prática o Jordan
+             não teria como apresentar a prova se o contrato fosse contestado.
+             É o equivalente ao "Certificate of Completion" do DocuSign. -->
+        <div id="trilha-auditoria" hidden>
+          <button type="button" class="btn-trilha" id="btn-trilha" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span>Comprovante de assinatura</span>
+            <svg class="chevron-trilha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div id="trilha-corpo" hidden>
+            <dl class="trilha-lista" id="trilha-lista"></dl>
+            <button type="button" class="botao-secundario" id="btn-copiar-trilha" style="width:100%;justify-content:center;margin-top:12px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
+              Copiar comprovante
+            </button>
+            <p class="trilha-nota">Guarde este comprovante se o contrato for questionado: ele liga a assinatura ao signatário e prova que o arquivo não foi alterado.</p>
           </div>
         </div>
         <div id="acoes-contrato-pendente" hidden style="margin-top:18px">
@@ -2832,6 +2876,8 @@
     el("btn-enviar-cliente").hidden = true;
     el("acoes-contrato-pendente").hidden = true;
     el("link-revisar-contrato").hidden = false;
+    /* nunca deixar a trilha de um cliente aparecer na ficha de outro */
+    el("trilha-auditoria").hidden = true;
     /* o painel só aparece quando existe mesmo um contrato pra este cliente —
        sem contrato, não há "Contrato criado" pra mostrar (era o bug: o bloco
        antigo mostrava esse passo sempre marcado, mesmo sem nada gerado ainda) */
@@ -2859,6 +2905,10 @@
     if (contrato.visualizado_em) marcar("visualizado", contrato.visualizado_em);
     if (contrato.assinado_em) marcar("assinado", contrato.assinado_em, "var(--ok)");
 
+    /* fica ANTES do early-return de "cancelado": o comprovante de um contrato
+       que chegou a ser assinado continua valendo mesmo depois de cancelado */
+    desenharTrilhaAuditoria(contrato);
+
     /* ações pendentes: só faz sentido enquanto o contrato ainda é um rascunho
        (depois de enviado ao casal, o fluxo é todo pelo /assinar dele) */
     var acoes = el("acoes-contrato-pendente");
@@ -2882,6 +2932,93 @@
     /* o aviso só aparece enquanto falta a assinatura dele */
     el("aviso-assine-primeiro").hidden = assinadoJordan || jaLiberado || jaAssinado;
   }
+
+  /* ---------- comprovante de assinatura (trilha de auditoria) ----------
+     O contrato assinado afirma, em texto, que o IP, o dispositivo e o hash
+     SHA-256 do documento "ficam preservados no sistema do fotógrafo". Eles
+     sempre foram gravados, mas viviam só no banco — o Jordan não tinha como
+     alcançá-los sem rodar SQL, o que tornava a promessa inútil na hora que
+     ela importa. Aqui ela vira algo que ele consegue abrir e copiar. */
+  var trilhaAtual = "";
+
+  function desenharTrilhaAuditoria(contrato){
+    var caixa = el("trilha-auditoria");
+    /* só existe comprovante depois que o casal assinou */
+    if (!contrato || !contrato.assinado_em){ caixa.hidden = true; return; }
+
+    var fmtData = function(d){
+      return new Date(d).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) + " (horário de Brasília)";
+    };
+    /* contratos assinados antes de 2026-08-01 gravavam "?" quando o IP não
+       vinha nos cabeçalhos (hoje grava null). Mostrar "?" faria passar por
+       valor uma informação que ninguém tem — vira "não registrado". */
+    var valorOuNada = function(v){
+      var s = (v == null ? "" : String(v)).trim();
+      return (s === "" || s === "?") ? null : s;
+    };
+    var linhas = [
+      ["Signatário", valorOuNada(contrato.signatario_nome), false],
+      ["CPF", contrato.signatario_cpf ? mascarar(contrato.signatario_cpf, "999.999.999-99") : null, false],
+      ["E-mail", valorOuNada(contrato.signatario_email), false],
+      ["Data e hora", contrato.assinado_em ? fmtData(contrato.assinado_em) : null, false],
+      ["Verificação", contrato.verificacao_metodo === "link-tokenizado"
+        ? "Posse do link exclusivo, entregue pelo Jordan ao casal" : valorOuNada(contrato.verificacao_metodo), false],
+      ["Endereço IP", valorOuNada(contrato.assinante_ip), true],
+      ["Dispositivo", valorOuNada(contrato.assinante_ua), true],
+      ["Impressão digital (SHA-256)", valorOuNada(contrato.doc_sha256), true],
+      ["Aceite", valorOuNada(contrato.aceite_texto), false]
+    ];
+
+    var lista = el("trilha-lista");
+    lista.innerHTML = "";
+    var texto = [];
+    linhas.forEach(function(l){
+      var rotulo = l[0], valor = l[1], tecnico = l[2];
+      var dt = document.createElement("dt"); dt.textContent = rotulo;
+      var dd = document.createElement("dd");
+      if (valor){
+        dd.textContent = valor;
+        if (tecnico) dd.className = "tecnico";
+        texto.push(rotulo + ": " + valor);
+      } else {
+        /* não registrado é dito com todas as letras: inventar um "?" aqui
+           seria afirmar que existe um dado que ninguém tem */
+        dd.textContent = "não registrado";
+        dd.className = "ausente";
+        texto.push(rotulo + ": não registrado");
+      }
+      lista.appendChild(dt); lista.appendChild(dd);
+    });
+
+    trilhaAtual = "COMPROVANTE DE ASSINATURA ELETRÔNICA\n" +
+      "Contrato de Prestação de Serviços de Fotografia — Jordan Santos\n\n" +
+      texto.join("\n") +
+      "\n\nA impressão digital confere com o arquivo PDF assinado: rodando" +
+      "\nSHA-256 sobre a via baixada, o valor tem que ser idêntico ao acima." +
+      "\nQualquer alteração no documento muda esse número.";
+
+    caixa.hidden = false;
+  }
+
+  (function(){
+    var btn = el("btn-trilha"), corpo = el("trilha-corpo");
+    btn.addEventListener("click", function(){
+      var abrindo = corpo.hidden;
+      corpo.hidden = !abrindo;
+      btn.setAttribute("aria-expanded", abrindo ? "true" : "false");
+    });
+    el("btn-copiar-trilha").addEventListener("click", function(){
+      if (!trilhaAtual) return;
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(trilhaAtual).then(
+          function(){ toastCopiado("Comprovante copiado ✓"); },
+          function(){ toastCopiado(copiaLegado(trilhaAtual) ? "Comprovante copiado ✓" : "Não consegui copiar"); }
+        );
+      } else {
+        toastCopiado(copiaLegado(trilhaAtual) ? "Comprovante copiado ✓" : "Não consegui copiar");
+      }
+    });
+  })();
 
   function itemSelecionado(id){ return itensAtuais.some(function(i){ return i.id === id; }); }
   function valorDoItem(id){

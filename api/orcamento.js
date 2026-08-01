@@ -162,7 +162,7 @@ export default async function handler(req, res) {
   }
 
   const ip = ipDe(req);
-  if (estourou(ip)) {
+  if (estourou(ip || "sem-ip")) {   /* ipDe devolve null quando não há proxy */
     return res.status(429).json({ erro: "muitos envios, aguarde alguns minutos" });
   }
 
