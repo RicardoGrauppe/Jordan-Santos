@@ -1,0 +1,4 @@
+# Gerador dos templates PDF do contrato: ferramenta local, roda só na máquina
+# de quem edita o contrato (precisa de Chrome). Sem esta linha o gerador.html
+# viraria um arquivo estático servido publicamente no site.
+tools/

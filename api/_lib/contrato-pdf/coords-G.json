@@ -1,0 +1,258 @@
+{
+  "paginas": 9,
+  "larguraPaginaPx": 793.6875,
+  "alturaPaginaPx": 1122.515625,
+  "margemTopoMm": 15,
+  "margemEsquerdaMm": 15,
+  "campos": [
+    {
+      "campo": "noivo",
+      "pagina": 0,
+      "x": 52.296875,
+      "y": 249.03125,
+      "w": 225,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "cpf-noivo",
+      "pagina": 0,
+      "x": 321.265625,
+      "y": 249.03125,
+      "w": 125,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "noiva",
+      "pagina": 0,
+      "x": 49.375,
+      "y": 274.5,
+      "w": 225,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "cpf-noiva",
+      "pagina": 0,
+      "x": 318.34375,
+      "y": 274.5,
+      "w": 125,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "endereco",
+      "pagina": 0,
+      "x": 78.078125,
+      "y": 299.96875,
+      "w": 285,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "numero",
+      "pagina": 0,
+      "x": 397.8125,
+      "y": 299.96875,
+      "w": 55,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "bairro",
+      "pagina": 0,
+      "x": 518.890625,
+      "y": 299.96875,
+      "w": 135,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "cidade",
+      "pagina": 0,
+      "x": 61.625,
+      "y": 325.4375,
+      "w": 155,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "complemento",
+      "pagina": 0,
+      "x": 359.640625,
+      "y": 325.4375,
+      "w": 125,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "estado",
+      "pagina": 0,
+      "x": 578.96875,
+      "y": 325.4375,
+      "w": 42,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "cep",
+      "pagina": 0,
+      "x": 0,
+      "y": 350.90625,
+      "w": 92,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "tel-noivo",
+      "pagina": 0,
+      "x": 119.34375,
+      "y": 376.375,
+      "w": 150,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "tel-noiva",
+      "pagina": 0,
+      "x": 398,
+      "y": 376.375,
+      "w": 150,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "data-formatada",
+      "pagina": 0,
+      "x": 117.984375,
+      "y": 599.1875,
+      "w": 250,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "local",
+      "pagina": 0,
+      "x": 127.84375,
+      "y": 624.65625,
+      "w": 300,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "horario",
+      "pagina": 0,
+      "x": 66.921875,
+      "y": 650.125,
+      "w": 66,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "valor-total",
+      "pagina": 1,
+      "x": 526.234375,
+      "y": 431,
+      "w": 125,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "valor-entrada",
+      "pagina": 1,
+      "x": 122.484375,
+      "y": 456.46875,
+      "w": 115,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": false
+    },
+    {
+      "campo": "cidade-assinatura",
+      "pagina": 7,
+      "x": 151.46875,
+      "y": 405.09375,
+      "w": 150,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": true
+    },
+    {
+      "campo": "data-assinatura",
+      "pagina": 7,
+      "x": 309.75,
+      "y": 405.09375,
+      "w": 215,
+      "h": 20,
+      "fontePx": 13.6,
+      "centrado": true
+    },
+    {
+      "campo": "ass-casal-rotulo",
+      "pagina": 7,
+      "x": 180.15625,
+      "y": 563.5625,
+      "w": 320,
+      "h": 18,
+      "fontePx": 12.5,
+      "centrado": true
+    }
+  ],
+  "boxes": [
+    {
+      "box": "tabela-servicos",
+      "pagina": 1,
+      "x": 0,
+      "y": 14,
+      "w": 680.3125,
+      "h": 360
+    },
+    {
+      "box": "assinatura-casal",
+      "pagina": 7,
+      "x": 130.15625,
+      "y": 452.5625,
+      "w": 420,
+      "h": 104
+    },
+    {
+      "box": "assinatura-jordan",
+      "pagina": 7,
+      "x": 130.15625,
+      "y": 625.0625,
+      "w": 420,
+      "h": 104
+    },
+    {
+      "box": "auditoria",
+      "pagina": 8,
+      "x": 0,
+      "y": 37,
+      "w": 680.3125,
+      "h": 270
+    }
+  ],
+  "variante": "G",
+  "geradoDe": {
+    "arquivo": "contrato-template.js",
+    "sha256": "bda571650d8cec3ad1f83c1f6d967c1fb3febd05f2d411f8d852f017d5585c5b"
+  }
+}

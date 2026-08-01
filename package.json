@@ -3,6 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node dev-server.mjs"
+    "dev": "node dev-server.mjs",
+    "contrato:regerar": "node --experimental-websocket tools/contrato-template/rodar.mjs",
+    "contrato:verificar": "node tools/contrato-template/verificar.mjs"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
   }
 }

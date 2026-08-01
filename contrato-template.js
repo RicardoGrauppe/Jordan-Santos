@@ -1,6 +1,14 @@
 /*
   Template do contrato — FONTE ÚNICA.
 
+  ⚠️  MEXEU NO TEXTO AQUI? REGERE OS TEMPLATES PDF:
+        npm run contrato:regerar        (precisa de Chrome; ver tools/contrato-template/)
+      Este arquivo alimenta DOIS caminhos: as telas (/assinar e /revisar-contrato,
+      que o renderizam ao vivo) e os templates vetoriais de api/_lib/contrato-pdf/,
+      que são gerados a partir dele e viram o PDF assinado. Sem regerar, a tela
+      mostra a cláusula nova e o documento arquivado sai com a ANTIGA, em silêncio.
+      `npm run contrato:verificar` acusa a divergência.
+
   Antes o texto vivia solto dentro de assinar.html, e revisar-contrato.html tinha
   só o cabeçalho + tabela, com um aviso no lugar das dez cláusulas ("omitido aqui
   só pra revisão ficar mais rápida de rolar"). Ou seja: o Jordan confirmava e
@@ -31,12 +39,11 @@
   O `modo` muda SÓ a legenda embaixo da linha de assinatura do casal (orientação
   de tela, não texto contratual). O corpo do contrato é idêntico nos dois.
 
-  A logo no topo (.logo-contrato) é a mesma nas duas páginas E no PDF: o PDF sai
-  de #documento via html2pdf/html2canvas em assinar.html, então o que aparece na
-  tela de assinatura é exatamente o que vira o arquivo baixado. O estilo do
-  ".logo-contrato" fica em cada página (este arquivo só devolve HTML, sem CSS) —
-  mexeu na logo aqui, confira o CSS de #documento em assinar.html e
-  revisar-contrato.html.
+  A logo no topo (.logo-contrato) é a mesma nas duas páginas E no PDF. O estilo
+  do ".logo-contrato" fica em cada página (este arquivo só devolve HTML, sem
+  CSS) — mexeu na logo aqui, confira o CSS de #documento em assinar.html e
+  revisar-contrato.html, e o de .conteudo-pag em tools/contrato-template/gerador.html
+  (lá a altura é fixa de propósito, senão a medição sai errada).
 
   Os valores são preenchidos depois, pelas páginas, via [data-campo="..."]:
     noivo, cpf-noivo, noiva, cpf-noiva, endereco, numero, bairro, cidade,

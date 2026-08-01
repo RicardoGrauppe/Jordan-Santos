@@ -5,9 +5,16 @@
 
   GET  ?token=…                         → obtém o contrato p/ renderizar; marca "visualizado"
   GET  ?token=…&pdf=1                   → devolve a via assinada em base64 (só depois de assinado)
-  POST {acao:"assinar", token, aceite, pdfBase64, nomeSignatario, cpfSignatario}
-       → valida o aceite, calcula hash, grava auditoria + PDF, status "assinado",
-         e-mail pras duas partes.
+  POST {acao:"assinar", token, aceite, assinaturaDataUrl, nomeSignatario, cpfSignatario}
+       → valida o aceite, MONTA O PDF, calcula hash, grava auditoria + PDF,
+         status "assinado", e-mail pras duas partes.
+
+  O PDF é montado AQUI (2026-07-31). Antes o casal mandava o documento pronto:
+  o assinar.html fotografava a tela com html2pdf/html2canvas e subia ~2,9 MB de
+  imagem — sem texto selecionável, serrilhado, com quebra de página por pixel
+  (linha cortada ao meio) e resultado variando conforme o aparelho. Agora o
+  casal manda só o PNG da assinatura (~15 KB) e o servidor preenche um template
+  vetorial (api/_lib/contrato-pdf/), sempre igual, ~240 KB.
 
   Validade jurídica: assinatura eletrônica simples entre as partes (MP 2.200-2/2001
   art. 10 §2º; CC arts. 107 e 219). A trilha (aceite expresso, nome+CPF, IP, UA,
@@ -25,8 +32,10 @@ import { rest, supabaseConfigurado } from "./_lib/supabase.js";
 import { normalizarCpf } from "./_lib/sessao.js";
 import { enviarEmail, DESTINO_JORDAN } from "./_lib/email.js";
 import { textoCurto, ipDe } from "./_lib/util.js";
+import { gerarContratoPdf } from "./_lib/contrato-pdf/gerar.js";
 
-const LIMITE_PDF_BASE64 = 6_000_000; /* ~4.5MB, limite de body da Vercel */
+/* mesmo teto que api/estudio.js usa pra assinatura do Jordan */
+const LIMITE_ASSINATURA_DATAURL = 500_000;
 const ACEITE_TEXTO =
   "Declaro que li e concordo com os termos deste contrato e reconheço a validade da " +
   "minha assinatura eletrônica realizada por este meio (MP 2.200-2/2001, art. 10, §2º).";
@@ -46,8 +55,13 @@ function tokenValido(t) {
   return typeof t === "string" && /^[A-Za-z0-9_-]{20,64}$/.test(t);
 }
 
-async function sha256hex(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+/* Hash dos BYTES do PDF (2026-07-31). Antes era o hash da string base64, o que
+   nunca batia com um `sha256sum` no arquivo baixado — agora bate, e qualquer
+   perito confere a integridade da via sem depender do nosso código. Contratos
+   assinados antes desta data guardam a semântica antiga; nada recomputa nem
+   compara hash, o valor só é gravado e mandado no e-mail. */
+async function sha256hex(bytes) {
+  const buf = await crypto.subtle.digest("SHA-256", bytes);
   return Array.prototype.map.call(new Uint8Array(buf),
     function (b) { return b.toString(16).padStart(2, "0"); }).join("");
 }
@@ -155,19 +169,36 @@ export default async function handler(req, res) {
       if (c.status === "assinado") return res.status(409).json({ erro: "contrato já assinado" });
       if (estourou("assinar:" + ip, 10)) return res.status(429).json({ erro: "muitas tentativas, aguarde" });
 
-      const { aceite, pdfBase64, nomeSignatario, cpfSignatario } = req.body;
+      const { aceite, assinaturaDataUrl, nomeSignatario, cpfSignatario } = req.body;
       if (aceite !== true) return res.status(400).json({ erro: "é preciso aceitar os termos para assinar" });
 
-      if (typeof pdfBase64 !== "string" || !pdfBase64) return res.status(400).json({ erro: "documento ausente" });
-      if (pdfBase64.length > LIMITE_PDF_BASE64) return res.status(413).json({ erro: "documento grande demais" });
+      if (typeof assinaturaDataUrl !== "string" || !/^data:image\/png;base64,/.test(assinaturaDataUrl)) {
+        return res.status(400).json({ erro: "assinatura ausente" });
+      }
+      if (assinaturaDataUrl.length > LIMITE_ASSINATURA_DATAURL) {
+        return res.status(413).json({ erro: "assinatura grande demais" });
+      }
 
       const nome = textoCurto(nomeSignatario, 120);
       const cpf = normalizarCpf(cpfSignatario || "");
       if (!nome || cpf.length !== 11) return res.status(400).json({ erro: "preencha nome e CPF válidos" });
 
-      const doc_sha256 = await sha256hex(pdfBase64);
       const email = emailDoContrato(c);
-      const agora = new Date().toISOString();
+      const assinadoEm = new Date();
+      const agora = assinadoEm.toISOString();
+
+      /* monta o PDF ANTES do PATCH: se a geração falhar, o contrato continua
+         não-assinado e o casal pode tentar de novo, em vez de ficar marcado
+         como assinado sem via nenhuma guardada */
+      const pdfBytes = await gerarContratoPdf({
+        snapshot: c.snapshot || {},
+        assinaturaCasalDataUrl: assinaturaDataUrl,
+        assinaturaJordanDataUrl: c.jordan_assinatura_dataurl || null,
+        signatario: { nome: nome, cpf: cpf, email: email },
+        assinadoEm: assinadoEm
+      });
+      const doc_sha256 = await sha256hex(pdfBytes);
+      const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
       await rest("contratos?token=eq." + token, {
         method: "PATCH",

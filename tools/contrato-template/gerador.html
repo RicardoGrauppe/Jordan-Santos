@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<!--
+  Gerador do TEMPLATE PDF do contrato — FERRAMENTA LOCAL, nunca vai pro ar.
+  Quem roda isto é o rodar.mjs (ver README.md desta pasta). Não abra à mão:
+  sozinho no navegador ele até pagina, mas quem mede E imprime no mesmo DOM
+  é o rodar.mjs, e é isso que garante template e coordenadas casando.
+
+  O que faz: renderiza o ../../contrato-template.js (FONTE ÚNICA do texto do
+  contrato, intocada) em páginas A4 de tamanho fixo, transformando
+    - cada campo variável  -> lacuna sublinhada de largura fixa
+    - tabela de itens, as duas assinaturas e a auditoria -> caixas reservadas
+  e, depois de paginar, mede a posição de cada lacuna/caixa relativa à sua
+  página, publicando o mapa em <script id="coords"> pro pdf-lib saber onde
+  escrever (api/_lib/contrato-pdf/gerar.js).
+
+  ?boxTabela=NNN define a altura reservada pra tabela de itens (variantes
+  P/M/G — ver README.md).
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<!-- fontes LOCAIS de propósito: a medição e a impressão precisam paginar
+     igual, e webfont remota carregando em tempos diferentes mudava a métrica
+     (e portanto a paginação) entre uma passada e outra -->
+<link href="fonts/fonts-local.css" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --ink:#1D1D1B; --ink-soft:#706F6F;
+    --accent:#003646; --line:#E8E1DC;
+    --serif:"Bodoni Moda","Didot",Georgia,serif;
+    --sans:"Jost","Helvetica Neue",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#fff}
+  body{font-family:var(--sans);font-weight:400;color:var(--ink)}
+
+  @page{size:A4;margin:0}
+  .pagina-a4{
+    width:210mm;height:297mm;overflow:hidden;background:var(--paper);
+    page-break-after:always;break-after:page;position:relative;
+  }
+  .pagina-a4:last-child{page-break-after:auto;break-after:auto}
+  .conteudo-pag{
+    position:absolute;top:15mm;left:15mm;right:15mm;bottom:18mm;
+    overflow:hidden;
+  }
+
+  /* ------- estilos do documento (espelho do #documento de assinar.html) ------- */
+  /* altura FIXA (190 * 457/1293, a proporção real do arquivo): o layout não
+     pode depender de a imagem já ter carregado na hora de medir — era o que
+     deslocava todos os campos em relação ao que era impresso */
+  .conteudo-pag .logo-contrato{display:block;margin:0 auto 14px;width:190px;height:67.16px}
+  .conteudo-pag h2{font-family:var(--serif);font-weight:500;font-size:21px;letter-spacing:.06em;text-align:center;margin-bottom:26px}
+  .conteudo-pag h3{font-size:14.5px;font-weight:500;letter-spacing:.05em;margin:24px 0 10px}
+  .conteudo-pag h3:first-child{margin-top:0}
+  .conteudo-pag p,.conteudo-pag li{font-size:13.6px;line-height:1.8;margin-bottom:10px;text-align:justify}
+  .conteudo-pag ol{padding-left:22px;margin-bottom:0}
+  .conteudo-pag ol li:last-child{margin-bottom:10px}
+
+  /* Lacuna: campo variável vira sublinhado de largura fixa.
+     SEM height fixa e COM um nbsp dentro (ver prepararFonte): um inline-block
+     VAZIO não tem baseline de texto — o navegador usa a borda de baixo da
+     caixa como baseline, e a lacuna afundava uma linha inteira em relação ao
+     texto vizinho. Como as coordenadas saem daqui e o valor é escrito por
+     cima delas, isso jogava o texto preenchido pra fora da linha certa. */
+  .campo{
+    display:inline-block;border-bottom:1px solid #B9B2AA;
+    vertical-align:baseline;
+  }
+
+  /* caixas reservadas (tabela / assinaturas / auditoria) */
+  .box-reserva{position:relative}
+  .box-tabela{height:318px;margin:14px 0 18px}   /* sobrescrito por ?boxTabela= */
+  .box-ass{height:104px;max-width:420px;margin:24px auto 0}
+  /* legendas centralizadas — precisa vencer o text-align:justify genérico
+     de .conteudo-pag p na especificidade */
+  .conteudo-pag .linha-ass{border-top:1px solid var(--ink);max-width:420px;margin:0 auto;padding-top:6px;font-size:12.5px;line-height:1.5;text-align:center}
+  .conteudo-pag p.cidade-data{text-align:center;margin-bottom:8px}
+  .conteudo-pag .rotulo-ass{text-align:center;font-size:12.5px;line-height:1.5;margin-bottom:0}
+  .conteudo-pag .rotulo-ass-sub{margin-bottom:10px}
+  .rotulo-ass .campo{border-bottom:none}
+
+  /* página de auditoria */
+  .auditoria h3{text-align:center;margin-top:0;border-top:none}
+  .box-auditoria{height:270px;margin:16px 0}
+  .auditoria .selo{font-size:11.5px;color:var(--ink-soft);margin-top:14px;text-align:center}
+
+  #fonte{display:none}
+</style>
+</head>
+<body>
+
+<div id="fonte"><article id="documento"></article></div>
+<div id="paginas"></div>
+
+<!-- FONTE ÚNICA do texto do contrato: o mesmo arquivo que /assinar e
+     /revisar-contrato renderizam ao vivo. Mexeu numa cláusula lá? Os
+     templates aqui ficam obsoletos — regere (ver README.md desta pasta). -->
+<script src="../../contrato-template.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* larguras (px) das lacunas por campo — folga pro maior valor plausível */
+  var LARGURAS = {
+    "noivo": 225, "cpf-noivo": 125, "noiva": 225, "cpf-noiva": 125,
+    "endereco": 285, "numero": 55, "bairro": 135,
+    "cidade": 155, "complemento": 125, "estado": 42, "cep": 92,
+    "tel-noivo": 150, "tel-noiva": 150,
+    "data-formatada": 250, "local": 300, "horario": 66,
+    "valor-total": 125, "valor-entrada": 115,
+    "cidade-assinatura": 150, "data-assinatura": 215,
+    /* "Fulano de Tal — CPF 000.000.000-00" embaixo da assinatura do casal */
+    "ass-casal-rotulo": 320
+  };
+
+  /* três variantes do mesmo template, uma por faixa de qtd. de itens do
+     contrato — cada uma pagina diferente porque a caixa da tabela muda de
+     tamanho. O contrato tem de 1 a 9 itens possíveis, e reservar sempre o
+     pior caso deixava um vão enorme na página 1 dos contratos pequenos (o
+     bloco é atômico: se a caixa de 9 itens não cabe no que sobrou da página,
+     ELA INTEIRA pula pra próxima, em vez de só o que faltar). */
+  var boxTabelaPx = Number(new URLSearchParams(location.search).get("boxTabela")) || 318;
+  document.querySelector("style").textContent += "\n.box-tabela{height:" + boxTabelaPx + "px}";
+
+  function prepararFonte(){
+    var doc = document.getElementById("documento");
+    doc.innerHTML = CONTRATO_TEMPLATE.html({ modo: "assinar" });
+
+    /* o src da logo é absoluto (/img/...) pro site; aqui rodando em file://
+       precisa ser relativo à raiz do repo */
+    var logo = doc.querySelector(".logo-contrato");
+    if (logo) logo.src = "../../img/logo-principal-petroleo.png";
+
+    /* tabela de serviços vira caixa reservada (o pdf-lib desenha a grade) */
+    var tabela = doc.querySelector("table");
+    var boxT = document.createElement("div");
+    boxT.className = "box-reserva box-tabela";
+    boxT.dataset.box = "tabela-servicos";
+    tabela.parentNode.replaceChild(boxT, tabela);
+
+    /* bloco de assinaturas refeito com caixas reservadas pras imagens */
+    var bloco = doc.querySelector("#bloco-assinaturas");
+    bloco.innerHTML =
+      '<p class="cidade-data"><span class="campo" data-campo="cidade-assinatura" style="width:150px"></span>, <span class="campo" data-campo="data-assinatura" style="width:215px"></span>.</p>' +
+      '<div class="box-reserva box-ass" data-box="assinatura-casal"></div>' +
+      '<p class="linha-ass"></p>' +
+      /* dois parágrafos, não um com <br>: a lacuna precisa ficar sozinha na
+         sua linha pra medir certo, senão o valor escrito por cima cai em
+         cima do "Assinado eletronicamente" */
+      '<p class="rotulo-ass"><span class="campo" data-campo="ass-casal-rotulo" style="width:320px"></span></p>' +
+      '<p class="rotulo-ass rotulo-ass-sub">Assinado eletronicamente</p>' +
+      '<div class="box-reserva box-ass" data-box="assinatura-jordan"></div>' +
+      '<p class="linha-ass"></p>' +
+      '<p class="rotulo-ass">Jordan Santos &ndash; CONTRATADA</p>';
+
+    /* Campos viram lacunas de largura fixa. Roda DEPOIS de reescrever o bloco
+       de assinaturas, senão os campos criados ali ficariam de fora.
+       O nbsp é o que dá ao inline-block uma baseline de texto de verdade — sem
+       ele a lacuna afunda uma linha inteira (ver comentário do .campo no CSS)
+       e o valor escrito por cima cai fora do lugar. Invisível na impressão. */
+    Array.prototype.forEach.call(doc.querySelectorAll(".campo[data-campo]"), function(span){
+      var w = LARGURAS[span.dataset.campo] || 140;
+      span.style.width = w + "px";
+      span.innerHTML = "&nbsp;";
+    });
+  }
+
+  /* quebra o documento numa lista de blocos móveis; <ol> quebra por item,
+     preservando a numeração com o atributo start. É o que garante que uma
+     linha nunca é cortada ao meio na virada de página. */
+  function blocosMoveis(){
+    var doc = document.getElementById("documento");
+    var blocos = [];
+    Array.prototype.forEach.call(Array.prototype.slice.call(doc.children), function(no){
+      if (no.tagName === "OL"){
+        var itens = Array.prototype.slice.call(no.children);
+        itens.forEach(function(li, i){
+          var mini = document.createElement("ol");
+          mini.setAttribute("start", String(i + 1));
+          mini.appendChild(li);
+          blocos.push(mini);
+        });
+        no.remove();
+      } else {
+        blocos.push(no);
+      }
+    });
+    return blocos;
+  }
+
+  function novaPagina(paginas){
+    var pag = document.createElement("div");
+    pag.className = "pagina-a4";
+    var cont = document.createElement("div");
+    cont.className = "conteudo-pag";
+    pag.appendChild(cont);
+    paginas.appendChild(pag);
+    return cont;
+  }
+
+  function transborda(cont){
+    return cont.scrollHeight > cont.clientHeight + 1;
+  }
+
+  function paginar(){
+    var paginas = document.getElementById("paginas");
+    var blocos = blocosMoveis();
+    var cont = novaPagina(paginas);
+
+    for (var i = 0; i < blocos.length; i++){
+      var b = blocos[i];
+      cont.appendChild(b);
+      if (transborda(cont)){
+        cont.removeChild(b);
+        cont = novaPagina(paginas);
+        cont.appendChild(b);
+      }
+      /* título não fica órfão no pé da página: se o PRÓXIMO bloco não couber,
+         o título desce junto com ele */
+      if (b.tagName === "H3" && i + 1 < blocos.length){
+        var prox = blocos[i + 1];
+        cont.appendChild(prox);
+        var cabe = !transborda(cont);
+        cont.removeChild(prox);
+        if (!cabe){
+          cont.removeChild(b);
+          cont = novaPagina(paginas);
+          cont.appendChild(b);
+        }
+      }
+    }
+
+    /* página de auditoria — sempre a última, inteira reservada */
+    var contAud = novaPagina(paginas);
+    var aud = document.createElement("div");
+    aud.className = "auditoria";
+    aud.innerHTML =
+      '<h3>Comprovante de Assinatura Eletrônica</h3>' +
+      '<div class="box-reserva box-auditoria" data-box="auditoria"></div>' +
+      '<p class="selo">O registro completo de auditoria (endereço IP, dispositivo e impressão digital SHA-256 do documento) fica preservado no sistema do fotógrafo e comprova a autoria e a integridade desta via.</p>';
+    contAud.appendChild(aud);
+  }
+
+  function medir(){
+    var paginas = Array.prototype.slice.call(document.querySelectorAll(".pagina-a4"));
+    /* as coordenadas são relativas ao .conteudo-pag; estas margens (as mesmas
+       do CSS .conteudo-pag) são o que o pdf-lib soma pra chegar na folha */
+    var mapa = {
+      paginas: paginas.length, larguraPaginaPx: 0, alturaPaginaPx: 0,
+      margemTopoMm: 15, margemEsquerdaMm: 15,
+      campos: [], boxes: []
+    };
+    if (paginas.length){
+      var r0 = paginas[0].getBoundingClientRect();
+      mapa.larguraPaginaPx = r0.width;
+      mapa.alturaPaginaPx = r0.height;
+    }
+    /* Ancora no .conteudo-pag, NÃO na .pagina-a4.
+       A .pagina-a4 é medida na posição em que caiu no fluxo do documento, e
+       essa posição acumula um errinho de arredondamento a cada página — na
+       página 8 o desvio já valia mais de uma linha, e o valor preenchido saía
+       fora da lacuna. O .conteudo-pag, por outro lado, está sempre a uma
+       distância FIXA e conhecida da borda da folha (as margens abaixo), então
+       o pdf-lib remonta a posição sem depender de onde a página começou. */
+    function pagDe(el){
+      var p = el.closest(".pagina-a4");
+      var conteudo = p.querySelector(".conteudo-pag");
+      return { indice: paginas.indexOf(p), rect: conteudo.getBoundingClientRect() };
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("#paginas .campo[data-campo]"), function(span){
+      var pg = pagDe(span);
+      var rCaixa = span.getBoundingClientRect();   /* largura da lacuna */
+      /* A ALTURA sai da caixa do TEXTO interno (o nbsp), não do inline-block.
+         A caixa do inline-block não é referência confiável: dependendo de o
+         span ser maior que a line-height da linha, ela desliza pra cima ou
+         pra baixo em relação ao texto vizinho — o valor preenchido saía ora
+         4pt acima do rótulo, ora 18pt abaixo, na mesma página. Já a caixa do
+         nbsp tem exatamente a métrica de linha do texto ao redor. */
+      var faixa = document.createRange();
+      faixa.selectNodeContents(span);
+      var rTexto = faixa.getBoundingClientRect();
+      var r = (rTexto && rTexto.height) ? rTexto : rCaixa;
+      mapa.campos.push({
+        campo: span.dataset.campo, pagina: pg.indice,
+        x: rCaixa.left - pg.rect.left, y: r.top - pg.rect.top,
+        w: rCaixa.width, h: r.height,
+        fontePx: parseFloat(getComputedStyle(span.parentNode).fontSize),
+        centrado: !!span.closest(".cidade-data, .rotulo-ass")
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#paginas .box-reserva"), function(box){
+      var pg = pagDe(box), r = box.getBoundingClientRect();
+      mapa.boxes.push({
+        box: box.dataset.box, pagina: pg.indice,
+        x: r.left - pg.rect.left, y: r.top - pg.rect.top,
+        w: r.width, h: r.height
+      });
+    });
+    var s = document.createElement("script");
+    s.type = "application/json";
+    s.id = "coords";
+    s.textContent = JSON.stringify(mapa);
+    document.body.appendChild(s);
+  }
+
+  /* CARREGAR AS FONTES DE VERDADE ANTES DE PAGINAR.
+     Não basta `document.fonts.ready` antes de montar o documento: naquele
+     instante nenhum texto existe ainda (o #fonte é display:none), então a
+     promise resolve na hora, sem nada pendente. A paginação acontecia com as
+     métricas da fonte de fallback e mudava de uma execução pra outra — e como
+     a IMPRESSÃO espera as fontes reais, o mapa de coordenadas descrevia um
+     layout que não era o do PDF, e o texto preenchido caía fora das lacunas.
+     `document.fonts.load` de cada combinação usada é o que dá determinismo. */
+  var USADAS = [
+    '400 13.6px "Jost"', '500 13.6px "Jost"', '500 14.5px "Jost"',
+    '400 12.5px "Jost"', '500 21px "Bodoni Moda"'
+  ];
+  Promise.all(USADAS.map(function(f){ return document.fonts.load(f); }))
+    .then(function(){ return document.fonts.ready; })
+    .then(function(){
+      prepararFonte();
+      return document.fonts.ready;   /* o texto já existe: pega o que faltar */
+    })
+    .then(function(){
+      paginar();
+      medir();
+      document.title = "template-pronto";
+    });
+})();
+</script>
+</body>
+</html>

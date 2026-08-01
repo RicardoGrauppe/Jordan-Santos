@@ -4,7 +4,13 @@
   Página PÚBLICA e tokenizada: o Jordan gera o link no /estudio, o casal revisa o
   contrato e assina aqui. Assinatura eletrônica simples/avançada (MP 2.200-2/2001
   art. 10 §2º). Dados vêm de /api/assinatura?token= ; a assinatura é capturada com
-  signature_pad e o PDF é gerado com html2pdf.js.
+  signature_pad (ou desenhada em cursiva num canvas) e enviada como PNG.
+
+  ESTA PÁGINA NÃO GERA MAIS O PDF (2026-07-31): ela manda só a imagem da
+  assinatura, e o /api/assinatura monta o documento preenchendo um template
+  vetorial (api/_lib/contrato-pdf). O #documento abaixo é a via de LEITURA do
+  casal; o arquivo arquivado é montado no servidor a partir do mesmo
+  contrato-template.js, então os dois mostram o mesmo texto.
 
   O TEXTO DO CONTRATO abaixo (#documento) é fixo, com os dados do casal preenchidos
   a partir do backend (data-campo). A assinatura do Jordan é a que ele fez NESTE
@@ -240,7 +246,6 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 <script>
 (function(){
@@ -419,9 +424,10 @@
       '<p class="linha-ass" style="margin-top:0">Jordan Santos &ndash; CONTRATADA</p>';
   }
 
-  /* ---------- baixar a via assinada ---------- */
-  /* guardado em memória logo após assinar, pra baixar na hora sem ida ao servidor */
-  var pdfAssinadoBase64 = null;
+  /* ---------- baixar a via assinada ----------
+     Sempre do servidor: o PDF é montado lá (api/_lib/contrato-pdf) e já está
+     guardado quando o POST de assinar responde. Antes esta aba mantinha uma
+     cópia em memória porque era ela quem gerava o arquivo. */
 
   function nomeArquivoPdf(){
     var casal = [dados && dados.noivo, dados && dados.noiva].filter(Boolean).join(" e ");
@@ -464,8 +470,6 @@
   }
 
   el("baixar-agora").addEventListener("click", function(){
-    /* acabou de assinar: o PDF ainda está na memória desta aba */
-    if (pdfAssinadoBase64) { baixarBase64(pdfAssinadoBase64); return; }
     baixarDoServidor("aviso-baixar-agora", el("baixar-agora"));
   });
   el("baixar-assinado").addEventListener("click", function(){
@@ -506,92 +510,31 @@
 
   el("limpar-ass").addEventListener("click", function(){ if (signaturePad) signaturePad.clear(); avaliarBotao(); });
 
+  /* Só manda a assinatura; quem monta o PDF é o servidor (2026-07-31).
+     Antes daqui saía o documento inteiro: o html2pdf fotografava a tela com
+     html2canvas e subia ~2,9 MB de imagem, sem texto selecionável e com risco
+     de cortar linha na virada de página. Agora vai só o PNG (~15 KB) e o
+     /api/assinatura preenche um template vetorial — some junto toda a gambiarra
+     de scroll que o screenshot exigia e a injeção do bloco de auditoria, que
+     passou a ser montado no servidor com o horário DELE. */
   el("btn-assinar").addEventListener("click", function(){
     var aviso = el("aviso-assinar");
-    if (typeof html2pdf === "undefined"){
-      aviso.className = "aviso erro";
-      aviso.textContent = "Não foi possível preparar o documento. Recarregue a página.";
-      return;
-    }
     var nome = el("a-nome").value.trim();
     var cpf = el("a-cpf").value.replace(/\D/g, "");
     var assinaturaImg = modo === "cursiva"
       ? cursivaParaDataUrl(nome)
       : signaturePad.toDataURL("image/png");
 
-    /* injeta a assinatura + comprovante de auditoria no documento antes do PDF */
-    var agora = new Date();
-    var bloco = el("bloco-assinaturas");
-    var assinaturaJordanImg = assinaturaJordanContrato || estudioCfg.assinatura_jordan;
-    var contratadaHtml = assinaturaJordanImg
-      ? '<div style="text-align:center;margin-top:36px">' +
-          '<img src="' + assinaturaJordanImg + '" alt="assinatura Jordan Santos" style="max-height:80px;max-width:280px">' +
-          '<p class="linha-ass" style="margin-top:0">Jordan Santos &ndash; CONTRATADA</p>' +
-        '</div>'
-      : '<p class="linha-ass" style="margin-top:36px">Jordan Santos &ndash; CONTRATADA</p>';
-    bloco.innerHTML =
-      '<p><span>' + (dados.cidade || "") + '</span>, ' + dataExtenso(agora) + '.</p>' +
-      '<div style="text-align:center;margin-top:24px">' +
-        '<img src="' + assinaturaImg + '" alt="assinatura" style="max-height:90px;max-width:320px">' +
-        '<p class="linha-ass" style="margin-top:0">' + nome + ' &ndash; CPF ' + formatarCpf(cpf) + '<br>Assinado eletronicamente</p>' +
-      '</div>' +
-      contratadaHtml;
-
-    var doc = el("documento");
-    var auditoria = document.createElement("div");
-    auditoria.className = "auditoria";
-    auditoria.innerHTML =
-      '<h3>Comprovante de Assinatura Eletrônica</h3>' +
-      '<div class="linhas">' +
-        '<strong>Signatário:</strong> ' + nome + '<br>' +
-        '<strong>CPF:</strong> ' + formatarCpf(cpf) + '<br>' +
-        (dados.email ? '<strong>E-mail:</strong> ' + dados.email + '<br>' : '') +
-        '<strong>Data e hora:</strong> ' + agora.toLocaleString("pt-BR") + '<br>' +
-        '<strong>Verificação:</strong> acesso por link eletrônico exclusivo, entregue ao contratante<br>' +
-        '<strong>Aceite:</strong> os termos foram lidos e aceitos, com reconhecimento da validade da assinatura eletrônica (MP 2.200-2/2001, art. 10, §2º)' +
-      '</div>' +
-      '<p class="selo">O registro completo de auditoria (endereço IP, dispositivo e impressão digital SHA-256 do documento) fica preservado no sistema do fotógrafo e comprova a autoria e a integridade desta via.</p>';
-    doc.appendChild(auditoria);
-
     el("btn-assinar").disabled = true;
     aviso.className = "aviso"; aviso.textContent = "Registrando sua assinatura...";
 
-    /* Página 1 saindo em branco: até aqui o casal rolou a tela inteira (o
-       contrato + o painel de assinatura) pra chegar no botão, então
-       window.scrollY está grande no momento do clique. Sem compensar isso,
-       html2canvas recorta o "retrato" da página a partir da posição de scroll
-       atual em vez do topo do documento — o espaço em branco equivalente ao
-       scroll vira a primeira página, e o contrato de verdade só aparece a
-       partir da página 2 (confirmado extraindo o PDF de um contrato real).
-       scrollTo(0,0) só ajuda se for síncrono a tempo; scrollX/scrollY:0 no
-       html2canvas é o que garante de verdade, independente de quando o
-       repaint do scroll termina. */
-    window.scrollTo(0, 0);
-
-    html2pdf().set({
-      margin: [15, 15, 18, 15],
-      image: { type: "jpeg", quality: 0.82 },
-      html2canvas: { scale: 1.5, useCORS: true, scrollX: 0, scrollY: 0 },
-      jsPDF: { unit: "mm", format: "a4" },
-      /* "legacy" fatia o canvas puramente por altura de pixel, sem noção de
-         onde termina uma linha de texto — uma linha que caísse bem na borda da
-         página saía cortada ao meio (a metade de cima numa página, a de baixo
-         na seguinte; confirmado renderizando um PDF real e ampliando a
-         transição entre páginas). "avoid-all" aplica page-break-inside:avoid
-         em todo elemento de bloco (parágrafo, item de lista, linha de tabela)
-         sem precisar marcar CSS um por um: se o bloco não cabe inteiro, ele
-         desce pra próxima página em vez de ser rasgado no meio. */
-      pagebreak: { mode: ["css", "avoid-all"] }
-    }).from(doc).outputPdf("datauristring").then(function(dataUri){
-      pdfAssinadoBase64 = dataUri.split(",")[1];  /* guarda pro botão de baixar */
-      return fetch("/api/assinatura", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          acao: "assinar", token: token, aceite: true,
-          pdfBase64: pdfAssinadoBase64,
-          nomeSignatario: nome, cpfSignatario: cpf
-        })
-      });
+    fetch("/api/assinatura", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acao: "assinar", token: token, aceite: true,
+        assinaturaDataUrl: assinaturaImg,
+        nomeSignatario: nome, cpfSignatario: cpf
+      })
     }).then(function(r){
       return r.json().then(function(j){ return { ok: r.ok, j: j }; });
     }).then(function(resp){
@@ -599,8 +542,6 @@
       mostrarEstado("estado-sucesso");
       window.scrollTo(0, 0);
     }).catch(function(e){
-      /* desfaz a injeção pra permitir nova tentativa */
-      if (auditoria.parentNode) auditoria.parentNode.removeChild(auditoria);
       aviso.className = "aviso erro";
       aviso.textContent = e.message === "falha" ? "Não deu pra assinar agora. Confira o código e tente de novo." : e.message;
       el("btn-assinar").disabled = false;

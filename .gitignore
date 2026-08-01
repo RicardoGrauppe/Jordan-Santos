@@ -2,3 +2,6 @@
 .env*
 .vercel
 .claude/settings.local.json
+
+# pdf-lib (usado por api/_lib/contrato-pdf) — a Vercel instala no build
+node_modules/

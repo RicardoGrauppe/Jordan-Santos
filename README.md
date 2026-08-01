@@ -4,17 +4,17 @@ Site do fotógrafo Jordan Santos: portfólio estático (público), painel do est
 
 Produção: https://jordan-santos.vercel.app (deploy automático a cada push na `main`).
 
-Site estático, sem build: HTML/CSS/JS vanilla, um arquivo por página. Bibliotecas via CDN: `html2pdf.js` + `signature_pad` (assinar.html) e `intl-tel-input` (cadastro.html, campo de WhatsApp com DDI por país). Os dados vivem no **Supabase** (Postgres), acessado só pelas Vercel Functions com a service role key.
+Site estático, sem build: HTML/CSS/JS vanilla, um arquivo por página. Bibliotecas via CDN: `signature_pad` (assinar.html) e `intl-tel-input` (cadastro.html, campo de WhatsApp com DDI por país). Os dados vivem no **Supabase** (Postgres), acessado só pelas Vercel Functions com a service role key. Única dependência npm: **`pdf-lib`**, usada pelas functions pra montar o PDF do contrato.
 
 ## Estrutura
 
 ```
 index.html               Portfólio (página inicial) — pacotes/adicionais/álbum exibidos com preço, sem clique nem seleção
 cadastro.html            Cadastro do casal + evento (/cadastro) — página autônoma, sem produto/preço; o Jordan manda o link direto
-contrato-template.js     FONTE ÚNICA do texto do contrato, usada por assinar e revisar-contrato
+contrato-template.js     FONTE ÚNICA do texto do contrato — usada pelas telas E pra gerar os templates PDF
 estudio.html             Painel do Jordan (/estudio): clientes + escolha de pacote/adicionais + gerar contrato
 revisar-contrato.html    Revisão/"assinatura" do Jordan antes de liberar (/revisar-contrato?id=…), admin-only
-assinar.html             Assinatura pública do contrato (/assinar?token=…) — signature_pad + html2pdf
+assinar.html             Assinatura pública do contrato (/assinar?token=…) — signature_pad; não gera PDF
 catalogo.js              FONTE ÚNICA dos produtos (id → grupo/preço/nome/curto), usada só pelo estudio
 
 api/sessao.js            Login/logout do estúdio (admin, sobre o Supabase Auth)
@@ -22,10 +22,12 @@ api/estudio.js           CRUD de clientes + gerar/cancelar contrato p/ assinatur
 api/orcamento.js         Público: orçamento do site → cria o CLIENTE direto
 api/assinatura.js        Público: obter/assinar/baixar o contrato (link tokenizado)
 api/_lib/                Helpers compartilhados: supabase, sessao, email, util (não viram functions)
+api/_lib/contrato-pdf/   Monta o PDF assinado (pdf-lib) + os templates vetoriais GERADOS
+tools/contrato-template/ Gerador dos templates (Chrome headless) — local, fora do deploy
 
 supabase/schema.sql               DDL completo (setup do zero)
 supabase/migracao-*.sql           Migrações para banco já existente (contratos, config)
-vercel.json              cleanUrls (URLs sem .html)
+vercel.json              cleanUrls + includeFiles dos templates na function de assinatura
 ```
 
 ## Fluxo completo (ponta a ponta)
@@ -35,7 +37,7 @@ Sem estágio de prospecção (decisão de 2026-07-24): o link do site geralmente
 1. **Contato** (`/`): o portfólio mostra os pacotes (Eternal/Heritage), adicionais, álbum e pré-wedding com nome e preço — **igual a antes** —, só que sem clique nenhum (decisão de 2026-07-31: os cards eram `<button>` com seleção/resumo/total rodando; viraram `<div>` estáticos, preço escrito direto no HTML, sem `catalogo.js` nesta página). O casal não escolhe mais produto no site. O contato é só por WhatsApp/telefone/e-mail no rodapé. Depois de conversar, o Jordan manda o link do **`/cadastro`** (`cadastro.html`) — página totalmente autônoma, sem nenhuma conexão com a home. Lá o casal só cadastra os dados (nome + CPF dos dois, WhatsApp, e-mail, endereço com autocomplete de CEP via ViaCEP, data/horário/local do evento). Isso cria o **CLIENTE** direto (`/api/orcamento`, upsert por `cpf_noivo+data_evento`), sem itens nem total — ficam vazios/nulos até o Jordan preencher, escolhendo o pacote/adicionais correspondente ao que o casal viu no site. O Jordan recebe um e-mail (template com a paleta da marca) avisando do cliente novo.
 2. **Ficha do cliente** (`/estudio`): o Jordan confere/completa os dados e **escolhe o pacote/adicionais no seletor** (única etapa do fluxo em que produto é escolhido). Clica em **"Gerar contrato"** (ícone no topo ou botão dentro do fieldset "Contrato") → valida os campos obrigatórios (inclusive pelo menos um item escolhido), salva, gera o contrato (status `rascunho`, já salvo mesmo sem assinatura nenhuma) e abre em outra aba a página de revisão.
 3. **Revisão do Jordan** (`/revisar-contrato?id=…`, admin-only): ele confere o contrato inteiro e confirma com uma assinatura (cursiva com o nome, padrão, ou desenhada na mão) — isso não manda nada ao casal, só libera o botão **"Pegar link pro cliente"** de volta no `/estudio`, que marca o contrato como enviado e abre um modal com o link + a mensagem pronta pra copiar ou abrir direto na conversa do WhatsApp. O mesmo botão recupera o link depois ("Ver link de novo"), sem gerar contrato novo.
-4. **Assinatura do casal** (`/assinar?token=…`): o casal revisa o contrato (já com a assinatura do Jordan deste contrato específico), preenche nome + CPF, marca o aceite e assina de um dos **dois jeitos** (mesma escolha que o Jordan tem na revisão): o nome em cursiva (padrão, desenhado num canvas com a fonte Dancing Script) ou o traço na mão (`signature_pad`). O PDF é gerado no navegador (`html2pdf`), guardado e enviado pras partes (`/api/assinatura`). Depois de assinar, o casal tem um botão pra **baixar a via em PDF** — na hora, direto da memória da aba, e também quando voltar no link depois (aí busca em `GET /api/assinatura?token=…&pdf=1`).
+4. **Assinatura do casal** (`/assinar?token=…`): o casal revisa o contrato (já com a assinatura do Jordan deste contrato específico), preenche nome + CPF, marca o aceite e assina de um dos **dois jeitos** (mesma escolha que o Jordan tem na revisão): o nome em cursiva (padrão, desenhado num canvas com a fonte Dancing Script) ou o traço na mão (`signature_pad`). O navegador manda só o **PNG da assinatura**; quem monta o PDF é o servidor (`/api/assinatura` → `api/_lib/contrato-pdf`), que guarda a via e envia pras partes. Depois de assinar, o casal tem um botão pra **baixar a via em PDF**, que busca sempre em `GET /api/assinatura?token=…&pdf=1`.
 
 O contrato é FIXO (fonte única em `contrato-template.js`), com os dados do casal preenchidos a partir do backend. A **assinatura do Jordan** é a que ele faz na revisão de cada contrato (`contratos.jordan_assinatura_dataurl`), lida server-side e injetada no contrato do casal — funciona em qualquer dispositivo. A página `/configuracoes`, que guardava uma assinatura padrão na tabela `config`, foi removida em 2026-07-28; o valor antigo segue no banco só como fallback e nada mais o escreve.
 
@@ -80,7 +82,9 @@ Chave fora do código, como env na Vercel. Sem domínio verificado, o Resend só
 
 ## Limites e decisões
 
-- POST na Vercel aceita até ~4.5MB; a função rejeita PDF acima disso (base64 > 6M chars) com HTTP 413. Contrato é texto, fica bem abaixo.
+- **O PDF do contrato é montado no servidor** (decisão de 2026-07-31). Antes o `assinar.html` fotografava a tela com `html2pdf`/`html2canvas` e subia o documento pronto: saíam ~2,9 MB de imagem por contrato, sem texto selecionável, serrilhado no zoom, com quebra de página por pixel (linha cortada ao meio, remendada na marra com `avoid-all`) e resultado variando conforme o aparelho do casal. Agora o navegador manda só o PNG da assinatura (~15 KB) e o `api/_lib/contrato-pdf` preenche um **template vetorial** com `pdf-lib`: ~240 KB, texto de verdade e sempre idêntico. Como o cliente não sobe mais arquivo, o limite de ~4,5 MB de body da Vercel deixou de ser uma preocupação; o que a função valida hoje é o tamanho da assinatura (500 KB).
+- **Os templates PDF são gerados, não escritos à mão.** Vivem em `api/_lib/contrato-pdf/` (três variantes, por quantidade de itens do contrato) e saem do `contrato-template.js` via `tools/contrato-template/`. Mexeu numa cláusula? **Regere** (`npm run contrato:regerar`), senão a tela mostra o texto novo e o PDF arquivado continua com o velho. `npm run contrato:verificar` acusa se estiverem fora de sincronia.
+- Hash do documento (`contratos.doc_sha256`): a partir de 2026-07-31 é o SHA-256 dos **bytes do PDF** — um `sha256sum` no arquivo baixado bate com o valor do banco. Contratos assinados antes disso guardam o hash da string base64 (não bate com o arquivo). Nada recomputa nem compara hash; ele só é gravado e mandado no e-mail.
 - Catálogo de produtos é **fonte única** em `catalogo.js` (id/preço/nome), consumido por index e estudio — evita rótulo divergente no contrato.
 - Entrega de fotos / área do casal: **removida** em 2026-07-13 (Storage não compensava). O vínculo de login do casal (`auth_user_id`) saiu do código e do banco.
 - Prospecção (kanban de leads): **removida** em 2026-07-24. O link do orçamento do site geralmente só é mandado depois de uma reunião, pra quem já quer fechar — então o formulário público já coleta tudo que o contrato precisa e cria o cliente direto. `api/prospectos.js` e a tela de kanban saíram do código; a tabela `prospectos` continua existindo em bancos antigos (não foi apagada), só não é mais lida nem escrita pelo app.
