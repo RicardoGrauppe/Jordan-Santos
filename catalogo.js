@@ -16,7 +16,10 @@ window.CATALOGO = {
   "expressa":   { grupo: "adicional",  preco: 3500,  nome: "Entrega Expressa em 7 dias",                      curto: "Entrega Expressa" },
   "bride":      { grupo: "adicional",  preco: 2790,  nome: "Bride Session, ensaio editorial da Noiva",        curto: "Bride Session" },
   "hora":       { grupo: "adicional",  preco: 1100,  nome: "Hora adicional de cobertura",                     curto: "Hora adicional" },
-  "civil":      { grupo: "adicional",  preco: 2690,  nome: "Cobertura fotográfica Noivado ou Casamento Civil", curto: "Noivado / Civil" },
+  /* a chave "civil" fica como está de propósito: é o id gravado em
+     clientes.itens e no snapshot dos contratos — renomear quebraria o vínculo
+     com o que já foi vendido. Só o rótulo mudou (2026-08-01: saiu "Noivado"). */
+  "civil":      { grupo: "adicional",  preco: 2690,  nome: "Cobertura fotográfica Casamento Civil",            curto: "Casamento Civil" },
   "album-30":   { grupo: "album",      preco: 5500,  nome: "Álbum 30x60 (50 páginas, 100 imagens)",           curto: "Álbum 30x60" },
   "album-20":   { grupo: "album",      preco: 3600,  nome: "Álbum 20x60 (40 páginas, 60 imagens)",            curto: "Álbum 20x60" },
   "prewedding": { grupo: "prewedding", preco: 2600,  nome: "Ensaio Pré Wedding",                              curto: "Ensaio Pré Wedding" }
