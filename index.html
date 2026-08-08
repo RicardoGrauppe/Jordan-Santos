@@ -21,9 +21,8 @@
   - Contrato: o Jordan cria o cliente e escolhe os produtos no /estudio, gera o link de assinatura.
     O casal assina em /assinar (link tokenizado, revisão final + OTP).
   - Fotos: extraídas do PDF (resolução de tela). Substituir pelas versões em alta que o Jordan vai mandar.
-  - Portfólio / Instagram (seção #portfolio): grid estilo feed do perfil (cabeçalho + grade 3 colunas).
-    Fotos são stand-in da proposta; trocar pelas do feed real do Jordan. Cada tile aponta pro perfil
-    (https://instagram.com/jordansantosphotography); pra linkar post específico, basta o URL do post no href.
+  - A seção de Instagram (grade estilo feed, #portfolio) foi REMOVIDA em 2026-08-01. As fotos dela eram
+    stand-in da proposta, não o feed real. O Instagram segue linkado no rodapé.
   - Marca nova do Diogo aplicada (2026-07-02): paleta oficial (petróleo #003646, aço #4F6278, preto #1D1D1B,
     cinza #706F6F, off-white #E8E1DC) + wordmark/assinatura em Assets/Marca/. Fonte display é aproximação
     (Bodoni Moda, estilo Didot como a wordmark) até o Diogo nomear as fontes oficiais.
@@ -330,118 +329,6 @@
      proporções diferentes são cortadas pelo centro */
   .entrega-fotos img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block}
 
-  /* ---------- portfólio / instagram (feed) ---------- */
-  .insta-feed{padding:88px 20px 96px}
-  .insta-feed-inner{max-width:935px;margin:0 auto}
-
-  .insta-feed-titulo{
-    font-family:var(--serif);
-    font-weight:400;
-    font-size:clamp(22px,3.2vw,28px);
-    letter-spacing:.28em;
-    text-transform:uppercase;
-    color:var(--ink);
-    text-align:center;
-    margin-bottom:36px;
-  }
-
-  .insta-perfil{
-    display:flex;
-    align-items:flex-start;
-    gap:16px;
-    max-width:520px;
-    margin:0 0 28px;
-    padding:0 4px;
-  }
-  .insta-perfil-foto{
-    width:56px;height:56px;
-    border-radius:50%;
-    object-fit:cover;
-    flex-shrink:0;
-    border:1px solid var(--line);
-  }
-  .insta-perfil-user{
-    display:block;
-    font-size:15px;
-    font-weight:500;
-    color:var(--ink);
-    text-decoration:none;
-    margin-bottom:6px;
-  }
-  .insta-perfil-user:hover{text-decoration:underline}
-  .insta-perfil-bio{
-    font-size:13px;
-    line-height:1.55;
-    color:var(--ink-soft);
-  }
-  .insta-perfil-bio a{
-    color:inherit;
-    text-decoration:none;
-    border-bottom:1px solid rgba(112,111,111,.35);
-  }
-  .insta-perfil-bio a:hover{color:var(--accent);border-color:var(--accent)}
-  .insta-perfil-tag{color:var(--ink);font-weight:400}
-
-  .insta-grid{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:4px;
-  }
-  .insta-item{
-    position:relative;
-    display:block;
-    aspect-ratio:1/1;
-    overflow:hidden;
-    background:var(--noir);
-  }
-  .insta-item img{
-    width:100%;height:100%;
-    object-fit:cover;
-    transition:opacity .2s ease;
-  }
-  .insta-item::after{
-    content:"";
-    position:absolute;inset:0;
-    background:rgba(0,0,0,0);
-    transition:background .2s ease;
-  }
-  .insta-item:hover::after{background:rgba(0,0,0,.18)}
-  .insta-item:hover img{opacity:.92}
-  .insta-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-  .insta-carrossel{
-    position:absolute;
-    top:8px;right:8px;
-    width:20px;height:20px;
-    z-index:2;
-    pointer-events:none;
-    filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
-  }
-
-  .insta-rodape{text-align:center;margin-top:40px}
-  .insta-cta{
-    display:inline-flex;
-    align-items:center;
-    gap:12px;
-    padding:15px 30px;
-    border:1px solid var(--accent);
-    border-radius:999px;
-    color:var(--accent);
-    text-decoration:none;
-    font-size:12px;
-    letter-spacing:.22em;
-    text-transform:uppercase;
-    transition:background .25s ease, color .25s ease;
-  }
-  .insta-cta svg{width:19px;height:19px}
-  .insta-cta:hover{background:var(--accent);color:#fff}
-  .insta-cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
-
-  @media (max-width:640px){
-    .insta-grid{grid-template-columns:repeat(2,1fr);gap:3px}
-    .insta-perfil{max-width:100%;padding:0 2px}
-  }
-
   /* ---------- citação ---------- */
   .quote-full{
     position:relative;
@@ -708,52 +595,6 @@
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.81L2 22l5.42-1.42a9.87 9.87 0 0 0 4.62 1.18h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2Zm5.8 14.02c-.25.7-1.24 1.29-1.98 1.44-.53.11-1.22.2-3.58-.77-2.99-1.24-4.92-4.28-5.07-4.48-.15-.2-1.21-1.61-1.21-3.07 0-1.46.75-2.17 1.02-2.47.27-.3.58-.37.78-.37.2 0 .39.002.56.01.18.008.42-.07.66.5.25.6.84 2.07.91 2.22.07.15.12.33.02.53-.1.2-.15.33-.3.5-.15.18-.31.4-.44.53-.15.15-.3.31-.13.61.17.3.76 1.25 1.63 2.02 1.12.99 2.06 1.3 2.36 1.45.3.15.48.13.66-.08.18-.2.76-.89.97-1.19.2-.3.4-.25.68-.15.28.1 1.77.83 2.07.98.3.15.5.22.57.35.07.13.07.75-.18 1.45Z"/></svg>
       Chamar no WhatsApp
     </a>
-  </div>
-</section>
-
-<!-- portfólio / instagram -->
-<section class="pagina insta-feed" id="portfolio">
-  <div class="insta-feed-inner">
-    <h2 class="insta-feed-titulo reveal">Instagram</h2>
-
-    <div class="insta-perfil reveal">
-      <img class="insta-perfil-foto" src="img/jordan-perfil.webp" alt="Jordan Santos" width="128" height="128">
-      <div>
-        <a class="insta-perfil-user" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">jordansantosphotography</a>
-        <p class="insta-perfil-bio"><span class="insta-perfil-tag">#destinationwedding</span><br>✈️🌍🇧🇷🇦🇷🇵🇾🇵🇦🇲🇽🇨🇱🇩🇴🇫🇷<br>Fotografia cl&aacute;ssica para casamentos.<br>Est&eacute;tica fine art com dire&ccedil;&atilde;o cinematogr&aacute;fica</p>
-      </div>
-    </div>
-
-    <div class="insta-grid reveal">
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/noiva-retrato.jpg" alt="Retrato da noiva com véu">
-        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/casal-campo.jpg" alt="Casal de mãos dadas em um campo ao pôr do sol">
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/casal-palacio.jpg" alt="Noivos em um palácio, em preto e branco">
-        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/prewedding.jpg" alt="Casal sobre uma caminhonete antiga em um campo">
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/entrega-2.jpg" alt="Noiva em um salão histórico">
-        <svg class="insta-carrossel" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="6.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/><rect x="3.5" y="3.5" width="12" height="12" rx="1.5" stroke="#fff" stroke-width="1.6"/></svg>
-      </a>
-      <a class="insta-item" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener" aria-label="Ver no Instagram">
-        <img src="img/entrega-1.jpg" alt="Noivos em um corredor clássico">
-      </a>
-    </div>
-
-    <div class="insta-rodape reveal">
-      <a class="insta-cta" href="https://instagram.com/jordansantosphotography" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.6"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg>
-        Seguir no Instagram
-      </a>
-    </div>
   </div>
 </section>
 
