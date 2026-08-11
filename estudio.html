@@ -147,8 +147,6 @@
   .btn-copiar-campo svg{width:15px;height:15px}
   .btn-copiar-campo svg[hidden]{display:none}
   .btn-copiar-campo.copiou{color:var(--ok)}
-  /* copiar funciona mesmo com a seção travada (é justamente o caso de uso) */
-  fieldset.secao-bloqueada .btn-copiar-campo{pointer-events:auto}
 
   /* toast de confirmação do copiar — o check no ícone é sutil demais sozinho */
   .toast-copiado{
@@ -716,9 +714,6 @@
   }
   .btn-editar-secao:hover{color:var(--accent);border-color:var(--accent)}
   .btn-editar-secao svg{width:14px;height:14px}
-  /* travado de vez (contrato já assinado): o lápis continua no lugar, só que
-     apagado e sem clique — sumir ele criaria um buraco no layout e "por que
-     não tem mais o botão aqui?" é pior do que só apagadinho e sem função */
   .btn-editar-secao:disabled{
     opacity:.32;cursor:not-allowed;pointer-events:none;color:var(--ink-soft);border-color:var(--line);
   }
@@ -738,22 +733,12 @@
     opacity:0;pointer-events:none;transition:opacity .14s ease;z-index:40;
   }
   .btn-editar-secao[data-tt]:hover::after,.btn-editar-secao[data-tt]:hover::before{opacity:1}
-  fieldset.secao-bloqueada input:not([type=checkbox]),
-  fieldset.secao-bloqueada select,
-  fieldset.secao-bloqueada textarea{
-    background:var(--soft);border-color:transparent;color:var(--ink-soft);pointer-events:none;
-  }
-  fieldset.secao-bloqueada .btn-wpp{pointer-events:auto}
-  /* esconde o seletor de data/hora nativo enquanto travado (ele ignora pointer-events) */
-  fieldset.secao-bloqueada input::-webkit-calendar-picker-indicator{display:none}
-  /* clicar no <label for="..."> foca o input associado por conta própria —
-     isso é comportamento nativo do browser, não passa pelo pointer-events do
-     input. Sem isto, clicar em cima do texto do rótulo (em vez do campo em
-     si) destravava a edição por baixo do pano, mesmo com tudo "apagadinho" */
-  fieldset.secao-bloqueada label{pointer-events:none}
-  /* pacote/adicionais não são input/select/textarea, então o "cuidado" padrão
-     acima não os pega — trava à parte, mesmo visual de esmaecido */
-  fieldset.secao-bloqueada .seletor-itens{opacity:.55;pointer-events:none}
+  /* Existiu aqui uma trava "secao-bloqueada": todo card abria somente-leitura e
+     um lápis na legenda destravava. Saiu em 2026-08-08 — o Jordan é o único
+     usuário do Estúdio e pedia dois cliques pra corrigir uma letra. Agora o
+     campo é campo: digitou, salva sozinho (ver salvamento automático no JS).
+     A trava que SOBROU é a .travado-assinado, mais abaixo, e essa é de outra
+     natureza: não é cuidado com engano, é o contrato já assinado. */
   /* ---------- trilha de auditoria da assinatura ---------- */
   #trilha-auditoria{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
   .btn-trilha{
@@ -1267,57 +1252,57 @@
       <button class="voltar" id="voltar" type="button">&larr; Clientes</button>
       <div id="detalhe-hero" class="hero-cliente"></div>
 
-      <form id="form-cliente">
+      <!-- autocomplete="off" no form E em cada campo (2026-08-08). Sem isso o
+           Chrome lia os rótulos (E-mail, Telefone, CEP, Endereço, Cidade,
+           Estado), classificava o bloco como formulário de endereço e oferecia
+           o perfil salvo do JORDAN pra preencher a ficha do casal — o autofill
+           é sempre sobre quem digita, nunca sobre o assunto do registro, e o
+           navegador não tem como saber que estes campos descrevem um terceiro.
+           Note o contraste com o /cadastro, onde cada campo tem autocomplete
+           semântico (given-name, tel, postal-code...): lá quem preenche É o
+           dono do dado, e o autofill ajuda. -->
+      <form id="form-cliente" autocomplete="off">
         <div class="detalhe-colunas">
         <div class="detalhe-col">
 
-        <fieldset id="fieldset-casal" class="secao-bloqueada card-colapsavel">
+        <fieldset id="fieldset-casal" class="card-colapsavel">
           <div class="legend-acao">
             <legend>O casal</legend>
-            <button type="button" class="btn-editar-secao" data-secao="fieldset-casal" data-tt="Editar dados do casal" aria-label="Editar dados do casal">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-            </button>
           </div>
           <div class="grade">
-            <div class="campo-form"><label for="f-noivo">Noivo</label><input id="f-noivo" data-campo="noivo"></div>
-            <div class="campo-form"><label for="f-cpf-noivo">CPF do noivo</label><input id="f-cpf-noivo" data-campo="cpf_noivo" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"></div>
-            <div class="campo-form"><label for="f-tel-noivo">Telefone do noivo</label><div class="campo-tel"><input id="f-tel-noivo" data-campo="tel_noivo" inputmode="tel" placeholder="(00) 00000-0000"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noivo" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
-            <div class="campo-form"><label for="f-noiva">Noiva</label><input id="f-noiva" data-campo="noiva"></div>
-            <div class="campo-form"><label for="f-cpf-noiva">CPF da noiva</label><input id="f-cpf-noiva" data-campo="cpf_noiva" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"></div>
-            <div class="campo-form"><label for="f-tel-noiva">Telefone da noiva</label><div class="campo-tel"><input id="f-tel-noiva" data-campo="tel_noiva" inputmode="tel" placeholder="(00) 00000-0000"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noiva" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
-            <div class="campo-form largo"><label for="f-email">E-mail do casal</label><input id="f-email" data-campo="email" type="email"></div>
+            <div class="campo-form"><label for="f-noivo">Noivo</label><input autocomplete="off" id="f-noivo" data-campo="noivo"></div>
+            <div class="campo-form"><label for="f-cpf-noivo">CPF do noivo</label><input autocomplete="off" id="f-cpf-noivo" data-campo="cpf_noivo" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"></div>
+            <div class="campo-form"><label for="f-tel-noivo">Telefone do noivo</label><div class="campo-tel"><input autocomplete="off" id="f-tel-noivo" data-campo="tel_noivo" inputmode="tel" placeholder="(00) 00000-0000"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noivo" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
+            <div class="campo-form"><label for="f-noiva">Noiva</label><input autocomplete="off" id="f-noiva" data-campo="noiva"></div>
+            <div class="campo-form"><label for="f-cpf-noiva">CPF da noiva</label><input autocomplete="off" id="f-cpf-noiva" data-campo="cpf_noiva" inputmode="numeric" placeholder="000.000.000-00" maxlength="14"></div>
+            <div class="campo-form"><label for="f-tel-noiva">Telefone da noiva</label><div class="campo-tel"><input autocomplete="off" id="f-tel-noiva" data-campo="tel_noiva" inputmode="tel" placeholder="(00) 00000-0000"><button type="button" class="btn-wpp" data-wpp-para="f-tel-noiva" title="Abrir conversa no WhatsApp" aria-label="Abrir conversa no WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a9.9 9.9 0 0 0-8.5 15.1L2 22l5-1.3A9.9 9.9 0 1 0 12 2zm0 18.1c-1.5 0-2.9-.4-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.1zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2-1.2-.8-.7-1.3-1.5-1.4-1.8-.2-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5 0-.2 0-.3 0-.5 0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2 0-.1-.2-.2-.4-.3z"/></svg></button></div></div>
+            <div class="campo-form largo"><label for="f-email">E-mail do casal</label><input autocomplete="off" id="f-email" data-campo="email" type="email"></div>
           </div>
         </fieldset>
 
-        <fieldset id="fieldset-evento" class="secao-bloqueada card-colapsavel">
+        <fieldset id="fieldset-evento" class="card-colapsavel">
           <div class="legend-acao">
             <legend>O evento</legend>
-            <button type="button" class="btn-editar-secao" data-secao="fieldset-evento" data-tt="Editar dados do evento" aria-label="Editar dados do evento">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-            </button>
           </div>
           <div class="grade">
-            <div class="campo-form"><label for="f-data">Data do casamento</label><input id="f-data" data-campo="data_evento" type="date"></div>
-            <div class="campo-form"><label for="f-horario">Hor&aacute;rio</label><input id="f-horario" data-campo="horario" type="time"></div>
-            <div class="campo-form largo"><label for="f-local">Local</label><input id="f-local" data-campo="local_evento"></div>
+            <div class="campo-form"><label for="f-data">Data do casamento</label><input autocomplete="off" id="f-data" data-campo="data_evento" type="date"></div>
+            <div class="campo-form"><label for="f-horario">Hor&aacute;rio</label><input autocomplete="off" id="f-horario" data-campo="horario" type="time"></div>
+            <div class="campo-form largo"><label for="f-local">Local</label><input autocomplete="off" id="f-local" data-campo="local_evento"></div>
           </div>
         </fieldset>
 
-        <fieldset id="fieldset-endereco" class="secao-bloqueada card-colapsavel">
+        <fieldset id="fieldset-endereco" class="card-colapsavel">
           <div class="legend-acao">
             <legend>Endere&ccedil;o</legend>
-            <button type="button" class="btn-editar-secao" data-secao="fieldset-endereco" data-tt="Editar endere&ccedil;o" aria-label="Editar endere&ccedil;o">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-            </button>
           </div>
           <div class="grade">
-            <div class="campo-form"><label for="f-cep">CEP</label><input id="f-cep" data-campo="cep" inputmode="numeric" placeholder="00000-000" maxlength="9"></div>
-            <div class="campo-form"><label for="f-endereco">Endere&ccedil;o</label><input id="f-endereco" data-campo="endereco"></div>
-            <div class="campo-form"><label for="f-numero">N&uacute;mero</label><input id="f-numero" data-campo="numero"></div>
-            <div class="campo-form"><label for="f-complemento">Complemento</label><input id="f-complemento" data-campo="complemento"></div>
-            <div class="campo-form"><label for="f-bairro">Bairro</label><input id="f-bairro" data-campo="bairro"></div>
-            <div class="campo-form"><label for="f-cidade">Cidade</label><input id="f-cidade" data-campo="cidade"></div>
-            <div class="campo-form"><label for="f-estado">Estado</label><input id="f-estado" data-campo="estado" placeholder="UF" maxlength="2"></div>
+            <div class="campo-form"><label for="f-cep">CEP</label><input autocomplete="off" id="f-cep" data-campo="cep" inputmode="numeric" placeholder="00000-000" maxlength="9"></div>
+            <div class="campo-form"><label for="f-endereco">Endere&ccedil;o</label><input autocomplete="off" id="f-endereco" data-campo="endereco"></div>
+            <div class="campo-form"><label for="f-numero">N&uacute;mero</label><input autocomplete="off" id="f-numero" data-campo="numero"></div>
+            <div class="campo-form"><label for="f-complemento">Complemento</label><input autocomplete="off" id="f-complemento" data-campo="complemento"></div>
+            <div class="campo-form"><label for="f-bairro">Bairro</label><input autocomplete="off" id="f-bairro" data-campo="bairro"></div>
+            <div class="campo-form"><label for="f-cidade">Cidade</label><input autocomplete="off" id="f-cidade" data-campo="cidade"></div>
+            <div class="campo-form"><label for="f-estado">Estado</label><input autocomplete="off" id="f-estado" data-campo="estado" placeholder="UF" maxlength="2"></div>
           </div>
         </fieldset>
 
@@ -1325,7 +1310,7 @@
           <div class="legend-acao"><legend>Outras informa&ccedil;&otilde;es</legend></div>
           <div class="grade">
             <div class="campo-form"><label for="f-origem">Como conheceu</label>
-              <select id="f-origem" data-campo="origem">
+              <select autocomplete="off" id="f-origem" data-campo="origem">
                 <option value="">Selecione</option>
                 <option value="Orçamento do site">Orçamento do site</option>
                 <option value="Instagram">Instagram</option>
@@ -1335,7 +1320,7 @@
                 <option value="Outro">Outro</option>
               </select>
             </div>
-            <div class="campo-form largo"><label for="f-observacoes">Observa&ccedil;&otilde;es (internas)</label><textarea id="f-observacoes" data-campo="observacoes" placeholder="Anota&ccedil;&otilde;es internas &mdash; s&oacute; voc&ecirc; v&ecirc;."></textarea></div>
+            <div class="campo-form largo"><label for="f-observacoes">Observa&ccedil;&otilde;es (internas)</label><textarea autocomplete="off" id="f-observacoes" data-campo="observacoes" placeholder="Anota&ccedil;&otilde;es internas &mdash; s&oacute; voc&ecirc; v&ecirc;."></textarea></div>
           </div>
         </fieldset>
 
@@ -1343,12 +1328,9 @@
 
         <div class="detalhe-col detalhe-col-dir">
 
-        <fieldset id="fieldset-contrato-valores" class="secao-bloqueada card-colapsavel">
+        <fieldset id="fieldset-contrato-valores" class="card-colapsavel">
           <div class="legend-acao">
             <legend>Contrato</legend>
-            <button type="button" class="btn-editar-secao" id="btn-editar-contrato-valores" data-secao="fieldset-contrato-valores" data-tt="Editar pacote e valores" aria-label="Editar pacote e valores">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-            </button>
             <button type="button" class="btn-editar-secao" id="gerar-contrato-form" data-tt="Gerar contrato e abrir a revis&atilde;o" aria-label="Gerar contrato">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line><line x1="9" y1="11" x2="12" y2="11"></line></svg>
             </button>
@@ -1356,8 +1338,8 @@
           <div class="seletor-itens" id="seletor-itens"></div>
           <div class="resumo-contrato" id="resumo-itens"></div>
           <div class="valores-contrato">
-            <div class="campo-form"><label for="f-total">Total (R$)</label><input id="f-total" data-campo="total" inputmode="decimal"></div>
-            <div class="campo-form"><label for="f-entrada">Entrada (R$)</label><input id="f-entrada" data-campo="entrada" inputmode="decimal"></div>
+            <div class="campo-form"><label for="f-total">Total (R$)</label><input autocomplete="off" id="f-total" data-campo="total" inputmode="decimal"></div>
+            <div class="campo-form"><label for="f-entrada">Entrada (R$)</label><input autocomplete="off" id="f-entrada" data-campo="entrada" inputmode="decimal"></div>
           </div>
         </fieldset>
 
@@ -1515,7 +1497,7 @@
   <div class="modal-confirm-fundo" data-cancelar></div>
   <div class="modal-confirm-caixa" role="alertdialog" aria-modal="true" aria-labelledby="mc-titulo" aria-describedby="mc-texto">
     <h3 id="mc-titulo"></h3>
-    <p id="mc-texto"></p>
+    <p id="mc-texto" style="white-space:pre-line"></p>
     <div class="modal-confirm-acoes">
       <button type="button" class="botao-fantasma" id="mc-cancelar" data-cancelar>Cancelar</button>
       <button type="button" class="botao-primario" id="mc-ok">Confirmar</button>
@@ -1602,22 +1584,64 @@
      arrastar da borda (e o botão voltar do Android) é a ÚNICA forma de voltar.
      Sem registrar as telas no histórico esse gesto sairia do app em vez de
      voltar pra lista. Cada tela vira uma entrada; as telas cheias de busca e
-     avisos também, pra o voltar fechá-las em vez de navegar. */
+     avisos também, pra o voltar fechá-las em vez de navegar.
+
+     A URL acompanha a tela (2026-08-08). Antes o pushState não mexia nela: o
+     endereço era sempre /estudio, então sair pro /revisar-contrato e voltar —
+     pelo link, pelo botão do navegador ou por um F5 — reabria o app na home,
+     nunca no cliente de onde se saiu. Agora cada tela tem endereço próprio
+     (/estudio, ?tela=clientes, ?cliente=<id>), e é ele que o boot lê. */
   var _voltandoPeloHistorico = false;
+
+  function enderecoDaTela(estado){
+    if (estado.tela === "detalhe" && estado.id) return "/estudio?cliente=" + estado.id;
+    if (estado.tela === "lista") return "/estudio?tela=clientes";
+    if (estado.tela === "home") return "/estudio";
+    /* overlay (busca/avisos em tela cheia) não é destino: ele abre POR CIMA da
+       tela atual, então mantém o endereço dela — null faz o pushState abaixo
+       omitir a URL, que é como se pede pro navegador não mexer nela */
+    return null;
+  }
 
   function registrarNoHistorico(estado){
     if (_voltandoPeloHistorico) return;
     var atual = history.state;
     if (atual && atual.tela === estado.tela && atual.id === estado.id) return;
-    history.pushState(estado, "");
+    var url = enderecoDaTela(estado);
+    /* a primeira tela só corrige a URL — empurrar entrada aqui faria o voltar
+       do navegador cair numa /estudio "vazia" antes de sair do app */
+    if (!atual) history.replaceState(estado, "", url || location.href);
+    /* Saindo de um overlay pra uma tela de verdade (clicou num aviso ou num
+       resultado de busca): SUBSTITUI a entrada do overlay em vez de empilhar
+       em cima dela. Empilhando, o voltar seguinte caía numa entrada de overlay
+       já fechado — o handler não sabia o que restaurar e jogava pra home, com
+       a URL apontando pra outra tela. Entrada de overlay não sobrevive
+       embaixo de uma tela real. */
+    else if (atual.tela === "overlay" && estado.tela !== "overlay") {
+      history.replaceState(estado, "", url || location.href);
+    }
+    else if (url) history.pushState(estado, "", url);
+    else history.pushState(estado, "");
+  }
+
+  /* topo do histórico é uma tela cheia do mobile? */
+  function estadoEhOverlay(){
+    return !!(history.state && history.state.tela === "overlay");
   }
 
   window.addEventListener("popstate", function(ev){
     _voltandoPeloHistorico = true;
     var e = ev.state || { tela: "home" };
-    /* overlay aberto: voltar fecha ele e para por aí */
-    if (!el("busca-mobile").hidden){ fecharBuscaMobile(true); _voltandoPeloHistorico = false; return; }
-    if (!el("notif-mobile").hidden){ fecharNotifMobile(true); _voltandoPeloHistorico = false; return; }
+    /* overlay aberto: voltar fecha ele e para por aí. Sem argumento de
+       propósito — devolve a rolagem, igual ao botão Fechar. O gesto e o botão
+       precisam terminar no mesmo lugar, e hoje é o gesto que passa por aqui
+       nos dois casos. */
+    if (!el("busca-mobile").hidden){ fecharBuscaMobile(); _voltandoPeloHistorico = false; return; }
+    if (!el("notif-mobile").hidden){ fecharNotifMobile(); _voltandoPeloHistorico = false; return; }
+    /* entrada de um overlay que JÁ está fechado: não há nada a restaurar — a
+       tela de baixo e a URL já são as certas, porque overlay não muda a URL.
+       Sem este return o else final jogava pra home indevidamente. */
+    if (e.tela === "overlay"){ _voltandoPeloHistorico = false; return; }
     if (e.tela === "detalhe" && e.id) abrirDetalhe(e.id);
     else if (e.tela === "lista") irPara("clientes");
     else irPara("home");
@@ -2159,14 +2183,17 @@
 
   /* ---------- contrato pra assinatura ---------- */
 
-  /* campos sem os quais o contrato sai incompleto ou o fluxo de assinatura quebra
-     (email é obrigatório pro código de verificação em /assinar) */
+  /* Campos que deixam o contrato incompleto quando faltam. Desde 2026-08-08
+     isso NÃO bloqueia mais nada: o Jordan gera e manda pra assinar do jeito
+     que estiver, e a lista aparece como aviso na confirmação — nenhum destes
+     campos é necessário pro fluxo funcionar (quem assina digita o próprio
+     nome e CPF em /assinar; o e-mail só serve pra mandar o PDF depois, e é
+     opcional lá também). */
   var CAMPOS_CONTRATO_OBRIGATORIOS = [
-    { campo: "noivo", rotulo: "Nome do noivo" },
-    { campo: "cpf_noivo", rotulo: "CPF do noivo" },
-    { campo: "noiva", rotulo: "Nome da noiva" },
-    { campo: "cpf_noiva", rotulo: "CPF da noiva" },
-    { campo: "email", rotulo: "E-mail (recebe o código de verificação)" },
+    /* noivo/noiva NÃO entram aqui: desde 2026-08-08 basta um dos dois, e a
+       regra é sobre o par (nome + CPF), não sobre campo isolado — quem cuida
+       é o contratantesFaltando() logo abaixo */
+    { campo: "email", rotulo: "E-mail do casal" },
     { campo: "cep", rotulo: "CEP" },
     { campo: "endereco", rotulo: "Endereço" },
     { campo: "numero", rotulo: "Número" },
@@ -2182,10 +2209,31 @@
     return input ? input.value.trim() : "";
   }
 
+  /* O contrato aceita um contratante só, mas quem for preenchido precisa ter
+     nome E CPF — senão o documento sai com uma parte sem identificação. */
+  function contratantesFaltando(){
+    var pessoas = [
+      { rotuloNome: "Nome do noivo", rotuloCpf: "CPF do noivo", nome: "noivo", cpf: "cpf_noivo" },
+      { rotuloNome: "Nome da noiva", rotuloCpf: "CPF da noiva", nome: "noiva", cpf: "cpf_noiva" }
+    ].map(function(p){
+      var nome = valorCampo(p.nome), cpf = valorCampo(p.cpf).replace(/\D/g, "");
+      return { p: p, vazia: !nome && !cpf, completa: !!nome && cpf.length === 11, temNome: !!nome };
+    });
+
+    if (pessoas.every(function(x){ return x.vazia; })){
+      return ["Nome e CPF de pelo menos um contratante"];
+    }
+    return pessoas
+      .filter(function(x){ return !x.vazia && !x.completa; })
+      .map(function(x){ return x.temNome ? x.p.rotuloCpf : x.p.rotuloNome; });
+  }
+
   function camposFaltando(){
-    var faltando = CAMPOS_CONTRATO_OBRIGATORIOS
-      .filter(function(c){ return !valorCampo(c.campo); })
-      .map(function(c){ return c.rotulo; });
+    var faltando = contratantesFaltando().concat(
+      CAMPOS_CONTRATO_OBRIGATORIOS
+        .filter(function(c){ return !valorCampo(c.campo); })
+        .map(function(c){ return c.rotulo; })
+    );
     if (!itensAtuais.length) faltando.push("Pelo menos um item do pacote/adicional");
     return faltando;
   }
@@ -2209,16 +2257,20 @@
   function enviarParaAssinatura(){
     if (!clienteAtual) return;
 
+    /* Dado faltando NÃO barra mais a geração (2026-08-08): o contrato aceita
+       um contratante só e o Jordan às vezes fecha com o que tem em mãos. A
+       lista continua sendo calculada, só que como aviso na confirmação que ele
+       já ia clicar — informar no momento da decisão, sem impedir. */
     var faltando = camposFaltando();
+    var texto = "Salva os dados atuais, gera o contrato (já fica salvo, mesmo sem assinatura) e " +
+      "abre a página de revisão pra você conferir e confirmar antes de mandar pro casal.";
     if (faltando.length){
-      alert("Faltam dados pra gerar o contrato:\n\n— " + faltando.join("\n— ") +
-        "\n\nPreencha e salve antes de enviar pra assinatura.");
-      return;
+      texto += "\n\nO contrato vai sair sem: " + faltando.join(", ") + ".";
     }
 
     confirmar({
       titulo: "Gerar contrato?",
-      texto: "Salva os dados atuais, gera o contrato (já fica salvo, mesmo sem assinatura) e abre a página de revisão pra você conferir e confirmar antes de mandar pro casal.",
+      texto: texto,
       rotuloOk: "Gerar e abrir"
     }).then(function(ok){
       if (!ok) return;
@@ -2663,55 +2715,38 @@
     if (!tela || tela.hidden) return;
     fecharTelaMobile(tela, manterScroll);
   }
-  el("notif-mobile-fechar").addEventListener("click", function(){ fecharNotifMobile(); });
+
+  /* Fechar pelo botão ou pelo Esc tem que CONSUMIR a entrada que o
+     abrirTelaMobile empurrou, e não só esconder o elemento. Enquanto não
+     consumia, a entrada sobrevivia fechada e o voltar seguinte era gasto nela
+     sem sair do lugar — "apertei voltar e não aconteceu nada". Voltando pelo
+     histórico, quem fecha de fato é o popstate, num caminho só. */
+  function sairDaTelaMobile(fecharDireto){
+    if (estadoEhOverlay()) history.back();
+    else fecharDireto();
+  }
+
+  el("notif-mobile-fechar").addEventListener("click", function(){
+    sairDaTelaMobile(function(){ fecharNotifMobile(); });
+  });
 
   buscaMobInput.addEventListener("input", renderBuscaMobile);
-  el("busca-mobile-fechar").addEventListener("click", fecharBuscaMobile);
+  el("busca-mobile-fechar").addEventListener("click", function(){
+    sairDaTelaMobile(function(){ fecharBuscaMobile(); });
+  });
   document.addEventListener("keydown", function(ev){
     if (ev.key !== "Escape") return;
-    if (!buscaMob.hidden) fecharBuscaMobile();
-    fecharNotifMobile();
+    if (!buscaMob.hidden) sairDaTelaMobile(function(){ fecharBuscaMobile(); });
+    else if (!el("notif-mobile").hidden) sairDaTelaMobile(function(){ fecharNotifMobile(); });
   });
   el("filtro-status").addEventListener("change", desenharLista);
 
   /* ---------- clientes · detalhe ---------- */
   function campos(){ return Array.prototype.slice.call(document.querySelectorAll("[data-campo]")); }
 
-  /* seções que abrem travadas (evita alterar dado do contrato sem querer);
-     o lápis na legenda destrava até trocar de cliente */
-  var SECOES_TRAVAVEIS = ["fieldset-casal", "fieldset-evento", "fieldset-endereco", "fieldset-contrato-valores"];
-
-  function travarSecoes(travar){
-    SECOES_TRAVAVEIS.forEach(function(id){
-      var fs = el(id);
-      if (!fs) return;
-      fs.classList.toggle("secao-bloqueada", travar);
-      var btn = fs.querySelector(".btn-editar-secao");
-      if (btn) atualizarRotuloTrava(btn, travar);
-    });
-  }
-
-  function atualizarRotuloTrava(btn, travado){
-    btn.dataset.tt = travado ? (btn.dataset.ttEditar || "Editar") : "Travar edição";
-    btn.setAttribute("aria-label", btn.dataset.tt);
-  }
-
-  Array.prototype.forEach.call(document.querySelectorAll(".btn-editar-secao[data-secao]"), function(btn){
-    btn.dataset.ttEditar = btn.dataset.tt;
-    btn.addEventListener("click", function(){
-      var fs = el(btn.dataset.secao);
-      var travar = !fs.classList.contains("secao-bloqueada");
-      fs.classList.toggle("secao-bloqueada", travar);
-      atualizarRotuloTrava(btn, travar);
-      /* destravou pra editar com o card fechado → abre junto (editar às cegas
-         não faz sentido); travar de volta não fecha, o Jordan decide no chevron */
-      if (!travar && fs.__setColapsado) fs.__setColapsado(false);
-    });
-  });
-
   /* chevron de abrir/fechar em cada card. O botão é injetado aqui em vez de
      repetido nos 7 cabeçalhos do HTML: uma marcação só, um lugar só pra mexer.
-     Entra como último filho do cabeçalho, então cai depois do lápis. */
+     Entra como último filho do cabeçalho. */
   (function(){
     var CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
     Array.prototype.forEach.call(document.querySelectorAll(".card-colapsavel"), function(card){
@@ -2728,8 +2763,8 @@
         btn.setAttribute("aria-expanded", colapsado ? "false" : "true");
         btn.setAttribute("aria-label", colapsado ? "Abrir seção" : "Fechar seção");
       }
-      /* deixa outros controles abrirem/fecharem o card (ex.: o lápis de editar
-         abre o card junto ao destravar) sem duplicar o estado do chevron */
+      /* deixa outros controles abrirem/fecharem o card sem duplicar o estado
+         do chevron */
       card.__setColapsado = aplicar;
       btn.addEventListener("click", function(){
         aplicar(!card.classList.contains("card-colapsado"));
@@ -2891,8 +2926,10 @@
   })();
 
   function preencher(cliente){
-    /* cliente novo abre liberado pra digitar; cliente existente abre travado */
-    travarSecoes(!!cliente);
+    /* preencher é escrita da tela, não do Jordan: silencia o autosave enquanto
+       roda, senão abrir uma ficha dispararia um salvamento do que acabou de ser
+       lido do banco */
+    _preenchendo = true;
     campos().forEach(function(c){
       var v = cliente ? cliente[c.dataset.campo] : null;
       c.value = v == null ? "" : v;
@@ -2916,6 +2953,18 @@
       if (input && cliente && cliente[k] != null && cliente[k] !== "") input.value = formatarMoeda(cliente[k]);
     });
     sincronizarBotoesWpp();
+    /* "Salvo" de um cliente não pode ficar pendurado na ficha do próximo */
+    statusSalvamento("");
+    _preenchendo = false;
+  }
+
+  /* Marco zero do autosave: "o que está na tela é o que está no banco".
+     Fica FORA do preencher() de propósito — quem decide se os valores do
+     contrato entram no payload é a trava de assinado, e ela só é conhecida
+     no preencherTimelineContrato(), que roda depois. Calculando aqui, o marco
+     nasce com a mesma forma que os salvamentos seguintes vão ter. */
+  function marcarBaseSalvamento(){
+    _ultimoSalvo = JSON.stringify(montarClienteDoFormulario());
   }
 
   function preencherTimelineContrato(contrato){
@@ -2923,12 +2972,13 @@
     /* pacote/adicionais/total/entrada só valem enquanto o Jordan ainda não
        confirmou a assinatura dele: depois disso o snapshot do contrato já
        está gerado e editar aqui só criaria um valor fantasma, que nunca mais
-       chega no documento de verdade. Trava de vez — some até o lápis, porque
-       destravar não adiantaria nada (o CSS de .travado-assinado bloqueia
-       igual, mas ficar mostrando um lápis que não destrava nada é confuso). */
-    var travadoDeVez = !!(contrato && contrato.jordan_confirmado_em);
-    el("fieldset-contrato-valores").classList.toggle("travado-assinado", travadoDeVez);
-    el("btn-editar-contrato-valores").disabled = travadoDeVez;
+       chega no documento de verdade. Esta é a ÚNICA trava de edição que
+       restou na ficha — as outras eram cuidado com engano e saíram junto com
+       o lápis; esta é o documento assinado, e não se desfaz com um clique. */
+    valoresTravados = !!(contrato && contrato.jordan_confirmado_em);
+    el("fieldset-contrato-valores").classList.toggle("travado-assinado", valoresTravados);
+    aplicarTravaValores();
+    marcarBaseSalvamento();
     atualizarBotaoContratoDoFieldset();
     /* "enviar pro cliente" volta pro estado travado a cada render: nunca deve
        sobrar visível de um contrato anterior só porque o container está escondido */
@@ -3096,6 +3146,30 @@
      role="button"> com o "nome" como parte clicável e o preço como campo à parte. */
   var CHECK_SVG = '<span class="pill-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>';
 
+  /* Contrato já confirmado pelo Jordan: pacote, adicionais, total e entrada
+     param de aceitar edição. Só CSS não basta — pointer-events não impede foco
+     por Tab nem o clique no <label>, que o browser encaminha pro input por
+     conta própria. E com o salvamento automático uma edição "impossível"
+     dessas iria pro banco caladinha. Daí a trava em três camadas: readonly nos
+     inputs, os pills fora da ordem de tabulação, e o guard nas funções que
+     escrevem. */
+  var valoresTravados = false;
+
+  function aplicarTravaValores(){
+    ["f-total", "f-entrada"].forEach(function(id){
+      var input = el(id);
+      if (input) input.readOnly = valoresTravados;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#seletor-itens .preco-valor"), function(i){
+      i.readOnly = valoresTravados;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#seletor-itens .pill-item"), function(p){
+      if (p.tagName === "BUTTON") p.disabled = valoresTravados;
+      else p.setAttribute("tabindex", valoresTravados ? "-1" : "0");
+      p.setAttribute("aria-disabled", valoresTravados ? "true" : "false");
+    });
+  }
+
   function pillItem(id){
     var nome = esc(CATALOGO[id].curto);
     if (!itemSelecionado(id)){
@@ -3105,7 +3179,7 @@
     }
     return '<div class="pill-item ativo" data-id="' + id + '" role="button" tabindex="0">' + CHECK_SVG +
       '<span class="pill-nome">' + nome + '</span>' +
-      '<span class="preco">R$&nbsp;<input type="text" inputmode="decimal" class="preco-valor" ' +
+      '<span class="preco">R$&nbsp;<input type="text" inputmode="decimal" class="preco-valor" autocomplete="off" ' +
       'value="' + esc(formatarMoeda(valorDoItem(id))) + '" aria-label="Valor de ' + nome + '"></span>' +
       '</div>';
   }
@@ -3142,20 +3216,28 @@
         this.value = formatarMoeda(n != null ? n : 0);
       });
     });
+    /* o seletor é redesenhado a cada mudança: a trava tem que ser reaplicada
+       nos elementos novos, senão ela vale só até o primeiro clique */
+    aplicarTravaValores();
   }
 
   /* só atualiza o estado + os totais — nunca re-renderiza o seletor aqui, ou
      o campo perderia foco/cursor a cada tecla digitada */
   function editarValorItem(id, valorDigitado){
+    if (valoresTravados) return;
     var atual = itensAtuais.filter(function(i){ return i.id === id; })[0];
     if (!atual) return;
     var n = parseMoeda(valorDigitado);
     atual.valor = n != null ? n : 0;
     desenharResumoContrato();
     recalcTotaisContrato();
+    /* pacote e adicionais não são [data-campo], então o autosave do formulário
+       não os enxerga — quem avisa é aqui */
+    agendarSalvamento();
   }
 
   function alternarItem(id){
+    if (valoresTravados) return;
     if (PACOTES.indexOf(id) !== -1){
       var jaEra = itemSelecionado(id);
       itensAtuais = itensAtuais.filter(function(i){ return PACOTES.indexOf(i.id) === -1; });
@@ -3169,6 +3251,7 @@
     desenharSeletorItens();
     desenharResumoContrato();
     recalcTotaisContrato();
+    salvarAgora();   /* marcar/desmarcar item é ação pronta: grava na hora */
   }
 
   /* dinheiro em pt-BR (18600 → "18.600,00") e de volta (mesma lógica do submit) */
@@ -3213,7 +3296,20 @@
       '<span class="total">' + brl.format(total) + '</span>';
   }
 
+  /* De onde o detalhe foi aberto: home, lista, busca ou notificação. O botão
+     de voltar usava carregarLista() fixo, então quem clicava num casal na home
+     era despejado na lista — "voltar" levava pra outro lugar, não de volta. */
+  var telaDeOnde = "home";
+
+  function lembrarOrigem(){
+    if (!telas.detalhe.hidden) return;              /* detalhe → detalhe: mantém */
+    telaDeOnde = telas.lista && !telas.lista.hidden ? "clientes" : "home";
+    var botao = el("voltar");
+    if (botao) botao.innerHTML = telaDeOnde === "clientes" ? "&larr; Clientes" : "&larr; Início";
+  }
+
   function abrirDetalhe(id){
+    lembrarOrigem();
     api("/api/estudio?id=" + id).then(function(r){
       clienteAtual = id;
       contratoAtual = r.contrato || null;
@@ -3225,6 +3321,7 @@
   }
 
   el("novo-cliente").addEventListener("click", function(){
+    lembrarOrigem();
     clienteAtual = null;
     contratoAtual = null;
     renderHeroCliente(null);
@@ -3233,7 +3330,7 @@
     mostrar("detalhe");
   });
 
-  el("voltar").addEventListener("click", carregarLista);
+  el("voltar").addEventListener("click", function(){ irPara(telaDeOnde); });
 
   /* lê os campos do formulário como o backend espera (números formatados, itens) */
   function montarClienteDoFormulario(){
@@ -3249,6 +3346,13 @@
       if (cliente[k]) cliente[k] = soDigitos(cliente[k]);
     });
     cliente.itens = itensAtuais;
+    /* contrato já confirmado: nem manda os valores. O /api/estudio descarta
+       esses três campos nesse caso, então enviá-los faria a tela dizer "Salvo"
+       sobre algo que o servidor jogou fora — e a comparação com o último
+       salvamento acusaria mudança pra sempre, salvando em loop */
+    if (valoresTravados){
+      delete cliente.itens; delete cliente.total; delete cliente.entrada;
+    }
     return cliente;
   }
 
@@ -3257,19 +3361,115 @@
     var cliente = montarClienteDoFormulario();
     if (clienteAtual) return api("/api/estudio", { acao: "atualizar", id: clienteAtual, cliente: cliente });
     return api("/api/estudio", { acao: "criar", cliente: cliente }).then(function(r){
-      if (r.cliente) clienteAtual = r.cliente.id;
+      if (r.cliente){
+        clienteAtual = r.cliente.id;
+        /* a ficha nasceu no meio da digitação (autosave): o endereço ainda é
+           /estudio genérico, e um F5 aqui abriria a home em vez do cliente que
+           acabou de existir. replaceState porque não é uma navegação nova. */
+        history.replaceState({ tela: "detalhe", id: clienteAtual }, "", "/estudio?cliente=" + clienteAtual);
+      }
       return r;
     });
   }
 
+  /* ---------- salvamento automático ----------
+     "Digitou, salvou" (2026-08-08). Antes cada card abria travado, o lápis
+     destravava e o Salvar gravava; corrigir uma letra custava três cliques e
+     dava pra fechar a ficha achando que tinha salvado.
+
+     Três cuidados que o autosave exige e o botão não exigia:
+       - não salvar o que a TELA escreveu (o preencher() dispara input em todo
+         campo ao abrir a ficha) → _preenchendo;
+       - não criar cliente fantasma: enquanto a ficha é nova, só grava depois
+         que existir um nome — um clique sem querer no "Novo cliente" mais uma
+         tecla criaria uma linha órfã no banco;
+       - não deixar dois PATCH se cruzarem: quem chega enquanto um está no ar
+         vira "salva de novo quando terminar", com o formulário lido na hora
+         do envio (é sempre o estado mais recente que sobe). */
+  var _preenchendo = false;
+  var _timerSalvar = null;
+  var _salvandoAgora = false;
+  var _refazerDepois = false;
+  var _ultimoSalvo = null;
+  var ESPERA_AUTOSAVE = 700;
+
+  /* diferente do avisar(), este status NÃO some sozinho: ele é a resposta à
+     pergunta "isso já está salvo?", e sumir depois de 4s devolveria a dúvida
+     que o autosave veio resolver. Só troca quando o estado troca. */
+  function statusSalvamento(texto, cor){
+    var aviso = el("aviso-salvo");
+    aviso.textContent = texto;
+    aviso.style.color = cor || "var(--ink-soft)";
+  }
+
+  function podeSalvarAutomatico(){
+    if (_preenchendo) return false;
+    if (telas.detalhe.hidden) return false;
+    if (clienteAtual) return true;
+    /* ficha nova ainda sem dono: espera um nome antes de existir no banco */
+    return !!(valorCampo("noivo") || valorCampo("noiva"));
+  }
+
+  function salvarAgora(){
+    clearTimeout(_timerSalvar);
+    _timerSalvar = null;
+    if (!podeSalvarAutomatico()) return;
+    if (_salvandoAgora){ _refazerDepois = true; return; }
+    /* sair de um campo dispara focusout E change; sem esta comparação o mesmo
+       conteúdo subiria duas vezes e a tela piscaria "Salvando…" à toa */
+    var agora = JSON.stringify(montarClienteDoFormulario());
+    if (agora === _ultimoSalvo) return;
+    _salvandoAgora = true;
+    statusSalvamento("Salvando…");
+    salvarClienteAtual().then(function(){
+      _ultimoSalvo = agora;
+      statusSalvamento("Salvo", "var(--ok)");
+    }).catch(function(e){
+      if (e.message !== "sessao") statusSalvamento("Não salvou: " + e.message, "var(--erro)");
+    }).then(function(){
+      _salvandoAgora = false;
+      if (_refazerDepois){ _refazerDepois = false; salvarAgora(); }
+    });
+  }
+
+  function agendarSalvamento(){
+    if (!podeSalvarAutomatico()) return;
+    statusSalvamento("");
+    clearTimeout(_timerSalvar);
+    _timerSalvar = setTimeout(salvarAgora, ESPERA_AUTOSAVE);
+  }
+
+  /* digitar espera a pausa; sair do campo, trocar um select ou mexer no
+     pacote grava na hora — são ações já "terminadas" */
+  el("form-cliente").addEventListener("input", function(ev){
+    if (ev.target.matches("[data-campo]")) agendarSalvamento();
+  });
+  el("form-cliente").addEventListener("change", function(ev){
+    if (ev.target.matches("[data-campo]")) salvarAgora();
+  });
+  el("form-cliente").addEventListener("focusout", function(ev){
+    if (ev.target.matches("[data-campo]") && _timerSalvar) salvarAgora();
+  });
+
+  /* sair da ficha não pode levar embora o que ainda estava no timer */
+  window.addEventListener("pagehide", function(){ if (_timerSalvar) salvarAgora(); });
+  document.addEventListener("visibilitychange", function(){
+    if (document.visibilityState === "hidden" && _timerSalvar) salvarAgora();
+  });
+
   el("form-cliente").addEventListener("submit", function(ev){
     ev.preventDefault();
+    clearTimeout(_timerSalvar);
+    _timerSalvar = null;
     var eraNovo = !clienteAtual;
+    var enviado = JSON.stringify(montarClienteDoFormulario());
+    statusSalvamento("Salvando…");
     salvarClienteAtual().then(function(){
+      _ultimoSalvo = enviado;
       if (eraNovo){ abrirDetalhe(clienteAtual); return; }
-      avisar("aviso-salvo", "Salvo.");
+      statusSalvamento("Salvo", "var(--ok)");
     }).catch(function(e){
-      if (e.message !== "sessao") avisar("aviso-salvo", e.message, true);
+      if (e.message !== "sessao") statusSalvamento("Não salvou: " + e.message, "var(--erro)");
     });
   });
 
@@ -3278,7 +3478,15 @@
     if (!r.ok) throw 0;
     return r.json();
   }).then(function(j){
-    if (j.role === "admin"){ irPara("home"); carregarNotificacoes(); } else mostrar("login");
+    if (j.role !== "admin"){ mostrar("login"); return; }
+    /* abre onde a URL manda: é isso que faz o "Voltar pro Estúdio" do
+       /revisar-contrato cair no cliente certo, e não na home */
+    var busca = new URLSearchParams(location.search);
+    var cliente = busca.get("cliente");
+    if (cliente) abrirDetalhe(cliente);
+    else if (busca.get("tela") === "clientes") irPara("clientes");
+    else irPara("home");
+    carregarNotificacoes();
   }).catch(function(){ mostrar("login"); });
 })();
 </script>

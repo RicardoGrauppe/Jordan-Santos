@@ -146,7 +146,7 @@
   </div>
 
   <div class="estado" id="estado-carregando"><p>Carregando o contrato...</p></div>
-  <div class="estado" id="estado-erro" hidden><h2>Ops</h2><p id="erro-texto">Não foi possível abrir este contrato.</p><p style="margin-top:14px"><a href="/estudio">&larr; Voltar pro Estúdio</a></p></div>
+  <div class="estado" id="estado-erro" hidden><h2>Ops</h2><p id="erro-texto">Não foi possível abrir este contrato.</p><p style="margin-top:14px"><a class="volta-estudio" href="/estudio">&larr; Voltar pro Estúdio</a></p></div>
 
   <div id="fluxo" hidden>
     <div class="doc-card">
@@ -181,7 +181,7 @@
         <p class="aviso" id="aviso-link"></p>
       </div>
 
-      <a class="voltar-estudio" href="/estudio">&larr; Voltar pro Estúdio</a>
+      <a class="voltar-estudio volta-estudio" href="/estudio">&larr; Voltar pro Estúdio</a>
     </div>
 
     <!-- painel de assinatura do Jordan -->
@@ -224,6 +224,13 @@
   var clienteId = new URLSearchParams(location.search).get("id") || "";
   var signaturePad = null;
   var modo = "cursiva";
+
+  /* Voltar pro Estúdio no cliente certo. O link era /estudio puro, e como o
+     Estúdio abria sempre na home, revisar um contrato e voltar significava
+     procurar o casal na lista de novo. */
+  Array.prototype.slice.call(document.querySelectorAll(".volta-estudio")).forEach(function(a){
+    a.href = clienteId ? "/estudio?cliente=" + encodeURIComponent(clienteId) : "/estudio";
+  });
 
   function mostrarEstado(id, texto){
     ["estado-carregando","estado-erro","fluxo"].forEach(function(x){ el(x).hidden = true; });

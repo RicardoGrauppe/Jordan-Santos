@@ -208,6 +208,12 @@ export default async function handler(req, res) {
       const cliente = linhas && linhas[0];
       if (!cliente) return res.status(404).json({ erro: "cliente não encontrado" });
 
+      /* Nada de validação de completude aqui (decisão de 2026-08-08): o Jordan
+         gera o contrato com o que tem em mãos e completa depois, e nenhum
+         campo da ficha é necessário pro fluxo funcionar — quem assina digita o
+         próprio nome e CPF em /assinar, e o e-mail do casal só serve pra
+         enviar o PDF depois, sendo opcional lá também. O /estudio mostra o que
+         está faltando na confirmação, como aviso. */
       const base = baseUrlDe(req);
 
       /* reaproveita um rascunho ainda não enviado ao casal (mesmo já confirmado
@@ -296,7 +302,9 @@ export default async function handler(req, res) {
       /* o link vai pelo WhatsApp, na mão do Jordan (decisão de 2026-07-25: o domínio
          do estúdio não existe, então o Resend não entrega pra ninguém além dele) */
       const link = baseUrlDe(req) + "/assinar?token=" + contrato.token;
-      const primeiroNome = String(cliente.noivo || "").trim().split(/\s+/)[0] || "";
+      /* cai pra noiva quando o contrato é só dela — senão a mensagem sairia
+         como "Oi! Aqui é o Jordan", sem nome */
+      const primeiroNome = String(cliente.noivo || cliente.noiva || "").trim().split(/\s+/)[0] || "";
       const jaAssinado = contrato.status === "assinado";
       const saudacao = "Oi" + (primeiroNome ? ", " + primeiroNome : "") + "! Aqui é o Jordan. ";
       const mensagem = jaAssinado
