@@ -76,18 +76,24 @@ function templateNovoCliente(c, link) {
     (c.cidade ? " · " + c.cidade + (c.estado ? "/" + c.estado : "") : "") +
     (c.cep ? " · CEP " + c.cep : "");
 
+  /* o contrato pode ter só uma pessoa (2026-08-08): concatenar cru deixaria
+     "Ana & " no título e "123… / " na linha de CPF */
+  var nomes = [c.noivo, c.noiva].filter(Boolean).join(" & ") || "(sem nome)";
+  var cpfs = [c.cpfNoivoFmt, c.cpfNoivaFmt].filter(Boolean).join(" / ");
+  var rotuloCpf = (c.noivo && c.noiva) ? "CPF noivo / noiva" : "CPF";
+
   var html =
     '<div style="background:#F6F7F9;padding:32px 16px;font-family:Georgia,\'Times New Roman\',serif">' +
       '<div style="max-width:520px;margin:0 auto;background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E8E1DC">' +
         '<div style="background:#003646;padding:22px 28px">' +
           '<div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.65);font-family:Helvetica,Arial,sans-serif;margin-bottom:6px">Novo cliente</div>' +
-          '<div style="font-size:22px;color:#FFFFFF;font-family:Georgia,\'Times New Roman\',serif">' + escHtml(c.noivo) + ' &amp; ' + escHtml(c.noiva) + '</div>' +
+          '<div style="font-size:22px;color:#FFFFFF;font-family:Georgia,\'Times New Roman\',serif">' + escHtml(nomes) + '</div>' +
         '</div>' +
         '<div style="padding:26px 28px 8px">' +
           '<table style="width:100%;border-collapse:collapse;font-family:Helvetica,Arial,sans-serif" cellpadding="0" cellspacing="0">' +
             linha("WhatsApp", c.contato, "https://wa.me/" + String(c.contato).replace(/\D/g, "")) +
             linha("E-mail", c.email, "mailto:" + c.email) +
-            linha("CPF noivo / noiva", (c.cpfNoivoFmt || "") + " / " + (c.cpfNoivaFmt || "")) +
+            linha(rotuloCpf, cpfs) +
             linha("Endereço", endereco) +
             linha("Data do evento", c.dataBr) +
             linha("Horário", c.horario) +
@@ -108,10 +114,10 @@ function templateNovoCliente(c, link) {
     '</div>';
 
   var texto =
-    "Novo cliente: " + c.noivo + " & " + c.noiva + "\n" +
+    "Novo cliente: " + nomes + "\n" +
     "WhatsApp: " + c.contato + "\n" +
     "E-mail: " + c.email + "\n" +
-    "CPF noivo / noiva: " + (c.cpfNoivoFmt || "") + " / " + (c.cpfNoivaFmt || "") + "\n" +
+    rotuloCpf + ": " + cpfs + "\n" +
     "Endereço: " + endereco + "\n" +
     "Data do evento: " + c.dataBr + "\n" +
     "Horário: " + c.horario + "\n" +
@@ -150,9 +156,24 @@ export default async function handler(req, res) {
   const dataIso = typeof dados.dataEvento === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(dados.dataEvento) ? dados.dataEvento : null;
 
-  const faltando = !noivo || !noiva || cpfNoivo.length !== 11 || cpfNoiva.length !== 11 ||
-    !contato || !email || !cep || !endereco || !numero || !bairro || !cidade || !estado ||
-    !dataIso || !horario || !local;
+  /* Basta UMA das duas pessoas (decisão de 2026-08-08): dá pra contratar só
+     com o noivo, só com a noiva, ou com os dois. Quem for informado, porém,
+     precisa vir COMPLETO — nome sem CPF viraria contratante sem identificação
+     no documento. */
+  const temNoivo = !!noivo || cpfNoivo.length > 0;
+  const temNoiva = !!noiva || cpfNoiva.length > 0;
+  const noivoOk = !!noivo && cpfNoivo.length === 11;
+  const noivaOk = !!noiva && cpfNoiva.length === 11;
+
+  if (!temNoivo && !temNoiva) {
+    return res.status(400).json({ erro: "informe o nome e o CPF de pelo menos um dos contratantes" });
+  }
+  if ((temNoivo && !noivoOk) || (temNoiva && !noivaOk)) {
+    return res.status(400).json({ erro: "de quem for preencher, informe nome e CPF (11 dígitos)" });
+  }
+
+  const faltando = !contato || !email || !cep || !endereco || !numero || !bairro ||
+    !cidade || !estado || !dataIso || !horario || !local;
   if (faltando) {
     return res.status(400).json({ erro: "preencha todos os campos obrigatórios" });
   }
@@ -179,22 +200,45 @@ export default async function handler(req, res) {
   const totalNum = typeof dados.totalNumero === "number" ? dados.totalNumero : null;
   const entradaNum = typeof dados.entradaNumero === "number" ? dados.entradaNumero : null;
 
+  const linha = {
+    status: "novo",
+    noivo: noivo, noiva: noiva,
+    /* null, NUNCA "" — ver o comentário do upsert abaixo */
+    cpf_noivo: cpfNoivo || null, cpf_noiva: cpfNoiva || null,
+    tel_noivo: contato, email: email,
+    cep: cep, endereco: endereco, numero: numero, complemento: complemento || null,
+    bairro: bairro, cidade: cidade, estado: estado,
+    data_evento: dataIso, horario: horario, local_evento: local,
+    itens: itens, total: totalNum, entrada: entradaNum,
+    origem: "Orçamento do site", observacoes: null
+  };
+
+  /* Reenviar o mesmo cadastro atualiza a ficha em vez de duplicar.
+
+     Isto era um upsert com `on_conflict=cpf_noivo,data_evento`, apoiado no
+     índice único do banco. Não serve mais desde que o CPF do noivo virou
+     opcional: o índice trata "" como valor comum, então DOIS casais
+     diferentes sem noivo e com a mesma data do evento colidiriam na mesma
+     chave ('', data) — e o merge-duplicates faria o segundo cadastro
+     sobrescrever a ficha inteira do primeiro, sem erro nenhum.
+
+     Agora a busca é explícita, pelo CPF de quem existir (o índice continua
+     no banco protegendo o caso comum). O CPF ausente vai como null, que o
+     Postgres considera distinto a cada linha — dois cadastros sem noivo na
+     mesma data convivem como fichas separadas, que é o certo. */
+  const chave = cpfNoivo || cpfNoiva;
   try {
-    await rest("clientes?on_conflict=cpf_noivo,data_evento", {
-      method: "POST",
-      prefer: "resolution=merge-duplicates,return=minimal",
-      body: {
-        status: "novo",
-        noivo: noivo, noiva: noiva,
-        cpf_noivo: cpfNoivo, cpf_noiva: cpfNoiva,
-        tel_noivo: contato, email: email,
-        cep: cep, endereco: endereco, numero: numero, complemento: complemento || null,
-        bairro: bairro, cidade: cidade, estado: estado,
-        data_evento: dataIso, horario: horario, local_evento: local,
-        itens: itens, total: totalNum, entrada: entradaNum,
-        origem: "Orçamento do site", observacoes: null
-      }
-    });
+    const achados = await rest(
+      "clientes?data_evento=eq." + encodeURIComponent(dataIso) +
+      "&or=(cpf_noivo.eq." + chave + ",cpf_noiva.eq." + chave + ")" +
+      "&select=id&limit=1"
+    );
+    const existente = achados && achados[0];
+    if (existente) {
+      await rest("clientes?id=eq." + existente.id, { method: "PATCH", body: linha });
+    } else {
+      await rest("clientes", { method: "POST", prefer: "return=minimal", body: linha });
+    }
   } catch (e) {
     console.error("orcamento falhou:", e.message);
     return res.status(502).json({ erro: "não deu pra registrar, tente de novo" });
@@ -214,7 +258,7 @@ export default async function handler(req, res) {
     }, link);
     await enviarEmail({
       to: DESTINO_JORDAN,
-      subject: "Novo cliente · " + noivo + " & " + noiva,
+      subject: "Novo cliente · " + ([noivo, noiva].filter(Boolean).join(" & ") || "(sem nome)"),
       html: conteudo.html,
       text: conteudo.texto
     });

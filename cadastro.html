@@ -78,6 +78,7 @@
 
   form{margin-top:30px}
   .form-secao{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px}
+  .ajuda-secao{font-size:12.5px;line-height:1.5;color:var(--ink-soft);margin:-4px 0 14px}
   .form-secao:first-of-type{margin-top:0}
   .campo{display:block;font-size:12.5px;letter-spacing:.04em;color:var(--ink-soft);margin-bottom:16px}
   .campo .opc{text-transform:none;letter-spacing:0;opacity:.7}
@@ -156,22 +157,27 @@
   <div id="area-form">
     <span class="dica">Cadastro</span>
     <h1>Vamos confirmar nossa data</h1>
-    <p class="sub">Preencha os dados de vocês dois. Assim que eu confirmar, já te mando o contrato pra assinar.</p>
+    <p class="sub">Preencha os dados de quem vai assinar o contrato. Assim que eu confirmar, já te mando o contrato pra assinar.</p>
 
     <form id="form-orcamento" novalidate>
-      <div class="form-secao">Vocês dois</div>
+      <!-- Basta UMA das duas pessoas (2026-08-08). Quem preencher, preenche o
+           par completo (nome + CPF) — a validação em CAMPOS_VALIDACAO cuida
+           disso. Os `required` saíram do segundo par pra não prometer
+           obrigatoriedade que não existe mais. -->
+      <div class="form-secao">Quem vai assinar</div>
+      <p class="ajuda-secao">Se só um de vocês vai assinar, preencha só os dados dele. Os dois campos de um mesmo contratante andam juntos: nome e CPF.</p>
       <label class="campo">Nome do noivo
-        <input id="o-noivo" type="text" autocomplete="given-name" required>
+        <input id="o-noivo" type="text" autocomplete="given-name">
       </label>
       <label class="campo">Nome da noiva
-        <input id="o-noiva" type="text" autocomplete="given-name" required>
+        <input id="o-noiva" type="text" autocomplete="given-name">
       </label>
       <div class="campo-linha">
         <label class="campo">CPF do noivo
-          <input id="o-cpf-noivo" type="text" inputmode="numeric" placeholder="000.000.000-00" required>
+          <input id="o-cpf-noivo" type="text" inputmode="numeric" placeholder="000.000.000-00">
         </label>
         <label class="campo">CPF da noiva
-          <input id="o-cpf-noiva" type="text" inputmode="numeric" placeholder="000.000.000-00" required>
+          <input id="o-cpf-noiva" type="text" inputmode="numeric" placeholder="000.000.000-00">
         </label>
       </div>
       <label class="campo">WhatsApp
@@ -327,10 +333,6 @@
   function valorCampo(id){ return el(id).value.trim(); }
 
   var CAMPOS_VALIDACAO = [
-    { id: "o-noivo", teste: function(v){ return !!v; }, msg: "Preencha o nome do noivo." },
-    { id: "o-noiva", teste: function(v){ return !!v; }, msg: "Preencha o nome da noiva." },
-    { id: "o-cpf-noivo", teste: function(v){ return soDigitos(v).length === 11; }, msg: "Confira o CPF (11 dígitos)." },
-    { id: "o-cpf-noiva", teste: function(v){ return soDigitos(v).length === 11; }, msg: "Confira o CPF (11 dígitos)." },
     { id: "o-contato", teste: function(){ return !!valorContato(); }, msg: "Preencha o WhatsApp." },
     { id: "o-email", teste: function(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }, msg: "Digite um e-mail válido." },
     { id: "o-cep", teste: function(v){ return soDigitos(v).length === 8; }, msg: "Confira o CEP (8 dígitos)." },
@@ -359,8 +361,35 @@
     campo.scrollIntoView({ block: "center", behavior: "smooth" });
     setTimeout(function(){ campo.focus(); }, 280);
   }
+  /* Contratantes: basta UM (2026-08-08), mas quem entrar tem que vir com nome
+     E CPF. Fica fora do CAMPOS_VALIDACAO porque a regra é sobre o par, não
+     sobre um campo isolado — e por isso roda antes da lista. */
+  function validarContratantes(){
+    var pessoas = [
+      { rotulo: "do noivo", nome: "o-noivo", cpf: "o-cpf-noivo" },
+      { rotulo: "da noiva", nome: "o-noiva", cpf: "o-cpf-noiva" }
+    ].map(function(p){
+      var nome = valorCampo(p.nome), cpf = soDigitos(valorCampo(p.cpf));
+      return { p: p, nome: nome, cpf: cpf, vazia: !nome && !cpf, completa: !!nome && cpf.length === 11 };
+    });
+
+    if (pessoas.every(function(x){ return x.vazia; })){
+      marcarErroCampo("o-noivo", "Preencha ao menos um contratante (nome e CPF).");
+      return false;
+    }
+    for (var i = 0; i < pessoas.length; i++){
+      var x = pessoas[i];
+      if (x.vazia || x.completa) continue;
+      if (!x.nome){ marcarErroCampo(x.p.nome, "Preencha o nome " + x.p.rotulo + " ou apague o CPF."); return false; }
+      marcarErroCampo(x.p.cpf, "Confira o CPF " + x.p.rotulo + " (11 dígitos).");
+      return false;
+    }
+    return true;
+  }
+
   function validarFormulario(){
     limparErrosCampos();
+    if (!validarContratantes()) return false;
     for (var i = 0; i < CAMPOS_VALIDACAO.length; i++){
       var c = CAMPOS_VALIDACAO[i];
       if (!c.teste(valorCampo(c.id))){ marcarErroCampo(c.id, c.msg); return false; }

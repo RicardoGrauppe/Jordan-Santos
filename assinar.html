@@ -336,8 +336,9 @@
     preencherCampo("cidade-assinatura", c.cidade);
     preencherCampo("data-assinatura", dataExtenso(new Date()));
 
-    /* pré-preenche o nome do signatário com o noivo, se houver */
-    if (c.noivo) el("a-nome").value = c.noivo;
+    /* pré-preenche com quem estiver no contrato — pode ser só a noiva */
+    var primeiroContratante = c.noivo || c.noiva;
+    if (primeiroContratante) el("a-nome").value = primeiroContratante;
   }
 
   function iniciarPad(){
