@@ -2187,12 +2187,12 @@
      isso NÃO bloqueia mais nada: o Jordan gera e manda pra assinar do jeito
      que estiver, e a lista aparece como aviso na confirmação — nenhum destes
      campos é necessário pro fluxo funcionar (quem assina digita o próprio
-     nome e CPF em /assinar; o e-mail só serve pra mandar o PDF depois, e é
-     opcional lá também). */
+     nome em /assinar; o e-mail só serve pra mandar o PDF depois, e é opcional
+     lá também). */
   var CAMPOS_CONTRATO_OBRIGATORIOS = [
-    /* noivo/noiva NÃO entram aqui: desde 2026-08-08 basta um dos dois, e a
-       regra é sobre o par (nome + CPF), não sobre campo isolado — quem cuida
-       é o contratantesFaltando() logo abaixo */
+    /* noivo/noiva NÃO entram aqui: basta um dos dois, e a regra é sobre a
+       pessoa, não sobre campo isolado — quem cuida é o contratantesFaltando()
+       logo abaixo. CPF também não entra: é opcional desde 2026-08-11. */
     { campo: "email", rotulo: "E-mail do casal" },
     { campo: "cep", rotulo: "CEP" },
     { campo: "endereco", rotulo: "Endereço" },
@@ -2209,23 +2209,32 @@
     return input ? input.value.trim() : "";
   }
 
-  /* O contrato aceita um contratante só, mas quem for preenchido precisa ter
-     nome E CPF — senão o documento sai com uma parte sem identificação. */
+  /* O contrato aceita um contratante só. O que se cobra aqui é o NOME — o CPF
+     saiu do aviso em 2026-08-11, quando virou opcional: tem cliente que não
+     tem, e apontar "falta o CPF" em toda geração era barulho sobre uma coisa
+     que está certa do jeito que está.
+
+     CPF pela metade continua aparecendo: aí não é ausência, é erro de
+     digitação, e sairia meio CPF impresso no documento. */
   function contratantesFaltando(){
     var pessoas = [
-      { rotuloNome: "Nome do noivo", rotuloCpf: "CPF do noivo", nome: "noivo", cpf: "cpf_noivo" },
-      { rotuloNome: "Nome da noiva", rotuloCpf: "CPF da noiva", nome: "noiva", cpf: "cpf_noiva" }
+      { rotuloNome: "Nome do noivo", rotuloCpf: "CPF do noivo (incompleto)", nome: "noivo", cpf: "cpf_noivo" },
+      { rotuloNome: "Nome da noiva", rotuloCpf: "CPF da noiva (incompleto)", nome: "noiva", cpf: "cpf_noiva" }
     ].map(function(p){
       var nome = valorCampo(p.nome), cpf = valorCampo(p.cpf).replace(/\D/g, "");
-      return { p: p, vazia: !nome && !cpf, completa: !!nome && cpf.length === 11, temNome: !!nome };
+      return { p: p, nome: nome, cpf: cpf };
     });
 
-    if (pessoas.every(function(x){ return x.vazia; })){
-      return ["Nome e CPF de pelo menos um contratante"];
+    if (pessoas.every(function(x){ return !x.nome; })){
+      return ["Nome de pelo menos um contratante"];
     }
-    return pessoas
-      .filter(function(x){ return !x.vazia && !x.completa; })
-      .map(function(x){ return x.temNome ? x.p.rotuloCpf : x.p.rotuloNome; });
+
+    var faltas = [];
+    pessoas.forEach(function(x){
+      if (x.cpf && !x.nome) faltas.push(x.p.rotuloNome);
+      if (x.cpf && x.cpf.length !== 11) faltas.push(x.p.rotuloCpf);
+    });
+    return faltas;
   }
 
   function camposFaltando(){
