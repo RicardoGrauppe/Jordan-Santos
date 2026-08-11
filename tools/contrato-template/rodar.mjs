@@ -27,14 +27,6 @@ const DESTINO = join(RAIZ, "api", "_lib", "contrato-pdf");
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
-/* Faixas de quantidade de itens -> altura reservada (px) pra tabela.
-   O catálogo tem 9 itens no total (catalogo.js), então G cobre o pior caso. */
-const VARIANTES = {
-  P: { boxTabela: 170, ate: 3 },
-  M: { boxTabela: 260, ate: 6 },
-  G: { boxTabela: 360, ate: 9 }
-};
-
 /* carimbo pra detectar template obsoleto: se o contrato-template.js mudar
    (cláusula editada) sem regerar, o `npm run contrato:verificar` acusa */
 function shaDoTemplate() {
@@ -42,11 +34,9 @@ function shaDoTemplate() {
   return createHash("sha256").update(src).digest("hex");
 }
 
-async function gerar(nome) {
-  const { boxTabela } = VARIANTES[nome];
+async function gerar() {
   const porta = 9222 + Math.floor(Math.random() * 700);
-  const url =
-    pathToFileURL(join(AQUI, "gerador.html")).href + "?boxTabela=" + boxTabela;
+  const url = pathToFileURL(join(AQUI, "gerador.html")).href;
 
   const chrome = spawn(CHROME, [
     "--headless=new", "--disable-gpu", "--no-first-run",
@@ -102,9 +92,8 @@ async function gerar(nome) {
       returnByValue: true
     });
     const mapa = JSON.parse(coords.result.value);
-    mapa.variante = nome;
     mapa.geradoDe = { arquivo: "contrato-template.js", sha256: shaDoTemplate() };
-    writeFileSync(join(DESTINO, `coords-${nome}.json`), JSON.stringify(mapa, null, 2));
+    writeFileSync(join(DESTINO, "coords.json"), JSON.stringify(mapa, null, 2));
 
     /* preferCSSPageSize respeita o @page{size:A4;margin:0} do gerador */
     const pdf = await cdp("Page.printToPDF", {
@@ -113,20 +102,14 @@ async function gerar(nome) {
       displayHeaderFooter: false,
       marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0
     });
-    writeFileSync(join(DESTINO, `template-${nome}.pdf`), Buffer.from(pdf.data, "base64"));
+    writeFileSync(join(DESTINO, "template.pdf"), Buffer.from(pdf.data, "base64"));
 
-    console.log(`  ${nome}: ${mapa.paginas} páginas, ${mapa.campos.length} campos, ${mapa.boxes.length} caixas`);
+    console.log(`  ${mapa.paginas} páginas, ${mapa.campos.length} campos, ${mapa.boxes.length} caixas`);
   } finally {
     chrome.kill();
   }
 }
 
-const pedidas = process.argv.slice(2).map((v) => v.toUpperCase());
-const alvos = pedidas.length ? pedidas : Object.keys(VARIANTES);
-for (const nome of alvos) {
-  if (!VARIANTES[nome]) throw new Error(`variante desconhecida: ${nome} (use P, M ou G)`);
-}
-
-console.log("Regerando templates a partir de contrato-template.js…");
-for (const nome of alvos) await gerar(nome);
-console.log(`Pronto. Arquivos em api/_lib/contrato-pdf/ — confira um PDF preenchido antes de commitar.`);
+console.log("Regerando o template a partir de contrato-template.js…");
+await gerar();
+console.log("Pronto. Arquivos em api/_lib/contrato-pdf/ — confira um PDF preenchido antes de commitar.");

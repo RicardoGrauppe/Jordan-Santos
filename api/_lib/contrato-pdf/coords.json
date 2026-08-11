@@ -167,9 +167,9 @@
     },
     {
       "campo": "valor-total",
-      "pagina": 1,
+      "pagina": 0,
       "x": 526.234375,
-      "y": 431,
+      "y": 864.59375,
       "w": 125,
       "h": 20,
       "fontePx": 13.6,
@@ -177,9 +177,9 @@
     },
     {
       "campo": "valor-entrada",
-      "pagina": 1,
+      "pagina": 0,
       "x": 122.484375,
-      "y": 456.46875,
+      "y": 890.0625,
       "w": 115,
       "h": 20,
       "fontePx": 13.6,
@@ -189,7 +189,7 @@
       "campo": "cidade-assinatura",
       "pagina": 7,
       "x": 151.46875,
-      "y": 405.09375,
+      "y": 193.28125,
       "w": 150,
       "h": 20,
       "fontePx": 13.6,
@@ -199,7 +199,7 @@
       "campo": "data-assinatura",
       "pagina": 7,
       "x": 309.75,
-      "y": 405.09375,
+      "y": 193.28125,
       "w": 215,
       "h": 20,
       "fontePx": 13.6,
@@ -209,7 +209,7 @@
       "campo": "ass-casal-rotulo",
       "pagina": 7,
       "x": 180.15625,
-      "y": 563.5625,
+      "y": 351.75,
       "w": 320,
       "h": 18,
       "fontePx": 12.5,
@@ -219,17 +219,17 @@
   "boxes": [
     {
       "box": "tabela-servicos",
-      "pagina": 1,
+      "pagina": 0,
       "x": 0,
-      "y": 14,
+      "y": 687.59375,
       "w": 680.3125,
-      "h": 360
+      "h": 120
     },
     {
       "box": "assinatura-casal",
       "pagina": 7,
       "x": 130.15625,
-      "y": 452.5625,
+      "y": 240.75,
       "w": 420,
       "h": 104
     },
@@ -237,7 +237,7 @@
       "box": "assinatura-jordan",
       "pagina": 7,
       "x": 130.15625,
-      "y": 625.0625,
+      "y": 413.25,
       "w": 420,
       "h": 104
     },
@@ -250,9 +250,8 @@
       "h": 270
     }
   ],
-  "variante": "G",
   "geradoDe": {
     "arquivo": "contrato-template.js",
-    "sha256": "bda571650d8cec3ad1f83c1f6d967c1fb3febd05f2d411f8d852f017d5585c5b"
+    "sha256": "7699fcc4cbf792482dc73962fee68f044c5a35c5f0a78d70ddcaa6fb5880ba58"
   }
 }

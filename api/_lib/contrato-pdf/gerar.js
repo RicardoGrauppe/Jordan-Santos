@@ -13,9 +13,14 @@
   Resultado: ~240 KB, texto de verdade (selecionável e pesquisável) e sempre
   idêntico, independente do aparelho de quem assina.
 
-  Os arquivos template-*.pdf / coords-*.json desta pasta são GERADOS — não
-  edite à mão. Mexeu numa cláusula do contrato-template.js? Regere (veja
+  O template.pdf / coords.json desta pasta são GERADOS — não edite à mão.
+  Mexeu numa cláusula do contrato-template.js? Regere (veja
   tools/contrato-template/README.md), senão o PDF sai com o texto antigo.
+
+  Template ÚNICO desde 2026-08-08. Existiam três (P/M/G) porque a tabela de
+  serviços crescia uma linha por item e mudava a paginação; agora ela mostra
+  só o pacote + o VALOR TOTAL, tem altura fixa, e um contrato de 1 item sai
+  com a mesma paginação de um de 8.
 */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -26,13 +31,13 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
    o dev-server local e a lambda da Vercel */
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
-/* Faixa de itens -> variante do template. A caixa da tabela é um bloco
-   atômico; reservar sempre o pior caso (9 itens) deixava um vão enorme na
-   página 1 dos contratos pequenos. Ver tools/contrato-template/README.md. */
-function varianteDe(qtdItens) {
-  if (qtdItens <= 3) return "P";
-  if (qtdItens <= 6) return "M";
-  return "G";
+/* Quais itens são PACOTE (o resto é adicional). O catalogo.js é a fonte única
+   dos produtos, mas ele é browser-only (`window.CATALOGO`) e esta function roda
+   no servidor — daí a lista aqui. Pacote novo no catálogo? Acrescente o id.
+   O fallback pelo nome cobre o esquecimento sem quebrar o contrato. */
+const PACOTES = new Set(["eternal", "heritage"]);
+function ehPacote(item) {
+  return PACOTES.has(item.id) || /^pacote\b/i.test(String(item.nome || ""));
 }
 
 const TINTA = rgb(0.114, 0.114, 0.106);      /* --ink  #1D1D1B */
@@ -97,12 +102,11 @@ export async function gerarContratoPdf({
 }) {
   const dados = snapshot || {};
   const itens = Array.isArray(dados.itens) ? dados.itens : [];
-  const variante = varianteDe(itens.length);
 
-  const coords = JSON.parse(
-    readFileSync(join(AQUI, `coords-${variante}.json`), "utf8")
-  );
-  const doc = await PDFDocument.load(readFileSync(join(AQUI, `template-${variante}.pdf`)));
+  /* um template só: a tabela tem altura fixa (pacote + total), então a
+     paginação não depende mais da quantidade de itens */
+  const coords = JSON.parse(readFileSync(join(AQUI, "coords.json"), "utf8"));
+  const doc = await PDFDocument.load(readFileSync(join(AQUI, "template.pdf")));
 
   const pages = doc.getPages();
   const { height: pageH } = pages[0].getSize();
@@ -126,8 +130,13 @@ export async function gerarContratoPdf({
     return c;
   }
 
-  function escreverCampo(nome, texto) {
+  /* `opcional` deixa a lacuna em branco em vez de escrever "—". É o caso da
+     segunda pessoa quando o contrato tem um contratante só (2026-08-08): a
+     linha NOIVA/TELEFONE NOIVA existe no template impresso, e um travessão
+     ali pareceria dado faltando em vez de campo que não se aplica. */
+  function escreverCampo(nome, texto, opcional) {
     const c = campoDe(nome);
+    if (opcional && !texto) return;
     const valor = paraWinAnsi(texto === 0 ? "0" : (texto || "—"));
     let size = c.fontePx * 0.92 * 0.75;
     const maxW = (c.w - 6) * sx;
@@ -192,10 +201,12 @@ export async function gerarContratoPdf({
   const entrada = (dados.entrada != null && dados.entrada !== "")
     ? Number(dados.entrada) : total * 0.3;
 
-  escreverCampo("noivo", dados.noivo);
-  escreverCampo("cpf-noivo", cpfFormatado(dados.cpf_noivo));
-  escreverCampo("noiva", dados.noiva);
-  escreverCampo("cpf-noiva", cpfFormatado(dados.cpf_noiva));
+  /* contratantes: os dois lados são opcionais (basta um), então a lacuna de
+     quem não existe fica vazia em vez de levar um travessão */
+  escreverCampo("noivo", dados.noivo, true);
+  escreverCampo("cpf-noivo", cpfFormatado(dados.cpf_noivo), true);
+  escreverCampo("noiva", dados.noiva, true);
+  escreverCampo("cpf-noiva", cpfFormatado(dados.cpf_noiva), true);
   escreverCampo("endereco", dados.endereco);
   escreverCampo("numero", dados.numero);
   escreverCampo("bairro", dados.bairro);
@@ -203,8 +214,12 @@ export async function gerarContratoPdf({
   escreverCampo("complemento", dados.complemento || "N/A");
   escreverCampo("estado", dados.estado);
   escreverCampo("cep", cepFormatado(dados.cep));
-  escreverCampo("tel-noivo", dados.tel_noivo);
-  escreverCampo("tel-noiva", dados.tel_noiva);
+  /* o /cadastro coleta UM telefone só e ele sempre cai em tel_noivo. Num
+     contrato só da noiva isso imprimiria o número dela na linha do noivo e um
+     traço na dela — então o contato solto vai pra linha de quem existe. */
+  const soNoiva = !dados.noivo && !!dados.noiva;
+  escreverCampo("tel-noivo", soNoiva ? "" : dados.tel_noivo, true);
+  escreverCampo("tel-noiva", soNoiva ? (dados.tel_noiva || dados.tel_noivo) : dados.tel_noiva, true);
   escreverCampo("data-formatada", dataEventoExtenso(dados.data_evento));
   escreverCampo("local", dados.local_evento);
   escreverCampo("horario", dados.horario ? String(dados.horario).slice(0, 5) : "");
@@ -224,16 +239,27 @@ export async function gerarContratoPdf({
     const colQtd = 34 * sx, colVal = 105 * sx;
     const colDesc = b.largura - colQtd - colVal;
 
-    const linhas = [{ cabecalho: true, qtd: "QTD", desc: "DESCRIÇÃO DOS SERVIÇOS", val: "VALOR TOTAL" }];
-    for (const item of itens) {
-      linhas.push({
-        qtd: "1",
-        desc: item.nome || item.id || "Serviço",
-        val: moeda(item.valor),
-        quebra: quebrarEmLinhas(item.nome || item.id || "Serviço", helv, fs, colDesc - pad * 2)
-      });
-    }
-    linhas.push({ destaque: true, qtd: "", desc: "VALOR TOTAL", val: moeda(total) });
+    /* Duas linhas, sempre (decisão de 2026-08-08): o pacote e o valor final.
+       Os adicionais continuam sendo escolhidos no /estudio e entram na soma,
+       mas não aparecem item a item no documento.
+
+       A linha do pacote vai SEM valor próprio de propósito: imprimir o preço
+       de tabela dele ao lado de um total maior levantaria a pergunta "de onde
+       vem a diferença?", que é justamente o detalhe que se quer omitir.
+
+       Altura fixa é o que permite um template único — antes eram três
+       (P/M/G), porque a tabela crescia com a quantidade de itens. */
+    const pacote = itens.find(ehPacote);
+    const descricao = pacote
+      ? (pacote.nome || pacote.id)
+      : "Serviços fotográficos contratados";
+
+    const linhas = [
+      { cabecalho: true, qtd: "QTD", desc: "DESCRIÇÃO DOS SERVIÇOS", val: "VALOR TOTAL" },
+      { qtd: "1", desc: descricao, val: "",
+        quebra: quebrarEmLinhas(descricao, helv, fs, colDesc - pad * 2) },
+      { destaque: true, qtd: "", desc: "VALOR TOTAL", val: moeda(total) }
+    ];
 
     let topo = b.topo;
     for (const l of linhas) {

@@ -17,16 +17,28 @@
   páginas renderizam ESTE arquivo — o que ele revisa é, literalmente, o que o
   casal assina.
 
-  Base: "Contrato de Casamento (modelo Jordan).docx" (Assets/ do cliente), com
-  três correções que o docx pede e uma cláusula a mais:
-    - o docx numera DUAS cláusulas como "OITAVA" (uso de imagem e foro de
-      eleição); aqui o foro é a NONA;
-    - o docx traz a linha solta "30010111777900" no meio do foro — removida;
-    - erros de digitação do docx corrigidos (pulicada → publicada, desta
-      intensão → desta intenção, mediante ao pagamento → mediante o pagamento);
-    - CLÁUSULA DÉCIMA (assinatura eletrônica) não existe no docx: é ela que
-      sustenta juridicamente o fluxo de /assinar (MP 2.200-2/2001, art. 10 §2º).
-      NÃO remover ao sincronizar com uma via nova do Jordan.
+  Base: "contrato de casamento - revisado.docx" (via de 2026-08-08 do Jordan).
+  Onde este arquivo DIVERGE do docx, e por quê:
+
+    - CLÁUSULA DÉCIMA PRIMEIRA (assinatura eletrônica) não existe no docx: é
+      ela que sustenta juridicamente o fluxo de /assinar (MP 2.200-2/2001,
+      art. 10 §2º). NÃO remover ao sincronizar com uma via nova do Jordan.
+    - as linhas de 1ª e 2ª TESTEMUNHA do docx não entram: a assinatura é
+      eletrônica e elas ficariam em branco no PDF, enfraquecendo o documento.
+      Junto com elas saiu o "na presença de testemunha:" do fecho, que sem as
+      linhas afirmava uma formalidade que o documento não cumpre.
+    - erros de digitação do docx seguem corrigidos aqui (decisão de 2026-08-08,
+      mantida da via anterior): pulicada → publicada, desta intensão → desta
+      intenção, marca d'agua → d'água, copias → cópias, cerimonia → cerimônia,
+      Djs → DJs, uteis → úteis, termino → término, "comprometendo a executar"
+      → "comprometendo-se a executar", "assume estar cientes" → "assumem",
+      "sem sejam cobradas" → "sem que sejam", "a baixo" → "abaixo".
+    - a tabela de serviços NÃO lista adicional por adicional (decisão de
+      2026-08-08): sai o pacote e o valor final, com os adicionais compondo o
+      total sem aparecer em linha. Quem desenha é api/_lib/contrato-pdf/gerar.js.
+
+  A numeração das cláusulas segue o docx novo (LGPD entrou como NONA e empurrou
+  o foro pra DÉCIMA); a assinatura eletrônica fecha como DÉCIMA PRIMEIRA.
 
   Uso:
     <article id="documento"></article>
@@ -65,7 +77,7 @@
       <img class="logo-contrato" src="/img/logo-principal-petroleo.png" alt="Jordan Santos Fotografia">
       <h2>Contrato de Prestação de Serviços de Fotografia</h2>
 
-      <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endereço na rua Jesuítas, Carimã Nº390, Foz do Iguaçu &ndash; Paraná, CEP: 85855700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de serviços relacionados à fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>
+      <p>Que entre si fazem, de um lado, Jordan Santos com CPF 071.176.769-65 com endereço na rua Jesuítas, Carimã, nº 390, Foz do Iguaçu &ndash; Paraná, CEP: 85855-700 e Telefone: (45) 99907-7874 &mdash; www.jordansantosfotografia.com.br &mdash; correspondente a prestador de serviços relacionados à fotografia, que aqui denominada CONTRATADA, e do outro lado como CONTRATANTES:</p>
 
       <p>
         NOIVO: <span class="campo" data-campo="noivo"></span> &nbsp; CPF: <span class="campo" data-campo="cpf-noivo"></span><br>
@@ -94,11 +106,11 @@
 
       <h3>CLÁUSULA SEGUNDA &ndash; VALOR CONTRATUAL E CONDIÇÕES DE PAGAMENTO:</h3>
       <ol>
-        <li>Pelo objeto ora contratado, a CONTRATANTE pagará à CONTRATADA o valor total de <span class="campo" data-campo="valor-total"></span> com entrada de 30% (<span class="campo" data-campo="valor-entrada"></span>) na assinatura do contrato mediante recibo ou depósito bancário, entendida como reserva de data. Chave Pix cel 45999077874 nome Jordan Sant.</li>
+        <li>Pelo objeto ora contratado, a CONTRATANTE pagará à CONTRATADA o valor total de <span class="campo" data-campo="valor-total"></span> com entrada de 30% (<span class="campo" data-campo="valor-entrada"></span>) na assinatura do contrato mediante recibo ou depósito bancário, entendida como reserva de data. Chave Pix cel 45999077874 nome Jordan Santos.</li>
         <li>Pagamentos antecipados não sofrem alterações de valores e nem acréscimos de juros em caso de parcelas, exceto por cartão de crédito via o sistema &ldquo;Pagseguro&rdquo; (ou outro meio que utilizar).</li>
         <li>Os pagamentos devem ocorrer nas datas combinadas, sendo cabível multa de 2% calculados sobre o valor total deste contrato, mais multa moratória de 0,5% por dia de atraso após o evento.</li>
         <li>O não cumprimento das obrigações financeiras do CONTRATANTE acarretará na nulidade do cumprimento dos prazos por parte CONTRATADO, a não entrega dos materiais até a regularização das obrigações, e em alguns casos específicos, a não realização do serviço contratado.</li>
-        <li>Para eventos em cidades com 100km de Foz do Iguaçu ou fora do estado do Paraná, fica estabelecido que os CONTRATANTES suportarão as despesas de transportes, terrestres ou aéreos, com o mínimo de uma diária de hospedagem para o CONTRATADO e sua equipe.</li>
+        <li>Para eventos realizados em cidades localizadas a mais de 100 km de distância de Foz do Iguaçu ou fora do estado do Paraná, fica estabelecido que os CONTRATANTES suportarão as despesas de transporte, terrestres ou aéreos, com o mínimo de uma diária de hospedagem para o CONTRATADO e sua equipe.</li>
         <li>Eventuais acréscimos ao orçamento por conta de horas-extras, estacionamento, alimentação, taxas cobradas por Igrejas ou salões de eventos, deverão ser reembolsadas à CONTRATADA, em uma só parcela.</li>
       </ol>
 
@@ -124,13 +136,16 @@
       <p>Os gastos e prejuízos do CONTRATADO:</p>
       <ol>
         <li>Em caso de rescisão pelo CONTRATANTE, este se responsabilizará por todos os gastos e prejuízos que o CONTRATADO já teve em virtude do presente contrato, além das demais obrigações deste parágrafo.</li>
-        <li>Em caso do não comparecimento ao evento por parte da CONTRATADA, sujeitará aos CONTRATANTES o pagamento de multa em 100% (cem por cento) do valor deste contrato, mais 100% (cem por cento) do mesmo valor aos pelos danos morais e materiais.</li>
+        <li>Em caso do não comparecimento ao evento por parte da CONTRATADA, esta pagará aos CONTRATANTES multa de 100% (cem por cento) do valor deste contrato, mais 100% (cem por cento) do mesmo valor pelos danos morais e materiais.</li>
         <li>Nas hipóteses de caso fortuito ou de força maior que o impeça de estar presente ao evento objeto deste contrato, a CONTRATADA poderá cumprir as obrigações assumidas neste contrato através da nomeação de outros profissionais que possuam as mesmas capacitações técnicas e as mesmas características estéticas, sem que isso represente infração contratual.</li>
       </ol>
 
       <h3>CLÁUSULA QUARTA &ndash; MATERIAL DE ESCOLHA E PRAZOS:</h3>
       <ol>
-        <li>Todas as fotos serão editadas após passar por uma seleção, e enviadas para o site de escolha em até (20 dias úteis), podendo ser prorrogados por mais (15 dias úteis) em períodos sazonais com aviso prévio. ATENÇÃO: Contratantes do PACOTES DIGITAL estão isentos do item 2 ao 7 desta cláusula.</li>
+        <li>Todas as fotos serão editadas após passar por uma seleção, e enviadas para o site de escolha em até (20 dias úteis), podendo ser prorrogados por mais (15 dias úteis) em períodos sazonais com aviso prévio.</li>
+      </ol>
+      <p>ATENÇÃO: Contratantes do PACOTES DIGITAL estão isentos do item 2 ao 7 desta cláusula.</p>
+      <ol start="2">
         <li>O CONTRATANTE terá um prazo de (30 dias) para selecionar as fotos, podendo ser prorrogado gratuitamente por mais (15 dias). Se ainda sim precisar de mais tempo, deverá escolher uma das seguintes opções: para mais 15 dias no site de escolha (R$ 50,00); para mais 30 dias no site de escolha (R$ 100,00); para mais 60 dias no site de escolha (R$ 150,00).</li>
         <li>Após finalizada a seleção o CONTRATANTE deverá clicar no botão ENVIAR SELEÇÃO. A devolução da lista escolhida é feita automaticamente através do próprio sistema.</li>
         <li>Após a seleção das fotos, uma amostra do álbum será apresentada ao CONTRATANTE em até (30 dias úteis) podendo ser prorrogado por mais (15 dias úteis) em períodos sazonais com aviso prévio. O mesmo terá um prazo de até (7 dias) para solicitar pequenos ajustes ou aprovar para a impressão.</li>
@@ -188,19 +203,22 @@
       </ol>
       <p>Parágrafo Único: A autorização para a CONTRATADA é concedida a título gratuito, abrangendo o uso das imagens acima mencionadas, em todo território nacional e/ou exterior, sem limitação de tempo ou número de utilizações e de maneira alguma as imagens utilizadas poderão agredir a imagem pessoal e a personalidade dos CONTRATANTES e convidados.</p>
 
-      <h3>CLÁUSULA NONA &ndash; FORO DE ELEIÇÃO:</h3>
+      <h3>CLÁUSULA NONA &ndash; DA PROTEÇÃO DE DADOS PESSOAIS (LGPD):</h3>
+      <p>Os dados pessoais fornecidos pelos CONTRATANTES neste contrato (nome, CPF, endereço e contatos) serão tratados pela CONTRATADA exclusivamente para a execução deste contrato e a prestação do serviço fotográfico contratado, nos termos da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais &ndash; LGPD). O uso das imagens e vídeos para fins de divulgação e portfólio, conforme autorizado na Cláusula Oitava, tem como base legal o consentimento expresso dos CONTRATANTES aqui manifestado, podendo ser revogado a qualquer tempo mediante comunicação por escrito à CONTRATADA, sem prejuízo dos usos já realizados até a data da revogação. A CONTRATADA se compromete a não compartilhar os dados pessoais dos CONTRATANTES com terceiros para finalidades distintas das previstas neste contrato, adotando medidas razoáveis de segurança para sua proteção.</p>
+
+      <h3>CLÁUSULA DÉCIMA &ndash; FORO DE ELEIÇÃO:</h3>
       <ol>
         <li>Na assinatura deste documento, os CONTRATANTES declaram estar cientes sobre o estilo de trabalho da CONTRATADA.</li>
         <li>As partes elegem como competente para dirimir quaisquer questões relacionadas à interpretação ou aplicação deste contrato o foro da sede dos CONTRATANTES, em detrimento de qualquer outro por mais privilegiado que possa ser.</li>
       </ol>
 
-      <h3>CLÁUSULA DÉCIMA &ndash; DA ASSINATURA ELETRÔNICA:</h3>
+      <h3>CLÁUSULA DÉCIMA PRIMEIRA &ndash; DA ASSINATURA ELETRÔNICA:</h3>
       <ol>
         <li>As partes reconhecem a validade, a autenticidade e a eficácia da assinatura eletrônica aposta neste instrumento, aceitando-a expressamente como meio válido de manifestação de vontade e de comprovação de autoria e integridade, nos termos do art. 10, §2º da Medida Provisória nº 2.200-2/2001.</li>
         <li>O signatário é identificado por nome e CPF e acessa este instrumento por meio de link eletrônico exclusivo e não public&aacute;vel, gerado com identificador aleatório e enviado pela CONTRATADA diretamente ao CONTRATANTE, cuja posse constitui o elemento de vinculação do ato à sua pessoa. Ficam registrados, para fins de auditoria, a data e hora, o endereço IP e o dispositivo utilizados, além da impressão digital (hash) do documento assinado.</li>
       </ol>
 
-      <p>E por estarem certos e ajustados, as partes declaram que o presente contrato foi objeto de ampla negociação em todas as suas cláusulas, notadamente aquelas que definem o objeto, o preço e as multas, assinando o mesmo em duas vias de igual forma e teor, na presença de testemunha:</p>
+      <p>E por estarem certos e ajustados, as partes declaram que o presente contrato foi objeto de ampla negociação em todas as suas cláusulas, notadamente aquelas que definem o objeto, o preço e as multas, assinando o mesmo em duas vias de igual forma e teor:</p>
 
       <div class="assinaturas" id="bloco-assinaturas">
         <p><span class="campo" data-campo="cidade-assinatura"></span>, <span class="campo" data-campo="data-assinatura"></span>.</p>

@@ -17,31 +17,21 @@ const atual = createHash("sha256")
   .update(readFileSync(join(RAIZ, "contrato-template.js")))
   .digest("hex");
 
-let obsoleto = false;
-for (const nome of ["P", "M", "G"]) {
-  let mapa;
-  try {
-    mapa = JSON.parse(readFileSync(join(DESTINO, `coords-${nome}.json`), "utf8"));
-  } catch {
-    console.error(`✗ ${nome}: coords-${nome}.json não existe — regere os templates.`);
-    obsoleto = true;
-    continue;
-  }
-  const gerado = mapa.geradoDe && mapa.geradoDe.sha256;
-  if (gerado !== atual) {
-    console.error(`✗ ${nome}: gerado de outra versão do contrato-template.js`);
-    obsoleto = true;
-  } else {
-    console.log(`✓ ${nome}: em dia`);
-  }
+let mapa;
+try {
+  mapa = JSON.parse(readFileSync(join(DESTINO, "coords.json"), "utf8"));
+} catch {
+  console.error("✗ coords.json não existe — regere o template.");
+  process.exit(1);
 }
 
-if (obsoleto) {
+if ((mapa.geradoDe && mapa.geradoDe.sha256) !== atual) {
   console.error(
-    "\nO texto do contrato mudou desde a última geração dos templates.\n" +
-    "O PDF assinado sairia com o texto ANTIGO. Regere com:\n" +
-    "  node --experimental-websocket tools/contrato-template/rodar.mjs\n"
+    "✗ o template foi gerado de outra versão do contrato-template.js\n\n" +
+    "O texto do contrato mudou desde a última geração. O PDF assinado sairia\n" +
+    "com o texto ANTIGO. Regere com:\n" +
+    "  npm run contrato:regerar\n"
   );
   process.exit(1);
 }
-console.log("\nTemplates batem com o contrato-template.js atual.");
+console.log("✓ o template bate com o contrato-template.js atual.");

@@ -12,9 +12,6 @@
   e, depois de paginar, mede a posição de cada lacuna/caixa relativa à sua
   página, publicando o mapa em <script id="coords"> pro pdf-lib saber onde
   escrever (api/_lib/contrato-pdf/gerar.js).
-
-  ?boxTabela=NNN define a altura reservada pra tabela de itens (variantes
-  P/M/G — ver README.md).
 -->
 <html lang="pt-BR">
 <head>
@@ -70,7 +67,12 @@
 
   /* caixas reservadas (tabela / assinaturas / auditoria) */
   .box-reserva{position:relative}
-  .box-tabela{height:318px;margin:14px 0 18px}   /* sobrescrito por ?boxTabela= */
+  /* A tabela tem 3 linhas fixas (cabeçalho + pacote + VALOR TOTAL) desde
+     2026-08-08, quando os adicionais deixaram de ir linha a linha. ~23pt por
+     linha = ~93px; 120px dá folga pro nome do pacote quebrar em duas linhas.
+     Como a altura não depende mais da quantidade de itens, o template voltou
+     a ser um só (antes eram três: P/M/G). */
+  .box-tabela{height:120px;margin:14px 0 18px}
   .box-ass{height:104px;max-width:420px;margin:24px auto 0}
   /* legendas centralizadas — precisa vencer o text-align:justify genérico
      de .conteudo-pag p na especificidade */
@@ -114,14 +116,6 @@
     "ass-casal-rotulo": 320
   };
 
-  /* três variantes do mesmo template, uma por faixa de qtd. de itens do
-     contrato — cada uma pagina diferente porque a caixa da tabela muda de
-     tamanho. O contrato tem de 1 a 9 itens possíveis, e reservar sempre o
-     pior caso deixava um vão enorme na página 1 dos contratos pequenos (o
-     bloco é atômico: se a caixa de 9 itens não cabe no que sobrou da página,
-     ELA INTEIRA pula pra próxima, em vez de só o que faltar). */
-  var boxTabelaPx = Number(new URLSearchParams(location.search).get("boxTabela")) || 318;
-  document.querySelector("style").textContent += "\n.box-tabela{height:" + boxTabelaPx + "px}";
 
   function prepararFonte(){
     var doc = document.getElementById("documento");
@@ -174,10 +168,14 @@
     var blocos = [];
     Array.prototype.forEach.call(Array.prototype.slice.call(doc.children), function(no){
       if (no.tagName === "OL"){
+        /* respeita o start da lista original: a cláusula quarta é partida em
+           duas <ol> (o aviso do PACOTE DIGITAL entra no meio, como parágrafo),
+           e a segunda começa no item 2. Reiniciar em 1 renumeraria o contrato. */
+        var inicio = parseInt(no.getAttribute("start") || "1", 10) || 1;
         var itens = Array.prototype.slice.call(no.children);
         itens.forEach(function(li, i){
           var mini = document.createElement("ol");
-          mini.setAttribute("start", String(i + 1));
+          mini.setAttribute("start", String(inicio + i));
           mini.appendChild(li);
           blocos.push(mini);
         });
