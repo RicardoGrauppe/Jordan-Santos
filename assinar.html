@@ -292,17 +292,35 @@
     });
   }
 
+  /* O contrato não detalha adicional por adicional nem preço unitário
+     (2026-08-08): uma linha com o pacote contratado, sem valor próprio, mais
+     a linha do VALOR TOTAL. Tem que bater EXATAMENTE com o
+     api/_lib/contrato-pdf/gerar.js — o que se lê na tela é o que vai pro PDF
+     assinado, e divergir aí seria divergir o documento.
+
+     O valor do pacote fica em branco de propósito: imprimir o preço de tabela
+     ao lado de um total maior levantaria a pergunta "de onde vem a diferença?",
+     que é justamente o detalhe que se quer omitir.
+
+     O catalogo.js não é carregado nesta página, então a detecção de pacote é a
+     mesma do servidor: id conhecido, com o nome como rede de segurança. */
+  var IDS_PACOTE = { eternal: 1, heritage: 1 };
+  function ehPacote(it){
+    return !!(it && IDS_PACOTE[it.id]) || /^pacote\b/i.test(String((it && it.nome) || ""));
+  }
+
   function montaTabela(itens, total){
     var tbody = el("tabela-servicos");
     tbody.innerHTML = "";
-    (itens || []).forEach(function(it){
-      var tr = document.createElement("tr");
-      var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
-      var desc = document.createElement("td"); desc.textContent = it.nome || it.id || "Serviço";
-      var val = document.createElement("td"); val.textContent = it.valor != null ? brl.format(it.valor) : ""; val.className = "num";
-      tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
-      tbody.appendChild(tr);
-    });
+    var pacote = (itens || []).filter(ehPacote)[0];
+    var tr = document.createElement("tr");
+    var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
+    var desc = document.createElement("td");
+    desc.textContent = pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados";
+    var val = document.createElement("td"); val.className = "num";
+    tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
+    tbody.appendChild(tr);
+
     var trTotal = document.createElement("tr");
     var v = document.createElement("td");
     var r = document.createElement("td"); r.textContent = "VALOR TOTAL"; r.style.fontWeight = "500";
