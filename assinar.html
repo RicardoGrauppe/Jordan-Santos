@@ -214,7 +214,7 @@
 
       <div class="grade2">
         <div class="campo-form"><label for="a-nome">Seu nome completo</label><input id="a-nome" type="text" autocomplete="name"></div>
-        <div class="campo-form"><label for="a-cpf">Seu CPF</label><input id="a-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off"></div>
+        <div class="campo-form"><label for="a-cpf">Seu CPF (opcional)</label><input id="a-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" autocomplete="off"></div>
       </div>
 
       <label class="aceite">
@@ -292,15 +292,15 @@
     });
   }
 
-  /* O contrato não detalha adicional por adicional nem preço unitário
-     (2026-08-08): uma linha com o pacote contratado, sem valor próprio, mais
-     a linha do VALOR TOTAL. Tem que bater EXATAMENTE com o
+  /* O contrato LISTA o pacote e os adicionais, um por linha, mas sem NENHUM
+     valor unitário — só o VALOR TOTAL no rodapé (2026-08-11). Tem que bater
+     EXATAMENTE com o
      api/_lib/contrato-pdf/gerar.js — o que se lê na tela é o que vai pro PDF
      assinado, e divergir aí seria divergir o documento.
 
-     O valor do pacote fica em branco de propósito: imprimir o preço de tabela
-     ao lado de um total maior levantaria a pergunta "de onde vem a diferença?",
-     que é justamente o detalhe que se quer omitir.
+     Os valores ficam em branco de propósito: imprimir o preço de tabela de
+     cada item ao lado de um total diferente levantaria a pergunta "de onde vem
+     a diferença?", que é justamente o detalhe que se quer omitir.
 
      O catalogo.js não é carregado nesta página, então a detecção de pacote é a
      mesma do servidor: id conhecido, com o nome como rede de segurança. */
@@ -312,14 +312,21 @@
   function montaTabela(itens, total){
     var tbody = el("tabela-servicos");
     tbody.innerHTML = "";
-    var pacote = (itens || []).filter(ehPacote)[0];
-    var tr = document.createElement("tr");
-    var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
-    var desc = document.createElement("td");
-    desc.textContent = pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados";
-    var val = document.createElement("td"); val.className = "num";
-    tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
-    tbody.appendChild(tr);
+    var lista = itens || [];
+    var pacote = lista.filter(ehPacote)[0];
+    var descricoes = [pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados"];
+    lista.filter(function(i){ return !ehPacote(i); }).forEach(function(a){
+      descricoes.push(a.nome || a.id);
+    });
+
+    descricoes.forEach(function(texto){
+      var tr = document.createElement("tr");
+      var qtd = document.createElement("td"); qtd.textContent = "1"; qtd.className = "num";
+      var desc = document.createElement("td"); desc.textContent = texto;
+      var val = document.createElement("td"); val.className = "num";
+      tr.appendChild(qtd); tr.appendChild(desc); tr.appendChild(val);
+      tbody.appendChild(tr);
+    });
 
     var trTotal = document.createElement("tr");
     var v = document.createElement("td");
@@ -383,9 +390,13 @@
   }
 
   function avaliarBotao(){
+    /* CPF não trava mais a assinatura (2026-08-11) — tem cliente que não tem.
+       Se digitar, aí sim precisa estar completo, senão o contrato sairia com
+       meio CPF. */
+    var cpf = el("a-cpf").value.replace(/\D/g, "");
     var ok = el("a-aceite").checked &&
              el("a-nome").value.trim() &&
-             el("a-cpf").value.replace(/\D/g, "").length === 11 &&
+             (cpf.length === 0 || cpf.length === 11) &&
              assinaturaPronta();
     el("btn-assinar").disabled = !ok;
   }

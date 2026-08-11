@@ -72,7 +72,12 @@
      linha = ~93px; 120px dá folga pro nome do pacote quebrar em duas linhas.
      Como a altura não depende mais da quantidade de itens, o template voltou
      a ser um só (antes eram três: P/M/G). */
-  .box-tabela{height:120px;margin:14px 0 18px}
+  /* Altura FIXA da tabela de serviços — é ela que mantém a paginação igual pra
+     todo contrato e permitiu acabar com as variantes P/M/G. 220px comportam,
+     no tamanho cheio, cabeçalho + pacote + 4 adicionais + total; acima disso o
+     gerar.js aperta as linhas pra caber. Mexeu aqui? Regere e confira a
+     paginação, porque isso empurra todo o texto seguinte. */
+  .box-tabela{height:220px;margin:14px 0 18px}
   .box-ass{height:104px;max-width:420px;margin:24px auto 0}
   /* legendas centralizadas — precisa vencer o text-align:justify genérico
      de .conteudo-pag p na especificidade */

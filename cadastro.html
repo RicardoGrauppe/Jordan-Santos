@@ -165,7 +165,7 @@
            disso. Os `required` saíram do segundo par pra não prometer
            obrigatoriedade que não existe mais. -->
       <div class="form-secao">Quem vai assinar</div>
-      <p class="ajuda-secao">Se só um de vocês vai assinar, preencha só os dados dele. Os dois campos de um mesmo contratante andam juntos: nome e CPF.</p>
+      <p class="ajuda-secao">Se só um de vocês vai assinar, preencha só os dados dele. O CPF é opcional &mdash; se n&atilde;o tiver, pode deixar em branco.</p>
       <label class="campo">Nome do noivo
         <input id="o-noivo" type="text" autocomplete="given-name">
       </label>
@@ -373,16 +373,24 @@
       return { p: p, nome: nome, cpf: cpf, vazia: !nome && !cpf, completa: !!nome && cpf.length === 11 };
     });
 
-    if (pessoas.every(function(x){ return x.vazia; })){
-      marcarErroCampo("o-noivo", "Preencha ao menos um contratante (nome e CPF).");
+    /* O NOME é o mínimo; o CPF é opcional (2026-08-11) — o Jordan atende
+       clientes que não têm CPF, e exigir travaria o cadastro deles. Se o CPF
+       vier preenchido, aí sim tem que estar completo: meio CPF no contrato é
+       pior do que nenhum. */
+    if (pessoas.every(function(x){ return !x.nome; })){
+      marcarErroCampo("o-noivo", "Preencha o nome de ao menos um contratante.");
       return false;
     }
     for (var i = 0; i < pessoas.length; i++){
       var x = pessoas[i];
-      if (x.vazia || x.completa) continue;
-      if (!x.nome){ marcarErroCampo(x.p.nome, "Preencha o nome " + x.p.rotulo + " ou apague o CPF."); return false; }
-      marcarErroCampo(x.p.cpf, "Confira o CPF " + x.p.rotulo + " (11 dígitos).");
-      return false;
+      if (x.cpf && x.cpf.length !== 11){
+        marcarErroCampo(x.p.cpf, "Confira o CPF " + x.p.rotulo + " (11 dígitos) ou deixe em branco.");
+        return false;
+      }
+      if (x.cpf && !x.nome){
+        marcarErroCampo(x.p.nome, "Preencha o nome " + x.p.rotulo + " ou apague o CPF.");
+        return false;
+      }
     }
     return true;
   }

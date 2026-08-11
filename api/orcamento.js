@@ -156,20 +156,19 @@ export default async function handler(req, res) {
   const dataIso = typeof dados.dataEvento === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(dados.dataEvento) ? dados.dataEvento : null;
 
-  /* Basta UMA das duas pessoas (decisão de 2026-08-08): dá pra contratar só
-     com o noivo, só com a noiva, ou com os dois. Quem for informado, porém,
-     precisa vir COMPLETO — nome sem CPF viraria contratante sem identificação
-     no documento. */
-  const temNoivo = !!noivo || cpfNoivo.length > 0;
-  const temNoiva = !!noiva || cpfNoiva.length > 0;
-  const noivoOk = !!noivo && cpfNoivo.length === 11;
-  const noivaOk = !!noiva && cpfNoiva.length === 11;
-
-  if (!temNoivo && !temNoiva) {
-    return res.status(400).json({ erro: "informe o nome e o CPF de pelo menos um dos contratantes" });
+  /* Basta o NOME de UMA das duas pessoas: dá pra contratar só com o noivo, só
+     com a noiva, ou com os dois (2026-08-08). O CPF é opcional desde
+     2026-08-11 — o Jordan atende clientes que não têm CPF, e exigir travaria
+     o cadastro deles. Quando vier, tem que estar completo: meio CPF no
+     contrato é pior do que nenhum. */
+  if (!noivo && !noiva) {
+    return res.status(400).json({ erro: "informe o nome de pelo menos um dos contratantes" });
   }
-  if ((temNoivo && !noivoOk) || (temNoiva && !noivaOk)) {
-    return res.status(400).json({ erro: "de quem for preencher, informe nome e CPF (11 dígitos)" });
+  if ((cpfNoivo && cpfNoivo.length !== 11) || (cpfNoiva && cpfNoiva.length !== 11)) {
+    return res.status(400).json({ erro: "CPF precisa ter 11 dígitos, ou pode ficar em branco" });
+  }
+  if ((cpfNoivo && !noivo) || (cpfNoiva && !noiva)) {
+    return res.status(400).json({ erro: "informe o nome de quem tem o CPF preenchido" });
   }
 
   const faltando = !contato || !email || !cep || !endereco || !numero || !bairro ||
@@ -225,13 +224,19 @@ export default async function handler(req, res) {
      Agora a busca é explícita, pelo CPF de quem existir (o índice continua
      no banco protegendo o caso comum). O CPF ausente vai como null, que o
      Postgres considera distinto a cada linha — dois cadastros sem noivo na
-     mesma data convivem como fichas separadas, que é o certo. */
-  const chave = cpfNoivo || cpfNoiva;
+     mesma data convivem como fichas separadas, que é o certo.
+
+     Sem CPF nenhum (que passou a ser possível em 2026-08-11) a busca cai pro
+     nome de quem existir. É mais frágil — um erro de digitação no reenvio
+     cria uma ficha nova em vez de atualizar —, mas duplicar é o modo de
+     falhar seguro; o perigoso seria casar fichas que não são a mesma. */
+  const chaveCpf = cpfNoivo || cpfNoiva;
+  const filtro = chaveCpf
+    ? "&or=(cpf_noivo.eq." + chaveCpf + ",cpf_noiva.eq." + chaveCpf + ")"
+    : (noivo ? "&noivo=eq." : "&noiva=eq.") + encodeURIComponent(noivo || noiva);
   try {
     const achados = await rest(
-      "clientes?data_evento=eq." + encodeURIComponent(dataIso) +
-      "&or=(cpf_noivo.eq." + chave + ",cpf_noiva.eq." + chave + ")" +
-      "&select=id&limit=1"
+      "clientes?data_evento=eq." + encodeURIComponent(dataIso) + filtro + "&select=id&limit=1"
     );
     const existente = achados && achados[0];
     if (existente) {

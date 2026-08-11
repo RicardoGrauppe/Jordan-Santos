@@ -180,8 +180,13 @@ export default async function handler(req, res) {
       }
 
       const nome = textoCurto(nomeSignatario, 120);
+      /* CPF opcional desde 2026-08-11: o Jordan atende clientes que não têm
+         CPF, e exigir aqui impediria de assinar. Quem tem, informa — e aí
+         precisa estar completo. O nome continua obrigatório: é ele que
+         identifica quem assinou. */
       const cpf = normalizarCpf(cpfSignatario || "");
-      if (!nome || cpf.length !== 11) return res.status(400).json({ erro: "preencha nome e CPF válidos" });
+      if (!nome) return res.status(400).json({ erro: "preencha seu nome" });
+      if (cpf && cpf.length !== 11) return res.status(400).json({ erro: "CPF precisa ter 11 dígitos, ou pode ficar em branco" });
 
       const email = emailDoContrato(c);
       const assinadoEm = new Date();
@@ -228,7 +233,7 @@ export default async function handler(req, res) {
       const corpo = {
         subject: "Contrato assinado — " + nome,
         text: "O contrato foi assinado eletronicamente.\n\n" +
-          "Signatário: " + nome + " (CPF " + cpf + ")\n" +
+          "Signatário: " + nome + (cpf ? " (CPF " + cpf + ")" : "") + "\n" +
           "Data/hora: " + agora + "\n" +
           "Verificação: link de assinatura exclusivo, entregue ao contratante\n" +
           "Impressão digital do documento (SHA-256): " + doc_sha256 + "\n\n" +

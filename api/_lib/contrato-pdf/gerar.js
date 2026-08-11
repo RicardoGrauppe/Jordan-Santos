@@ -18,9 +18,10 @@
   tools/contrato-template/README.md), senão o PDF sai com o texto antigo.
 
   Template ÚNICO desde 2026-08-08. Existiam três (P/M/G) porque a tabela de
-  serviços crescia uma linha por item e mudava a paginação; agora ela mostra
-  só o pacote + o VALOR TOTAL, tem altura fixa, e um contrato de 1 item sai
-  com a mesma paginação de um de 8.
+  serviços crescia uma linha por item e empurrava a paginação. Hoje a tabela
+  lista o pacote e os adicionais (sem valor unitário — só o total), mas mora
+  numa caixa de altura FIXA e se encaixa nela: um contrato de 1 item sai
+  folgado, um de 10 sai apertado, e os dois ocupam o mesmo espaço na folha.
 */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -227,44 +228,63 @@ export async function gerarContratoPdf({
   escreverCampo("valor-entrada", moeda(entrada));
   escreverCampo("cidade-assinatura", dados.cidade);
   escreverCampo("data-assinatura", dataExtenso(assinadoEm) + ".");
+  /* sem CPF sai só o nome (o CPF virou opcional em 2026-08-11) — deixar
+     "— CPF —" pendurado na linha da assinatura pareceria dado faltando */
   escreverCampo(
     "ass-casal-rotulo",
-    signatario.nome + " — CPF " + cpfFormatado(signatario.cpf)
+    signatario.nome + (signatario.cpf ? " — CPF " + cpfFormatado(signatario.cpf) : "")
   );
 
   /* ---------- tabela de itens ---------- */
   {
     const b = caixaDe("tabela-servicos");
-    const fs = 9.8, pad = 6;
+    const pad = 6;
     const colQtd = 34 * sx, colVal = 105 * sx;
     const colDesc = b.largura - colQtd - colVal;
 
-    /* Duas linhas, sempre (decisão de 2026-08-08): o pacote e o valor final.
-       Os adicionais continuam sendo escolhidos no /estudio e entram na soma,
-       mas não aparecem item a item no documento.
+    /* O contrato LISTA o pacote e os adicionais, um por linha, mas NENHUM
+       valor unitário — só o VALOR TOTAL no rodapé da tabela (2026-08-11).
+       Imprimir o preço de tabela de cada item ao lado de um total diferente
+       levantaria a pergunta "de onde vem a diferença?", que é justamente o
+       que se quer omitir.
 
-       A linha do pacote vai SEM valor próprio de propósito: imprimir o preço
-       de tabela dele ao lado de um total maior levantaria a pergunta "de onde
-       vem a diferença?", que é justamente o detalhe que se quer omitir.
-
-       Altura fixa é o que permite um template único — antes eram três
-       (P/M/G), porque a tabela crescia com a quantidade de itens. */
+       O pacote vem primeiro; sem pacote nenhum (contrato só de adicionais) a
+       primeira linha é um rótulo genérico. */
     const pacote = itens.find(ehPacote);
-    const descricao = pacote
-      ? (pacote.nome || pacote.id)
-      : "Serviços fotográficos contratados";
+    const adicionais = itens.filter((i) => !ehPacote(i));
+    const itensDaTabela = [
+      { desc: pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados" },
+      ...adicionais.map((a) => ({ desc: a.nome || a.id }))
+    ];
+
+    /* A caixa do template tem altura FIXA — é ela que mantém a paginação igual
+       pra todo contrato e permitiu acabar com as três variantes P/M/G. Como a
+       tabela voltou a crescer com a quantidade de itens, ela agora se ENCAIXA
+       na caixa: aperta primeiro o respiro das linhas, depois a fonte, até
+       caber. Um contrato de 1 item sai folgado, um de 10 sai apertado, e os
+       dois ocupam exatamente o mesmo espaço na folha. */
+    const N_FIXAS = 2;                         /* cabeçalho + VALOR TOTAL */
+    let fs = 9.8, respiro = 10, quebras;
+    for (;;) {
+      quebras = itensDaTabela.map((l) => quebrarEmLinhas(l.desc, helv, fs, colDesc - pad * 2));
+      const linhasDeTexto = quebras.reduce((s, q) => s + q.length, 0) + N_FIXAS;
+      const altura = (itensDaTabela.length + N_FIXAS) * respiro + linhasDeTexto * (fs + 3.5);
+      if (altura <= b.altura) break;
+      if (respiro > 4) { respiro -= 1; continue; }
+      if (fs > 6.8) { fs -= 0.3; continue; }
+      break;   /* piso: melhor um leve transbordo do que texto ilegível */
+    }
 
     const linhas = [
       { cabecalho: true, qtd: "QTD", desc: "DESCRIÇÃO DOS SERVIÇOS", val: "VALOR TOTAL" },
-      { qtd: "1", desc: descricao, val: "",
-        quebra: quebrarEmLinhas(descricao, helv, fs, colDesc - pad * 2) },
+      ...itensDaTabela.map((l, i) => ({ qtd: "1", desc: l.desc, val: "", quebra: quebras[i] })),
       { destaque: true, qtd: "", desc: "VALOR TOTAL", val: moeda(total) }
     ];
 
     let topo = b.topo;
     for (const l of linhas) {
       const nLinhas = l.quebra ? l.quebra.length : 1;
-      const alturaLinha = 10 + nLinhas * (fs + 3.5);
+      const alturaLinha = respiro + nLinhas * (fs + 3.5);
       const base = topo - alturaLinha;
 
       if (l.cabecalho) {
@@ -282,7 +302,7 @@ export async function gerarContratoPdf({
       }
 
       const fonte = (l.cabecalho || l.destaque) ? helvBold : helv;
-      const size = l.cabecalho ? 8 : fs;
+      const size = l.cabecalho ? Math.min(8, fs) : fs;
       const y = base + alturaLinha - size - 5;
       const qtd = paraWinAnsi(l.qtd);
       b.page.drawText(qtd, {
@@ -318,7 +338,7 @@ export async function gerarContratoPdf({
     const quando = assinadoEm.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
     const linhas = [
       ["Signatário:", signatario.nome],
-      ["CPF:", cpfFormatado(signatario.cpf)],
+      ...(signatario.cpf ? [["CPF:", cpfFormatado(signatario.cpf)]] : []),
       ...(signatario.email ? [["E-mail:", signatario.email]] : []),
       ["Data e hora:", quando + " (horário de Brasília)"],
       ["Verificação:", "acesso por link eletrônico exclusivo, entregue ao contratante"],
