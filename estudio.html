@@ -1415,7 +1415,9 @@
               <!-- vira "Copiar link da via" depois que o casal assina -->
               <span id="rotulo-enviar-cliente">Copiar link</span>
             </button>
-            <a href="#" id="link-revisar-contrato" class="botao-secundario">
+            <!-- aba nova: o Jordan volta pra ficha do cliente sem perder onde
+                 estava. O comportamento em app instalado é ajustado no JS. -->
+            <a href="#" id="link-revisar-contrato" class="botao-secundario" target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"></path><path d="M21 3l-9 9"></path><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"></path></svg>
               Abrir contrato
             </a>
@@ -2262,6 +2264,23 @@
     var aba = window.open(link, "_blank", "noopener");
     if (!aba) location.href = link;
   }
+
+  /* O Estúdio salvo na tela de início roda em janela própria, sem abas: ali um
+     target="_blank" joga o Jordan pra FORA do app, no navegador — outro
+     contexto, de onde ele só volta trocando de aplicativo. Nesse caso o link
+     "Abrir contrato" navega na mesma janela, e o gesto de voltar desfaz. Em
+     navegador normal ele abre em aba nova e a ficha do cliente fica intacta,
+     que é o pedido. */
+  function appInstalado(){
+    return !!(window.navigator.standalone ||
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches));
+  }
+
+  el("link-revisar-contrato").addEventListener("click", function(ev){
+    if (!appInstalado()) return;
+    ev.preventDefault();
+    location.href = this.href;
+  });
 
   function enviarParaAssinatura(){
     if (!clienteAtual) return;
