@@ -5,3 +5,8 @@
 
 # pdf-lib (usado por api/_lib/contrato-pdf) — a Vercel instala no build
 node_modules/
+
+# páginas de comparação visual (lab-titulo-peso, lab-icones-deluxe, lab-conta-card...):
+# rascunho pra decidir um detalhe de design vendo as opções lado a lado. São
+# descartáveis e ficam só na máquina — commitadas, virariam página pública no site.
+lab-*.html
