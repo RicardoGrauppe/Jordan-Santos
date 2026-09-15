@@ -8,6 +8,7 @@
     "contrato:verificar": "node tools/contrato-template/verificar.mjs"
   },
   "dependencies": {
-    "pdf-lib": "^1.17.1"
+    "pdf-lib": "^1.17.1",
+    "pdfmake": "^0.2.23"
   }
 }

@@ -36,8 +36,8 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
    dos produtos, mas ele é browser-only (`window.CATALOGO`) e esta function roda
    no servidor — daí a lista aqui. Pacote novo no catálogo? Acrescente o id.
    O fallback pelo nome cobre o esquecimento sem quebrar o contrato. */
-const PACOTES = new Set(["eternal", "heritage"]);
-function ehPacote(item) {
+export const PACOTES = new Set(["eternal", "heritage"]);
+export function ehPacote(item) {
   return PACOTES.has(item.id) || /^pacote\b/i.test(String(item.nome || ""));
 }
 
@@ -50,23 +50,23 @@ const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-function moeda(v) {
+export function moeda(v) {
   /* o Intl separa "R$" do número com espaço fino (U+00A0); troca por espaço
      normal só pra não depender de encoding exótico na fonte do PDF */
   return brl.format(Number(v) || 0).replace(/ /g, " ");
 }
-function cpfFormatado(v) {
+export function cpfFormatado(v) {
   const d = String(v || "").replace(/\D/g, "");
   return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : String(v || "");
 }
-function cepFormatado(v) {
+export function cepFormatado(v) {
   const d = String(v || "").replace(/\D/g, "");
   return d.length === 8 ? d.replace(/(\d{5})(\d{3})/, "$1-$2") : String(v || "");
 }
-function dataExtenso(d) {
+export function dataExtenso(d) {
   return d.getDate() + " de " + MESES[d.getMonth()] + " de " + d.getFullYear();
 }
-function dataEventoExtenso(iso) {
+export function dataEventoExtenso(iso) {
   if (!iso) return "";
   const [a, m, dia] = String(iso).split("-").map(Number);
   return dia + " de " + MESES[m - 1] + " de " + a;
