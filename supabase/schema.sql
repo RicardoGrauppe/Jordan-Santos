@@ -60,6 +60,26 @@ create trigger prospectos_atualizado before update on public.prospectos
   for each row execute function public.tocar_atualizado_em();
 alter table public.prospectos enable row level security;
 
+-- ───────────────────── contrato_templates ─────────────────────
+-- Texto do contrato editável pelo Jordan (editor Tiptap em /configuracoes),
+-- no lugar do contrato-template.js hardcoded. Nunca edita uma linha existente:
+-- salvar sempre insere uma versão nova e desativa a anterior — mesmo
+-- princípio de imutabilidade de contrato_versoes (mais abaixo). Cada contrato
+-- grava, em contratos.template_id, qual versão estava ativa quando ele foi
+-- gerado, então editar o template depois não muda contratos já em andamento
+-- ou assinados. Vem ANTES de contratos no arquivo de propósito: a FK precisa
+-- da tabela já existir.
+create table public.contrato_templates (
+  id             uuid primary key default gen_random_uuid(),
+  conteudo_json  jsonb not null,   -- doc do Tiptap (fonte editável)
+  conteudo_html  text not null,    -- HTML exportado — mesma forma que contrato-template.js
+                                    -- produzia (<span class="campo" data-campo="...">, tabela, etc.)
+  ativo          boolean not null default false,
+  criado_em      timestamptz not null default now()
+);
+create unique index contrato_templates_um_ativo on contrato_templates (ativo) where ativo;
+alter table public.contrato_templates enable row level security;
+
 -- ───────────────────────── contratos ─────────────────────────
 -- Assinatura eletrônica simples/avançada, válida entre as partes (MP 2.200-2/2001
 -- art. 10 §2º; CC arts. 107 e 219). A trilha abaixo sustenta autoria/integridade.
@@ -78,6 +98,10 @@ create table public.contratos (
   expira_em      timestamptz not null,         -- +30 dias no envio
 
   snapshot      jsonb,                          -- congela o que foi enviado pra assinar
+  versao        int not null default 1,         -- sobe a cada edição depois de confirmado/enviado
+  template_id   uuid references public.contrato_templates(id),
+                                                 -- fixa pra sempre qual versão do TEXTO do contrato
+                                                 -- este contrato usa — editar o template depois não muda isto
 
   -- revisão/confirmação do Jordan (gera → ele revisa e "assina" → libera envio ao casal)
   jordan_confirmado_em     timestamptz,
@@ -104,6 +128,25 @@ create table public.contratos (
 create index contratos_cliente_idx on public.contratos (cliente_id);
 create index contratos_status_idx  on public.contratos (cliente_id, status);
 alter table public.contratos enable row level security;
+
+-- histórico de versões: toda edição da ficha depois que o contrato já foi
+-- confirmado/enviado guarda aqui o snapshot e a assinatura do Jordan que
+-- estavam valendo ATÉ a edição, antes de "contratos" ser atualizado pra versão
+-- nova. Contrato nunca sobrescreve silenciosamente o que já foi confirmado ou
+-- mostrado ao casal — só o que ainda é rascunho não confirmado (ninguém viu).
+create table public.contrato_versoes (
+  id                        uuid primary key default gen_random_uuid(),
+  contrato_id               uuid not null references public.contratos(id) on delete cascade,
+  versao                    int not null,
+  snapshot                  jsonb not null,
+  jordan_assinatura_tipo    text,
+  jordan_assinatura_dataurl text,
+  jordan_assinatura_nome    text,
+  jordan_confirmado_em      timestamptz,
+  criado_em                 timestamptz not null default now()
+);
+create index contrato_versoes_contrato_idx on public.contrato_versoes (contrato_id, versao desc);
+alter table public.contrato_versoes enable row level security;
 
 -- ───────────────────────── config ─────────────────────────
 -- Preferências do estúdio (chave/valor): a assinatura do Jordan.
