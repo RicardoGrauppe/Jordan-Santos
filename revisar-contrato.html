@@ -13,6 +13,14 @@
   Aqui o Jordan só confere e "assina" (cursiva com o nome, padrão, ou traço manual)
   — isso não manda nada ao casal ainda, só libera o botão "Enviar pro cliente" lá
   no /estudio.
+
+  Layout (2026-09-01): inspirado em SkySlope/Autentique — header com título/status
+  e menu de opções, sidebar com abas "Assinantes"/"Histórico" (colapsável em
+  drawer no mobile), documento dividido em folhas A4 (efeito visual só, quebra
+  por SEÇÃO — ver paginarDocumento() — não é paginação exata por altura como um
+  editor de texto faria). O JS de edição/confirmação/assinatura é o mesmo de
+  antes, só a moldura em volta mudou. assinar.html usa a MESMA estrutura de
+  shell/sidebar/folha (fonte duplicada, mesmo motivo do texto do contrato).
 -->
 <html lang="pt-BR">
 <head>
@@ -28,7 +36,7 @@
 <title>Revisar contrato | Jordan Santos Fotografia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600&family=Jost:wght@300;400;500&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
 <style>
   :root{
     /* faixas seguras do iPhone (notch em cima, barrinha de home embaixo).
@@ -36,46 +44,330 @@
        pra ficarem legíveis e testáveis num só lugar. */
     --sat: env(safe-area-inset-top, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
-    --paper:#FFFFFF; --ink:#1D1D1B; --ink-soft:#706F6F;
-    --accent:#003646; --accent-deep:#4F6278; --noir:#1D1D1B;
-    --line:#E8E1DC; --soft:#F6F3F0; --erro:#A33B3B; --ok:#2E6B4F;
+    /* paleta alinhada ao brandbook-estudio.html (2026-09-10): a página estava
+       com --ink/--ink-soft/--line/--soft em tons quentes/bege, destoando do
+       resto do app (que é cinza-azulado frio). Também tinha um --cta laranja
+       exclusivo do FAB — sumiu, ação primária no estúdio é sempre petróleo
+       (--accent) com hover --accent-hover. O interior do #documento continua
+       com tons de papel de propósito (Times NR, cara de contrato). */
+    --paper:#FFFFFF; --ink:#1F2329; --ink-soft:#6B7280;
+    --accent:#003646; --accent-deep:#4F6278; --accent-hover:#00485C; --noir:#1D1D1B;
+    --line:#E4E6EA; --soft:#F6F7F9; --erro:#A33B3B; --ok:#2E6B4F; --alerta:#9A7B1E;
     --sombra:0 10px 34px rgba(29,29,27,.14);
-    --serif:"Bodoni Moda","Didot",Georgia,serif;
-    --sans:"Jost","Helvetica Neue",sans-serif;
+    /* esta tela é ferramenta do Jordan (ele revisa/confirma antes de liberar
+       pro casal) — NÃO é o que o casal vê, então segue a regra do estúdio
+       (Inter, padrão, sem par serifada+sans), diferente de assinar.html.
+       Só o TEXTO do contrato (#documento, mais abaixo) foge disso — ver
+       var(--contrato). */
+    --serif:"Inter","Helvetica Neue",sans-serif;
+    --sans:"Inter","Helvetica Neue",sans-serif;
     --cursiva:"Dancing Script","Segoe Script","Brush Script MT",cursive;
+    /* só o TEXTO do contrato (#documento) usa esta fonte — serifada clássica
+       de documento jurídico, de propósito diferente da identidade da marca
+       (--serif/Bodoni Moda, que seguem no resto da tela: header, sidebar,
+       botões). O contrato em si deve parecer contrato, não peça de marketing. */
+    --contrato:"Times New Roman",Times,Georgia,serif;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--soft);color:var(--ink);font-family:var(--sans);font-weight:400;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
-  .envelope{max-width:820px;margin:0 auto;padding:calc(28px + var(--sat)) 18px calc(80px + var(--sab))}
-  .topo{text-align:center;margin-bottom:18px}
-  .topo h1{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);letter-spacing:.02em}
-  .topo p{color:var(--ink-soft);font-size:14px;margin-top:6px}
+  [hidden]{display:none !important}
 
   .estado{max-width:520px;margin:80px auto;text-align:center;padding:0 20px}
   .estado h2{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--accent);margin-bottom:12px}
   .estado p{color:var(--ink-soft)}
   .estado a{color:var(--accent)}
-  [hidden]{display:none !important}
 
-  .doc-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sombra);overflow:hidden}
-  .doc-scroll{max-height:56vh;overflow-y:auto;padding:6px 4px}
+  /* ============================= SHELL ============================= */
+  /* altura travada em 100dvh (com fallback pra vh) de propósito: sidebar e
+     documento rolam CADA UM na sua coluna, igual Autentique/SkySlope — sem
+     isso a sidebar (bem mais curta que 6-7 folhas de contrato) rolava junto
+     com o documento e sumia da tela no meio da revisão. */
+  /* row, não column: a sidebar precisa ir até o topo de verdade (ver pedido
+     de 2026-09-01), então ela é irmã de .coluna-principal — não fica dentro
+     de um container que começa depois do header. */
+  .shell{height:100vh;height:100dvh;display:flex;overflow:hidden}
+  .coluna-principal{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
 
-  #documento{max-width:760px;margin:0 auto;padding:26px 30px}
+  /* sem card branco atrás: o header vive na mesma superfície da página, só
+     com o alinhamento seguindo a mesma margem do documento logo abaixo (ver
+     .topbar-inner, com o mesmo max-width/centralização do .folha). */
+  .topbar{padding:calc(18px + var(--sat)) 24px 16px}
+  .topbar-inner{
+    max-width:794px;margin:0 auto;width:100%;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  }
+  .topbar-titulo h1{font-family:var(--serif);font-weight:700;font-size:18px;color:var(--ink);letter-spacing:.01em;line-height:1.3}
+  .topbar-meta{margin-top:6px;font-size:12.5px;color:var(--ink-soft)}
+  .topbar-tags{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .tag{
+    display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;
+    background:var(--paper);font-size:10.5px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .tag svg{width:11px;height:11px;flex-shrink:0}
+  .tag.ok{color:var(--ok);background:#E7F1EC}
+  .tag.pendente{color:var(--alerta);background:#FBF6E8}
+  .tag.info{color:var(--accent);background:#EAF1F3}
+  .tag.erro{color:var(--erro);background:#FBEBEB}
+
+  .topbar-acoes{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .btn-icone{
+    width:38px;height:38px;border-radius:10px;border:0;background:var(--soft);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);
+    transition:all .15s;
+  }
+  @media (hover:hover){.btn-icone:hover{background:var(--line);color:var(--accent)}}
+  .btn-icone svg{width:18px;height:18px}
+  #btn-sidebar-mobile{display:none}
+
+  .menu-wrap{position:relative}
+  .menu-opcoes{
+    position:absolute;top:calc(100% + 8px);right:0;min-width:260px;background:var(--paper);
+    border:1px solid var(--line);border-radius:12px;box-shadow:var(--sombra);padding:6px;z-index:30;
+  }
+  .menu-opcoes a span,.menu-opcoes button span{white-space:nowrap}
+  .menu-opcoes a,.menu-opcoes button{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:0;background:none;
+    font:inherit;font-size:13.5px;color:var(--ink);text-decoration:none;cursor:pointer;
+  }
+  .menu-opcoes svg{width:15px;height:15px;flex-shrink:0;opacity:.85}
+  @media (hover:hover){.menu-opcoes a:hover,.menu-opcoes button:not(:disabled):not(.perigo):hover{background:var(--soft)}}
+  .menu-opcoes button:disabled{opacity:.4;cursor:not-allowed}
+  .menu-opcoes .perigo{color:var(--erro);background:#FBEBEB}
+  @media (hover:hover){.menu-opcoes .perigo:hover{background:#F5D8D8}}
+
+  /* ---------- sidebar (assinantes / histórico) ---------- */
+  .sidebar{width:336px;flex-shrink:0;border-right:1px solid var(--line);background:var(--paper);overflow-y:auto;scrollbar-gutter:stable}
+  .sidebar-cabecalho{position:sticky;top:0;background:var(--paper);z-index:5}
+  .sidebar-topo{display:flex;align-items:center;gap:14px;padding:16px 16px 14px}
+  .link-voltar{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;
+    color:var(--ink-soft);font-size:12.5px;letter-spacing:.02em;font:inherit;
+    background:none;border:0;cursor:pointer;
+    text-decoration:none;flex-shrink:0;transition:background .15s,color .15s;
+  }
+  .link-voltar svg{width:14px;height:14px;flex-shrink:0}
+  /* PADRÃO oficial de hover pra botão de ação secundária (ícone+texto, sem
+     fundo/borda em repouso): --line, não --soft — este botão aparece tanto
+     sobre fundo branco (sidebar) quanto sobre --soft (header), e --soft
+     hover em cima de fundo --soft não aparece. --line é mais escuro que os
+     dois, então funciona nos dois lugares. Reaplicar em qualquer botão novo
+     desse tipo. */
+  @media (hover:hover){.link-voltar:hover{background:var(--line);color:var(--accent)}}
+  .link-voltar:focus{outline:none}
+  .link-voltar:focus-visible{background:var(--line);color:var(--accent)}
+  .sidebar-abas{display:flex;border-bottom:1px solid var(--line)}
+  .sidebar-aba{
+    flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:14px 8px;background:none;border:0;font:inherit;font-size:13px;letter-spacing:.03em;
+    color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;
+  }
+  .sidebar-aba svg{width:15px;height:15px;flex-shrink:0}
+  @media (hover:hover){.sidebar-aba:hover:not(.ativa){background:var(--line);color:var(--accent)}}
+  .sidebar-aba:focus{outline:none}
+  .sidebar-aba:focus-visible:not(.ativa){background:var(--line);color:var(--accent)}
+  .sidebar-aba.ativa{color:var(--accent);border-bottom-color:var(--accent);font-weight:500}
+  .sidebar-painel{padding:16px}
+
+  /* sem borda pra diferenciar (regra do vault). Mesmo tratamento dos cartões
+     internos da home (#pagina-home .itens-lista li / .card-link-cliente):
+     pastel petróleo sutil #F7F9FA sobre o container branco, com sombra
+     fantasma no lugar do contorno. O hairline interno do detalhe continua
+     marcando "toque pra abrir" quando expandido. */
+  .signer-card{
+    background:#F7F9FA;border-radius:12px;margin-bottom:10px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(29,41,61,.03);
+  }
+  .signer-cabecalho{
+    width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:transparent;
+    border:0;cursor:pointer;text-align:left;font:inherit;
+  }
+  /* mesmo padrão de pill de ícone da home (kpi-icone, legend-icone):
+     pastel petróleo + ícone --accent */
+  .signer-avatar{
+    width:32px;height:32px;border-radius:50%;background:#EAF1F3;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:var(--accent);
+  }
+  .signer-avatar svg{width:16px;height:16px}
+  .signer-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .signer-titulo{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  .signer-nome{font-size:13.5px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .signer-badge{
+    display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
+    padding:3px 9px;border-radius:8px;font-size:10px;letter-spacing:.03em;text-transform:uppercase;
+    background:var(--soft);color:var(--ink-soft);
+  }
+  .signer-badge svg{width:11px;height:11px}
+  /* mesma hierarquia de cor das tags do header (.tag.ok/.pendente) */
+  .signer-badge.ok{color:var(--ok);background:#E7F1EC}
+  .signer-badge.pendente{color:var(--alerta);background:#FBF6E8}
+  .signer-cabecalho .chevron{width:14px;height:14px;color:var(--ink-soft);flex-shrink:0;transition:transform .18s}
+  .signer-cabecalho[aria-expanded="true"] .chevron{transform:rotate(180deg)}
+  .signer-detalhe{padding:0 14px 14px;border-top:1px solid var(--line)}
+  .signer-detalhe dl{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;margin-top:12px;font-size:12.5px}
+  .signer-detalhe dt{color:var(--ink-soft)}
+  .signer-detalhe dd{color:var(--ink);word-break:break-word}
+
+  .timeline{list-style:none;position:relative;padding-left:20px}
+  .timeline li{position:relative;padding-bottom:20px;font-size:12.5px}
+  .timeline li::before{
+    content:"";position:absolute;left:-20px;top:3px;width:9px;height:9px;border-radius:50%;
+    background:var(--line);box-shadow:0 0 0 2px var(--paper);
+  }
+  .timeline li.feito::before{background:var(--accent)}
+  .timeline li::after{content:"";position:absolute;left:-16px;top:12px;bottom:-8px;width:1px;background:var(--line)}
+  .timeline li:last-child::after{display:none}
+  .timeline .t-titulo{font-weight:500;color:var(--ink)}
+  .timeline .t-data{color:var(--ink-soft);margin-top:2px}
+  .timeline .t-vazio{color:var(--ink-soft);font-size:12.5px;padding-left:2px}
+
+  .auditoria-bloco{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12px}
+  .auditoria-titulo{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px}
+  /* rótulo em cima, valor embaixo — em vez do grid lado a lado de antes, que
+     amontoava dispositivo/hash (valores longos) espremidos numa coluna
+     estreita. Cada par dt/dd também respira mais entre si. */
+  .auditoria-bloco dl{display:flex;flex-direction:column}
+  /* hierarquia clara: dt é metadado (pequeno, cinza, caixa alta, peso leve) —
+     dd é o dado de verdade, por isso maior e mais escuro/pesado que o rótulo,
+     não do mesmo peso visual como estava antes. */
+  .auditoria-bloco dt{
+    color:var(--ink-soft);font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-top:16px;
+  }
+  .auditoria-bloco dt:first-child{margin-top:0}
+  .auditoria-bloco dd{color:var(--ink);font-weight:500;word-break:break-word;margin-top:5px;font-size:13.5px;line-height:1.5}
+  /* dispositivo e hash ganham uma caixinha própria: monoespaçada, com fundo,
+     pra separar visualmente do texto normal em vez de só encolher a fonte —
+     e aqui o peso normal (não 500) é de propósito, código não é destaque */
+  .auditoria-bloco dd.tecnico{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;font-size:10.5px;line-height:1.6;
+    background:var(--soft);border:1px solid var(--line);border-radius:8px;
+    padding:9px 10px;word-break:break-all;
+  }
+
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(29,29,27,.35);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+  .sidebar-backdrop.ativo{opacity:1;pointer-events:auto}
+  .menu-opcoes-backdrop{position:fixed;inset:0;background:rgba(29,29,27,.35);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+  .menu-opcoes-backdrop.ativo{opacity:1;pointer-events:auto}
+
+  /* ---------- área do documento ---------- */
+  .documento-area{flex:1;min-width:0;padding:16px 24px 60px;overflow-y:auto;scrollbar-gutter:stable}
+
+  /* barra de rolagem no nosso estilo (fina, cor da linha) em vez do talo
+     cinza padrão do sistema — sidebar e documento-area são os dois painéis
+     que rolam por dentro do shell (o resto da página não tem scroll próprio) */
+  .sidebar, .documento-area{scrollbar-width:thin;scrollbar-color:transparent transparent}
+  @media (hover:hover){.sidebar:hover, .documento-area:hover{scrollbar-color:var(--line) transparent}}
+  .sidebar::-webkit-scrollbar, .documento-area::-webkit-scrollbar{width:10px}
+  .sidebar::-webkit-scrollbar-track, .documento-area::-webkit-scrollbar-track{background:transparent}
+  .sidebar::-webkit-scrollbar-thumb, .documento-area::-webkit-scrollbar-thumb{
+    background-color:transparent;border-radius:8px;border:3px solid transparent;background-clip:padding-box;
+    transition:background-color .2s;
+  }
+  /* some marcado o tempo todo (sombra fixa na lateral) — só aparece ao passar
+     o mouse ou tocar na área que rola, igual à barra "overlay" nativa */
+  @media (hover:hover){.sidebar:hover::-webkit-scrollbar-thumb{background-color:var(--line);border-color:var(--paper)}}
+  @media (hover:hover){.documento-area:hover::-webkit-scrollbar-thumb{background-color:var(--line);border-color:var(--soft)}}
+  @media (hover:hover){.sidebar::-webkit-scrollbar-thumb:hover, .documento-area::-webkit-scrollbar-thumb:hover{background-color:var(--ink-soft) !important}}
+  #documento.folhas{display:flex;flex-direction:column;align-items:center;gap:26px;max-width:none;padding:0}
+  #documento{font-family:var(--contrato)}
+  .folha{
+    width:100%;max-width:794px;aspect-ratio:210/297;background:var(--paper);box-shadow:var(--sombra);
+    padding:52px 58px 46px;position:relative;overflow:hidden;
+  }
+  .pagina-numero{position:absolute;bottom:16px;right:22px;font-size:10px;letter-spacing:.05em;color:var(--ink-soft)}
+
   #documento .logo-contrato{display:block;margin:0 auto 14px;width:190px;height:auto}
-  #documento h2{font-family:var(--serif);font-weight:500;font-size:21px;letter-spacing:.06em;text-align:center;margin-bottom:26px}
-  #documento h3{font-size:14.5px;font-weight:500;letter-spacing:.05em;margin:24px 0 10px}
+  #documento h2{font-family:var(--contrato);font-weight:700;font-size:21px;letter-spacing:.06em;text-align:center;margin-bottom:26px}
+  #documento h3{font-size:14.5px;font-weight:500;letter-spacing:.05em;margin:24px 0 10px;break-after:avoid}
+  #documento .folha:first-child h3:first-child{margin-top:0}
   #documento p,#documento li{font-size:13.6px;line-height:1.8;margin-bottom:10px;text-align:justify}
+  /* alinhamento escolhido no editor do modelo (classe .al-* gerada pelo
+     jsonParaHtml em configuracoes-editor.js). Sem classe = justificado, que é
+     o padrão do contrato. */
+  #documento .al-left{text-align:left}
+  #documento .al-center{text-align:center}
+  #documento .al-right{text-align:right}
+  #documento .al-justify{text-align:justify}
   #documento ol{padding-left:22px;margin-bottom:10px}
   #documento .campo{font-weight:500;border-bottom:1px solid var(--line);padding:0 4px;white-space:pre-wrap}
-  #documento table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:13.6px}
+  #documento table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:13.6px;break-inside:avoid}
   #documento th,#documento td{border:1px solid #C9C4BD;padding:8px 10px;text-align:left}
   #documento th{font-weight:500;letter-spacing:.08em;font-size:11.5px;text-transform:uppercase;background:#F6F3F0}
   #documento td.num{text-align:right;white-space:nowrap}
-  #documento .assinaturas{margin-top:48px}
+  #documento .assinaturas{margin-top:48px;break-inside:avoid}
   #documento .assinaturas p{text-align:center;margin-bottom:40px}
   #documento .linha-ass{border-top:1px solid var(--ink);max-width:420px;margin:0 auto;padding-top:6px;text-align:center;font-size:12.5px}
 
-  .painel{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sombra);padding:26px 24px;margin-top:22px}
+  /* selo de validação: só aparece depois que o casal assina — ver
+     mostrarSeloValidacao(). Mostra o que a gente REALMENTE tem (hash SHA-256,
+     base legal, data) — sem QR/URL de validação fingindo um serviço que este
+     site não opera. */
+  .selo-validacao{
+    width:100%;max-width:794px;margin:-14px auto 0;background:var(--paper);border-top:1px solid var(--line);
+    padding:16px 24px;font-size:11.5px;color:var(--ink-soft);line-height:1.7;
+    display:flex;align-items:center;gap:14px;box-shadow:var(--sombra);
+  }
+  .selo-validacao svg{width:26px;height:26px;color:var(--accent);flex-shrink:0}
+  .selo-validacao strong{color:var(--ink);font-weight:600;word-break:break-all}
+
+  .aviso-doc{
+    max-width:794px;margin:0 auto;padding:0 58px;font-size:12px;
+    color:var(--ink-soft);text-align:right;min-height:16px;transition:opacity .3s;
+  }
+  .aviso-doc.erro{color:var(--erro)}
+
+  /* banner de rascunho (2026-09-09): aparece só enquanto o casal ainda não
+     recebeu o link. Some assim que o contrato vira "enviado" ou depois. */
+  .banner-rascunho{
+    margin-top:12px;flex:1;
+    background:#FBF6E8;color:#7A5A11;
+    padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.5;
+    display:flex;align-items:flex-start;gap:10px;
+    box-shadow:0 1px 2px rgba(122,90,17,.06), 0 2px 8px rgba(122,90,17,.04);
+  }
+  .banner-rascunho > svg{flex-shrink:0;width:16px;height:16px;margin-top:2px;color:#B99524;opacity:.8;stroke-width:1.6}
+  .link-itens-estudio{
+    display:block;text-align:right;font-size:12px;color:var(--accent);
+    margin:-6px 0 14px;text-decoration:none;
+  }
+  @media (hover:hover){.link-itens-estudio:hover{text-decoration:underline}}
+  #documento .campo.editavel{cursor:text;border-radius:3px;transition:background .12s}
+  @media (hover:hover){#documento .campo.editavel:hover{background:#FBF6EE}}
+  .campo-inline-edit{
+    font:inherit;font-size:inherit;color:inherit;background:#FBF6EE;
+    border:1px solid var(--accent);border-radius:4px;padding:0 3px;
+    width:auto;min-width:2.4em;
+  }
+
+  /* ---------- botão flutuante + modal/sheet de assinatura ---------- */
+  .assinar-fab{
+    position:fixed;right:28px;bottom:28px;z-index:60;
+    display:inline-flex;align-items:center;gap:9px;
+    padding:14px 22px;border-radius:999px;border:0;
+    background:var(--accent);color:#fff;font:inherit;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+    box-shadow:0 12px 30px rgba(0,54,70,.28);cursor:pointer;transition:background .15s,transform .15s;
+  }
+  @media (hover:hover){.assinar-fab:hover{background:var(--accent-hover);transform:translateY(-1px)}}
+  .assinar-fab svg{width:16px;height:16px;flex-shrink:0}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(29,29,27,.45);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-backdrop.aberto{opacity:1;pointer-events:auto}
+
+  /* desktop: modal centralizado. mobile (media query lá embaixo): vira sheet
+     que sobe da base — mesmo elemento, só a posição/transform mudam. */
+  .modal-assinatura{
+    position:fixed;z-index:80;left:50%;top:50%;
+    transform:translate(-50%,-46%);width:min(520px,92vw);max-height:85vh;overflow-y:auto;
+    background:var(--paper);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.28);
+    padding:30px 26px;opacity:0;pointer-events:none;transition:opacity .2s,transform .25s;
+  }
+  .modal-assinatura.aberto{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+  .modal-assinatura .painel{background:none;border:0;box-shadow:none;padding:0}
+  .modal-fechar{position:absolute;top:14px;right:14px}
+  .sheet-alca{display:none}
+  .sheet-alca-menu{display:none}
+
+  /* ---------- painel de ação (assinatura do Jordan) ---------- */
   .painel h2{font-family:var(--serif);font-weight:500;font-size:20px;color:var(--accent);margin-bottom:4px}
   .painel .sub{color:var(--ink-soft);font-size:13.5px;margin-bottom:20px}
 
@@ -86,39 +378,119 @@
   .campo-form{display:flex;flex-direction:column;margin-bottom:14px}
   .campo-form label{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px}
   .campo-form input{font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 13px;-webkit-appearance:none}
-  .campo-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
+  /* sem anel azul no foco (regra do vault) */
+  .campo-form input:focus{outline:none;border-color:var(--accent)}
 
-  .preview-cursiva{border:1px dashed #C9C4BD;border-radius:12px;background:#FBFAF8;padding:22px;text-align:center;margin-bottom:16px}
+  .preview-cursiva{border:1px dashed var(--line);border-radius:12px;background:var(--soft);padding:22px;text-align:center;margin-bottom:16px}
   .preview-cursiva span{font-family:var(--cursiva);font-size:38px;color:var(--ink)}
 
   .assina-area{margin:0 0 8px}
-  .canvas-box{position:relative;border:1px dashed #C9C4BD;border-radius:12px;background:#FBFAF8;height:180px;overflow:hidden}
+  .canvas-box{position:relative;border:1px dashed var(--line);border-radius:12px;background:var(--soft);height:180px;overflow:hidden}
   #pad{width:100%;height:100%;touch-action:none;display:block}
   .limpar-ass{position:absolute;top:8px;right:10px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);background:none;border:0;cursor:pointer}
-  .limpar-ass:hover{color:var(--accent)}
+  @media (hover:hover){.limpar-ass:hover{color:var(--accent)}}
 
   .botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border:0;border-radius:999px;font:inherit;font-size:13px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .2s ease,background .2s ease}
   .botao-1{background:var(--noir);color:#fff;width:100%;margin-top:14px}
-  .botao-1:hover{opacity:.88}
+  @media (hover:hover){.botao-1:hover{opacity:.88}}
   .botao:disabled{opacity:.4;cursor:default}
   .aviso{font-size:13.5px;margin-top:12px;min-height:18px}
+  /* banner âmbar do brandbook: avisa que a assinatura já veio preenchida da
+     padrão, pra a pessoa não achar que o campo veio errado do contrato */
+  .aviso-padrao{
+    display:flex;gap:9px;align-items:flex-start;margin:0 0 16px;
+    background:#FBF6E8;color:#7A5A11;padding:11px 13px;border-radius:10px;
+    font-size:12.5px;line-height:1.5;
+  }
+  .aviso-padrao[hidden]{display:none}
   .aviso.erro{color:var(--erro)}
   .aviso.ok{color:var(--ok)}
 
-  .ja-confirmado{border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;background:#FBFAF8}
+  .ja-confirmado{border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;background:var(--soft)}
   .ja-confirmado img{max-height:80px;max-width:280px}
 
-  /* link pro casal, logo abaixo da assinatura */
+  .campo-link{position:relative;margin-top:18px}
   #link-casal{
-    width:100%;margin-top:18px;padding:12px 14px;
+    width:100%;padding:12px 40px 12px 14px;
     border:1px solid var(--line);border-radius:10px;background:var(--soft);
     font:inherit;font-size:13px;color:var(--ink-soft);
+    outline:none;
   }
+  #link-casal:focus{border-color:var(--line);box-shadow:none}
+  .btn-copiar-icone{
+    position:absolute;top:50%;right:6px;transform:translateY(-50%);
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;padding:0;border:0;border-radius:7px;
+    background:none;color:var(--ink-soft);cursor:pointer;transition:background .15s,color .15s;
+  }
+  @media (hover:hover){.btn-copiar-icone:hover{background:var(--line);color:var(--ink)}}
+  .btn-copiar-icone svg{width:16px;height:16px}
   .voltar-estudio{
     display:block;text-align:center;margin-top:18px;
     font-size:13px;color:var(--ink-soft);text-decoration:none;
   }
-  .voltar-estudio:hover{color:var(--accent)}
+  @media (hover:hover){.voltar-estudio:hover{color:var(--accent)}}
+
+  /* ============================= MOBILE ============================= */
+  @media (max-width: 959px){
+    .sidebar{
+      position:fixed;inset:0 0 0 auto;width:min(340px,88vw);z-index:50;
+      transform:translateX(100%);transition:transform .22s ease;overflow-y:auto;
+      padding-top:var(--sat);box-shadow:-14px 0 30px rgba(0,0,0,.18);
+    }
+    .sidebar.aberta{transform:translateX(0)}
+    #btn-sidebar-mobile{display:inline-flex}
+    .documento-area{padding:20px 14px 50px}
+    .folha{padding:30px 22px 40px}
+    .aviso-doc{padding:0 22px}
+  }
+
+  /* imprime só o documento (rascunho): serve como "baixar PDF" antes da
+     assinatura, sem precisar de endpoint próprio no backend */
+  @media print{
+    body > *{display:none !important}
+    .coluna-principal, .coluna-principal .documento-area,
+    .coluna-principal .documento-area #documento,
+    .coluna-principal .documento-area #documento .folha,
+    .coluna-principal .documento-area #documento .folha *{display:revert !important}
+    #fluxo, .coluna-principal{display:block !important;overflow:visible !important}
+    .topbar, .sidebar, .assinar-fab, .modal-backdrop, .modal-assinatura,
+    .banner-rascunho, .pagina-numero{display:none !important}
+    .documento-area{padding:0 !important;overflow:visible !important}
+    #documento.folhas{gap:0 !important}
+    .folha{box-shadow:none !important;page-break-after:always;break-after:page}
+    .folha:last-child{page-break-after:auto;break-after:auto}
+  }
+  @page{size:A4;margin:0}
+
+  /* sheet de baixo pra cima: mesma .modal-assinatura, só a posição/entrada
+     mudam — celular é onde o FAB mais importa (documento é longo pra rolar
+     com o dedo até o fim procurando o botão). */
+  @media (max-width:640px){
+    .assinar-fab{right:18px;bottom:calc(18px + var(--sab))}
+    .modal-assinatura{
+      left:0;right:0;top:auto;bottom:0;transform:translateY(100%);
+      width:100%;max-width:none;border-radius:20px 20px 0 0;
+      max-height:88vh;padding:14px 20px calc(20px + var(--sab));
+    }
+    .modal-assinatura.aberto{transform:translateY(0)}
+    .sheet-alca{display:block;width:36px;height:4px;border-radius:99px;background:var(--line);margin:0 auto 16px}
+    .modal-fechar{top:10px}
+
+    .menu-opcoes,.menu-opcoes[hidden]{
+      display:flex !important;flex-direction:column;
+      position:fixed;inset:auto 0 0 0;
+      min-width:0;width:100%;max-width:none;
+      border-radius:20px 20px 0 0;border:0;
+      padding:10px 10px calc(10px + var(--sab));
+      box-shadow:0 -10px 30px rgba(0,0,0,.18);
+      transform:translateY(100%);transition:transform .25s ease;
+      z-index:80;pointer-events:none;
+    }
+    .menu-opcoes.aberto{transform:translateY(0);pointer-events:auto}
+    .sheet-alca-menu{display:block;width:36px;height:4px;border-radius:99px;background:var(--line);margin:4px auto 10px}
+    .menu-opcoes a,.menu-opcoes button{padding:14px 16px;font-size:15px;border-radius:10px}
+  }
 
   /* ---------- mobile: nada de zoom ao focar campo ----------
      O Safari do iOS dá zoom automático em qualquer input/select/textarea com
@@ -139,85 +511,225 @@
 </head>
 <body>
 
-<div class="envelope">
-  <div class="topo">
-    <h1>Revisar contrato</h1>
-    <p>Confira os dados abaixo e confirme pra liberar o envio ao casal.</p>
-  </div>
+<div class="estado" id="estado-carregando"><p>Carregando o contrato...</p></div>
+<div class="estado" id="estado-erro" hidden><h2>Ops</h2><p id="erro-texto">Não foi possível abrir este contrato.</p><p style="margin-top:14px"><a class="volta-estudio" href="/estudio">&larr; Voltar pro Estúdio</a></p></div>
 
-  <div class="estado" id="estado-carregando"><p>Carregando o contrato...</p></div>
-  <div class="estado" id="estado-erro" hidden><h2>Ops</h2><p id="erro-texto">Não foi possível abrir este contrato.</p><p style="margin-top:14px"><a class="volta-estudio" href="/estudio">&larr; Voltar pro Estúdio</a></p></div>
-
-  <div id="fluxo" hidden>
-    <div class="doc-card">
-      <div class="doc-scroll">
-        <!-- O texto do contrato vem de /contrato-template.js (fonte única: o que o
-             Jordan revisa aqui é exatamente o que o casal assina). Os dados do casal
-             entram depois, via [data-campo]. -->
-        <article id="documento"></article>
-        <script src="/contrato-template.js"></script>
-        <script>
-          document.getElementById("documento").innerHTML =
-            CONTRATO_TEMPLATE.html({ modo: "revisar" });
-        </script>
-      </div>
-    </div>
-
-    <!-- assinado: o link pro casal sai aqui mesmo, sem passar pelo Estúdio.
-         Não existe "assinar de novo": um contrato aceita UMA assinatura do
-         Jordan e UMA do casal (o servidor recusa a segunda). -->
-    <div class="painel" id="painel-ja-confirmado" hidden>
-      <h2 id="titulo-assinado">Contrato assinado ✓</h2>
-      <p class="sub" id="sub-assinado">Agora é só mandar o link pro casal. Quem tem o link consegue assinar, então mande direto pra eles.</p>
-      <div class="ja-confirmado" id="preview-confirmado"></div>
-
-      <!-- só aparece depois que o casal assina: aí existe PDF pra baixar -->
-      <button type="button" class="botao botao-1" id="btn-baixar-via" hidden>Baixar contrato assinado</button>
-      <p class="aviso" id="aviso-baixar-via"></p>
-
-      <div id="bloco-link" hidden>
-        <input type="text" id="link-casal" readonly aria-label="Link pro casal assinar">
-        <button type="button" class="botao botao-1" id="btn-copiar-link">Copiar mensagem</button>
-        <p class="aviso" id="aviso-link"></p>
-      </div>
-
-      <a class="voltar-estudio volta-estudio" href="/estudio">&larr; Voltar pro Estúdio</a>
-    </div>
-
-    <!-- painel de assinatura do Jordan -->
-    <div class="painel" id="painel-assinar">
-      <h2>Sua assinatura</h2>
-      <p class="sub">Por padrão, seu nome em cursiva. Se preferir, desenhe a assinatura na mão.</p>
-
-      <div class="abas">
-        <button type="button" class="aba ativa" id="aba-cursiva">Cursiva (nome)</button>
-        <button type="button" class="aba" id="aba-manual">Assinar manualmente</button>
-      </div>
-
-      <div id="modo-cursiva">
-        <div class="campo-form"><label for="nome-cursiva">Nome exibido na assinatura</label><input id="nome-cursiva" type="text" value="Jordan Santos"></div>
-        <div class="preview-cursiva"><span id="preview-cursiva-texto">Jordan Santos</span></div>
-      </div>
-
-      <div id="modo-manual" hidden>
-        <div class="assina-area">
-          <div class="canvas-box">
-            <canvas id="pad"></canvas>
-            <button type="button" class="limpar-ass" id="limpar-ass">Limpar</button>
-          </div>
+<div class="shell" id="fluxo" hidden>
+  <!-- sidebar-backdrop e sidebar são irmãs de .coluna-principal (não filhas):
+       a sidebar precisa ir até o topo de verdade, e o header só começa depois
+       dela — ver pedido de 2026-09-01. -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="sidebar" id="sidebar">
+      <div class="sidebar-cabecalho">
+        <div class="sidebar-topo">
+          <a href="/estudio" class="link-voltar volta-estudio" id="btn-voltar-sidebar" aria-label="Voltar pro cliente no Estúdio">
+            <i data-lucide="arrow-left"></i>
+            Voltar
+          </a>
+        </div>
+        <div class="sidebar-abas">
+          <button type="button" class="sidebar-aba ativa" data-aba="assinantes">
+            <i data-lucide="users"></i>
+            Assinantes
+          </button>
+          <button type="button" class="sidebar-aba" data-aba="historico">
+            <i data-lucide="history"></i>
+            Histórico
+          </button>
         </div>
       </div>
 
-      <button type="button" class="botao botao-1" id="btn-confirmar">Confirmar e liberar contrato</button>
-      <p class="aviso" id="aviso-confirmar"></p>
-    </div>
+      <div class="sidebar-painel" id="painel-assinantes">
+        <div class="signer-card" id="signer-jordan">
+          <button type="button" class="signer-cabecalho" aria-expanded="false">
+            <span class="signer-avatar"><i data-lucide="user"></i></span>
+            <span class="signer-info">
+              <span class="signer-titulo">Assinante</span>
+              <span class="signer-nome">Jordan Santos</span>
+            </span>
+            <span class="signer-badge" id="signer-jordan-badge"></span>
+            <i class="chevron" data-lucide="chevron-down"></i>
+          </button>
+          <dl class="signer-detalhe" id="signer-jordan-detalhe" hidden></dl>
+        </div>
+        <div class="signer-card" id="signer-casal">
+          <button type="button" class="signer-cabecalho" aria-expanded="false">
+            <span class="signer-avatar"><i data-lucide="user"></i></span>
+            <span class="signer-info">
+              <span class="signer-titulo">Assinante</span>
+              <span class="signer-nome" id="signer-casal-nome">Casal</span>
+            </span>
+            <span class="signer-badge" id="signer-casal-badge"></span>
+            <i class="chevron" data-lucide="chevron-down"></i>
+          </button>
+          <dl class="signer-detalhe" id="signer-casal-detalhe" hidden></dl>
+        </div>
+      </div>
+
+      <div class="sidebar-painel" id="painel-historico" hidden>
+        <ol class="timeline" id="timeline-lista"></ol>
+        <div class="auditoria-bloco" id="auditoria-bloco" hidden>
+          <div class="auditoria-titulo">Trilha de auditoria da assinatura</div>
+          <dl id="auditoria-lista"></dl>
+        </div>
+      </div>
+  </aside>
+
+  <div class="coluna-principal">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-titulo">
+          <h1 id="titulo-contrato">Contrato de Prestação de Serviços de Fotografia</h1>
+          <div class="topbar-meta">
+            <span id="meta-criado"></span>
+          </div>
+          <div class="topbar-tags">
+            <span class="tag" id="tag-status"></span>
+            <span class="tag" id="tag-versao" hidden></span>
+          </div>
+        </div>
+        <div class="topbar-acoes">
+          <button type="button" class="btn-icone" id="btn-sidebar-mobile" aria-label="Assinantes e histórico">
+            <i data-lucide="users"></i>
+          </button>
+          <div class="menu-wrap" id="menu-wrap-opcoes">
+            <button type="button" class="link-voltar" id="btn-opcoes" aria-haspopup="true" aria-expanded="false" aria-label="Opções">
+              Opções
+              <i data-lucide="ellipsis-vertical"></i>
+            </button>
+            <div class="menu-opcoes-backdrop" id="menu-opcoes-backdrop"></div>
+            <div class="menu-opcoes" id="menu-opcoes" hidden>
+              <div class="sheet-alca-menu"></div>
+              <button type="button" id="op-baixar-rascunho">
+                <i data-lucide="download"></i>
+                <span>Baixar rascunho em PDF</span>
+              </button>
+              <button type="button" id="op-baixar" disabled title="Disponível depois que os dois assinarem">
+                <i data-lucide="file-check"></i>
+                <span>Baixar contrato assinado</span>
+              </button>
+              <button type="button" class="perigo" id="op-cancelar">
+                <i data-lucide="x"></i>
+                <span>Cancelar contrato</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-inner">
+        <div class="banner-rascunho" id="banner-rascunho" hidden>
+          <i data-lucide="info"></i>
+          <span>Este contrato ainda é rascunho, você pode editar clicando nos campos. O casal só vê depois que você copiar e mandar o link.</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="documento-area">
+      <!-- O texto do contrato vem de /contrato-template.js (fonte única: o que o
+           Jordan revisa aqui é exatamente o que o casal assina). Os dados do casal
+           entram depois, via [data-campo]. paginarDocumento() reagrupa os filhos
+           em "folhas" A4 logo depois do innerHTML abaixo — ver <script> no fim. -->
+      <article id="documento" class="folhas"></article>
+      <script src="/contrato-template.js"></script>
+
+      <p class="aviso-doc" id="aviso-doc"></p>
+
+      <!-- Botão flutuante (2026-09-02): a ação de assinar/liberar/baixar não
+           fica mais fixa no fim do documento — com 6-7 folhas de contrato, ela
+           ficava enterrada, exigindo rolar tudo pra achar. O FAB abre um modal
+           (bottom sheet no mobile) com o painel certo pro estado atual —
+           mesmos elementos de sempre (#painel-assinar / #painel-ja-confirmado),
+           só que dentro do modal em vez de inline. */ -->
+      <button type="button" class="assinar-fab" id="btn-fab-assinatura" hidden>
+        <i data-lucide="pencil"></i>
+        <span id="fab-texto">Assinar agora</span>
+      </button>
+
+      <div class="modal-backdrop" id="modal-backdrop"></div>
+      <div class="modal-assinatura" id="modal-assinatura" role="dialog" aria-modal="true" aria-labelledby="titulo-assinado">
+        <div class="sheet-alca"></div>
+        <button type="button" class="btn-icone modal-fechar" id="modal-fechar" aria-label="Fechar">
+          <i data-lucide="x"></i>
+        </button>
+
+        <!-- assinado: o link pro casal sai aqui mesmo, sem passar pelo Estúdio.
+             Não existe "assinar de novo": um contrato aceita UMA assinatura do
+             Jordan e UMA do casal (o servidor recusa a segunda). -->
+        <div class="painel" id="painel-ja-confirmado" hidden>
+          <h2 id="titulo-assinado">Contrato assinado ✓</h2>
+          <p class="sub" id="sub-assinado">Agora é só mandar o link pro casal. Quem tem o link consegue assinar, então mande direto pra eles.</p>
+          <div class="ja-confirmado" id="preview-confirmado"></div>
+
+          <!-- só aparece depois que o casal assina: aí existe PDF pra baixar -->
+          <button type="button" class="botao botao-1" id="btn-baixar-via" hidden>Baixar contrato assinado</button>
+          <p class="aviso" id="aviso-baixar-via"></p>
+
+          <div id="bloco-link" hidden>
+            <div class="campo-link">
+              <input type="text" id="link-casal" readonly aria-label="Link pro casal assinar">
+              <button type="button" class="btn-copiar-icone" id="btn-copiar-link-icone" aria-label="Copiar link">
+                <i data-lucide="copy"></i>
+              </button>
+            </div>
+            <button type="button" class="botao botao-1" id="btn-copiar-link">Copiar mensagem</button>
+            <p class="aviso" id="aviso-link"></p>
+          </div>
+
+          <a class="voltar-estudio volta-estudio" href="/estudio">&larr; Voltar pro Estúdio</a>
+        </div>
+
+        <!-- painel de assinatura do Jordan -->
+        <div class="painel" id="painel-assinar">
+          <h2>Sua assinatura</h2>
+          <p class="sub">Por padrão, seu nome em cursiva. Se preferir, desenhe a assinatura na mão.</p>
+          <!-- preenchido por aplicarAssinaturaPadrao() quando existe uma padrão
+               salva em /configuracoes -->
+          <p class="aviso-padrao" id="aviso-padrao" hidden></p>
+
+          <div class="abas">
+            <button type="button" class="aba ativa" id="aba-cursiva">Cursiva (nome)</button>
+            <button type="button" class="aba" id="aba-manual">Assinar manualmente</button>
+          </div>
+
+          <div id="modo-cursiva">
+            <div class="campo-form"><label for="nome-cursiva">Nome exibido na assinatura</label><input id="nome-cursiva" type="text" value="Jordan Santos"></div>
+            <div class="preview-cursiva"><span id="preview-cursiva-texto">Jordan Santos</span></div>
+          </div>
+
+          <div id="modo-manual" hidden>
+            <div class="assina-area">
+              <div class="canvas-box">
+                <canvas id="pad"></canvas>
+                <button type="button" class="limpar-ass" id="limpar-ass">Limpar</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="botao botao-1" id="btn-confirmar">Confirmar e liberar contrato</button>
+          <p class="aviso" id="aviso-confirmar"></p>
+        </div>
+      </div>
+    </main>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 <script>
 (function(){
   "use strict";
+
+  lucide.createIcons();
+
+  /* ícones dinâmicos (usados via innerHTML) gerados na hora com a API do
+     Lucide CDN: lucide.createElement(lucide.icons[nome], atributos) devolve
+     um elemento <svg> de verdade — .outerHTML dá a string. */
+  function iconeSvg(nome, attrs){
+    /* lucide.icons é indexado por PascalCase (ex.: "ShieldCheck"), não pelo
+       kebab-case usado em data-lucide/CDN docs ("shield-check") — converte. */
+    var pascal = nome.replace(/(^|-)([a-z0-9])/g, function(_, __, c){ return c.toUpperCase(); });
+    return lucide.createElement(lucide.icons[pascal], attrs || {}).outerHTML;
+  }
 
   var brl = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
   var el = function(id){ return document.getElementById(id); };
@@ -225,17 +737,82 @@
   var signaturePad = null;
   var modo = "cursiva";
 
+  /* ---------- edição inline do documento ----------
+     snapshotAtual guarda os valores CRUS (não formatados) do último
+     render, pra pré-preencher o input de edição sem reconstruir o que
+     preencherCampo() já formatou pra exibição. documentoTravado espelha a
+     mesma regra do Estúdio: só o contrato assinado pelo casal trava. */
+  var snapshotAtual = {};
+  var documentoTravado = false;
+  var CAMPO_EDITAVEL = {
+    "noivo":          { col: "noivo",        tipo: "texto" },
+    "noiva":          { col: "noiva",        tipo: "texto" },
+    "cpf-noivo":      { col: "cpf_noivo",    tipo: "cpf" },
+    "cpf-noiva":      { col: "cpf_noiva",    tipo: "cpf" },
+    "endereco":       { col: "endereco",     tipo: "texto" },
+    "numero":         { col: "numero",       tipo: "texto" },
+    "bairro":         { col: "bairro",       tipo: "texto" },
+    "cidade":         { col: "cidade",       tipo: "texto" },
+    "complemento":    { col: "complemento",  tipo: "texto" },
+    "estado":         { col: "estado",       tipo: "texto" },
+    "cep":            { col: "cep",          tipo: "texto" },
+    "tel-noivo":      { col: "tel_noivo",    tipo: "texto" },
+    "tel-noiva":      { col: "tel_noiva",    tipo: "texto" },
+    "data-formatada": { col: "data_evento",  tipo: "data" },
+    "local":          { col: "local_evento", tipo: "texto" },
+    "horario":        { col: "horario",      tipo: "hora" },
+    "valor-total":    { col: "total",        tipo: "moeda" },
+    "valor-entrada":  { col: "entrada",      tipo: "moeda" }
+  };
+
   /* Voltar pro Estúdio no cliente certo. O link era /estudio puro, e como o
      Estúdio abria sempre na home, revisar um contrato e voltar significava
      procurar o casal na lista de novo. */
   Array.prototype.slice.call(document.querySelectorAll(".volta-estudio")).forEach(function(a){
-    a.href = clienteId ? "/estudio?cliente=" + encodeURIComponent(clienteId) : "/estudio";
+    a.href = clienteId ? "/estudio/cliente/" + encodeURIComponent(clienteId) : "/estudio";
   });
+
+  /* POST genérico pro /api/estudio, no mesmo padrão de erro usado em
+     carregarLinkDoCasal() mais abaixo — sem "falha" genérico aqui porque a
+     mensagem de erro específica é o que diferencia "salvo" de "não salvou". */
+  function api(url, corpo){
+    return fetch(url, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo)
+    }).then(function(r){
+      return r.json().then(function(j){
+        if (!r.ok) throw new Error(j.erro || "Não foi possível completar a ação.");
+        return j;
+      });
+    });
+  }
 
   function mostrarEstado(id, texto){
     ["estado-carregando","estado-erro","fluxo"].forEach(function(x){ el(x).hidden = true; });
     el(id).hidden = false;
     if (texto && el("erro-texto")) el("erro-texto").textContent = texto;
+  }
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+  function fmtDataHora(iso){
+    if (!iso) return "";
+    return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  }
+  function linhaDl(rotulo, valor, tecnico){
+    return "<dt>" + escapeHtml(rotulo) + "</dt><dd" + (tecnico ? ' class="tecnico"' : "") + ">" + escapeHtml(valor) + "</dd>";
+  }
+  /* badge de status do assinante: ok = check, senão (pendente/aguardando) =
+     relógio ("waiting"). O texto muda (Assinado/Aguardando/Pendente), o
+     ícone só tem dois estados — assinou ou não assinou ainda. */
+  var ICONE_CHECK = iconeSvg("check", { "stroke-width": 2.5 });
+  var ICONE_RELOGIO = iconeSvg("clock", { "stroke-width": 2 });
+  function definirBadge(el_, ok, texto){
+    el_.className = "signer-badge" + (ok ? " ok" : " pendente");
+    el_.innerHTML = (ok ? ICONE_CHECK : ICONE_RELOGIO) + "<span>" + escapeHtml(texto) + "</span>";
   }
 
   function formatarCpf(v){
@@ -300,9 +877,14 @@
     trTotal.appendChild(v); trTotal.appendChild(r); trTotal.appendChild(t);
     tbody.appendChild(trTotal);
   }
-  function renderContrato(c){
+  function renderContrato(c, travado){
     var total = Number(c.total) || 0;
     var entrada = (c.entrada != null && c.entrada !== "") ? Number(c.entrada) : total * 0.3;
+    /* guarda os valores crus (inclusive a entrada já com o fallback de 30%
+       aplicado, pra editar um número que bate com o que está na tela) pro
+       clique-pra-editar usar como base, sem precisar desfazer formatação */
+    snapshotAtual = Object.assign({}, c, { total: total, entrada: entrada });
+    documentoTravado = !!travado;
     montaTabela(Array.isArray(c.itens) ? c.itens : [], total);
     preencherCampo("noivo", c.noivo);
     preencherCampo("noiva", c.noiva);
@@ -324,6 +906,301 @@
     preencherCampo("valor-entrada", brl.format(entrada));
     preencherCampo("cidade-assinatura", c.cidade);
     preencherCampo("data-assinatura", dataExtenso(new Date()));
+    marcarCamposEditaveis();
+    mostrarLinkItens();
+  }
+
+  /* ---------- folhas A4 (2026-09-02) ----------
+     Tentei trocar isso pelo Paged.js (lib open source de paginação via CSS
+     Paged Media) — revertido no mesmo dia: a Previewer dele larga uma cópia
+     inteira direto em document.body por fora de qualquer container que a
+     gente passe, brigando com o layout desta tela (sidebar + header fixos) e
+     derrubando elementos alheios de vez em quando (erro intermitente
+     "Cannot set properties of null" em elementos que nem tinham relação com
+     o documento). Ferramenta ótima pra imprimir uma página inteira, ruim pra
+     embutir dentro de um app com chrome próprio. Ficamos com medição na mão:
+     mede a altura real de cada nó (não peso aproximado) e só deixa passar do
+     limite da folha se não tiver jeito de não estourar. Roda DEPOIS de
+     preencherCampo/montaTabela (por isso o "boot" chama renderContrato
+     antes) — paginar com o placeholder "________________" no lugar do valor
+     de verdade calculava a altura errada. */
+  function paginarDocumento(container){
+    if (container.dataset.paginado) return;
+    /* template salvo pelo editor Tiptap (configuracoes.html) exporta tudo
+       dentro de um <section class="secao"> só — sem desembrulhar, a
+       paginação vê UM nó gigante e não consegue quebrar em folha nenhuma */
+    var secao = container.querySelector(":scope > .secao");
+    if (secao){
+      while (secao.firstChild) container.appendChild(secao.firstChild);
+      secao.remove();
+    }
+    var filhos = Array.prototype.slice.call(container.children);
+
+    /* CLÁUSULA SEGUNDA (e outras) tem um <ol> só com vários itens — tratado
+       como bloco único, ele só cabe inteiro ou vai inteiro pra próxima
+       folha, sobrando uma folha quase vazia sempre que o <ol> não cabia no
+       resto do espaço (2026-09-03). Aqui cada <li> vira uma unidade que
+       pode ficar numa folha e continuar na próxima, com a numeração do
+       <ol> preservada via "start". */
+    var unidades = [];
+    filhos.forEach(function(no){
+      if ((no.tagName === "OL" || no.tagName === "UL") && no.children.length > 1){
+        var tag = no.tagName;
+        var numeroBase = tag === "OL" ? (parseInt(no.getAttribute("start"), 10) || 1) : null;
+        Array.prototype.forEach.call(Array.prototype.slice.call(no.children), function(li, i){
+          unidades.push({ li: li, tag: tag, classe: no.className, numero: numeroBase !== null ? numeroBase + i : null });
+        });
+        no.remove(); // some com o <ol>/<ul> vazio pra não ocupar espaço no flex
+      } else {
+        unidades.push({ no: no });
+      }
+    });
+
+    var sonda = document.createElement("div");
+    sonda.className = "folha";
+    container.appendChild(sonda);
+    var sondaRect = sonda.getBoundingClientRect();
+    var sondaCs = getComputedStyle(sonda);
+    var folhaLargura = sondaRect.width;
+    var folhaAltura = folhaLargura * 297 / 210;
+    var padEsq = parseFloat(sondaCs.paddingLeft) || 0;
+    var padDir = parseFloat(sondaCs.paddingRight) || 0;
+    var padTopo = parseFloat(sondaCs.paddingTop) || 0;
+    var padBase = parseFloat(sondaCs.paddingBottom) || 0;
+    var alturaUtil = folhaAltura - padTopo - padBase;
+    sonda.remove();
+
+    var medidor = document.createElement("div");
+    medidor.style.cssText =
+      "position:absolute;visibility:hidden;pointer-events:none;top:-99999px;left:-99999px;" +
+      "width:" + (folhaLargura - padEsq - padDir) + "px;";
+    container.appendChild(medidor);
+
+    function alturaDoNo(no){
+      medidor.appendChild(no);
+      var cs = getComputedStyle(no);
+      return no.getBoundingClientRect().height +
+        (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+    }
+    /* mede o <li> dentro de um <ol>/<ul> descartável (só assim ele ganha o
+       marcador/numeração e o padding certos) e devolve o <li> pro lugar de
+       origem em seguida — o wrapper de medição é jogado fora. */
+    function alturaDoLi(unidade){
+      var wrapper = document.createElement(unidade.tag);
+      if (unidade.classe) wrapper.className = unidade.classe;
+      wrapper.appendChild(unidade.li);
+      medidor.appendChild(wrapper);
+      var cs = getComputedStyle(wrapper);
+      var altura = wrapper.getBoundingClientRect().height +
+        (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+      medidor.appendChild(unidade.li); // devolve o <li> solto, some o wrapper
+      wrapper.remove();
+      return altura;
+    }
+    function alturaDaUnidade(u){ return u.li ? alturaDoLi(u) : alturaDoNo(u.no); }
+
+    /* prioriza quebrar em fronteira de seção, mas NUNCA deixa passar do
+       limite da folha mesmo no meio de uma cláusula — texto de contrato
+       cortado (invisível, por causa do overflow:hidden da folha) é bem pior
+       do que uma cláusula grande atravessar a virada de página. Um <ol>
+       inteiro (várias unidades "li" seguidas) pode quebrar entre itens. */
+    var folhas = [];
+    var atual = [];
+    var alturaAtual = 0;
+    unidades.forEach(function(u){
+      var altura = alturaDaUnidade(u);
+      var estouraSemMargem = atual.length && (alturaAtual + altura) > alturaUtil;
+      if (estouraSemMargem){
+        folhas.push(atual);
+        atual = []; alturaAtual = 0;
+      }
+      atual.push(u);
+      alturaAtual += altura;
+    });
+    if (atual.length) folhas.push(atual);
+    medidor.remove();
+
+    /* reconstrói cada folha: unidades "li" seguidas da MESMA lista original
+       viram um <ol>/<ul> novo, com "start" ajustado pra numeração continuar
+       certa quando a lista atravessa a virada de página. */
+    function montarConteudoFolha(folha, grupo){
+      var i = 0;
+      while (i < grupo.length){
+        var u = grupo[i];
+        if (u.no){
+          folha.appendChild(u.no);
+          i++;
+          continue;
+        }
+        var lista = document.createElement(u.tag);
+        if (u.classe) lista.className = u.classe;
+        if (u.tag === "OL" && u.numero !== null) lista.setAttribute("start", u.numero);
+        var tagAtual = u.tag, classeAtual = u.classe;
+        while (i < grupo.length && grupo[i].li && grupo[i].tag === tagAtual && grupo[i].classe === classeAtual){
+          lista.appendChild(grupo[i].li);
+          i++;
+        }
+        folha.appendChild(lista);
+      }
+    }
+
+    var frag = document.createDocumentFragment();
+    folhas.forEach(function(grupo, i){
+      var folha = document.createElement("div");
+      folha.className = "folha";
+      montarConteudoFolha(folha, grupo);
+      var numero = document.createElement("span");
+      numero.className = "pagina-numero";
+      numero.textContent = (i + 1) + " / " + folhas.length;
+      folha.appendChild(numero);
+      frag.appendChild(folha);
+    });
+    container.appendChild(frag);
+    container.dataset.paginado = "1";
+  }
+
+  /* selo de validação: só depois que o CASAL assina (doc_sha256 só existe
+     nesse ponto). De propósito SEM QR code nem "URL de validação" fingindo
+     um serviço de verificação pública que este site não roda — mostra só o
+     que a gente de fato tem e pode provar: o hash do PDF, a base legal usada
+     no fluxo (MP 2.200-2/2001, não eIDAS/Regulamento 910/2014 — este
+     contrato não é europeu) e a data. */
+  function mostrarSeloValidacao(contrato){
+    var existente = document.getElementById("selo-validacao");
+    if (existente) existente.remove();
+    if (!contrato || contrato.status !== "assinado" || !contrato.doc_sha256) return;
+    var div = document.createElement("div");
+    div.id = "selo-validacao";
+    div.className = "selo-validacao";
+    div.innerHTML =
+      iconeSvg("shield-check", { "stroke-width": 1.6 }) +
+      "<div>Assinado com assinatura eletrônica (MP 2.200-2/2001, art. 10, §2º)<br>" +
+      "Hash SHA-256 do PDF assinado: <strong>" + escapeHtml(contrato.doc_sha256) + "</strong><br>" +
+      "Assinado em " + escapeHtml(fmtDataHora(contrato.assinado_em)) + "</div>";
+    var doc = el("documento");
+    doc.parentNode.insertBefore(div, doc.nextSibling);
+  }
+
+  /* liga/desliga a affordance visual de clique-pra-editar em cada [data-campo]
+     que tem entrada em CAMPO_EDITAVEL. cidade-assinatura e data-assinatura
+     ficam de fora: são derivados (cidade e a data de hoje), não campos
+     próprios — editar cidade lá em cima já resolve os dois. */
+  function marcarCamposEditaveis(){
+    Object.keys(CAMPO_EDITAVEL).forEach(function(chave){
+      Array.prototype.forEach.call(document.querySelectorAll('[data-campo="' + chave + '"]'), function(span){
+        span.classList.toggle("editavel", !documentoTravado);
+      });
+    });
+  }
+
+  /* pacote/adicionais têm catálogo próprio (checkbox, preço por item) — não
+     cabe virar um campo de texto clicável aqui. Em vez de simular isso mal,
+     aponta pro lugar certo. Só aparece com o documento ainda editável. */
+  function mostrarLinkItens(){
+    var tabela = document.querySelector("#documento table");
+    if (!tabela) return;
+    var existente = document.getElementById("link-itens-estudio");
+    if (existente) existente.remove();
+    if (documentoTravado) return;
+    var a = document.createElement("a");
+    a.id = "link-itens-estudio";
+    a.className = "link-itens-estudio";
+    a.href = "/estudio/cliente/" + encodeURIComponent(clienteId);
+    a.textContent = "Editar pacote e itens no Estúdio →";
+    tabela.parentNode.insertBefore(a, tabela.nextSibling);
+  }
+
+  function avisoDoc(texto, erro){
+    var p = el("aviso-doc");
+    p.textContent = texto || "";
+    p.classList.toggle("erro", !!erro);
+  }
+
+  /* ---------- edição inline: clique no campo, digita, Enter/blur salva ---------- */
+  function valorParaInput(tipo, cru){
+    if (tipo === "moeda") return (Number(cru) || 0).toFixed(2);
+    if (tipo === "data") return /^\d{4}-\d{2}-\d{2}$/.test(cru || "") ? cru : "";
+    if (tipo === "hora") return cru ? String(cru).slice(0, 5) : "";
+    return cru || "";
+  }
+  function tipoDoInput(tipo){
+    if (tipo === "moeda") return "number";
+    if (tipo === "data") return "date";
+    if (tipo === "hora") return "time";
+    return "text";
+  }
+  function larguraChute(tipo, valor){
+    if (tipo === "data" || tipo === "hora") return null;   /* nativo já tem tamanho certo */
+    return Math.max(String(valor || "").length, 3) + 1.5 + "ch";
+  }
+
+  function tornarEditavel(span, chave){
+    var conf = CAMPO_EDITAVEL[chave];
+    if (!conf || documentoTravado || span.querySelector("input")) return;
+
+    var valorCru = snapshotAtual[conf.col];
+    var input = document.createElement("input");
+    input.className = "campo-inline-edit";
+    input.type = tipoDoInput(conf.tipo);
+    if (conf.tipo === "moeda") { input.step = "0.01"; input.min = "0"; }
+    var valorInicial = valorParaInput(conf.tipo, valorCru);
+    input.value = valorInicial;
+    var largura = larguraChute(conf.tipo, valorInicial);
+    if (largura) input.style.width = largura;
+
+    var textoOriginal = span.textContent;
+    span.textContent = "";
+    span.appendChild(input);
+    input.focus();
+    if (input.select) input.select();
+
+    var resolvido = false;
+    function reverter(){
+      if (resolvido) return;
+      resolvido = true;
+      span.textContent = textoOriginal;
+    }
+    function commit(){
+      if (resolvido) return;
+      resolvido = true;
+      var novo = input.value;
+      if (conf.tipo === "moeda") novo = Number(novo) || 0;
+      /* nada mudou: não vale a pena versionar o contrato à toa */
+      var antes = conf.tipo === "moeda" ? Number(valorCru) || 0 : (valorCru || "");
+      if (String(novo) === String(antes)) { span.textContent = textoOriginal; return; }
+      salvarCampo(conf.col, novo, span, textoOriginal);
+    }
+    input.addEventListener("keydown", function(e){
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      else if (e.key === "Escape") { e.preventDefault(); reverter(); }
+    });
+    input.addEventListener("blur", commit);
+  }
+
+  function salvarCampo(col, valor, span, textoOriginal){
+    avisoDoc("Salvando...");
+    var payload = {};
+    payload[col] = valor;
+    api("/api/estudio", { acao: "atualizar", id: clienteId, cliente: payload })
+      .then(function(){
+        avisoDoc("Salvo.");
+        return carregarContrato();
+      })
+      .catch(function(e){
+        span.textContent = textoOriginal;
+        avisoDoc(e.message || "Não foi possível salvar essa edição.", true);
+      });
+  }
+
+  var _edicaoLigada = false;
+  function ligarEdicaoInline(){
+    if (_edicaoLigada) return;
+    _edicaoLigada = true;
+    el("documento").addEventListener("click", function(e){
+      var span = e.target.closest && e.target.closest(".campo[data-campo]");
+      if (!span || span.querySelector("input")) return;
+      tornarEditavel(span, span.getAttribute("data-campo"));
+    });
   }
 
   function iniciarPad(){
@@ -355,6 +1232,40 @@
   });
   el("limpar-ass").addEventListener("click", function(){ if (signaturePad) signaturePad.clear(); });
 
+  /* Assinatura padrão escolhida em /configuracoes: vem já aplicada aqui, que é
+     o ponto de ter uma padrão. Não troca o fluxo, só poupa reescrever/redesenhar
+     a mesma assinatura a cada contrato; as duas abas seguem funcionando e
+     "Limpar" apaga normalmente.
+     Mapeamento dos tipos: `cursiva` é gerada de fonte e cai na aba de cursiva;
+     `rubrica` (desenhada) e `imagem` (enviada) são as duas uma IMAGEM de
+     manuscrito, então entram no pad da aba manual, que é o que o banco chama de
+     "manual" (contratos.jordan_assinatura_tipo só aceita cursiva|manual). */
+  function aplicarAssinaturaPadrao(){
+    fetch("/api/templates", { credentials: "include" })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        var a = d && d.assinatura;
+        if (!a || !a.valor) return;
+        var aviso = el("aviso-padrao");
+        if (a.tipo === "cursiva"){
+          el("nome-cursiva").value = a.valor;
+          el("preview-cursiva-texto").textContent = a.valor;
+          alternarModo("cursiva");
+        } else {
+          alternarModo("manual");            /* cria o pad se ainda não existe */
+          /* fromDataURL devolve Promise nas versões novas do SignaturePad e
+             nada nas antigas: o Promise.resolve cobre as duas e evita rejeição
+             solta se a imagem salva estiver corrompida */
+          if (signaturePad) Promise.resolve(signaturePad.fromDataURL(a.valor)).catch(function(){});
+        }
+        if (aviso){
+          aviso.textContent = 'Aplicada a sua assinatura padrão (' + (a.nome || "sem nome") + '). Dá pra trocar aqui embaixo.';
+          aviso.hidden = false;
+        }
+      })
+      .catch(function(){ /* sem padrão salva ou API fora: segue o fluxo manual */ });
+  }
+
   /* renderiza o texto em cursiva num canvas, pra virar uma imagem PNG igual
      ao formato da assinatura desenhada (mesmo "shape" de dado, mais simples
      de injetar no contrato depois) */
@@ -383,7 +1294,11 @@
       el("sub-assinado").textContent = "O casal já assinou. Baixe a via em PDF ou mande o link pra eles baixarem.";
       marcarAssinaturaDoCasal(contrato);
       prepararDownloadDaVia(contrato.token);
+      el("fab-texto").textContent = "Ver contrato assinado";
+    } else {
+      el("fab-texto").textContent = "Copiar link do casal";
     }
+    el("btn-fab-assinatura").hidden = false;
     /* o link continua valendo depois de assinado: aí ele abre a tela de baixar
        a via, e é assim que o casal pede a segunda via */
     carregarLinkDoCasal();
@@ -409,33 +1324,53 @@
       "<br>Assinado eletronicamente" + (quando ? " em " + quando : "");
   }
 
+  /* baixa a via assinada — usada tanto pelo botão dentro do painel quanto
+     pelo atalho direto no header (ver btn-baixar-header, que substitui o
+     dropdown "Opções" depois de assinado: sem cancelar pra oferecer e sem
+     "voltar" pra repetir (já mora na sidebar), a única ação que sobra vira
+     botão direto em vez de menu) */
+  function baixarViaAssinada(token, botao, aviso, avisarEm){
+    if (!token) return;
+    botao.disabled = true;
+    if (aviso){ aviso.className = "aviso"; aviso.textContent = "Preparando o arquivo..."; }
+    fetch("/api/assinatura?pdf=1&token=" + encodeURIComponent(token))
+      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(resp){
+        if (!resp.ok || !resp.j.pdf) throw new Error(resp.j.erro || "falha");
+        var bin = atob(resp.j.pdf);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        var url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        var a = document.createElement("a");
+        a.href = url; a.download = resp.j.arquivo || "Contrato assinado.pdf";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+        if (aviso) aviso.textContent = "";
+      })
+      .catch(function(e){
+        var msg = e.message === "falha" ? "Não deu pra baixar agora. Tente de novo." : e.message;
+        if (aviso){ aviso.className = "aviso erro"; aviso.textContent = msg; }
+        else alert(msg);
+      })
+      .finally(function(){ botao.disabled = false; });
+  }
+
   function prepararDownloadDaVia(token){
     var botao = el("btn-baixar-via");
     if (!botao || !token) return;
     botao.hidden = false;
     botao.addEventListener("click", function(){
-      var aviso = el("aviso-baixar-via");
-      botao.disabled = true;
-      aviso.className = "aviso"; aviso.textContent = "Preparando o arquivo...";
-      fetch("/api/assinatura?pdf=1&token=" + encodeURIComponent(token))
-        .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
-        .then(function(resp){
-          if (!resp.ok || !resp.j.pdf) throw new Error(resp.j.erro || "falha");
-          var bin = atob(resp.j.pdf);
-          var bytes = new Uint8Array(bin.length);
-          for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          var url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-          var a = document.createElement("a");
-          a.href = url; a.download = resp.j.arquivo || "Contrato assinado.pdf";
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
-          aviso.textContent = "";
-        })
-        .catch(function(e){
-          aviso.className = "aviso erro";
-          aviso.textContent = e.message === "falha" ? "Não deu pra baixar agora. Tente de novo." : e.message;
-        })
-        .finally(function(){ botao.disabled = false; });
+      baixarViaAssinada(token, botao, el("aviso-baixar-via"));
+    });
+
+    /* assinado pelos dois: destrava o item "Baixar" do dropdown */
+    var opBaixar = el("op-baixar");
+    opBaixar.disabled = false;
+    opBaixar.removeAttribute("title");
+    opBaixar.addEventListener("click", function(){
+      alternarMenuOpcoes(false);
+      if (!confirm("Baixar o contrato assinado em PDF?")) return;
+      baixarViaAssinada(token, opBaixar, null);
     });
   }
 
@@ -517,12 +1452,17 @@
         aviso.className = "aviso ok";
         aviso.textContent = "Mensagem copiada. É só colar pro casal.";
       } else {
-        /* último recurso: deixa o link selecionado pra copiar na mão */
-        el("link-casal").focus();
-        el("link-casal").setSelectionRange(0, el("link-casal").value.length);
         aviso.className = "aviso";
-        aviso.textContent = "Não consegui copiar sozinho — o link está selecionado aí em cima.";
+        aviso.textContent = "Não consegui copiar sozinho, use o ícone ao lado do link.";
       }
+    });
+  });
+
+  el("btn-copiar-link-icone").addEventListener("click", function(){
+    var aviso = el("aviso-link");
+    copiarTexto(el("link-casal").value).then(function(copiou){
+      aviso.className = copiou ? "aviso ok" : "aviso erro";
+      aviso.textContent = copiou ? "Link copiado." : "Não consegui copiar, selecione o link na mão.";
     });
   });
 
@@ -562,37 +1502,285 @@
       });
   });
 
+  /* ---------- header + menu de opções ---------- */
+  var ROTULO_STATUS = {
+    rascunho: "Rascunho", enviado: "Enviado", visualizado: "Visualizado",
+    assinado: "Assinado", cancelado: "Cancelado"
+  };
+  /* cor da tag conforme o status — rascunho fica neutro (tag sem classe) de
+     propósito, é o único estado que ainda não saiu das mãos do Jordan */
+  var CLASSE_TAG_STATUS = {
+    enviado: "pendente", visualizado: "info", assinado: "ok", cancelado: "erro"
+  };
+  var ICONE_LAPIS = iconeSvg("pencil", { "stroke-width": 2 });
+  var ICONE_ENVIADO = iconeSvg("send", { "stroke-width": 2 });
+  var ICONE_OLHO_TAG = iconeSvg("eye", { "stroke-width": 2 });
+  var ICONE_X = iconeSvg("x-circle", { "stroke-width": 2 });
+  var ICONE_TAG_STATUS = {
+    rascunho: ICONE_LAPIS, enviado: ICONE_ENVIADO, visualizado: ICONE_OLHO_TAG,
+    assinado: ICONE_CHECK, cancelado: ICONE_X
+  };
+  function atualizarCabecalho(cliente, contrato){
+    var casal = [cliente.noivo, cliente.noiva].filter(Boolean).join(" e ") || "cliente sem nome";
+    el("titulo-contrato").textContent = "Contrato de Fotografia (" + casal + ")";
+    el("meta-criado").textContent = contrato.criado_em
+      ? "Criado em " + new Date(contrato.criado_em).toLocaleDateString("pt-BR")
+      : "";
+    var tagStatus = el("tag-status");
+    var iconeStatus = ICONE_TAG_STATUS[contrato.status] || "";
+    tagStatus.innerHTML = iconeStatus + "<span>" + escapeHtml(ROTULO_STATUS[contrato.status] || contrato.status) + "</span>";
+    var classeStatus = CLASSE_TAG_STATUS[contrato.status];
+    tagStatus.className = "tag" + (classeStatus ? " " + classeStatus : "");
+    var tagVersao = el("tag-versao");
+    var versao = contrato.versao || 1;
+    tagVersao.hidden = versao <= 1;
+    tagVersao.textContent = "Versão " + versao;
+
+    var podeCancelar = contrato.status !== "assinado" && contrato.status !== "cancelado";
+    el("op-cancelar").hidden = !podeCancelar;
+
+    /* banner "ainda é rascunho" só enquanto o casal não recebeu — some assim
+       que status vira "enviado" (link já foi liberado pra eles) */
+    var bannerRascunho = el("banner-rascunho");
+    if (bannerRascunho) bannerRascunho.hidden = contrato.status !== "rascunho";
+  }
+
+  function renderSigners(cliente, contrato){
+    var jordanOk = !!contrato.jordan_confirmado_em;
+    definirBadge(el("signer-jordan-badge"), jordanOk, jordanOk ? "Assinado" : "Pendente");
+    var detJordan = linhaDl("Papel", "Contratado (fotógrafo)");
+    if (jordanOk){
+      detJordan += linhaDl("Forma", contrato.jordan_assinatura_tipo === "manual" ? "Traço manual" : "Nome em cursiva");
+      detJordan += linhaDl("Confirmado em", fmtDataHora(contrato.jordan_confirmado_em));
+    } else {
+      detJordan += linhaDl("Status", "Toque em “Assinar agora”, no canto da tela");
+    }
+    el("signer-jordan-detalhe").innerHTML = detJordan;
+
+    var casalNome = [cliente.noivo, cliente.noiva].filter(Boolean).join(" e ") || "Casal";
+    var casalOk = contrato.status === "assinado";
+    el("signer-casal-nome").textContent = casalNome;
+    var textoCasal = casalOk ? "Assinado"
+      : (contrato.status === "enviado" || contrato.status === "visualizado") ? "Aguardando"
+      : "Pendente";
+    definirBadge(el("signer-casal-badge"), casalOk, textoCasal);
+    var detCasal = linhaDl("Papel", "Contratante");
+    var email = contrato.snapshot && contrato.snapshot.email;
+    if (email) detCasal += linhaDl("E-mail", email);
+    if (casalOk){
+      detCasal += linhaDl("Assinante", contrato.signatario_nome || "—");
+      if (contrato.signatario_cpf) detCasal += linhaDl("CPF", formatarCpf(contrato.signatario_cpf));
+      detCasal += linhaDl("Assinado em", fmtDataHora(contrato.assinado_em));
+    } else if (contrato.visualizado_em){
+      detCasal += linhaDl("Abriu o link em", fmtDataHora(contrato.visualizado_em));
+    } else if (contrato.enviado_em){
+      detCasal += linhaDl("Link enviado em", fmtDataHora(contrato.enviado_em));
+    } else {
+      detCasal += linhaDl("Status", "Ainda não recebeu o link");
+    }
+    el("signer-casal-detalhe").innerHTML = detCasal;
+  }
+
+  function renderHistorico(contrato){
+    var eventos = [
+      { data: contrato.criado_em, titulo: "Contrato criado" },
+      { data: contrato.jordan_confirmado_em, titulo: "Confirmado pelo Jordan" },
+      { data: contrato.enviado_em, titulo: "Enviado ao casal" },
+      { data: contrato.visualizado_em, titulo: "Casal abriu o link" },
+      { data: contrato.assinado_em, titulo: "Assinado pelo casal" }
+    ].filter(function(e){ return !!e.data; })
+     .sort(function(a, b){ return new Date(a.data) - new Date(b.data); });
+
+    el("timeline-lista").innerHTML = eventos.length
+      ? eventos.map(function(e){
+          return '<li class="feito"><div class="t-titulo">' + escapeHtml(e.titulo) + '</div>' +
+                 '<div class="t-data">' + escapeHtml(fmtDataHora(e.data)) + '</div></li>';
+        }).join("")
+      : '<li class="t-vazio">Sem eventos ainda.</li>';
+
+    var bloco = el("auditoria-bloco");
+    if (contrato.status !== "assinado"){ bloco.hidden = true; return; }
+    bloco.hidden = false;
+    var linhas =
+      linhaDl("Signatário", contrato.signatario_nome || "—") +
+      (contrato.signatario_cpf ? linhaDl("CPF", formatarCpf(contrato.signatario_cpf)) : "") +
+      (contrato.signatario_email ? linhaDl("E-mail", contrato.signatario_email) : "") +
+      linhaDl("Verificação", contrato.verificacao_metodo === "link-tokenizado"
+        ? "Link exclusivo entregue ao contratante" : (contrato.verificacao_metodo || "—")) +
+      linhaDl("Endereço IP", contrato.assinante_ip || "não registrado") +
+      linhaDl("Dispositivo", contrato.assinante_ua || "não registrado", true) +
+      linhaDl("Hash SHA-256 do PDF", contrato.doc_sha256 || "—", true);
+    el("auditoria-lista").innerHTML = linhas;
+  }
+
+  /* ---------- FAB + modal/sheet de assinatura ----------
+     Um botão só, texto muda com o estado; o modal sempre mostra o painel que
+     já estiver visível (#painel-assinar ou #painel-ja-confirmado) — a lógica
+     de qual aparece continua a mesma de sempre (mostrarJaConfirmado /
+     carregarContrato), só que agora eles moram dentro do modal, não soltos no
+     fim do documento. */
+  function atualizarFab(contrato){
+    var fab = el("btn-fab-assinatura");
+    var texto = el("fab-texto");
+    if (!contrato || contrato.status === "cancelado"){ fab.hidden = true; return; }
+    fab.hidden = false;
+    if (contrato.status === "assinado") texto.textContent = "Ver contrato assinado";
+    else if (contrato.jordan_confirmado_em) texto.textContent = "Copiar link do casal";
+    else texto.textContent = "Assinar agora";
+  }
+  function abrirModalAssinatura(){
+    el("modal-backdrop").classList.add("aberto");
+    el("modal-assinatura").classList.add("aberto");
+  }
+  function fecharModalAssinatura(){
+    el("modal-backdrop").classList.remove("aberto");
+    el("modal-assinatura").classList.remove("aberto");
+  }
+  el("btn-fab-assinatura").addEventListener("click", abrirModalAssinatura);
+  el("modal-backdrop").addEventListener("click", fecharModalAssinatura);
+  el("modal-fechar").addEventListener("click", fecharModalAssinatura);
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") fecharModalAssinatura();
+  });
+
+  el("op-baixar-rascunho").addEventListener("click", function(){
+    alternarMenuOpcoes(false);
+    window.print();
+  });
+
+  function alternarMenuOpcoes(forcar){
+    var menu = el("menu-opcoes");
+    var backdrop = el("menu-opcoes-backdrop");
+    if (window.innerWidth <= 640){
+      var aberto = forcar != null ? forcar : !menu.classList.contains("aberto");
+      menu.classList.toggle("aberto", aberto);
+      backdrop.classList.toggle("ativo", aberto);
+    } else {
+      var aberto = forcar != null ? forcar : menu.hidden;
+      menu.hidden = !aberto;
+    }
+    el("btn-opcoes").setAttribute("aria-expanded", String(aberto));
+  }
+  el("btn-opcoes").addEventListener("click", function(e){
+    e.stopPropagation();
+    alternarMenuOpcoes();
+  });
+  document.addEventListener("click", function(){ alternarMenuOpcoes(false); });
+  el("menu-opcoes-backdrop").addEventListener("click", function(){ alternarMenuOpcoes(false); });
+
+  function abrirSidebarMobile(){
+    el("sidebar").classList.add("aberta");
+    el("sidebar-backdrop").classList.add("ativo");
+  }
+  function fecharSidebarMobile(){
+    el("sidebar").classList.remove("aberta");
+    el("sidebar-backdrop").classList.remove("ativo");
+  }
+  el("btn-sidebar-mobile").addEventListener("click", abrirSidebarMobile);
+  el("sidebar-backdrop").addEventListener("click", fecharSidebarMobile);
+
+  function trocarAbaSidebar(nome){
+    Array.prototype.forEach.call(document.querySelectorAll(".sidebar-aba"), function(b){
+      b.classList.toggle("ativa", b.dataset.aba === nome);
+    });
+    el("painel-assinantes").hidden = nome !== "assinantes";
+    el("painel-historico").hidden = nome !== "historico";
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".sidebar-aba"), function(b){
+    b.addEventListener("click", function(){ trocarAbaSidebar(b.dataset.aba); });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".signer-cabecalho"), function(botao){
+    botao.addEventListener("click", function(){
+      var aberto = botao.getAttribute("aria-expanded") === "true";
+      botao.setAttribute("aria-expanded", String(!aberto));
+      botao.nextElementSibling.hidden = aberto;
+    });
+  });
+
+  /* Cancelar contrato: mesma ação que já existe em api/estudio.js, só que
+     antes só dava pra disparar por SQL — não tinha botão em lugar nenhum.
+     confirm() nativo mesmo: é uma ação rara, de baixa frequência, não
+     justifica um modal próprio. */
+  el("op-cancelar").addEventListener("click", function(){
+    alternarMenuOpcoes(false);
+    if (!confirm("Cancelar este contrato? O casal não vai mais conseguir assinar pelo link atual.")) return;
+    api("/api/estudio", { acao: "cancelar-contrato", id: clienteId })
+      .then(function(){ location.href = "/estudio/cliente/" + encodeURIComponent(clienteId); })
+      .catch(function(e){ alert(e.message || "Não foi possível cancelar."); });
+  });
+
+  /* ---------- carregar/recarregar o contrato ----------
+     Função própria (não só o boot): toda edição inline chama de novo depois
+     de salvar, pra a tela refletir o que o servidor decidiu de verdade (nova
+     versão, confirmação zerada, trava se virou "assinado" no meio do
+     caminho) em vez de o JS tentar adivinhar. */
+  function carregarContrato(){
+    return fetch("/api/estudio?id=" + encodeURIComponent(clienteId))
+      .then(function(r){
+        if (r.status === 401){ mostrarEstado("estado-erro", "Sua sessão expirou. Entre de novo no Estúdio e clique em \"Gerar contrato\"."); throw new Error("parar"); }
+        return r.json().then(function(j){ return { ok: r.ok, j: j }; });
+      })
+      .then(function(resp){
+        if (!resp.ok) { mostrarEstado("estado-erro", resp.j.erro || "Não foi possível abrir este contrato."); return; }
+        var contrato = resp.j.contrato;
+        var cliente = resp.j.cliente || {};
+        /* Reabrir a página depois de assinar precisa funcionar: ao liberar o link
+           o contrato deixa de ser "rascunho" e vira "enviado". Antes só rascunho
+           passava aqui, então o Jordan perderia a tela onde está o link. */
+        var ABERTOS = ["rascunho", "enviado", "visualizado", "assinado"];
+        if (!contrato || ABERTOS.indexOf(contrato.status) === -1){
+          mostrarEstado("estado-erro", "Não há contrato ativo pra revisar. Gere um novo em \"Gerar contrato\", no Estúdio.");
+          return;
+        }
+        /* texto do contrato: o FIXADO neste contrato (template_html, gravado
+           na hora de gerar) quando existir, senão o fixo de sempre. Só dá pra
+           saber isso depois desta resposta, então o HTML entra aqui — antes,
+           antes de existir template editável, sempre era o fixo direto no
+           boot. */
+        el("documento").innerHTML = contrato.template_html || CONTRATO_TEMPLATE.html({ modo: "revisar" });
+        /* mostrarEstado("fluxo") precisa vir ANTES de paginarDocumento: ela
+           mede altura real em pixel, e #fluxo (o container inteiro) ainda
+           está "hidden" até aqui — medir dentro de um ancestral hidden dá
+           tudo zero. E renderContrato (preenche os campos de verdade)
+           precisa vir ANTES também: paginar com "________________" no lugar
+           do endereço de verdade calcula a altura errada. */
+        mostrarEstado("fluxo");
+        renderContrato(contrato.snapshot || {}, contrato.status === "assinado");
+        paginarDocumento(el("documento"));
+        ligarEdicaoInline();
+        atualizarCabecalho(cliente, contrato);
+        renderSigners(cliente, contrato);
+        renderHistorico(contrato);
+        mostrarSeloValidacao(contrato);
+        atualizarFab(contrato);
+        /* reseta os dois painéis a cada carga: sem isso, editar um contrato já
+           confirmado (que zera jordan_confirmado_em) deixaria "painel-ja-
+           confirmado" preso na tela de uma carga anterior */
+        el("painel-assinar").hidden = false;
+        el("painel-ja-confirmado").hidden = true;
+        if (contrato.jordan_confirmado_em && contrato.jordan_assinatura_dataurl){
+          el("nome-cursiva").value = contrato.jordan_assinatura_nome || "Jordan Santos";
+          el("preview-cursiva-texto").textContent = el("nome-cursiva").value;
+          mostrarJaConfirmado(contrato.jordan_assinatura_dataurl, contrato);
+        } else {
+          /* só quando ainda falta assinar: a assinatura DESTE contrato manda
+             sobre a padrão, senão sobrescreveria o que já foi confirmado */
+          aplicarAssinaturaPadrao();
+        }
+        /* Sem "else" aqui (2026-09-01): status não-rascunho sem confirmação do
+           Jordan costumava ser um estado impossível (contrato liberado sem
+           assinatura). Agora é esperado — a ficha foi editada depois de já
+           confirmado/enviado, o snapshot mudou e "atualizar" (api/estudio.js)
+           limpou a confirmação anterior. O painel de assinatura, que já
+           aparece por padrão no estado "fluxo", pede a assinatura de novo. */
+      })
+      .catch(function(e){ if (e.message !== "parar") mostrarEstado("estado-erro", "Não foi possível abrir este contrato. Tente de novo."); });
+  }
+
   /* ---------- boot ---------- */
   if (!clienteId){ mostrarEstado("estado-erro", "Link inválido."); return; }
-
-  fetch("/api/estudio?id=" + encodeURIComponent(clienteId))
-    .then(function(r){
-      if (r.status === 401){ mostrarEstado("estado-erro", "Sua sessão expirou. Entre de novo no Estúdio e clique em \"Gerar contrato\"."); throw new Error("parar"); }
-      return r.json().then(function(j){ return { ok: r.ok, j: j }; });
-    })
-    .then(function(resp){
-      if (!resp.ok) { mostrarEstado("estado-erro", resp.j.erro || "Não foi possível abrir este contrato."); return; }
-      var contrato = resp.j.contrato;
-      /* Reabrir a página depois de assinar precisa funcionar: ao liberar o link
-         o contrato deixa de ser "rascunho" e vira "enviado". Antes só rascunho
-         passava aqui, então o Jordan perderia a tela onde está o link. */
-      var ABERTOS = ["rascunho", "enviado", "visualizado", "assinado"];
-      if (!contrato || ABERTOS.indexOf(contrato.status) === -1){
-        mostrarEstado("estado-erro", "Não há contrato ativo pra revisar. Gere um novo em \"Gerar contrato\", no Estúdio.");
-        return;
-      }
-      renderContrato(contrato.snapshot || {});
-      mostrarEstado("fluxo");
-      if (contrato.jordan_confirmado_em && contrato.jordan_assinatura_dataurl){
-        el("nome-cursiva").value = contrato.jordan_assinatura_nome || "Jordan Santos";
-        el("preview-cursiva-texto").textContent = el("nome-cursiva").value;
-        mostrarJaConfirmado(contrato.jordan_assinatura_dataurl, contrato);
-      } else if (contrato.status !== "rascunho"){
-        /* estado impossível pelo fluxo normal (liberado sem assinatura) */
-        mostrarEstado("estado-erro", "Este contrato foi liberado sem a sua assinatura. Cancele e gere outro no Estúdio.");
-      }
-    })
-    .catch(function(e){ if (e.message !== "parar") mostrarEstado("estado-erro", "Não foi possível abrir este contrato. Tente de novo."); });
+  carregarContrato();
 })();
 </script>
 </body>

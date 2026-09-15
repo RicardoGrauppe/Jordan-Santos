@@ -109,8 +109,15 @@ async function tratarEstatico(req, res, url) {
   if (!alvo.startsWith(RAIZ + sep)) { res.writeHead(403); return res.end(); }
   if (!extname(alvo) && existsSync(alvo + ".html")) alvo += ".html";
   if (!existsSync(alvo) || !statSync(alvo).isFile()) {
-    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    return res.end("não encontrado");
+    /* rotas internas do app (SPA): /estudio/clientes, /estudio/pendencias,
+       /estudio/cliente/<id> não são arquivos — todas caem no estudio.html,
+       que lê o caminho e abre a tela certa. Espelha o rewrite da Vercel. */
+    if (/^\/estudio(\/|$)/.test(url.pathname)) {
+      alvo = join(RAIZ, "estudio.html");
+    } else {
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      return res.end("não encontrado");
+    }
   }
   res.writeHead(200, {
     "Content-Type": MIME[extname(alvo).toLowerCase()] || "application/octet-stream",

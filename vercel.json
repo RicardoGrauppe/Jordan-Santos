@@ -1,5 +1,8 @@
 {
   "cleanUrls": true,
+  "rewrites": [
+    { "source": "/estudio/:caminho*", "destination": "/estudio.html" }
+  ],
   "functions": {
     "api/assinatura.js": {
       "includeFiles": "api/_lib/contrato-pdf/**"

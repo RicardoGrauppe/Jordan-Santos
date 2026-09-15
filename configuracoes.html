@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<!--
+  Configurações · Jordan Santos Fotografia
+  Página nova, separada do /estudio (pedido de 2026-09-02: "uma página
+  completamente nova só para configurações, com sidebar exclusiva pra ela").
+  Entra pelo menu do avatar no /estudio ("Configurações", ao lado de "Sair").
+
+  Mesmo padrão do resto do site: single-file, sem build. O login/boot/dropdown
+  do avatar são cópia dos mesmos trechos de estudio.html (fonte duplicada de
+  propósito, mesmo motivo de sempre) — é a mesma sessão de admin
+  (api/_lib/sessao.js), só que esta página não tem as páginas Home/Clientes,
+  então não precisa da busca nem do sino de notificações do topo.
+
+  Categorias agrupadas na sidebar, SEM CONTEÚDO ainda — cada uma mostra
+  "Em breve" no conteúdo. Pensado como esqueleto pronto pra receber conteúdo
+  categoria por categoria depois, sem precisar redesenhar a navegação.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" href="/img/icone-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/img/icone-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="/img/icone-180.png">
+<meta name="theme-color" content="#003646">
+<meta name="robots" content="noindex, nofollow">
+<title>Configurações | Jordan Santos Fotografia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --paper:#FFFFFF;
+    --ink:#1F2329;
+    --ink-soft:#6B7280;
+    --accent:#003646;
+    --noir:#1D1D1B;
+    --line:#E4E6EA;
+    --soft:#F6F7F9;
+    --sombra:0 10px 34px rgba(29,29,27,.14);
+    --sans:"Inter","Helvetica Neue",sans-serif;
+    --erro:#A33B3B;
+    /* faltava no arquivo (só --erro existia), então `var(--ok)` caía pra cor
+       herdada; valor do brandbook do estúdio */
+    --ok:#2E6B4F;
+    /* 64 e não 56: com o título em 26/700 (igual ao das telas cheias), 56px
+       deixava só 8px de respiro em cima e embaixo — 64 dá os mesmos ~12px que
+       o .tela-mobile-topo usa em volta do título de Notificações. */
+    --topo-altura:64px;
+    /* área interna (estúdio/configurações) é só Inter, de propósito:
+       --serif existe pra não duplicar toda regra que usa var(--serif) pra
+       título, mas aqui aponta pra Inter também — nada de par serifada+sans
+       aqui dentro, isso é regra do portfólio e do que o casal vê (index.html,
+       cadastro.html, revisar-contrato.html, assinar.html). */
+    --serif:"Inter","Helvetica Neue",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+  html{overflow-y:scroll}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent)}
+  [hidden]{display:none !important}
+
+  /* ---------- login (mesma tela de estudio.html) ---------- */
+  #tela-login{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .topo{padding:0;text-align:center}
+  .topo img{width:min(200px,50vw);margin:0 auto}
+  h1{font-weight:600;font-size:22px;letter-spacing:-.01em;color:var(--ink);margin:36px 0 6px}
+  #tela-login h1{text-align:center;color:var(--accent);margin-top:32px}
+  .sub{color:var(--ink-soft);text-align:center;font-size:14px}
+  .login{width:100%;max-width:360px;margin:32px auto 0;padding:0 24px}
+  .campo-form{display:flex;flex-direction:column;margin-bottom:18px}
+  .campo-form label{font-size:12.5px;font-weight:500;color:var(--ink-soft);margin-bottom:6px}
+  input{font:inherit;color:var(--ink);background:var(--soft);border:0;border-radius:8px;padding:9px 12px;-webkit-appearance:none;height:44px}
+  /* select: mesmo estilo dos inputs, mais o chevron desenhado à direita
+     (sem isso o navegador desenha o próprio, que destoa da linguagem) */
+  select{
+    font:inherit;color:var(--ink);background-color:var(--soft);
+    border:0;border-radius:8px;
+    padding:9px 36px 9px 12px;height:44px;cursor:pointer;
+    -webkit-appearance:none;-moz-appearance:none;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  /* sem anel azul no foco (regra do vault) — feedback vem de fundo mais escuro */
+  select:focus{outline:none;background-color:#EEF0F3}
+  select::-ms-expand{display:none}
+  input:focus{outline:none;background:#EEF0F3}
+  .campo-senha{position:relative}
+  .campo-senha input{width:100%;padding-right:32px}
+  .alternar-senha{position:absolute;right:0;top:50%;transform:translateY(-50%);padding:4px;color:var(--ink-soft);display:flex;align-items:center}
+  @media (hover:hover){.alternar-senha:hover{color:var(--accent)}}
+  .alternar-senha:focus{outline:none}
+  .alternar-senha:focus-visible{color:var(--accent)}
+  .alternar-senha svg{width:18px;height:18px;display:block}
+  .cta{display:block;width:100%;padding:16px 24px;margin-top:8px;background:var(--noir);color:#fff;text-align:center;font-size:13px;letter-spacing:.22em;text-transform:uppercase;border-radius:999px;transition:opacity .2s ease;border:0;cursor:pointer}
+  @media (hover:hover){.cta:hover{opacity:.85}}
+  .cta:disabled{opacity:.4;cursor:default}
+  .msg-erro{color:var(--erro);font-size:13.5px;text-align:center;margin-top:16px;min-height:20px}
+
+  /* ---------- shell (header + sidebar exclusiva) ---------- */
+  .app{display:flex;flex-direction:column;min-height:100vh}
+  .app[hidden]{display:none}
+  /* header: voltar + título da página, sem logo e sem avatar. A navegação de
+     conta (e o "Sair") vive no /estudio; aqui o topo serve só pra sair da
+     página e dizer onde você está. */
+  .topo-estudio{
+    display:flex;align-items:center;gap:10px;
+    min-height:var(--topo-altura);padding:var(--sat) 20px 0;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--paper);z-index:20;
+  }
+  /* só o ícone, sem rótulo: a seta sozinha já diz o que faz (o aria-label
+     cobre quem usa leitor de tela) */
+  .cfg-voltar{
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+    width:38px;height:38px;border-radius:10px;
+    color:var(--ink-soft);text-decoration:none;
+    -webkit-tap-highlight-color:transparent;transition:background .15s,color .15s;
+  }
+  .cfg-voltar svg{width:18px;height:18px;flex-shrink:0}
+  /* hover de ação secundária usa --line, não --soft (padrão do DESIGN-ESTUDIO) */
+  @media (hover:hover){.cfg-voltar:hover{background:var(--line);color:var(--accent)}}
+  .cfg-voltar:focus{outline:none}
+  .cfg-voltar:focus-visible{background:var(--line);color:var(--accent)}
+  .cfg-voltar:active{background:var(--line);color:var(--ink)}
+  /* mesmo peso e tamanho do título das telas cheias do estúdio
+     (.tela-mobile-titulo: Inter 26/700), pra o topo ler igual em toda a
+     plataforma. O align-items:center do .topo-estudio é o que mantém ele
+     centrado verticalmente com a seta de voltar. */
+  /* título + estado do salvamento empilhados (o estado fica sob o nome do
+     arquivo, como no Docs). Sem o indicador, vira só o título de sempre. */
+  .topo-titulo-area{display:flex;flex-direction:column;justify-content:center;min-width:0;flex:1}
+  .topo-titulo-pagina{
+    font-family:var(--sans);font-weight:700;font-size:26px;color:var(--ink);
+    min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .topo-titulo-area .msg-salvar{
+    margin:0;min-height:0;font-size:12px;color:var(--ink-soft);
+    padding-left:8px;   /* alinha com o texto do campo, que tem esse padding */
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .topo-titulo-area .msg-salvar:empty{display:none}
+  /* o verde/vermelho precisam vencer a cor neutra da linha */
+  .topo-titulo-area .msg-salvar.ok{color:var(--ok)}
+  .topo-titulo-area .msg-salvar.erro{color:var(--erro)}
+
+  .app-corpo{display:flex;align-items:flex-start;flex:1;min-height:0}
+  .lateral-config{
+    width:240px;flex-shrink:0;background:var(--soft);border-right:1px solid var(--line);
+    padding:20px 14px;position:sticky;top:var(--topo-altura);height:calc(100vh - var(--topo-altura));
+    overflow-y:auto;
+  }
+  .grupo-config{margin-bottom:22px}
+  .grupo-config:last-child{margin-bottom:0}
+  .grupo-titulo{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);padding:0 10px;margin-bottom:8px}
+  .item-config{
+    display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    padding:10px 10px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--ink);
+    background:none;border:0;cursor:pointer;transition:background .15s ease,color .15s ease;
+  }
+  .item-config svg{width:16px;height:16px;flex-shrink:0;color:var(--ink-soft);transition:color .15s ease}
+  @media (hover:hover){.item-config:hover{background:#E9EBEF}}
+  .item-config.ativo{background:#E9EBEF;color:var(--accent)}
+  .item-config.ativo svg{color:var(--accent)}
+
+  .conteudo-config{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;min-height:calc(100vh - var(--topo-altura));padding:40px 24px}
+  /* página única de configurações (perfil, localização, segurança) */
+  #painel-config{max-width:620px;margin:0 auto}
+  .cfg-topo{margin-bottom:28px}
+  .cfg-topo p{color:var(--ink-soft);font-size:14px;margin:0}
+  .cfg-secao{margin-bottom:26px}
+  /* título DENTRO do card, como a legend das fieldsets da home: mesmo peso,
+     tamanho, cor e pill de ícone (ver #pagina-home legend + .legend-icone-lg
+     no estudio.html) */
+  .cfg-secao-tit{
+    display:flex;align-items:center;gap:9px;margin:0 0 18px;
+    font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--ink);
+  }
+  .cfg-secao-tit .ic{width:36px;height:36px;border-radius:13px;background:#EAF1F3;color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .cfg-secao-tit .ic svg{width:17px;height:17px;stroke-width:2}
+  /* mesma caixa das fieldsets da home: radius 22 e padding 22/24/24 */
+  .cfg-card{background:var(--paper);border-radius:22px;box-shadow:0 1px 2px rgba(29,29,27,.04), 0 6px 16px rgba(29,29,27,.05);padding:22px 24px 24px}
+  .cfg-sub{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px}
+  /* e-mail da conta: dado, não campo. SEM o fundo --soft de propósito — no
+     app input é exatamente "bg --soft + radius 8", então usar isso aqui fazia
+     a caixa ler como editável, que é justamente o que ela não é. Sem caixa,
+     ela se distingue dos campos logo abaixo. */
+  .cfg-conta-email{display:flex;flex-direction:column;gap:2px;margin-bottom:16px}
+  .cfg-conta-email-rotulo{font-size:12.5px;font-weight:500;color:var(--ink-soft)}
+  .cfg-conta-email-valor{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:14px;color:var(--ink);word-break:break-all;
+  }
+  .cfg-conta-email-valor svg{width:13px;height:13px;flex-shrink:0;color:var(--ink-soft)}
+  .cfg-card .campo-form:last-of-type{margin-bottom:16px}
+  /* botões de ação ficam encostados à direita do card. flex + fit-content (e
+     não inline-flex) porque margin-left:auto só empurra elemento de bloco. */
+  .cfg-salvar{display:flex;width:fit-content;margin-left:auto;align-items:center;justify-content:center;height:44px;padding:0 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;border:0;border-radius:10px;cursor:pointer;box-shadow:0 1px 2px rgba(0,54,70,.22);transition:background .15s ease,transform .1s ease,box-shadow .18s ease}
+  @media (hover:hover){.cfg-salvar:hover{background:#00485c;transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,54,70,.22)}}
+  .cfg-salvar:active{transform:scale(.98)}
+  .cfg-salvar:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
+  /* ação secundária (padrão .botao-secundario do DESIGN-ESTUDIO): bg --soft,
+     texto --accent, sem borda, hover vira --line */
+  .cfg-secundario{
+    display:flex;width:fit-content;margin-left:auto;
+    align-items:center;justify-content:center;height:40px;padding:0 16px;
+    background:var(--soft);color:var(--accent);font:inherit;font-size:13.5px;font-weight:600;
+    border:0;border-radius:10px;cursor:pointer;transition:background .15s ease,transform .1s ease;
+  }
+  @media (hover:hover){.cfg-secundario:hover{background:var(--line)}}
+  .cfg-secundario:active{transform:scale(.98)}
+  .cfg-secundario:focus{outline:none}
+  .cfg-secundario:focus-visible{background:var(--line)}
+  .cfg-secundario:disabled{opacity:.55;cursor:default;transform:none}
+  /* separa a troca de senha do caminho alternativo (link por e-mail) */
+  .cfg-divisor{height:1px;background:var(--line);margin:22px 0 18px}
+  /* à direita pra acompanhar o botão, que também é alinhado à direita do card */
+  .cfg-msg{font-size:13px;margin:12px 0 0;min-height:16px;line-height:1.4;text-align:right}
+  .cfg-msg.ok{color:var(--ok)}
+  .cfg-msg.erro{color:var(--erro)}
+  .em-breve{max-width:360px;text-align:center}
+  /* painel de localização */
+  .loc-wrap{max-width:420px}
+  .loc-wrap h3{font-size:20px;font-weight:600;color:var(--ink);margin:0 0 6px}
+  .loc-sub{font-size:14px;color:var(--ink-soft);line-height:1.5;margin:0 0 22px}
+  .loc-salvar{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;border:0;border-radius:10px;cursor:pointer;box-shadow:0 1px 2px rgba(0,54,70,.22);transition:background .15s ease,transform .1s ease,box-shadow .18s ease}
+  @media (hover:hover){.loc-salvar:hover{background:#00485c;transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,54,70,.22)}}
+  .loc-salvar:active{transform:scale(.98)}
+  .loc-salvar:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
+  .loc-msg{font-size:13.5px;margin:14px 0 0;min-height:18px;line-height:1.5}
+  .loc-msg.ok{color:var(--ok)}
+  .loc-msg.erro{color:var(--erro)}
+  .em-breve .icone-em-breve{
+    width:56px;height:56px;border-radius:50%;background:var(--soft);color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+  }
+  .em-breve .icone-em-breve svg{width:24px;height:24px}
+  .em-breve h3{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:8px}
+  .em-breve p{color:var(--ink-soft);font-size:13.5px}
+  .em-breve .tag-em-breve{
+    display:inline-flex;margin-top:16px;padding:4px 12px;border-radius:8px;
+    background:var(--soft);border:1px solid var(--line);color:var(--ink-soft);
+    font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  }
+
+  .btn-menu-config{
+    display:none;width:38px;height:38px;border-radius:10px;border:0;
+    background:var(--soft);align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer;
+  }
+  .btn-menu-config svg{width:18px;height:18px}
+
+  /* ---------- índice de contrato (modelos + assinatura) ---------- */
+  .indice-topo{margin-bottom:0}
+  .indice-topo p{color:var(--ink-soft);font-size:13.5px;margin:0;max-width:560px;line-height:1.5}
+  /* cada seção é um card branco, igual aos de Configurações (.cfg-card) e às
+     fieldsets da home: título dentro, conteúdo dentro. Os cards internos
+     (modelos, assinatura) continuam existindo, só mudam de fundo pra saltar
+     deste aqui — ver .modelo-card. */
+  .indice-secao{
+    margin-top:26px;background:var(--paper);border-radius:22px;
+    box-shadow:0 1px 2px rgba(29,29,27,.04), 0 6px 16px rgba(29,29,27,.05);
+    padding:22px 24px 24px;
+  }
+  .indice-secao-titulo{
+    display:flex;align-items:center;gap:9px;margin:0 0 18px;
+    font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--ink);
+  }
+  .indice-secao-titulo .ic{width:36px;height:36px;border-radius:13px;background:#EAF1F3;color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .indice-secao-titulo .ic svg{width:17px;height:17px;stroke-width:2}
+  .modelos-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  /* card interno: agora vive dentro do card branco da seção, então usa o
+     pastel petróleo sutil + sombra fantasma da home (#F7F9FA, hover #F0F4F6),
+     senão ficaria branco sobre branco */
+  .modelo-card{
+    position:relative;background:#F7F9FA;border-radius:16px;
+    box-shadow:0 1px 2px rgba(29,41,61,.03);transition:transform .12s ease, background .15s ease;
+  }
+  @media (hover:hover){.modelo-card:hover{transform:translateY(-1px);background:#F0F4F6}}
+  /* botão que abre o modelo: ocupa o card inteiro, pra a área de clique não
+     encolher por causa do kebab que fica por cima */
+  .mc-abrir{
+    display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+    width:100%;min-height:120px;padding:18px 18px 16px;
+    background:none;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;
+  }
+  .mc-abrir:focus{outline:none}
+  .modelo-card .mc-ico{width:38px;height:38px;border-radius:11px;background:#EAF1F3;color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .modelo-card .mc-ico svg{width:18px;height:18px}
+  .modelo-card .mc-nome{font-weight:600;font-size:14.5px;color:var(--ink);line-height:1.3}
+  .modelo-card .mc-meta{font-size:12px;color:var(--ink-soft);margin-top:auto}
+  /* canto superior direito: selo "Padrão" + kebab, lado a lado */
+  .mc-canto{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;z-index:2}
+  .modelo-card .mc-padrao{font-size:10.5px;font-weight:600;letter-spacing:.03em;color:var(--accent);background:#EAF1F3;border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .mc-kebab{
+    width:28px;height:28px;border:0;border-radius:8px;background:none;color:var(--ink-soft);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent;
+  }
+  .mc-kebab svg{width:16px;height:16px}
+  @media (hover:hover){.mc-kebab:hover{background:var(--line);color:var(--ink)}}
+  .mc-kebab:focus{outline:none}
+  .mc-kebab[aria-expanded="true"]{background:var(--line);color:var(--ink)}
+  .mc-menu{
+    position:absolute;top:44px;right:12px;z-index:5;min-width:196px;padding:6px;
+    background:var(--paper);border-radius:12px;
+    box-shadow:0 1px 2px rgba(29,29,27,.06), 0 10px 28px rgba(29,29,27,.14);
+  }
+  .mc-menu[hidden]{display:none}
+  .mc-menu button{
+    display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;border:0;border-radius:8px;
+    background:none;font:inherit;font-size:13.5px;color:var(--ink);text-align:left;cursor:pointer;
+  }
+  .mc-menu button svg{width:15px;height:15px;flex-shrink:0;opacity:.85}
+  .mc-menu button:disabled{opacity:.4;cursor:not-allowed}
+  @media (hover:hover){.mc-menu button:not(.perigo):hover{background:var(--soft)}}
+  .mc-menu .perigo{color:var(--erro)}
+  @media (hover:hover){.mc-menu .perigo:hover{background:#FBEBEB}}
+  .modelo-novo{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    background:none;border:2px dashed var(--line);border-radius:16px;color:var(--ink-soft);
+    cursor:pointer;min-height:120px;font-size:13px;font-weight:500;transition:border-color .15s,color .15s,background .15s;
+  }
+  @media (hover:hover){.modelo-novo:hover{border-color:var(--accent);color:var(--accent);background:var(--soft)}}
+  .modelo-novo svg{width:22px;height:22px}
+
+  /* Card de assinatura: mesmo corpo do .modelo-card, mas no lugar do ícone em
+     pill mostra a PRÓPRIA assinatura, que é o que identifica uma da outra. */
+  /* a amostra ocupa a largura toda, então começa ABAIXO da faixa do canto
+     (selo "Padrão" + kebab, que vai até 40px): no card de modelo o ícone é
+     pequeno e divide a faixa com o selo, aqui a assinatura passaria por baixo */
+  .assin-card .mc-abrir{gap:12px;padding-top:46px}
+  .assin-amostra{
+    width:100%;height:58px;border-radius:10px;background:var(--paper);
+    display:flex;align-items:center;justify-content:center;padding:6px 10px;overflow:hidden;
+  }
+  .assin-amostra img{max-height:46px;max-width:100%;object-fit:contain}
+  .assin-amostra .cursiva{font-family:"Segoe Script","Bradley Hand",cursive;font-size:24px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+  /* modal de assinatura: mais largo que o de confirmação porque abriga o canvas
+     de desenho, que fica inutilizável numa caixa estreita */
+  /* as duas classes vivem no mesmo elemento e `.modal-confirm-caixa` (440px)
+     está DEPOIS na folha: com a mesma especificidade ela vencia e este modal
+     nunca chegava aos 520. O seletor duplo resolve sem depender da ordem. */
+  .modal-confirm-caixa.ma-caixa{max-width:520px}
+  .ma-rotulo{display:block;font-size:12.5px;font-weight:500;color:var(--ink-soft);margin:16px 0 6px}
+  /* o primeiro rótulo já vem logo abaixo do h3, que tem margem própria */
+  .ma-rotulo-1{margin-top:0}
+  /* X de fechar: mesma linguagem do kebab do card (sem moldura, acende no
+     hover). O padding no h3 evita o título passar por baixo dele. */
+  .ma-caixa h3{padding-right:40px}
+  .ma-fechar{
+    position:absolute;top:18px;right:18px;z-index:2;
+    width:32px;height:32px;border:0;border-radius:9px;background:none;color:var(--ink-soft);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent;
+  }
+  .ma-fechar svg{width:17px;height:17px}
+  @media (hover:hover){.ma-fechar:hover{background:var(--soft);color:var(--ink)}}
+  .ma-fechar:focus{outline:none}
+
+  /* assinatura: formulário dentro do #modal-assinatura.
+     Caixa única: abas no topo, preview e campo do modo escolhido embaixo. Os
+     três modos são excludentes e trocam o MESMO conteúdo, que é exatamente o
+     que aba significa — como chips soltos pareciam filtro, e a caixa de preview
+     parecia um bloco sem dono. */
+  .assinatura-caixa{background:var(--soft);border-radius:12px;overflow:hidden;margin-bottom:4px}
+  /* altura TRAVADA na do modo mais alto (o desenho, por causa do canvas): sem
+     isso a caixa ia de 142 pra 270 ao trocar de aba e o modal inteiro pulava
+     128px debaixo do dedo. O preview é quem estica pra ocupar a sobra nos
+     modos mais baixos, então o espaço não fica largado no fim. */
+  .assinatura-corpo-caixa{height:270px;display:flex;flex-direction:column;padding:14px}
+  .assinatura-corpo-caixa > .assinatura-preview{flex:1;min-height:0}
+  .assinatura-corpo-caixa > #assinatura-corpo{flex-shrink:0}
+  /* modo desenho: sem preview (o canvas já é a assinatura), então ele é quem
+     estica pra ocupar a caixa toda */
+  .assinatura-corpo-caixa.so-desenho > .assinatura-preview{display:none}
+  .assinatura-corpo-caixa.so-desenho > #assinatura-corpo{flex:1;min-height:0;display:flex;flex-direction:column}
+  .assinatura-corpo-caixa.so-desenho .assinatura-rubrica{flex:1;height:auto;min-height:0}
+  /* "Limpar" na direita, longe do canto onde a mão começa a assinar */
+  .assin-desenho-acoes{display:flex;justify-content:flex-end;margin-top:8px;flex-shrink:0}
+  /* abas sublinhadas: trilho fino embaixo da faixa inteira e um traço em
+     petróleo sob a ativa. Aqui a linha NÃO é decoração de card (que a casa
+     evita), é o próprio trilho da aba, que é o que dá a leitura de "seleção". */
+  /* as três dividem a largura em partes iguais, cada rótulo centralizado na
+     sua: o sublinhado da ativa marca a faixa inteira dela, não só o texto */
+  .assinatura-modos{display:flex;gap:0;box-shadow:inset 0 -1px 0 var(--line)}
+  .assinatura-modos button{
+    flex:1 1 0;min-width:0;text-align:center;
+    position:relative;font:inherit;font-size:13px;font-weight:500;white-space:nowrap;
+    padding:12px 6px 11px;border:0;border-radius:0;background:none;color:var(--ink-soft);
+    cursor:pointer;transition:color .15s;-webkit-tap-highlight-color:transparent;
+  }
+  @media (hover:hover){.assinatura-modos button:hover{color:var(--ink)}}
+  .assinatura-modos button:focus{outline:none}
+  .assinatura-modos button.ativo{color:var(--accent);font-weight:600}
+  .assinatura-modos button.ativo::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+    background:var(--accent);border-radius:2px 2px 0 0;
+  }
+  /* o fundo agora é da caixa, então o preview fica transparente */
+  .assinatura-preview{min-height:70px;background:none;display:flex;align-items:center;justify-content:center;padding:10px 4px 14px}
+  .assinatura-preview img{max-height:70px;max-width:100%}
+  .assinatura-preview .cursiva{font-family:"Segoe Script","Bradley Hand",cursive;font-size:30px;color:var(--ink)}
+  /* o flex já centraliza o bloco, mas a legenda quebra em duas linhas e sem
+     text-align a segunda linha encostava na esquerda; o max-width segura a
+     quebra num ponto agradável em vez de ir até a borda */
+  .assinatura-preview .vazio{color:var(--ink-soft);font-size:13px;text-align:center;line-height:1.5;max-width:31ch}
+  .assinatura-campo{margin-bottom:12px}
+  .assinatura-campo input[type=text]{width:100%;font:inherit;background:var(--soft);border:0;border-radius:10px;padding:12px 14px;color:var(--ink)}
+  .assinatura-campo input:focus{outline:none;background:#EEF0F3}
+  /* DEPOIS das regras de .assinatura-campo de propósito: mesma especificidade,
+     quem vem por último vence. Dentro da caixa cinza o campo sobe pro branco,
+     senão ele e o fundo viram a mesma mancha. */
+  .assinatura-corpo-caixa .assinatura-campo{margin-bottom:0}
+  .assinatura-corpo-caixa input[type=text]{background:var(--paper)}
+  .assinatura-corpo-caixa input[type=text]:focus{background:var(--paper)}
+  /* Branco (não --soft, que sumiria dentro da caixa cinza) mais a LINHA de
+     assinatura, pra pessoa saber onde assinar em vez de encarar um retângulo
+     vazio. A linha é fundo em CSS de propósito: desenhada no canvas ela entraria
+     no toDataURL e sairia carimbada no contrato. */
+  .assinatura-rubrica{
+    width:100%;height:130px;border-radius:10px;touch-action:none;display:block;
+    background:
+      linear-gradient(var(--line), var(--line)) no-repeat,
+      var(--paper);
+    background-size:calc(100% - 44px) 1px;
+    background-position:22px calc(100% - 30px);
+  }
+
+  /* imagem: a área do preview inteira vira o botão de enviar */
+  .assin-envio{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+    flex:1;align-self:stretch;padding:12px;border:0;border-radius:10px;background:none;
+    font:inherit;color:var(--ink-soft);cursor:pointer;
+    transition:background .15s ease,color .15s ease;-webkit-tap-highlight-color:transparent;
+  }
+  @media (hover:hover){.assin-envio:hover{background:var(--paper)}}
+  .assin-envio:active{background:var(--paper)}
+  .assin-envio:focus{outline:none}
+  .assin-envio-ico{
+    width:44px;height:44px;border-radius:14px;background:#EAF1F3;color:var(--accent);
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .assin-envio-ico svg{width:20px;height:20px}
+  .assin-envio-txt{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .assin-envio-sub{font-size:11.5px;color:var(--ink-soft)}
+
+  /* ---------- editor do contrato (Tiptap) ---------- */
+  /* full-width: com o editor aberto some a sidebar de config */
+  .editor-aberto .lateral-config{display:none}
+  .voltar-editor{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;margin-bottom:14px;
+    color:var(--ink-soft);font-size:12.5px;font:inherit;background:none;border:0;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .voltar-editor svg{width:14px;height:14px}
+  @media (hover:hover){.voltar-editor:hover{background:var(--line);color:var(--accent)}}
+  /* herda tamanho/peso de .topo-titulo-pagina (as duas classes estão no
+     elemento); aqui só o que faz dele um campo: sem moldura em repouso, fundo
+     sutil ao passar/entrar, e largura que acompanha o header */
+  .editor-nome{
+    font:inherit;font-family:var(--sans);font-weight:700;font-size:26px;color:var(--ink);
+    background:none;border:0;border-radius:8px;padding:2px 8px;margin:-2px -8px;
+    min-width:0;flex:1;max-width:640px;
+  }
+  @media (hover:hover){.editor-nome:hover{background:var(--soft)}}
+  .editor-nome:focus{outline:none;background:var(--soft)}
+  .conteudo-config.largo{display:block;align-items:stretch;justify-content:flex-start;padding:28px 24px;max-width:1100px;margin:0 auto;width:100%}
+  /* com o editor aberto a página vira tela cheia (estilo Google Docs): sem o
+     limite de 1100px e sem o respiro lateral, o documento ocupa tudo */
+  .editor-aberto .conteudo-config.largo{max-width:none;padding:0}
+  /* com o editor aberto, o header da página e a barra de edição são uma coisa
+     só: a linha entre os dois partia o cabeçalho ao meio. Quem separa o
+     cabeçalho inteiro do documento é a linha do .editor-topo, embaixo. */
+  .editor-aberto .topo-estudio{border-bottom:0}
+  .painel-contrato-topo{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+  .painel-contrato-topo h3{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink)}
+  .painel-contrato-topo p{color:var(--ink-soft);font-size:13px;margin-top:2px}
+
+  /* ---------- cabeçalho do editor (estilo Google Docs) ----------
+     Nome do arquivo + ações numa linha, barra de formatação embaixo, os dois
+     grudados no topo enquanto o documento rola por baixo. */
+  /* Gruda LOGO ABAIXO do header da página, não em top:0 — os dois eram sticky
+     no topo e a barra de edição sumia atrás do header ao rolar. A altura vem
+     medida do header real (--altura-topo, ver medirAlturaTopo), porque no
+     iPhone ela é 64px + a faixa do notch; o calc é só o valor da 1ª pintura. */
+  .editor-topo{
+    position:sticky;top:var(--altura-topo, calc(var(--topo-altura) + var(--sat)));
+    z-index:10;background:var(--paper);
+    padding:4px 24px 0;border-bottom:1px solid var(--line);
+  }
+
+  /* folha do documento: ocupa a largura toda, sem moldura de "caixinha" */
+  .editor-folha{padding:0 24px 40px}
+  .btn-salvar-template{padding:11px 22px;background:var(--noir);color:#fff;border:0;border-radius:999px;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:opacity .2s ease}
+  @media (hover:hover){.btn-salvar-template:hover{opacity:.85}}
+  .btn-salvar-template:disabled{opacity:.4;cursor:default}
+  /* dentro do cabeçalho agora: sem moldura nem cantos, só uma faixa */
+  /* o padding de cima some quase todo de propósito: junto com os 4px do
+     .editor-topo ele deixa 10px entre o header da página e os botões, no lugar
+     dos 24px de vão morto que havia. Só o espaço vazio encolhe — os botões
+     seguem com 32px de alvo. */
+  .toolbar-editor{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;padding:6px 0 8px;background:none;border:0}
+  /* grupo dos ícones: no desktop é só um trecho da mesma linha; no celular ele
+     desce inteiro pra segunda linha (ver o bloco de 820px) */
+  .tb-icones{display:flex;align-items:center;gap:6px;min-width:0}
+  /* ---------- barra de formatação (padrão Docs/Word) ----------
+     Sem moldura em repouso: o botão só "acende" com um fundo suave no hover.
+     Ícone no lugar de texto onde a ação tem símbolo consagrado (negrito,
+     itálico, listas); texto só onde o símbolo não seria óbvio (estilo, inserir). */
+  .toolbar-editor button, .toolbar-editor select{
+    font:inherit;font-size:13px;border:0;background:none;color:var(--ink);
+    border-radius:8px;cursor:pointer;
+  }
+  .tb-icone{
+    width:32px;height:32px;flex-shrink:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    color:var(--ink-soft);transition:background .12s ease,color .12s ease;
+  }
+  .tb-icone svg{width:17px;height:17px}
+  @media (hover:hover){.tb-icone:hover{background:var(--soft);color:var(--ink)}}
+  .tb-icone:active{background:var(--line)}
+  .tb-icone:focus{outline:none}
+  /* ativo = o formato está aplicado onde o cursor está (igual ao Docs) */
+  .tb-icone.ativo{background:#EAF1F3;color:var(--accent)}
+
+  /* separa as categorias (estilo · formatação · listas · inserir) */
+  .tb-divisor{width:1px;flex:0 0 1px;height:20px;align-self:center;margin:0 6px;background:var(--line)}
+
+  /* dropdown de estilo: também sem caixa, vira um "campo" só no hover */
+  .tb-estilo{
+    min-width:140px;flex-shrink:0;height:32px;padding:0 8px;color:var(--ink);
+    -webkit-appearance:none;appearance:none;
+    background:none;transition:background .12s ease;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 6px center;padding-right:26px;
+  }
+  @media (hover:hover){.tb-estilo:hover{background-color:var(--soft)}}
+  .tb-estilo:focus{outline:none;background-color:var(--soft)}
+
+  /* botão "Inserir" + menu agrupado por categoria */
+  .tb-inserir-wrap{position:relative;flex-shrink:0}
+  .tb-inserir{
+    display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;
+    color:var(--ink-soft);transition:background .12s ease,color .12s ease;
+  }
+  .tb-inserir svg{width:16px;height:16px;flex-shrink:0}
+  .tb-inserir .tb-seta{width:14px;height:14px;opacity:.7}
+  @media (hover:hover){.tb-inserir:hover{background:var(--soft);color:var(--ink)}}
+  .tb-inserir[aria-expanded="true"]{background:var(--soft);color:var(--ink)}
+  .tb-menu{
+    position:absolute;top:38px;left:0;z-index:20;min-width:236px;max-height:60vh;overflow-y:auto;
+    padding:6px;background:var(--paper);border-radius:12px;
+    box-shadow:0 1px 2px rgba(29,29,27,.06), 0 12px 30px rgba(29,29,27,.16);
+  }
+  .tb-menu[hidden]{display:none}
+  .tb-menu-grupo{
+    padding:8px 10px 4px;font-size:10.5px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .tb-menu button{
+    display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border-radius:8px;
+    font-size:13.5px;color:var(--ink);text-align:left;
+  }
+  .tb-menu button svg{width:15px;height:15px;flex-shrink:0;opacity:.8}
+  @media (hover:hover){.tb-menu button:hover{background:var(--soft)}}
+  /* o documento rola com a PÁGINA, não dentro de uma caixinha com altura
+     travada — é o que faz ele parecer uma folha de verdade */
+  #campo-editor{
+    border:0;border-radius:0;min-height:calc(100vh - var(--topo-altura) - 160px);
+    padding:32px 0 0;font-size:14px;line-height:1.65;
+  }
+  #campo-editor .ProseMirror{outline:none}
+  /* ---------- ritmo do documento dentro do editor ----------
+     O reset global (`*{margin:0;padding:0}`) zera o espaçamento AQUI DENTRO
+     também, e isso nunca tinha sido restaurado: parágrafos, títulos e listas
+     saíam todos colados, e a lista ainda perdia o recuo que faz o número ficar
+     pendurado FORA do texto (era o "tudo grudado" que o Jordan viu).
+     Os valores espelham o documento real (#documento em revisar-contrato.html)
+     pra o que se edita ter o mesmo ritmo do que vai ser gerado. Fonte e
+     justificação seguem as da interface de propósito: aqui é pra ler e
+     escrever, não pra imitar o papel. */
+  #campo-editor .ProseMirror p{margin-bottom:10px}
+  #campo-editor .ProseMirror h2{margin-bottom:16px}
+  #campo-editor .ProseMirror h3{margin:24px 0 10px}
+  #campo-editor .ProseMirror ol,
+  #campo-editor .ProseMirror ul{padding-left:22px;margin-bottom:10px}
+  #campo-editor .ProseMirror li{margin-bottom:10px}
+  /* o Tiptap embrulha o conteúdo do <li> num <p>; sem zerar, o item ganharia
+     o espaçamento duas vezes */
+  #campo-editor .ProseMirror li > p{margin-bottom:0}
+  #campo-editor .campo{background:#EDE7DA;border-radius:4px;padding:1px 5px;color:var(--accent);font-weight:500}
+  #campo-editor .placeholder-no-editor{
+    border:1px dashed var(--line);border-radius:8px;padding:14px;color:var(--ink-soft);
+    font-size:12.5px;text-align:center;background:var(--soft);margin:8px 0;
+  }
+  .msg-salvar{font-size:12.5px;margin-top:10px;min-height:18px}
+  .msg-salvar.ok{color:var(--ok)}
+  .msg-salvar.erro{color:var(--erro)}
+
+  /* ---------- pop-up de confirmação ----------
+     Copiado do /estudio pra as duas telas do admin confirmarem igual; medidas
+     do brandbook (cartão branco radius 18, padding 32/32/26, ícone em pill
+     SEMPRE inline ao lado do h3, corpo em --ink-soft com line-height 1.6). */
+  .modal-confirm{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-confirm[hidden]{display:none}
+  .modal-confirm-fundo{position:absolute;inset:0;background:rgba(29,29,27,.5);backdrop-filter:blur(2px)}
+  .modal-confirm-caixa{
+    position:relative;z-index:1;width:100%;max-width:440px;
+    background:var(--paper);border-radius:18px;padding:32px 32px 26px;box-shadow:var(--sombra);
+    /* guarda pra tela baixa (celular pequeno em pé, ou janela curta): o texto
+       rola dentro da caixa em vez de vazar pra fora do campo de visão */
+    max-height:calc(100dvh - 40px);overflow-y:auto;
+  }
+  .modal-confirm-caixa h3{
+    font-weight:600;font-size:22px;color:var(--ink);
+    margin:0 0 14px;display:flex;align-items:center;gap:12px;line-height:1.25;
+  }
+  .modal-confirm-caixa .mc-icone{
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+    width:32px;height:32px;border-radius:10px;
+    background:#EAF1F3;color:var(--accent);
+  }
+  .modal-confirm-caixa .mc-icone svg{width:16px;height:16px}
+  .modal-confirm-caixa p{font-size:14.5px;color:var(--ink-soft);line-height:1.6;margin:0}
+  /* banner âmbar do brandbook (#FBF6E8/#7A5A11, "aviso"): carrega o recado que
+     não pode passar batido, separado do corpo pra não virar mais um parágrafo */
+  .mc-aviso{
+    display:flex;align-items:flex-start;gap:10px;margin-top:16px !important;
+    background:#FBF6E8;color:#7A5A11 !important;padding:12px 14px;border-radius:10px;
+    font-size:13px !important;line-height:1.55 !important;
+  }
+  .mc-aviso[hidden]{display:none}
+  .mc-aviso svg{width:16px;height:16px;flex-shrink:0;color:#B99524;margin-top:1px}
+  /* os dois botões dividem a largura em 50/50: nenhuma das duas saídas é a
+     "secundária escondida", e assim as duas têm o mesmo alvo de clique */
+  .modal-confirm-acoes{display:flex;gap:10px;margin-top:28px}
+  /* mesma família do .cfg-salvar (o primário desta tela): altura 44, radius 10 */
+  .mc-btn-ok, .mc-btn-cancelar{
+    flex:1 1 0;min-width:0;
+    display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 16px;
+    font:inherit;font-size:14px;font-weight:600;border:0;border-radius:10px;cursor:pointer;
+    transition:background .15s ease,transform .1s ease,box-shadow .18s ease;
+  }
+  .mc-btn-ok{background:var(--accent);color:#fff;box-shadow:0 1px 2px rgba(0,54,70,.22)}
+  @media (hover:hover){.mc-btn-ok:hover{background:#00485c;transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,54,70,.22)}}
+  .mc-btn-ok:active{transform:scale(.98)}
+  .mc-btn-ok.perigo{background:var(--erro);box-shadow:0 1px 2px rgba(163,59,59,.25)}
+  @media (hover:hover){.mc-btn-ok.perigo:hover{background:#8F3333;box-shadow:0 6px 16px rgba(163,59,59,.25)}}
+  /* cancelar com fundo próprio (cinza da casa), não transparente: a hierarquia
+     entre os dois vem da COR, não de um deles sumir no branco do cartão */
+  .mc-btn-cancelar{background:var(--soft);color:var(--ink);box-shadow:0 1px 2px rgba(29,29,27,.05)}
+  @media (hover:hover){.mc-btn-cancelar:hover{background:var(--line);transform:translateY(-1px);box-shadow:0 6px 14px rgba(29,29,27,.08)}}
+  .mc-btn-cancelar:active{transform:scale(.98)}
+  .mc-btn-ok:focus, .mc-btn-cancelar:focus{outline:none}
+
+  @media (max-width:820px){
+    /* iOS dá zoom automático ao focar qualquer campo editável com fonte menor
+       que 16px, e não desfaz sozinho: a página fica deslocada e atrapalha
+       justamente quem está digitando. A correção é a fonte ter 16px no toque —
+       NÃO usar maximum-scale no viewport, que mataria o zoom de pinça e é
+       problema de acessibilidade. O !important é de propósito: regras mais
+       específicas venceriam e o zoom voltaria naquele campo. */
+    input, select, textarea{font-size:16px !important}
+    #campo-editor, #campo-editor .ProseMirror{font-size:16px}
+
+    /* barra de formatação em DUAS linhas. Com estilo + 8 ícones + divisórias ela
+       pede ~460px numa faixa de 327 e não cabe numa linha só: espremer derrubava
+       os botões de 32px pra 17px (abaixo do alvo mínimo de toque) e rolar na
+       horizontal escondia metade deles. Divisão por natureza da ação: em cima
+       o que mexe no BLOCO inteiro (estilo do parágrafo e inserir), embaixo os
+       ícones que mexem na FORMATAÇÃO. A ordem do DOM serve ao desktop, então
+       aqui os três são reordenados por `order` em vez de remontar o markup. */
+    .toolbar-editor{flex-wrap:wrap;row-gap:6px}
+    .tb-estilo{order:1;min-width:132px}
+    /* "Inserir" fecha a primeira linha pela direita; o auto empurra ele pra lá */
+    .tb-inserir-wrap{order:2;margin-left:auto}
+    .tb-icones{order:3;flex-basis:100%}
+    /* as duas divisórias que separavam o estilo dos ícones e os ícones do
+       inserir perdem a função: agora quem separa esses grupos é a quebra de
+       linha e o vão até a ponta direita */
+    .tb-div-estilo, .tb-div-inserir{display:none}
+    /* As duas divisórias que sobram (negrito/itálico · alinhamento · listas)
+       viram ESPAÇADORES ELÁSTICOS. Os ícones somam 312px numa faixa de 327, e
+       essa sobra de 15px deixava a linha de baixo terminando antes do "Inserir"
+       da linha de cima — as duas pontas direitas não batiam. Com `flex:1` nas
+       divisórias a sobra é absorvida por elas, então o último ícone encosta na
+       mesma borda do "Inserir" e cada grupo continua junto (espalhar por todos
+       os gaps afastaria negrito de itálico sem motivo). O traço segue 1px,
+       desenhado centrado no espaçador em vez de ser o fundo da caixa inteira. */
+    .tb-icones .tb-divisor{
+      flex:1 1 auto;width:auto;min-width:1px;margin:0;
+      background:linear-gradient(var(--line), var(--line)) center/1px 20px no-repeat;
+    }
+    /* o botão fica na ponta direita, então o menu abre alinhado por ali —
+       ancorado à esquerda ele sairia da tela */
+    .tb-menu{left:auto;right:0}
+    /* o vão compacto entre o header e a barra não é mais regra de mobile: virou
+       o padrão do arquivo, e vale nos dois tamanhos */
+
+    /* aqui a divisão 50/50 não cabe: metade da caixa dá ~140px e o rótulo
+       "Definir como padrão" pede ~160. Então empilham, os dois em largura
+       cheia (que é a versão da mesma ideia no vertical: mesmo peso, mesmo
+       alvo), com o column-reverse pondo o principal EM CIMA (convenção de
+       diálogo no celular) sem inverter a ordem do DOM, que mantém o foco
+       caindo no principal e o Tab indo dele pro Cancelar. */
+    .modal-confirm-caixa{padding:26px 22px 22px}
+    /* cada aba fica com um terço de ~291px, e "Enviar imagem" a 13px não cabe
+       nisso: a fonte desce um ponto e o respiro lateral encolhe. O nowrap da
+       regra base impede o rótulo virar duas linhas e engordar a faixa. */
+    .assinatura-modos button{font-size:12px;padding-left:2px;padding-right:2px}
+    .modal-confirm-acoes{flex-direction:column-reverse;margin-top:22px}
+    /* o `flex:1 1 0` do 50/50 é medida do eixo principal: virando coluna, ele
+       passa a mandar na ALTURA e engolia os 44px, deixando o botão com 21.
+       Aqui a largura já é cheia pela própria coluna, então o flex sai de cena. */
+    .mc-btn-ok, .mc-btn-cancelar{flex:0 0 auto}
+
+    /* ---------- assinatura vira SHEET no celular ----------
+       Só o #modal-assinatura: ele é um formulário (três modos, canvas, campos),
+       e sheet é o formato de formulário no toque. O #modal-confirm continua
+       cartão centrado, porque é uma pergunta curta de sim ou não. */
+    #modal-assinatura{padding:0;align-items:flex-end}
+    #modal-assinatura .modal-confirm-caixa{
+      width:100%;max-width:none;height:80dvh;max-height:80dvh;
+      border-radius:18px 18px 0 0;
+      padding:22px 20px calc(20px + var(--sab));
+      animation:ma-sobe .26s cubic-bezier(.22,.61,.36,1);
+    }
+    /* saindo = mesma animação ao contrário, disparada por fecharModalAssinatura
+       antes de esconder de fato */
+    #modal-assinatura.saindo .modal-confirm-caixa{animation:ma-desce .2s ease forwards}
+    #modal-assinatura.saindo .modal-confirm-fundo{animation:ma-some .2s ease forwards}
+    #modal-assinatura .modal-confirm-fundo{animation:ma-aparece .26s ease}
+    /* O corpo encolhe pra a folha caber nos 80% sem rolar por dentro. Os 340px
+       são o que o resto ocupa (título, rótulo, campo do nome, botões e os
+       paddings), medido na tela; o max() é um piso pra tela muito baixa (modo
+       paisagem), onde aí sim vale rolar. Continua IGUAL entre as três abas, que
+       é o que impede o pulo ao trocar de modo. */
+    #modal-assinatura .assinatura-corpo-caixa{height:max(150px, min(270px, calc(80dvh - 340px)))}
+    @keyframes ma-sobe{from{transform:translateY(100%)} to{transform:translateY(0)}}
+    @keyframes ma-desce{from{transform:translateY(0)} to{transform:translateY(100%)}}
+    @keyframes ma-aparece{from{opacity:0} to{opacity:1}}
+    @keyframes ma-some{from{opacity:1} to{opacity:0}}
+
+    .lateral-config{
+      position:fixed;inset:var(--topo-altura) 0 0 0;width:auto;height:auto;z-index:15;
+      transform:translateY(-100%);transition:transform .2s ease;padding-top:calc(20px + var(--sat));
+    }
+    .lateral-config.aberta{transform:translateY(0)}
+    /* header mobile: ícone de voltar + título da página no lugar onde a logo
+       ficava centralizada, e sem a linha divisória (só no mobile) */
+    .topo-estudio{padding-left:12px;padding-right:12px;gap:4px;border-bottom:0}
+
+    /* push/pop com /estudio (mesma lógica do estudio.html): vir da Conta é
+       "forward" (esta página entra da direita, por cima); o Voltar é "back"
+       (esta página sai pra direita e revela a Conta parada embaixo, sem ela
+       sobrepor a que está fechando). Só entre documentos, só no mobile. */
+    @view-transition{ navigation:auto }
+    @keyframes vt-entra-direita{ from{ transform:translateX(100%) } to{ transform:translateX(0) } }
+    @keyframes vt-sai-direita{ from{ transform:translateX(0) } to{ transform:translateX(100%) } }
+    :root:active-view-transition-type(forward)::view-transition-old(root){ animation:none; z-index:1 }
+    :root:active-view-transition-type(forward)::view-transition-new(root){ z-index:2; animation:.34s cubic-bezier(.22,.61,.36,1) both vt-entra-direita }
+    :root:active-view-transition-type(back)::view-transition-new(root){ animation:none; z-index:1 }
+    :root:active-view-transition-type(back)::view-transition-old(root){ z-index:2; animation:.34s cubic-bezier(.22,.61,.36,1) both vt-sai-direita }
+  }
+
+  /* Celular estreito (iPhone SE e Androids de 320-360px). Os 8 ícones da segunda
+     linha pedem 312px fixos, e com a margem de 24 de cada lado sobram só 272 —
+     a fileira passava da borda. A margem do editor cai pra 12, a mesma que o
+     header da página já usa no mobile, e o gap entre os ícones aperta: o alvo
+     de toque segue 32px, que é o que não pode encolher. */
+  @media (max-width:374px){
+    .editor-topo, .editor-folha{padding-left:12px;padding-right:12px}
+    .tb-icones{gap:3px}
+  }
+</style>
+</head>
+<body>
+
+<!-- push/pop com /estudio: precisa marcar o sentido cedo (pageswap/pagereveal
+     disparam no começo do ciclo do documento). Ir pra /estudio (Voltar) é
+     "back"; ir pra /configuracoes é "forward". -->
+<script>
+(function(){
+  "use strict";
+  document.addEventListener("click", function(ev){
+    var a = ev.target && ev.target.closest ? ev.target.closest("a[href]") : null;
+    if (!a) return;
+    var href = a.getAttribute("href") || "";
+    try{
+      if (/\/configuracoes(\?|#|$)/.test(href)) sessionStorage.setItem("JSF_VT", "forward");
+      else if (/\/estudio(\?|#|\/|$)/.test(href)) sessionStorage.setItem("JSF_VT", "back");
+    }catch(e){}
+  }, true);
+  function dir(activation){
+    try{
+      if (activation && activation.navigationType === "traverse" && activation.from && activation.entry){
+        return activation.entry.index < activation.from.index ? "back" : "forward";
+      }
+    }catch(e){}
+    try{ return sessionStorage.getItem("JSF_VT") || "forward"; }catch(e){ return "forward"; }
+  }
+  window.addEventListener("pageswap", function(e){
+    if (e && e.viewTransition){ try{ e.viewTransition.types.add(dir(e.activation)); }catch(_){} }
+  });
+  window.addEventListener("pagereveal", function(e){
+    if (e && e.viewTransition){ try{ e.viewTransition.types.add(dir(typeof navigation !== "undefined" && navigation ? navigation.activation : null)); }catch(_){} }
+  });
+})();
+</script>
+
+<div id="tela-login" hidden>
+  <header class="topo">
+    <img src="/img/logo-principal-petroleo.png" alt="Jordan Santos">
+  </header>
+  <h1>Configurações</h1>
+  <p class="sub">Área do Jordan</p>
+  <form class="login" id="form-login">
+    <div class="campo-form">
+      <label for="email-login">E-mail</label>
+      <input id="email-login" type="email" autocomplete="email" required>
+    </div>
+    <div class="campo-form">
+      <label for="senha">Senha</label>
+      <div class="campo-senha">
+        <input id="senha" type="password" autocomplete="current-password" required>
+        <button type="button" class="alternar-senha" id="alternar-senha" aria-label="Mostrar senha"></button>
+      </div>
+    </div>
+    <button class="cta" type="submit">Entrar</button>
+    <p class="msg-erro" id="erro-login"></p>
+  </form>
+</div>
+
+<div id="app" class="app" hidden>
+  <header class="topo-estudio">
+    <a class="cfg-voltar" id="voltar-topo" href="/estudio?conta=1" aria-label="Voltar pra conta">
+      <i data-lucide="arrow-left"></i>
+    </a>
+    <div class="topo-titulo-area">
+      <h2 class="topo-titulo-pagina" id="titulo-pagina">Configurações</h2>
+      <!-- mesmo lugar, mesma cara: dentro do editor o título vira campo editável
+           (é o nome do arquivo, estilo Docs). Só um dos dois aparece por vez. -->
+      <input type="text" class="topo-titulo-pagina editor-nome" id="editor-nome" aria-label="Nome do modelo" hidden>
+      <!-- uma linha só embaixo do nome: começa com o aviso e vira o estado do
+           salvamento assim que algo é gravado -->
+      <p class="msg-salvar" id="msg-salvar-template"></p>
+    </div>
+  </header>
+
+  <div class="app-corpo">
+    <main class="conteudo-config largo" id="conteudo-config">
+      <!-- página única de configurações: Perfil, Localização, Segurança -->
+      <div id="painel-config">
+        <!-- sem título nem descrição geral aqui: o título vive no header e
+             cada card explica a si mesmo pelo próprio .cfg-sub -->
+
+        <section class="cfg-secao">
+          <div class="cfg-card">
+            <div class="cfg-secao-tit"><span class="ic"><i data-lucide="user"></i></span>Perfil</div>
+            <p class="cfg-sub">Como você aparece dentro do estúdio.</p>
+            <!-- e-mail é a identidade do login, não um campo editável: trocar
+                 exige confirmação por e-mail no Auth. Some se a sessão for
+                 antiga (assinada antes do e-mail entrar no token). -->
+            <div class="cfg-conta-email" id="perfil-email-linha" hidden>
+              <span class="cfg-conta-email-rotulo">E-mail da conta</span>
+              <span class="cfg-conta-email-valor">
+                <i data-lucide="lock" aria-hidden="true"></i>
+                <!-- texto em span próprio: o boot escreve só aqui, senão o
+                     textContent apagaria o cadeado junto -->
+                <span id="perfil-email"></span>
+              </span>
+            </div>
+            <div class="campo-form">
+              <label for="perfil-nome">Nome</label>
+              <input id="perfil-nome" type="text" placeholder="Seu nome" autocomplete="name">
+            </div>
+            <div class="campo-form">
+              <label for="perfil-username">Nome de usuário</label>
+              <input id="perfil-username" type="text" placeholder="@usuario" autocomplete="username">
+            </div>
+            <button type="button" class="cfg-salvar" id="perfil-salvar">Salvar perfil</button>
+            <p class="cfg-msg" id="perfil-msg"></p>
+          </div>
+        </section>
+
+        <section class="cfg-secao">
+          <div class="cfg-card">
+            <div class="cfg-secao-tit"><span class="ic"><i data-lucide="map-pin"></i></span>Localização</div>
+            <p class="cfg-sub">Sua cidade define a previsão do tempo que aparece na saudação da Home.</p>
+            <div class="campo-form">
+              <label for="loc-cidade">Cidade</label>
+              <input id="loc-cidade" type="text" placeholder="Ex.: Foz do Iguaçu" autocomplete="off">
+            </div>
+            <button type="button" class="cfg-salvar" id="loc-salvar">Salvar localização</button>
+            <p class="cfg-msg" id="loc-msg"></p>
+          </div>
+        </section>
+
+        <section class="cfg-secao">
+          <div class="cfg-card">
+            <div class="cfg-secao-tit"><span class="ic"><i data-lucide="shield"></i></span>Segurança</div>
+            <p class="cfg-sub">Troque a senha que você usa pra entrar no estúdio.</p>
+            <div class="campo-form">
+              <label for="seg-senha-atual">Senha atual</label>
+              <input id="seg-senha-atual" type="password" autocomplete="current-password">
+            </div>
+            <div class="campo-form">
+              <label for="seg-senha-nova">Nova senha</label>
+              <input id="seg-senha-nova" type="password" autocomplete="new-password" placeholder="Pelo menos 8 caracteres">
+            </div>
+            <button type="button" class="cfg-salvar" id="seg-trocar">Trocar senha</button>
+            <p class="cfg-msg" id="seg-troca-msg"></p>
+
+            <!-- saída pra quem não lembra a senha atual. O e-mail vem da
+                 sessão, não de um campo: só existe uma conta e ela já está
+                 logada aqui. Quem está trancado pra fora usa o "Esqueci a
+                 senha" da tela de login. -->
+            <div class="cfg-divisor"></div>
+            <p class="cfg-sub">Não lembra a senha atual? Enviamos um link de redefinição pro e-mail da conta.</p>
+            <button type="button" class="cfg-secundario" id="seg-reset">Enviar link de redefinição</button>
+            <p class="cfg-msg" id="seg-msg"></p>
+          </div>
+        </section>
+      </div>
+
+      <div id="painel-contrato" hidden>
+        <!-- ÍNDICE: modelos salvos + assinatura padrão -->
+        <div id="contrato-indice">
+          <!-- sem h3 aqui: o título deste painel já vive no header (mesma
+               regra do #painel-config), repetir duplicava na mesma dobra -->
+          <div class="indice-topo">
+            <p>Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.</p>
+          </div>
+
+          <div class="indice-secao">
+            <div class="indice-secao-titulo"><span class="ic"><i data-lucide="file-text"></i></span>Modelos de contrato</div>
+            <div class="modelos-grade" id="modelos-grade"></div>
+          </div>
+
+          <!-- mesma forma da seção de modelos: grade de cards + botão de criar.
+               O que antes era o formulário solto aqui dentro virou o conteúdo do
+               #modal-assinatura, aberto pelo "Nova assinatura". -->
+          <div class="indice-secao">
+            <div class="indice-secao-titulo"><span class="ic"><i data-lucide="pen-tool"></i></span>Assinaturas</div>
+            <div class="modelos-grade" id="assinaturas-grade"></div>
+          </div>
+        </div>
+
+        <!-- EDITOR full-width de um modelo -->
+        <div id="contrato-editor" hidden>
+          <!-- cabeçalho estilo Google Docs, grudado logo abaixo do header da
+               página. O nome do arquivo e o estado do salvamento vivem os dois
+               lá em cima (ver .topo-titulo-area), então aqui só existe a barra
+               de formatação: agrupada por categoria (estilo do bloco,
+               formatação, listas e inserções), separada por divisórias -->
+          <div class="editor-topo">
+            <div class="toolbar-editor" id="toolbar-editor">
+              <select id="select-estilo" class="tb-estilo" aria-label="Estilo do texto">
+                <option value="p">Texto normal</option>
+                <option value="h2">Título</option>
+                <option value="h3">Subtítulo</option>
+              </select>
+              <span class="tb-divisor tb-div-estilo"></span>
+
+              <!-- os ícones ficam num grupo só porque no celular eles descem
+                   inteiros pra segunda linha (ver o bloco de 820px) -->
+              <div class="tb-icones">
+                <button type="button" class="tb-icone" data-acao="negrito" aria-label="Negrito" title="Negrito"><i data-lucide="bold"></i></button>
+                <button type="button" class="tb-icone" data-acao="italico" aria-label="Itálico" title="Itálico"><i data-lucide="italic"></i></button>
+
+                <span class="tb-divisor"></span>
+                <!-- alinhamento: o contrato é justificado por padrão, então este
+                     é o estado "normal" e os outros três são a exceção -->
+                <button type="button" class="tb-icone" data-alinhar="left" aria-label="Alinhar à esquerda" title="Alinhar à esquerda"><i data-lucide="align-left"></i></button>
+                <button type="button" class="tb-icone" data-alinhar="center" aria-label="Centralizar" title="Centralizar"><i data-lucide="align-center"></i></button>
+                <button type="button" class="tb-icone" data-alinhar="right" aria-label="Alinhar à direita" title="Alinhar à direita"><i data-lucide="align-right"></i></button>
+                <button type="button" class="tb-icone" data-alinhar="justify" aria-label="Justificar" title="Justificar"><i data-lucide="align-justify"></i></button>
+
+                <span class="tb-divisor"></span>
+                <!-- lista virou par de ícones (convenção do Docs/Word): continuam
+                     na mesma categoria por ficarem lado a lado no mesmo grupo,
+                     mas sem o texto que pesava a barra -->
+                <button type="button" class="tb-icone" data-lista="pontos" aria-label="Lista com marcadores" title="Lista com marcadores"><i data-lucide="list"></i></button>
+                <button type="button" class="tb-icone" data-lista="numerada" aria-label="Lista numerada" title="Lista numerada"><i data-lucide="list-ordered"></i></button>
+              </div>
+
+              <span class="tb-divisor tb-div-inserir"></span>
+              <!-- "Inserir" único no lugar dos dois selects de texto: um menu só,
+                   com os campos e os blocos separados por categoria -->
+              <div class="tb-inserir-wrap">
+                <button type="button" class="tb-inserir" id="btn-inserir" aria-haspopup="true" aria-expanded="false" aria-label="Inserir" title="Inserir">
+                  <i data-lucide="plus"></i><span>Inserir</span><i data-lucide="chevron-down" class="tb-seta"></i>
+                </button>
+                <div class="tb-menu" id="menu-inserir" hidden>
+                  <div class="tb-menu-grupo">Campos do casal</div>
+                  <div id="menu-inserir-campos"></div>
+                  <div class="tb-menu-grupo">Blocos</div>
+                  <button type="button" data-bloco="tabela"><i data-lucide="table"></i><span>Tabela de itens</span></button>
+                  <button type="button" data-bloco="assinaturas"><i data-lucide="pen-tool"></i><span>Bloco de assinaturas</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-folha">
+            <div id="campo-editor" class="ativo"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- pop-up de confirmação: mesmo componente do /estudio (mesmas classes, mesma
+     função confirmar()), pra ação importante não cair no confirm() do navegador,
+     que não comporta explicação nenhuma -->
+<div class="modal-confirm" id="modal-confirm" hidden>
+  <div class="modal-confirm-fundo" data-cancelar></div>
+  <div class="modal-confirm-caixa" role="alertdialog" aria-modal="true" aria-labelledby="mc-titulo" aria-describedby="mc-texto">
+    <h3 id="mc-titulo"><span class="mc-icone" aria-hidden="true"><i data-lucide="info"></i></span><span id="mc-titulo-texto"></span></h3>
+    <p id="mc-texto" style="white-space:pre-line"></p>
+    <p class="mc-aviso" id="mc-aviso" hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><span id="mc-aviso-texto"></span></p>
+    <div class="modal-confirm-acoes">
+      <button type="button" class="mc-btn-cancelar" data-cancelar>Cancelar</button>
+      <button type="button" class="mc-btn-ok" id="mc-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- criar/editar uma assinatura. É o formulário que antes vivia solto no card
+     de "Assinatura padrão"; virou modal quando a seção passou a ser uma grade
+     de cards, igual à de modelos. -->
+<div class="modal-confirm" id="modal-assinatura" hidden>
+  <div class="modal-confirm-fundo" data-fechar-assinatura></div>
+  <div class="modal-confirm-caixa ma-caixa" role="dialog" aria-modal="true" aria-labelledby="ma-titulo">
+    <button type="button" class="ma-fechar" id="ma-fechar" aria-label="Fechar" data-fechar-assinatura><i data-lucide="x"></i></button>
+    <h3 id="ma-titulo"><span class="mc-icone" aria-hidden="true"><i data-lucide="pen-tool"></i></span><span id="ma-titulo-texto">Nova assinatura</span></h3>
+    <!-- nome primeiro, como no editor de modelo: é o rótulo do card, e vem
+         preenchido com um padrão numerado pra ninguém precisar inventar um -->
+    <label class="ma-rotulo ma-rotulo-1" for="assin-apelido">Nome desta assinatura</label>
+    <div class="assinatura-campo">
+      <input type="text" id="assin-apelido" maxlength="40">
+    </div>
+    <!-- tudo que produz a assinatura mora numa caixa só: as abas escolhem o
+         jeito, e logo abaixo vêm o preview e o campo daquele jeito -->
+    <div class="assinatura-caixa">
+      <div class="assinatura-modos" id="assinatura-modos" role="tablist">
+        <button type="button" role="tab" aria-selected="true" data-modo="cursiva" class="ativo">Fonte cursiva</button>
+        <button type="button" role="tab" aria-selected="false" data-modo="rubrica">Desenhar</button>
+        <button type="button" role="tab" aria-selected="false" data-modo="imagem">Enviar imagem</button>
+      </div>
+      <div class="assinatura-corpo-caixa">
+        <div class="assinatura-preview" id="assinatura-preview"><span class="vazio">Escreva, desenhe ou envie uma imagem.</span></div>
+        <div class="assinatura-campo" id="assinatura-corpo"></div>
+      </div>
+    </div>
+    <span class="msg-salvar" id="msg-assinatura"></span>
+    <div class="modal-confirm-acoes">
+      <button type="button" class="mc-btn-cancelar" data-fechar-assinatura>Cancelar</button>
+      <button type="button" class="mc-btn-ok" id="btn-salvar-assinatura">Salvar assinatura</button>
+    </div>
+  </div>
+</div>
+
+<script src="/contrato-template.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+(function(){
+  "use strict";
+
+  lucide.createIcons();
+
+  /* ícones dinâmicos (usados via innerHTML) gerados na hora com a API do
+     Lucide CDN: lucide.createElement(lucide.icons[nome], atributos) devolve
+     um elemento <svg> de verdade — .outerHTML dá a string. */
+  function iconeSvg(nome, attrs){
+    /* lucide.icons é indexado por PascalCase (ex.: "ShieldCheck"), não pelo
+       kebab-case usado em data-lucide/CDN docs ("shield-check") — converte. */
+    var pascal = nome.replace(/(^|-)([a-z0-9])/g, function(_, __, c){ return c.toUpperCase(); });
+    return lucide.createElement(lucide.icons[pascal], attrs || {}).outerHTML;
+  }
+
+  function el(id){ return document.getElementById(id); }
+
+  /* ---------- pop-up de confirmação (Promise<boolean>) ----------
+     Mesma assinatura do confirmar() do /estudio, com um campo a mais (`aviso`)
+     pro banner âmbar. Resolve false no Cancelar, no clique no fundo e no Esc. */
+  var _resolverConfirm = null;
+  function confirmar(opts){
+    opts = opts || {};
+    /* o h3 tem o ícone dentro (inline com o texto), então escreve só no span
+       do texto — mexer no h3 apagaria o SVG */
+    el("mc-titulo-texto").textContent = opts.titulo || "Confirmar";
+    el("mc-texto").textContent = opts.texto || "";
+    el("mc-aviso").hidden = !opts.aviso;
+    el("mc-aviso-texto").textContent = opts.aviso || "";
+    var ok = el("mc-ok");
+    ok.textContent = opts.rotuloOk || "Confirmar";
+    ok.className = "mc-btn-ok" + (opts.perigo ? " perigo" : "");
+    el("modal-confirm").hidden = false;
+    setTimeout(function(){ ok.focus(); }, 50);
+    return new Promise(function(resolve){ _resolverConfirm = resolve; });
+  }
+  function _fecharConfirm(valor){
+    el("modal-confirm").hidden = true;
+    if (_resolverConfirm){ var r = _resolverConfirm; _resolverConfirm = null; r(valor); }
+  }
+  el("mc-ok").addEventListener("click", function(){ _fecharConfirm(true); });
+  Array.prototype.forEach.call(el("modal-confirm").querySelectorAll("[data-cancelar]"), function(b){
+    b.addEventListener("click", function(){ _fecharConfirm(false); });
+  });
+  document.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape" && !el("modal-confirm").hidden) _fecharConfirm(false);
+  });
+
+  var ROTULOS = {
+    perfil: "Perfil", localizacao: "Localização", seguranca: "Segurança", contrato: "Contrato e assinatura",
+    catalogo: "Catálogo e preços", notificacoes: "Notificações", integracoes: "Integrações"
+  };
+
+  function mostrar(nome){
+    if (nome === "login"){
+      el("tela-login").hidden = false;
+      el("app").hidden = true;
+      return;
+    }
+    el("tela-login").hidden = true;
+    el("app").hidden = false;
+  }
+
+  function api(url, corpo){
+    var ehLogin = corpo && corpo.acao === "entrar";
+    return fetch(url, corpo ? {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo)
+    } : undefined).then(function(r){
+      if (r.status === 401 && !ehLogin){ mostrar("login"); throw new Error("sessao"); }
+      return r.json().then(function(j){
+        if (!r.ok) throw new Error(j.erro || "falha");
+        return j;
+      });
+    });
+  }
+
+  /* ---------- olho de mostrar/ocultar senha (cópia de estudio.html) ---------- */
+  var ICONE_OLHO = iconeSvg("eye", { "stroke-width": 1.6 });
+  var ICONE_OLHO_FECHADO = iconeSvg("eye-off", { "stroke-width": 1.6 });
+  el("alternar-senha").innerHTML = ICONE_OLHO;
+  el("alternar-senha").addEventListener("click", function(){
+    var input = el("senha");
+    var mostrando = input.type === "text";
+    input.type = mostrando ? "password" : "text";
+    el("alternar-senha").innerHTML = mostrando ? ICONE_OLHO : ICONE_OLHO_FECHADO;
+    el("alternar-senha").setAttribute("aria-label", mostrando ? "Mostrar senha" : "Ocultar senha");
+  });
+
+  el("form-login").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var botao = ev.target.querySelector(".cta");
+    botao.disabled = true;
+    el("erro-login").textContent = "";
+    api("/api/sessao", { acao: "entrar", email: el("email-login").value, senha: el("senha").value })
+      .then(function(r){
+        if (r.role !== "admin") throw new Error("acesso não autorizado");
+        el("senha").value = "";
+        mostrar("app");
+      })
+      .catch(function(e){
+        if (e.message !== "sessao") el("erro-login").textContent = e.message;
+      })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  /* ---------- página única: perfil + localização + segurança ---------- */
+  function msgSec(id, txt, tipo){ var m = el(id); if (!m) return; m.textContent = txt || ""; m.className = "cfg-msg" + (tipo ? " " + tipo : ""); }
+
+  /* carrega perfil + localização de uma vez (config) e preenche os campos */
+  api("/api/config").then(function(cfg){
+    var p = (cfg && cfg.perfil) || {};
+    if (p.nome) el("perfil-nome").value = p.nome;
+    if (p.username) el("perfil-username").value = p.username;
+    if (cfg && cfg.localizacao && cfg.localizacao.cidade) el("loc-cidade").value = cfg.localizacao.cidade;
+  }).catch(function(){});
+
+  el("perfil-salvar").addEventListener("click", function(){
+    var botao = el("perfil-salvar"); botao.disabled = true; msgSec("perfil-msg", "Salvando…");
+    api("/api/config", { acao: "salvar-perfil", perfil: {
+      nome: el("perfil-nome").value.trim(), username: el("perfil-username").value.trim()
+    } })
+      .then(function(){ msgSec("perfil-msg", "Perfil salvo ✓", "ok"); })
+      .catch(function(e){ msgSec("perfil-msg", e.message || "Não consegui salvar.", "erro"); })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  /* e-mail da conta, preenchido no boot a partir da sessão. Guardado aqui
+     porque o campo de digitar e-mail saiu da Segurança: só existe uma conta e
+     ela já está logada. */
+  var emailDaConta = "";
+
+  el("seg-trocar").addEventListener("click", function(){
+    var atual = el("seg-senha-atual").value;
+    var nova = el("seg-senha-nova").value;
+    if (!atual || !nova){ msgSec("seg-troca-msg", "Preencha a senha atual e a nova.", "erro"); return; }
+    if (nova.length < 8){ msgSec("seg-troca-msg", "A nova senha precisa de pelo menos 8 caracteres.", "erro"); return; }
+    if (nova === atual){ msgSec("seg-troca-msg", "A nova senha precisa ser diferente da atual.", "erro"); return; }
+    var botao = el("seg-trocar"); botao.disabled = true; msgSec("seg-troca-msg", "Trocando…");
+    api("/api/sessao", { acao: "trocar-senha", atual: atual, nova: nova })
+      .then(function(){
+        el("seg-senha-atual").value = "";
+        el("seg-senha-nova").value = "";
+        msgSec("seg-troca-msg", "Senha trocada ✓", "ok");
+      })
+      .catch(function(e){
+        if (e.message === "sessao") return;   /* api() já mandou pro login */
+        msgSec("seg-troca-msg", e.message || "Não consegui trocar a senha.", "erro");
+      })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  el("seg-reset").addEventListener("click", function(){
+    if (!emailDaConta){ msgSec("seg-msg", "Saia e entre de novo pra usar esta opção.", "erro"); return; }
+    var botao = el("seg-reset"); botao.disabled = true; msgSec("seg-msg", "Enviando…");
+    api("/api/sessao", { acao: "recuperar", email: emailDaConta })
+      .then(function(){ msgSec("seg-msg", "Link de redefinição enviado pro e-mail da conta.", "ok"); })
+      .catch(function(){ msgSec("seg-msg", "Não consegui enviar agora, tente de novo.", "erro"); })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  /* ---------- localização (previsão do tempo) ----------
+     Geocoding e clima pela Open-Meteo (grátis, sem chave). Aqui só geocodifica a
+     cidade digitada e guarda {cidade,nome,lat,lon} em /api/config; a Home lê isso
+     e busca o tempo. */
+  function msgLoc(txt, tipo){ msgSec("loc-msg", txt, tipo); }
+  el("loc-salvar").addEventListener("click", function(){
+    var q = el("loc-cidade").value.trim();
+    if (!q){ msgLoc("Digite uma cidade.", "erro"); return; }
+    var botao = el("loc-salvar");
+    botao.disabled = true; msgLoc("Procurando…");
+    var u = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=1&language=pt&format=json";
+    fetch(u).then(function(r){ return r.json(); }).then(function(d){
+      var res = d && d.results && d.results[0];
+      if (!res){ botao.disabled = false; msgLoc("Não achei essa cidade, tente escrever de outro jeito.", "erro"); return; }
+      var partes = [res.name, res.admin1, res.country].filter(Boolean);
+      var loc = {
+        cidade: res.name,
+        nome: partes.join(", "),
+        lat: res.latitude,
+        lon: res.longitude
+      };
+      return api("/api/config", { acao: "salvar-localizacao", localizacao: loc }).then(function(){
+        el("loc-cidade").value = res.name;
+        msgLoc("Salvo: " + loc.nome + " ✓", "ok");
+      }).catch(function(e){ msgLoc(e.message || "Não consegui salvar.", "erro"); }).then(function(){ botao.disabled = false; });
+    }).catch(function(){ botao.disabled = false; msgLoc("Falha ao procurar a cidade, tente de novo.", "erro"); });
+  });
+
+  /* ---------- contrato: índice (modelos + assinatura) + editor ---------- */
+  var editorMod = null, editorContrato = null, modeloAtualId = null, editorPronto = false;
+
+  function carregarEditorMod(){
+    if (editorMod) return Promise.resolve(editorMod);
+    return import("/configuracoes-editor.js").then(function(mod){
+      editorMod = mod;
+      /* campos do casal entram como itens do menu "Inserir" (antes era um
+         <select> de texto na barra) */
+      var lista = el("menu-inserir-campos");
+      lista.innerHTML = "";
+      Object.keys(mod.ROTULOS_CAMPO).forEach(function(nome){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.dataset.campo = nome;
+        b.innerHTML = '<i data-lucide="square-dashed"></i><span></span>';
+        b.querySelector("span").textContent = mod.ROTULOS_CAMPO[nome];
+        lista.appendChild(b);
+      });
+      wireEditorUma();
+      return mod;
+    });
+  }
+
+  /* só busca e desenha a lista, sem mexer em quem está visível — assim dá pra
+     popular o índice por trás quando a página abre direto no editor */
+  function carregarIndiceContrato(){
+    return api("/api/templates").then(function(r){
+      renderModelos(r.modelos || []);
+      renderAssinaturas(r.assinaturas || []);
+    }).catch(function(){});
+  }
+  function mostrarIndiceContrato(){
+    document.body.classList.remove("editor-aberto");
+    el("contrato-editor").hidden = true;
+    el("contrato-indice").hidden = false;
+    /* saiu do editor: o header volta a nomear o painel, não o modelo */
+    definirTituloHeader(ROTULOS.contrato, false);
+    ajustarRotuloVoltar();
+    if (window.lucide) lucide.createIcons();
+    return carregarIndiceContrato();
+  }
+
+  function fmtData(iso){ try { return new Date(iso).toLocaleDateString("pt-BR"); } catch(e){ return ""; } }
+
+  /* fecha qualquer menu de modelo aberto */
+  function fecharMenusModelo(){
+    Array.prototype.forEach.call(document.querySelectorAll(".mc-menu"), function(m){ m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll(".mc-kebab"), function(k){ k.setAttribute("aria-expanded", "false"); });
+  }
+  document.addEventListener("pointerdown", function(ev){
+    if (ev.target.closest && ev.target.closest(".mc-kebab, .mc-menu")) return;
+    fecharMenusModelo();
+  });
+  document.addEventListener("keydown", function(ev){ if (ev.key === "Escape") fecharMenusModelo(); });
+
+  /* O card deixou de ser um <button> só: agora é um container com o botão de
+     abrir (ocupando o card inteiro) e, por cima, o kebab de opções. Botão
+     dentro de botão é HTML inválido e os cliques brigariam, por isso os dois
+     são irmãos. */
+  function renderModelos(modelos){
+    var grade = el("modelos-grade"); grade.innerHTML = "";
+    (modelos || []).forEach(function(m){
+      var card = document.createElement("div");
+      card.className = "modelo-card";
+      card.innerHTML =
+        '<button type="button" class="mc-abrir">' +
+          '<span class="mc-ico"><i data-lucide="file-text"></i></span>' +
+          '<span class="mc-nome"></span>' +
+          '<span class="mc-meta">Atualizado ' + fmtData(m.atualizado_em) + '</span>' +
+        '</button>' +
+        '<div class="mc-canto">' +
+          (m.ativo ? '<span class="mc-padrao">Padrão</span>' : '') +
+          '<button type="button" class="mc-kebab" aria-label="Opções do modelo" aria-haspopup="true" aria-expanded="false">' +
+            '<i data-lucide="ellipsis-vertical"></i></button>' +
+        '</div>' +
+        '<div class="mc-menu" hidden>' +
+          /* já é o padrão: aparece desabilitada com o motivo, em vez de sumir —
+             assim a opção continua visível e explicada (mesmo padrão do menu
+             de revisar-contrato.html) */
+          '<button type="button" data-acao="padrao"' +
+            (m.ativo ? ' disabled title="Este já é o modelo padrão"' : '') +
+            '><i data-lucide="circle-check"></i><span>Definir como padrão</span></button>' +
+          '<button type="button" data-acao="renomear"><i data-lucide="pencil"></i><span>Renomear</span></button>' +
+          '<button type="button" data-acao="excluir" class="perigo"><i data-lucide="trash-2"></i><span>Excluir</span></button>' +
+        '</div>';
+      card.querySelector(".mc-nome").textContent = m.nome;
+      card.querySelector(".mc-abrir").addEventListener("click", function(){ abrirModelo(m.id); });
+
+      var kebab = card.querySelector(".mc-kebab");
+      var menu = card.querySelector(".mc-menu");
+      kebab.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        var vaiAbrir = menu.hidden;
+        fecharMenusModelo();
+        if (vaiAbrir){ menu.hidden = false; kebab.setAttribute("aria-expanded", "true"); }
+      });
+      Array.prototype.forEach.call(menu.querySelectorAll("button[data-acao]"), function(b){
+        b.addEventListener("click", function(ev){
+          ev.stopPropagation();
+          fecharMenusModelo();
+          acaoDoModelo(b.dataset.acao, m);
+        });
+      });
+      grade.appendChild(card);
+    });
+    var novo = document.createElement("button");
+    novo.type = "button"; novo.className = "modelo-novo";
+    novo.innerHTML = '<i data-lucide="plus"></i>Novo modelo';
+    novo.addEventListener("click", novoModelo);
+    grade.appendChild(novo);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  /* Ações do kebab. O servidor é quem manda: ele recusa apagar o único modelo
+     ou o que está como padrão, e a mensagem dele é mostrada como veio. */
+  function acaoDoModelo(acao, m){
+    if (acao === "padrao"){
+      /* confirmação obrigatória: é a única ação daqui que muda o que vai pro
+         cliente. As outras (renomear, excluir) mexem só na organização dos
+         modelos, e excluir já tem a sua. O texto diz o que passa a valer,
+         quando passa a valer e o que NÃO é afetado, pra não restar dúvida de
+         que é o documento real e não um rascunho de teste. */
+      confirmar({
+        titulo: "Tornar este o contrato padrão?",
+        texto: 'O modelo "' + (m.nome || "") + '" passa a ser o texto de todo contrato'
+             + ' novo que você gerar daqui pra frente. É o documento que o casal'
+             + ' recebe pra ler e assinar, exatamente como está escrito aqui.'
+             + '\n\nContratos já gerados ou já assinados não mudam, e o modelo'
+             + ' que é padrão hoje continua salvo na lista.',
+        aviso: "Isto não é um teste. O próximo contrato que você enviar já sai com este texto.",
+        rotuloOk: "Definir como padrão"
+      }).then(function(ok){
+        if (!ok) return;
+        api("/api/templates", { acao: "definir-padrao", id: m.id })
+          .then(mostrarIndiceContrato)
+          .catch(function(e){ alert(e.message || "Não consegui definir como padrão."); });
+      });
+      return;
+    }
+    if (acao === "renomear"){
+      var nome = prompt("Novo nome do modelo:", m.nome || "");
+      if (nome == null || !nome.trim()) return;
+      api("/api/templates", { acao: "renomear", id: m.id, nome: nome.trim() })
+        .then(mostrarIndiceContrato)
+        .catch(function(e){ alert(e.message || "Não consegui renomear."); });
+      return;
+    }
+    if (acao === "excluir"){
+      if (!confirm('Apagar o modelo "' + (m.nome || "") + '"? Contratos já gerados não mudam.')) return;
+      api("/api/templates", { acao: "excluir", id: m.id })
+        .then(mostrarIndiceContrato)
+        .catch(function(e){ alert(e.message || "Não consegui apagar."); });
+    }
+  }
+
+  /* Modelo novo já nasce com nome, sem perguntar nada — igual ao Google Docs,
+     que cria "Documento sem título" e deixa você renomear depois no cabeçalho. */
+  var NOME_PADRAO_MODELO = "Documento sem título";
+
+  /* Texto do primeiro título dentro do documento (o H2 do contrato). Serve de
+     sugestão pro nome do arquivo; o nome segue sendo um campo separado e PODE
+     divergir do H2 — só o palpite inicial vem dele.
+     Lê do DOM vivo do editor em vez de getHtml(): o getHtml serializa o JSON
+     do Tiptap e depende do formato de saída, enquanto o que está na tela é
+     exatamente o que o Jordan acabou de escrever. */
+  function tituloDoDocumento(){
+    var pm = document.querySelector("#campo-editor .ProseMirror");
+    var h = pm && pm.querySelector("h1, h2, h3");
+    return h ? (h.textContent || "").trim() : "";
+  }
+  function novoModelo(){
+    api("/api/templates", { acao: "criar", nome: NOME_PADRAO_MODELO })
+      .then(function(r){ if (r && r.modelo) abrirModelo(r.modelo.id); })
+      .catch(function(e){ alert(e.message || "Não consegui criar o modelo."); });
+  }
+
+  /* ---------- endereço do painel de contrato ----------
+     Três estados, todos com URL própria:
+       ?painel=contrato              → lista de modelos
+       ?painel=contrato&modelo=<id>  → editor daquele modelo
+     Antes o editor abria sem mexer na URL: recarregar a página caía de volta
+     na lista e o gesto de voltar do celular saía de Configurações inteiro em
+     vez de só fechar o editor. */
+  var _editorVeioDeNavegacao = false;   /* true = existe entrada nossa pra voltar */
+  function urlDoIndice(){ return location.pathname + "?painel=contrato"; }
+  function urlDoModelo(id){ return location.pathname + "?painel=contrato&modelo=" + encodeURIComponent(id); }
+
+  /* semHistorico = está só refletindo a URL que já existe (boot ou voltar),
+     então não empurra entrada nova */
+  function abrirModelo(id, semHistorico){
+    carregarEditorMod().then(function(){
+      return api("/api/templates?id=" + encodeURIComponent(id));
+    }).then(function(r){
+      var m = r && r.modelo; if (!m) return;
+      modeloAtualId = m.id;
+      if (!semHistorico){
+        history.pushState({ painel: "contrato", modelo: m.id }, "", urlDoModelo(m.id));
+        _editorVeioDeNavegacao = true;
+      }
+      /* no editor o título do header É o campo de renomear */
+      definirTituloHeader(m.nome || NOME_PADRAO_MODELO, true);
+      if (editorContrato) editorContrato.destroy();
+      el("campo-editor").innerHTML = "";
+      editorContrato = editorMod.criarEditorContrato(el("campo-editor"), m.conteudo_json || "<p></p>");
+      /* o dropdown de estilo acompanha o cursor pelos eventos do próprio
+         Tiptap, e NÃO por click/keyup no elemento: esses disparam antes do
+         ProseMirror atualizar a seleção, então o dropdown mostrava sempre o
+         bloco anterior (parecia invertido ao alternar título/parágrafo). */
+      editorContrato.editor.on("selectionUpdate", sincronizarEstilo);
+      editorContrato.editor.on("transaction", sincronizarEstilo);
+      /* "update" (e não "transaction") dispara só quando o CONTEÚDO muda —
+         transaction inclui mover o cursor, o que salvaria à toa */
+      editorContrato.editor.on("update", agendarSalvarModelo);
+      el("campo-editor").classList.add("ativo");
+      el("toolbar-editor").hidden = false;
+      medirAlturaTopo();   /* o título do modelo pode mudar a altura do header */
+      sincronizarEstilo();
+      statusSalvar(AVISO_EDITOR);   /* some no primeiro salvamento */
+      el("contrato-indice").hidden = true;
+      el("contrato-editor").hidden = false;
+      document.body.classList.add("editor-aberto");
+      ajustarRotuloVoltar();
+      if (window.lucide) lucide.createIcons();
+      window.scrollTo(0, 0);
+    }).catch(function(e){ console.error("abrir modelo:", e); });
+  }
+
+  /* ---------- salvamento automático ----------
+     Não existe botão "Salvar": qualquer mudança no documento ou no nome grava
+     sozinha, como no Docs. As gravações são agrupadas numa janelinha curta
+     (não uma por tecla digitada) pra não disparar uma chamada por caractere;
+     na prática a sensação é instantânea e o indicador mostra o estado. */
+  var ESPERA_SALVAR_MS = 700;
+  var _timerSalvar = null, _salvandoAgora = false, _pendente = false;
+  /* a linha embaixo do título é uma só: abre com o aviso e, a partir do
+     primeiro salvamento, passa a mostrar o estado (o verde fica, como no Docs) */
+  var AVISO_EDITOR = "Editar aqui não muda contratos já gerados.";
+
+  function statusSalvar(texto, tipo){
+    var m = el("msg-salvar-template");
+    if (!m) return;
+    m.textContent = texto || "";
+    m.className = "msg-salvar" + (tipo ? " " + tipo : "");
+  }
+
+  function salvarModeloAgora(){
+    if (!editorContrato || !modeloAtualId) return;
+    if (_salvandoAgora){ _pendente = true; return; }   /* chegou mudança no meio: refaz depois */
+    _salvandoAgora = true;
+    statusSalvar("Salvando…");
+    api("/api/templates", {
+      acao: "salvar",
+      id: modeloAtualId,
+      nome: (el("editor-nome").value || "").trim() || undefined,
+      conteudo_json: editorContrato.getJson(),
+      conteudo_html: editorContrato.getHtml()
+    }).then(function(){
+      statusSalvar("Todas as alterações foram salvas", "ok");
+    }).catch(function(e){
+      statusSalvar(e.message || "Não consegui salvar agora.", "erro");
+    }).finally(function(){
+      _salvandoAgora = false;
+      if (_pendente){ _pendente = false; salvarModeloAgora(); }
+    });
+  }
+
+  function agendarSalvarModelo(){
+    if (!editorContrato || !modeloAtualId) return;
+    clearTimeout(_timerSalvar);
+    statusSalvar("Salvando…");
+    _timerSalvar = setTimeout(salvarModeloAgora, ESPERA_SALVAR_MS);
+  }
+
+  /* Mede o header de verdade e publica em --altura-topo, que é onde a barra de
+     edição gruda. Medir (em vez de assumir 64px) cobre a faixa do notch no
+     iPhone e o caso do título quebrar em duas linhas. */
+  function medirAlturaTopo(){
+    var h = document.querySelector(".topo-estudio");
+    if (!h) return;
+    document.documentElement.style.setProperty("--altura-topo", h.offsetHeight + "px");
+  }
+  window.addEventListener("resize", medirAlturaTopo);
+  medirAlturaTopo();
+
+  function fecharMenuInserir(){
+    var m = el("menu-inserir");
+    if (!m || m.hidden) return;
+    m.hidden = true;
+    el("btn-inserir").setAttribute("aria-expanded", "false");
+  }
+  document.addEventListener("pointerdown", function(ev){
+    if (ev.target.closest && ev.target.closest(".tb-inserir-wrap")) return;
+    fecharMenuInserir();
+  });
+  document.addEventListener("keydown", function(ev){ if (ev.key === "Escape") fecharMenuInserir(); });
+
+  /* reflete no cabeçalho o formato de onde o cursor está: o dropdown mostra o
+     estilo do bloco e os ícones acendem quando o formato está aplicado */
+  function sincronizarEstilo(){
+    if (!editorContrato) return;
+    if (el("select-estilo")) el("select-estilo").value = editorContrato.estiloAtual();
+    var lista = editorContrato.listaAtual();
+    Array.prototype.forEach.call(document.querySelectorAll("[data-lista]"), function(b){
+      b.classList.toggle("ativo", b.dataset.lista === lista);
+    });
+    var alinhamento = editorContrato.alinhamentoAtual();
+    Array.prototype.forEach.call(document.querySelectorAll("[data-alinhar]"), function(b){
+      b.classList.toggle("ativo", b.dataset.alinhar === alinhamento);
+    });
+    var marcas = editorContrato.marcasAtivas ? editorContrato.marcasAtivas() : null;
+    if (marcas){
+      var n = document.querySelector('[data-acao="negrito"]');
+      var i = document.querySelector('[data-acao="italico"]');
+      if (n) n.classList.toggle("ativo", !!marcas.negrito);
+      if (i) i.classList.toggle("ativo", !!marcas.italico);
+    }
+  }
+
+  function wireEditorUma(){
+    if (editorPronto) return;
+    editorPronto = true;
+
+      el("toolbar-editor").addEventListener("click", function(ev){
+        var botao = ev.target.closest("button[data-acao]");
+        if (!botao) return;
+        var acao = botao.dataset.acao;
+        if (acao === "negrito") editorContrato.negrito();
+        else if (acao === "italico") editorContrato.italico();
+        sincronizarEstilo();
+      });
+
+      /* listas: clicar no ícone do tipo que já está aplicado desliga a lista
+         (é o comportamento do Docs/Word, e substitui o item "Sem lista" que o
+         dropdown anterior precisava ter) */
+      el("toolbar-editor").addEventListener("click", function(ev){
+        var botao = ev.target.closest("button[data-lista]");
+        if (!botao || !editorContrato) return;
+        var tipo = botao.dataset.lista;
+        editorContrato.definirLista(editorContrato.listaAtual() === tipo ? "nenhuma" : tipo);
+        sincronizarEstilo();
+      });
+
+      el("toolbar-editor").addEventListener("click", function(ev){
+        var botao = ev.target.closest("button[data-alinhar]");
+        if (!botao || !editorContrato) return;
+        editorContrato.definirAlinhamento(botao.dataset.alinhar);
+        sincronizarEstilo();
+      });
+      /* estilo do bloco num dropdown só (era H2/H3 soltos): escolher aplica, e
+         o valor mostrado acompanha onde o cursor está, como no Docs */
+      el("select-estilo").addEventListener("change", function(){
+        if (!editorContrato) return;
+        editorContrato.definirEstilo(el("select-estilo").value);
+      });
+
+      /* menu "Inserir": campos do casal e blocos num só lugar, agrupados */
+      el("btn-inserir").addEventListener("click", function(ev){
+        ev.stopPropagation();
+        var abrir = el("menu-inserir").hidden;
+        el("menu-inserir").hidden = !abrir;
+        el("btn-inserir").setAttribute("aria-expanded", String(abrir));
+        if (abrir && window.lucide) lucide.createIcons();
+      });
+      el("menu-inserir").addEventListener("click", function(ev){
+        var b = ev.target.closest("button");
+        if (!b || !editorContrato) return;
+        if (b.dataset.campo) editorContrato.inserirCampo(b.dataset.campo);
+        else if (b.dataset.bloco === "tabela") editorContrato.inserirTabela();
+        else if (b.dataset.bloco === "assinaturas") editorContrato.inserirAssinaturas();
+        fecharMenuInserir();
+      });
+
+
+
+      /* Sugestão de nome estilo Google Docs: enquanto o modelo ainda está com
+         o nome padrão, clicar no campo já traz o título do documento (o H2)
+         preenchido e selecionado, pra confirmar com um Enter ou digitar por
+         cima. Se ele já tem nome próprio, não mexe em nada. */
+      el("editor-nome").addEventListener("focus", function(){
+        var campo = el("editor-nome");
+        if ((campo.value || "").trim() !== NOME_PADRAO_MODELO) return;
+        var sugestao = tituloDoDocumento();
+        if (sugestao) campo.value = sugestao;
+        /* select() no próximo tick: o focus roda no meio do clique, e o clique
+           ainda vai posicionar o cursor depois — selecionar agora seria
+           desfeito. Adiando, a sugestão fica selecionada pra ser trocada de
+           uma vez, como no Docs. */
+        setTimeout(function(){ campo.select(); }, 0);
+      });
+      /* nome também salva sozinho, enquanto digita — mesma janelinha do texto.
+         "input" já cobre digitação, colar e desfazer, então não precisa de um
+         "change" separado. Nome vazio não grava: apagaria o título sem querer. */
+      el("editor-nome").addEventListener("input", function(){
+        if ((el("editor-nome").value || "").trim()) agendarSalvarModelo();
+      });
+  }
+
+  /* ---------- assinaturas (cursiva / desenho / imagem) ----------
+     Mesma estrutura dos modelos de contrato: grade de cards, kebab com as
+     mesmas três opções e um botão de criar. O que muda é que o card mostra a
+     PRÓPRIA assinatura no lugar do ícone, e que criar/editar acontece num
+     modal, porque o formulário tem três modos e não cabe no card. */
+  var assinModo = "cursiva", assinValor = "", assinNome = "", assinEditando = null;
+  /* guardada na render pra o nome padrão saber em que número parar */
+  var assinaturasAtuais = [];
+
+  /* "Assinatura 1", "Assinatura 2"... pulando os números já usados, pra criar
+     três seguidas não gerar três com o mesmo nome. Mesma ideia do "Documento
+     sem título" do editor de modelo: nasce nomeada, renomeia depois. */
+  function proximoNomeAssinatura(){
+    var usados = {};
+    assinaturasAtuais.forEach(function(a){ usados[(a.nome || "").trim().toLowerCase()] = true; });
+    var n = 1;
+    while (usados["assinatura " + n]) n++;
+    return "Assinatura " + n;
+  }
+
+  /* desenha a assinatura (cursiva = texto na fonte manuscrita; desenho e imagem
+     = data URL) dentro de qualquer caixa, do card ou do modal */
+  function pintarAssinatura(caixa, tipo, valor, textoVazio){
+    if (!valor){ caixa.innerHTML = '<span class="vazio"></span>'; caixa.querySelector(".vazio").textContent = textoVazio || ""; return; }
+    if (tipo === "cursiva"){
+      caixa.innerHTML = '<span class="cursiva"></span>';
+      caixa.querySelector(".cursiva").textContent = valor;
+    } else {
+      caixa.innerHTML = '<img alt="assinatura">';
+      caixa.querySelector("img").src = valor;
+    }
+  }
+
+  function renderAssinaturas(lista){
+    assinaturasAtuais = lista || [];
+    var grade = el("assinaturas-grade"); grade.innerHTML = "";
+    (lista || []).forEach(function(a){
+      var card = document.createElement("div");
+      card.className = "modelo-card assin-card";
+      card.innerHTML =
+        '<button type="button" class="mc-abrir">' +
+          '<span class="assin-amostra"></span>' +
+          '<span class="mc-nome"></span>' +
+          '<span class="mc-meta">Atualizada ' + fmtData(a.atualizado_em) + '</span>' +
+        '</button>' +
+        '<div class="mc-canto">' +
+          (a.ativo ? '<span class="mc-padrao">Padrão</span>' : '') +
+          '<button type="button" class="mc-kebab" aria-label="Opções da assinatura" aria-haspopup="true" aria-expanded="false">' +
+            '<i data-lucide="ellipsis-vertical"></i></button>' +
+        '</div>' +
+        '<div class="mc-menu" hidden>' +
+          '<button type="button" data-acao="padrao"' +
+            (a.ativo ? ' disabled title="Esta já é a assinatura padrão"' : '') +
+            '><i data-lucide="circle-check"></i><span>Definir como padrão</span></button>' +
+          '<button type="button" data-acao="renomear"><i data-lucide="pencil"></i><span>Renomear</span></button>' +
+          '<button type="button" data-acao="excluir" class="perigo"><i data-lucide="trash-2"></i><span>Excluir</span></button>' +
+        '</div>';
+      card.querySelector(".mc-nome").textContent = a.nome || "Assinatura";
+      pintarAssinatura(card.querySelector(".assin-amostra"), a.tipo, a.valor, "");
+      /* abrir o card = editar a assinatura, igual abrir um modelo abre o editor */
+      card.querySelector(".mc-abrir").addEventListener("click", function(){ abrirModalAssinatura(a); });
+
+      var kebab = card.querySelector(".mc-kebab");
+      var menu = card.querySelector(".mc-menu");
+      kebab.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        var vaiAbrir = menu.hidden;
+        fecharMenusModelo();
+        if (vaiAbrir){ menu.hidden = false; kebab.setAttribute("aria-expanded", "true"); }
+      });
+      Array.prototype.forEach.call(menu.querySelectorAll("button[data-acao]"), function(b){
+        b.addEventListener("click", function(ev){
+          ev.stopPropagation();
+          fecharMenusModelo();
+          acaoDaAssinatura(b.dataset.acao, a);
+        });
+      });
+      grade.appendChild(card);
+    });
+    var nova = document.createElement("button");
+    nova.type = "button"; nova.className = "modelo-novo";
+    nova.innerHTML = '<i data-lucide="plus"></i>Nova assinatura';
+    nova.addEventListener("click", function(){ abrirModalAssinatura(null); });
+    grade.appendChild(nova);
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function acaoDaAssinatura(acao, a){
+    if (acao === "padrao"){
+      /* mesma confirmação do modelo padrão, pelo mesmo motivo: é o que vai
+         carimbado no contrato que o casal recebe assinado */
+      confirmar({
+        titulo: "Tornar esta a assinatura padrão?",
+        texto: 'A assinatura "' + (a.nome || "") + '" passa a vir aplicada toda vez que você'
+             + ' confirmar um contrato, e é ela que aparece no PDF que o casal recebe.'
+             + '\n\nVocê ainda pode trocar na hora de confirmar, e contratos já'
+             + ' assinados continuam com a assinatura que foi usada neles.',
+        aviso: "Isto não é um teste. O próximo contrato que você confirmar já sai com esta assinatura.",
+        rotuloOk: "Definir como padrão"
+      }).then(function(ok){
+        if (!ok) return;
+        api("/api/templates", { acao: "assinatura-definir-padrao", id: a.id })
+          .then(carregarIndiceContrato)
+          .catch(function(e){ alert(e.message || "Não consegui definir como padrão."); });
+      });
+      return;
+    }
+    if (acao === "renomear"){
+      var nome = prompt("Novo nome da assinatura:", a.nome || "");
+      if (nome == null || !nome.trim()) return;
+      api("/api/templates", { acao: "assinatura-renomear", id: a.id, nome: nome.trim() })
+        .then(carregarIndiceContrato)
+        .catch(function(e){ alert(e.message || "Não consegui renomear."); });
+      return;
+    }
+    if (acao === "excluir"){
+      confirmar({
+        titulo: "Apagar esta assinatura?",
+        texto: 'A assinatura "' + (a.nome || "") + '" sai da lista. Contratos já assinados'
+             + ' com ela não mudam, porque cada contrato guarda a sua própria cópia.',
+        rotuloOk: "Apagar", perigo: true
+      }).then(function(ok){
+        if (!ok) return;
+        api("/api/templates", { acao: "assinatura-excluir", id: a.id })
+          .then(carregarIndiceContrato)
+          .catch(function(e){ alert(e.message || "Não consegui apagar."); });
+      });
+    }
+  }
+
+  function abrirModalAssinatura(a){
+    assinEditando = a || null;
+    if (a){ assinModo = a.tipo; assinValor = a.valor; assinNome = a.nome || ""; }
+    else { assinModo = "cursiva"; assinValor = ""; assinNome = proximoNomeAssinatura(); }
+    el("ma-titulo-texto").textContent = a ? "Editar assinatura" : "Nova assinatura";
+    el("btn-salvar-assinatura").textContent = a ? "Salvar alterações" : "Salvar assinatura";
+    el("assin-apelido").value = assinNome;
+    el("msg-assinatura").textContent = ""; el("msg-assinatura").className = "msg-salvar";
+    Array.prototype.forEach.call(document.querySelectorAll("#assinatura-modos button"), function(b){
+      var ativa = b.dataset.modo === assinModo;
+      b.classList.toggle("ativo", ativa);
+      b.setAttribute("aria-selected", ativa ? "true" : "false");
+    });
+    clearTimeout(_timerFecharAssin);
+    el("modal-assinatura").classList.remove("saindo");
+    el("modal-assinatura").hidden = false;
+    /* o canvas só mede certo depois de estar visível: montar o corpo com o
+       modal ainda escondido daria largura 0 e a rubrica sairia deformada */
+    montarCorpoAssinatura(assinModo);
+    atualizarPreviewAssinatura();
+    if (window.lucide) lucide.createIcons();
+  }
+  /* No celular a folha desce antes de sumir; no desktop some direto, que é o
+     comportamento de cartão. O timer fica guardado pra reabrir antes do fim da
+     animação não deixar a classe "saindo" presa. */
+  var _timerFecharAssin = null;
+  function fecharModalAssinatura(){
+    var m = el("modal-assinatura");
+    clearTimeout(_timerFecharAssin);
+    assinEditando = null;
+    if (!window.matchMedia("(max-width:820px)").matches){ m.classList.remove("saindo"); m.hidden = true; return; }
+    m.classList.add("saindo");
+    _timerFecharAssin = setTimeout(function(){ m.classList.remove("saindo"); m.hidden = true; }, 200);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-fechar-assinatura]"), function(b){
+    b.addEventListener("click", fecharModalAssinatura);
+  });
+  document.addEventListener("keydown", function(ev){
+    if (ev.key === "Escape" && !el("modal-assinatura").hidden) fecharModalAssinatura();
+  });
+
+  /* cada modo explica o que vai acontecer NAQUELE modo, em vez de um texto
+     genérico listando os três (o genérico obrigava a pessoa a descobrir sozinha
+     qual parte da frase valia pra aba em que ela estava) */
+  var VAZIO_DO_MODO = {
+    cursiva: "O nome que você digitar abaixo aparece aqui, já na letra da assinatura.",
+    rubrica: "O que você desenhar abaixo aparece aqui."
+  };
+
+  function atualizarPreviewAssinatura(){
+    var pv = el("assinatura-preview");
+    var trocar = el("assin-trocar");
+    if (trocar) trocar.hidden = !assinValor;
+    /* no desenho quem mostra a assinatura é o próprio canvas */
+    if (assinModo === "rubrica") return;
+
+    /* imagem sem nada escolhido: a área inteira do preview VIRA o botão de
+       enviar, com ícone e legenda no meio. Clicar abre o seletor de arquivo
+       direto, sem passar pelo controle nativo do navegador. */
+    if (assinModo === "imagem" && !assinValor){
+      pv.innerHTML =
+        '<button type="button" class="assin-envio" id="assin-envio">' +
+          '<span class="assin-envio-ico"><i data-lucide="image-plus"></i></span>' +
+          '<span class="assin-envio-txt">Escolher uma imagem</span>' +
+          '<span class="assin-envio-sub">PNG, JPG ou WEBP, até 1,5 MB</span>' +
+        '</button>';
+      el("assin-envio").addEventListener("click", function(){
+        var f = el("assin-file"); if (f) f.click();
+      });
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    if (!assinValor){
+      pv.innerHTML = '<span class="vazio"></span>';
+      pv.querySelector(".vazio").textContent = VAZIO_DO_MODO[assinModo] || "";
+      return;
+    }
+    if (assinModo === "cursiva") pv.innerHTML = '<span class="cursiva"></span>', pv.querySelector(".cursiva").textContent = assinValor;
+    else { pv.innerHTML = '<img alt="assinatura">'; pv.querySelector("img").src = assinValor; }
+  }
+
+  function montarCorpoAssinatura(modo){
+    var corpo = el("assinatura-corpo");
+    /* o desenho não tem preview separado, então a caixa muda de arranjo */
+    document.querySelector(".assinatura-corpo-caixa").classList.toggle("so-desenho", modo === "rubrica");
+    if (modo === "cursiva"){
+      corpo.innerHTML = '<input type="text" id="assin-nome" placeholder="Digite o nome pra assinar" maxlength="40">';
+      var inp = el("assin-nome");
+      /* só o VALOR da assinatura: o nome do card virou campo próprio
+         (#assin-apelido), porque desenho e imagem também precisam de um */
+      inp.value = assinModo === "cursiva" ? assinValor : "";
+      inp.addEventListener("input", function(){
+        assinValor = inp.value.trim(); atualizarPreviewAssinatura();
+      });
+    } else if (modo === "imagem"){
+      /* o input nativo fica ESCONDIDO: quem recebe o clique é a área do preview
+         (ver atualizarPreviewAssinatura), e depois de escolher sobra só o
+         "Trocar imagem", já que o preview passa a mostrar a imagem */
+      corpo.innerHTML = '<input type="file" id="assin-file" accept="image/png,image/jpeg,image/webp" hidden>' +
+        '<button type="button" class="voltar-editor" id="assin-trocar" style="margin:8px 0 0" hidden><i data-lucide="image-plus"></i> Trocar imagem</button>';
+      if (window.lucide) lucide.createIcons();
+      el("assin-trocar").addEventListener("click", function(){ el("assin-file").click(); });
+      el("assin-file").addEventListener("change", function(ev){
+        var f = ev.target.files && ev.target.files[0]; if (!f) return;
+        if (f.size > 1.5 * 1024 * 1024){ el("msg-assinatura").textContent = "Imagem muito grande (máx 1,5MB)."; el("msg-assinatura").className = "msg-salvar erro"; return; }
+        var fr = new FileReader();
+        fr.onload = function(){ assinValor = fr.result; atualizarPreviewAssinatura(); };
+        fr.readAsDataURL(f);
+      });
+    } else {
+      /* sem preview aqui: o canvas JÁ mostra o traço, e repetir o mesmo desenho
+         logo acima era redundância pura. Com ele fora, o canvas ocupa a caixa
+         inteira e sobra área pra assinar. */
+      corpo.innerHTML = '<canvas class="assinatura-rubrica" id="assin-canvas"></canvas>' +
+        '<div class="assin-desenho-acoes">' +
+          '<button type="button" class="voltar-editor" id="assin-limpar"><i data-lucide="eraser"></i> Limpar</button>' +
+        '</div>';
+      if (window.lucide) lucide.createIcons();
+      prepararCanvasAssinatura(el("assin-canvas"));
+      el("assin-limpar").addEventListener("click", function(){
+        var c = el("assin-canvas"); c.getContext("2d").clearRect(0,0,c.width,c.height); assinValor = ""; atualizarPreviewAssinatura();
+      });
+    }
+  }
+
+  function prepararCanvasAssinatura(canvas){
+    var ctx = canvas.getContext("2d");
+    var rect = canvas.getBoundingClientRect();
+    var escala = window.devicePixelRatio || 1;
+    /* altura MEDIDA, não fixa: sem o preview o canvas estica pra ocupar a caixa,
+       e um 130 cravado deixaria o desenho deslocado do cursor */
+    var alturaCss = rect.height || 130;
+    canvas.width = rect.width * escala; canvas.height = alturaCss * escala;
+    ctx.scale(escala, escala);
+    ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#1F2329";
+    var desenhando = false, ux = 0, uy = 0;
+    function pos(e){ var r = canvas.getBoundingClientRect(); var t = e.touches ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top }; }
+    function inicio(e){ desenhando = true; var p = pos(e); ux = p.x; uy = p.y; e.preventDefault(); }
+    function move(e){ if (!desenhando) return; var p = pos(e); ctx.beginPath(); ctx.moveTo(ux, uy); ctx.lineTo(p.x, p.y); ctx.stroke(); ux = p.x; uy = p.y; e.preventDefault(); }
+    function fim(){ if (!desenhando) return; desenhando = false; assinValor = canvas.toDataURL("image/png"); atualizarPreviewAssinatura(); }
+    canvas.addEventListener("mousedown", inicio); canvas.addEventListener("mousemove", move); window.addEventListener("mouseup", fim);
+    canvas.addEventListener("touchstart", inicio, { passive: false }); canvas.addEventListener("touchmove", move, { passive: false }); canvas.addEventListener("touchend", fim);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("#assinatura-modos button"), function(b){
+    b.addEventListener("click", function(){
+      assinModo = b.dataset.modo; assinValor = "";
+      Array.prototype.forEach.call(document.querySelectorAll("#assinatura-modos button"), function(x){
+        x.classList.toggle("ativo", x === b);
+        x.setAttribute("aria-selected", x === b ? "true" : "false");
+      });
+      montarCorpoAssinatura(assinModo); atualizarPreviewAssinatura();
+    });
+  });
+
+  el("assin-apelido").addEventListener("input", function(){ assinNome = this.value.trim(); });
+
+  el("btn-salvar-assinatura").addEventListener("click", function(){
+    var msg = el("msg-assinatura"); msg.className = "msg-salvar";
+    if (!assinValor){ msg.textContent = "Defina a assinatura primeiro."; msg.className = "msg-salvar erro"; return; }
+    /* o campo já abre preenchido, então só cai aqui se a pessoa apagar tudo:
+       editando volta pro nome que a assinatura já tinha, criando pega o próximo
+       número livre. Card sem rótulo nenhum não pode existir. */
+    var nome = assinNome || (assinEditando && assinEditando.nome) || proximoNomeAssinatura();
+    var corpo = { acao: "assinatura-salvar", tipo: assinModo, valor: assinValor, nome: nome };
+    if (assinEditando) corpo.id = assinEditando.id;
+    var botao = el("btn-salvar-assinatura"); botao.disabled = true;
+    api("/api/templates", corpo)
+      .then(function(){ fecharModalAssinatura(); return carregarIndiceContrato(); })
+      .catch(function(e){ msg.textContent = e.message || "Não deu pra salvar."; msg.className = "msg-salvar erro"; })
+      .finally(function(){ botao.disabled = false; });
+  });
+
+  /* Título do header: no editor ele é EDITÁVEL (é o nome do arquivo, estilo
+     Docs); fora dele é só texto. Um ou outro aparece, nunca os dois — era essa
+     duplicação que fazia o nome sair repetido na mesma dobra. */
+  function definirTituloHeader(texto, editavel){
+    el("titulo-pagina").hidden = !!editavel;
+    el("editor-nome").hidden = !editavel;
+    if (editavel) el("editor-nome").value = texto;
+    else {
+      el("titulo-pagina").textContent = texto;
+      /* fora do editor não existe subtítulo: sem isso o "Todas as alterações
+         foram salvas" ficava pendurado embaixo de "Contrato e assinatura"
+         depois de voltar do editor */
+      statusSalvar("");
+    }
+  }
+
+  /* Sai do editor de volta pra lista. Faz o MESMO que o voltar do navegador:
+     se foi a gente que empurrou a entrada, volta por ela (não acumula
+     histórico); se o Jordan caiu direto no endereço do editor, troca a URL no
+     lugar pra o voltar dali não sair da página. */
+  function voltarParaModelos(){
+    if (_editorVeioDeNavegacao){ history.back(); return; }
+    history.replaceState({ painel: "contrato" }, "", urlDoIndice());
+    mostrarIndiceContrato();
+  }
+
+  /* Uma seta só, no header, serve as duas situações (o botão "← Modelos" de
+     dentro do editor saiu): com o editor aberto ela volta pros modelos; fora
+     dele segue o link normal pra Conta no /estudio. */
+  el("voltar-topo").addEventListener("click", function(ev){
+    if (el("contrato-editor").hidden) return;   /* deixa o <a href> agir */
+    ev.preventDefault();
+    voltarParaModelos();
+  });
+  /* mantém o rótulo do leitor de tela dizendo pra onde a seta leva agora */
+  function ajustarRotuloVoltar(){
+    var noEditor = !el("contrato-editor").hidden;
+    el("voltar-topo").setAttribute("aria-label", noEditor ? "Voltar pros modelos" : "Voltar pra conta");
+  }
+
+  /* Abre o que a URL estiver pedindo. Usada no boot e no voltar do navegador,
+     pra os dois caminhos levarem exatamente ao mesmo lugar. */
+  function aplicarUrl(){
+    var p = new URLSearchParams(location.search);
+    if (p.get("painel") !== "contrato"){
+      document.body.classList.remove("editor-aberto");
+      el("contrato-editor").hidden = true;
+      el("painel-contrato").hidden = true;
+      el("painel-config").hidden = false;
+      definirTituloHeader("Configurações", false);
+      _editorVeioDeNavegacao = false;
+      return;
+    }
+    el("painel-config").hidden = true;
+    el("painel-contrato").hidden = false;
+    var modelo = p.get("modelo");
+    if (modelo){
+      /* esconde o índice na hora pra ele não piscar antes do editor, mas
+         carrega a lista por trás — senão o "← Modelos" cairia numa tela vazia
+         quando a página abre direto no endereço do editor */
+      el("contrato-indice").hidden = true;
+      carregarIndiceContrato();
+      abrirModelo(modelo, true);
+      return;
+    }
+    _editorVeioDeNavegacao = false;
+    mostrarIndiceContrato();
+  }
+  /* voltar/avançar do navegador (e o gesto de voltar do celular) */
+  window.addEventListener("popstate", aplicarUrl);
+
+  /* ---------- boot ---------- */
+  fetch("/api/sessao").then(function(r){
+    if (!r.ok) throw 0;
+    return r.json();
+  }).then(function(j){
+    if (j.role !== "admin"){ mostrar("login"); return; }
+    mostrar("app");
+    /* e-mail da conta no card de Perfil. Sessão antiga não tem o campo no
+       token — nesse caso a linha fica escondida até o próximo login. */
+    if (j.email){
+      emailDaConta = j.email;
+      el("perfil-email").textContent = j.email;
+      el("perfil-email-linha").hidden = false;
+    }
+    /* deep-link: ?painel=contrato abre o painel de Contrato e assinatura, e
+       &modelo=<id> abre direto o editor daquele modelo (é o que faz recarregar
+       a página manter você onde estava). */
+    aplicarUrl();
+  }).catch(function(){ mostrar("login"); });
+})();
+</script>
+</body>
+</html>

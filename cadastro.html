@@ -88,7 +88,8 @@
     background:var(--paper);border:1px solid var(--line);border-radius:10px;
     -webkit-appearance:none;transition:border-color .15s ease,box-shadow .15s ease;
   }
-  .campo input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,54,70,.10)}
+  /* sem anel azul no foco (regra do vault) */
+  .campo input:focus{outline:none;border-color:var(--accent)}
 
   /* ---------- data e hora ----------
      <input type="date"|"time"> é um controle NATIVO: ele calcula a própria
@@ -113,7 +114,8 @@
   .campo-cep{position:relative}
   .cep-status{position:absolute;right:14px;top:34px;font-size:11px;color:var(--ink-soft)}
   .campo-invalido input{border-color:#A33B3B}
-  .campo-invalido input:focus{box-shadow:0 0 0 3px rgba(163,59,59,.12)}
+  /* sem anel de foco em campo inválido tampouco — a borda vermelha e a
+     mensagem de erro já sinalizam o problema (regra do vault: sem focus ring) */
   .campo-erro-msg{display:block;color:#A33B3B;font-size:11.5px;margin-top:5px;letter-spacing:0}
   .campo .iti{width:100%;margin-top:7px;display:block}
   .campo .iti input{margin-top:0}
@@ -125,8 +127,9 @@
     font-size:13px;letter-spacing:.22em;text-transform:uppercase;border-radius:999px;
     transition:opacity .2s ease;
   }
-  .cta:hover{opacity:.85}
-  .cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+  @media (hover:hover){.cta:hover{opacity:.85}}
+  /* :focus-visible sem outline (regra do vault: sem anel de foco). */
+  .cta:focus-visible{outline:none}
   #o-enviar:disabled{opacity:.5;pointer-events:none}
   .erro{color:#A33B3B;font-size:13.5px;text-align:center;margin-top:14px;min-height:18px}
 
@@ -244,6 +247,17 @@
 <script>
 (function(){
   function el(id){ return document.getElementById(id); }
+
+  /* clique em input de data/hora abre o picker (o padrão nativo só o
+     iconezinho da direita abre — o resto do campo fica "morto"). Só no
+     click (mouse/touch, não em Tab), então quem navega por teclado ainda
+     ganha foco sem picker e digita normal. */
+  document.addEventListener("click", function(ev){
+    var target = ev.target;
+    if (!target || !target.matches || !target.matches('input[type="date"], input[type="time"]')) return;
+    if (typeof target.showPicker !== "function") return;
+    try { target.showPicker(); } catch (_){ /* Firefox exige gesto de usuário; clique é gesto, mas fica de rede */ }
+  });
 
   /* ---------- WhatsApp com DDI ---------- */
   var itiContato = null;

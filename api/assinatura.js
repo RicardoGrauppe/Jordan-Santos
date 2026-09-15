@@ -33,6 +33,7 @@ import { normalizarCpf } from "./_lib/sessao.js";
 import { enviarEmail, DESTINO_JORDAN } from "./_lib/email.js";
 import { textoCurto, ipDe } from "./_lib/util.js";
 import { gerarContratoPdf } from "./_lib/contrato-pdf/gerar.js";
+import { gerarContratoPdfDinamico } from "./_lib/contrato-pdf/gerar-pdfmake.js";
 
 /* mesmo teto que api/estudio.js usa pra assinatura do Jordan */
 const LIMITE_ASSINATURA_DATAURL = 500_000;
@@ -67,6 +68,25 @@ async function sha256hex(bytes) {
 }
 
 function expirado(c) { return new Date(c.expira_em) < new Date(); }
+
+/* HTML do template FIXADO neste contrato, nunca o modelo vivo atual — editar
+   o modelo depois não pode mudar o texto de um contrato já em andamento ou já
+   assinado. Prefere o snapshot congelado na geração; só cai no join do modelo
+   por template_id pra contratos antigos, gerados antes do snapshot existir.
+   Sem nenhum dos dois: null, e a tela usa CONTRATO_TEMPLATE.html({modo}). */
+async function templateHtmlDoContrato(c) {
+  if (c && c.template_html_snapshot) return c.template_html_snapshot;
+  const templateId = c && c.template_id;
+  if (!templateId) return null;
+  try {
+    const linhas = await rest(
+      "contrato_templates?id=eq." + templateId + "&select=conteudo_html&limit=1"
+    );
+    return (linhas && linhas[0] && linhas[0].conteudo_html) || null;
+  } catch (_) {
+    return null;
+  }
+}
 
 function emailDoContrato(c) {
   return (c.snapshot && c.snapshot.email) || (c.clientes && c.clientes.email) || null;
@@ -116,22 +136,51 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const token = req.query.token;
     if (!tokenValido(token)) return res.status(400).json({ erro: "link inválido" });
+    /* select ampliado (2026-09-01): a sidebar de /assinar (abas "Assinantes"/
+       "Histórico", igual à do /revisar-contrato) mostra pro próprio casal a
+       linha do tempo e — só depois de assinado — a trilha de auditoria. É o
+       contrato DELES, atrás do link exclusivo; não é dado de terceiro. */
     const linhas = await rest(
       "contratos?token=eq." + token +
-      "&select=status,expira_em,snapshot,jordan_assinatura_dataurl&limit=1"
+      "&select=status,expira_em,snapshot,jordan_assinatura_dataurl,jordan_assinatura_tipo," +
+      "jordan_confirmado_em,versao,criado_em,enviado_em,visualizado_em,assinado_em," +
+      "signatario_nome,signatario_cpf,signatario_email,assinante_ip,assinante_ua," +
+      "doc_sha256,verificacao_metodo,template_id,template_html_snapshot&limit=1"
     );
     const c = linhas && linhas[0];
     if (!c) return res.status(404).json({ erro: "contrato não encontrado" });
     if (c.status === "cancelado") return res.status(410).json({ erro: "este contrato foi cancelado" });
-    if (c.status === "rascunho") return res.status(404).json({ erro: "este contrato ainda não foi liberado pelo Jordan" });
-    if (expirado(c)) return res.status(410).json({ erro: "este link expirou, peça um novo ao Jordan" });
-    if (c.status === "assinado") return res.status(200).json({ status: "assinado" });
+    if (c.status === "rascunho") return res.status(404).json({ erro: "este contrato ainda não foi liberado por mim" });
+    if (expirado(c)) return res.status(410).json({ erro: "este link expirou, me peça um novo" });
+    /* O Jordan editou a ficha depois de liberar (2026-09-01): "atualizar" em
+       api/estudio.js limpou jordan_confirmado_em pra ele reconfirmar sobre o
+       conteúdo novo antes do casal poder assinar — sem essa checagem o casal
+       assinaria uma versão que o Jordan nunca revisou. */
+    if (c.status !== "assinado" && !c.jordan_confirmado_em) {
+      return res.status(404).json({ erro: "atualizei este contrato e preciso confirmar de novo antes de liberar" });
+    }
+    const meta = {
+      status: c.status, versao: c.versao || 1, criado_em: c.criado_em,
+      enviado_em: c.enviado_em, visualizado_em: c.visualizado_em, assinado_em: c.assinado_em,
+      jordan_confirmado_em: c.jordan_confirmado_em, jordan_assinatura_tipo: c.jordan_assinatura_tipo,
+      signatario_nome: c.signatario_nome, signatario_cpf: c.signatario_cpf,
+      signatario_email: c.signatario_email, assinante_ip: c.assinante_ip,
+      assinante_ua: c.assinante_ua, doc_sha256: c.doc_sha256, verificacao_metodo: c.verificacao_metodo
+    };
+    const template_html = await templateHtmlDoContrato(c);
+    if (c.status === "assinado") {
+      return res.status(200).json({
+        status: "assinado", contrato: c.snapshot || {}, meta: meta, template_html: template_html
+      });
+    }
     if (c.status === "enviado") {
       try {
         await rest("contratos?token=eq." + token, {
           method: "PATCH",
           body: { status: "visualizado", visualizado_em: new Date().toISOString() }
         });
+        meta.status = "visualizado";
+        meta.visualizado_em = new Date().toISOString();
       } catch (_) { /* não bloqueia a leitura */ }
     }
     /* preferências do estúdio (assinatura padrão do Jordan), pro contrato renderizar
@@ -140,9 +189,11 @@ export default async function handler(req, res) {
     const estudio = await preferenciasEstudio();
     return res.status(200).json({
       status: "pronto",
+      meta: meta,
       contrato: c.snapshot || {},
       estudio: estudio,
-      jordanAssinatura: c.jordan_assinatura_dataurl || null
+      jordanAssinatura: c.jordan_assinatura_dataurl || null,
+      template_html: template_html
     });
   }
 
@@ -160,8 +211,13 @@ export default async function handler(req, res) {
   const c = linhas && linhas[0];
   if (!c) return res.status(404).json({ erro: "contrato não encontrado" });
   if (c.status === "cancelado") return res.status(410).json({ erro: "este contrato foi cancelado" });
-  if (c.status === "rascunho") return res.status(404).json({ erro: "este contrato ainda não foi liberado pelo Jordan" });
-  if (expirado(c)) return res.status(410).json({ erro: "este link expirou, peça um novo ao Jordan" });
+  if (c.status === "rascunho") return res.status(404).json({ erro: "este contrato ainda não foi liberado por mim" });
+  if (expirado(c)) return res.status(410).json({ erro: "este link expirou, me peça um novo" });
+  /* mesma checagem do GET: edição depois da liberação limpa jordan_confirmado_em
+     e o casal não pode assinar até o Jordan reconfirmar sobre o conteúdo novo */
+  if (c.status !== "assinado" && !c.jordan_confirmado_em) {
+    return res.status(404).json({ erro: "atualizei este contrato e preciso confirmar de novo antes de liberar" });
+  }
 
   try {
     /* ---------- assinar ---------- */
@@ -195,13 +251,37 @@ export default async function handler(req, res) {
       /* monta o PDF ANTES do PATCH: se a geração falhar, o contrato continua
          não-assinado e o casal pode tentar de novo, em vez de ficar marcado
          como assinado sem via nenhuma guardada */
-      const pdfBytes = await gerarContratoPdf({
-        snapshot: c.snapshot || {},
-        assinaturaCasalDataUrl: assinaturaDataUrl,
-        assinaturaJordanDataUrl: c.jordan_assinatura_dataurl || null,
-        signatario: { nome: nome, cpf: cpf, email: email },
-        assinadoEm: assinadoEm
-      });
+      /* contrato com modelo (texto editado em /configuracoes) monta o PDF do
+         zero via pdfmake; sem modelo (texto fixo de sempre) continua no
+         template.pdf pré-paginado — gerar.js intocado. Prefere o snapshot json
+         congelado na geração; só cai no join do modelo vivo pra contratos
+         antigos, gerados antes do snapshot existir. */
+      let pdfBytes;
+      if (c.template_json_snapshot || c.template_id) {
+        let templateJson = c.template_json_snapshot || null;
+        if (!templateJson && c.template_id) {
+          const tplLinhas = await rest(
+            "contrato_templates?id=eq." + c.template_id + "&select=conteudo_json&limit=1"
+          );
+          templateJson = tplLinhas && tplLinhas[0] && tplLinhas[0].conteudo_json;
+        }
+        pdfBytes = await gerarContratoPdfDinamico({
+          templateJson: templateJson,
+          snapshot: c.snapshot || {},
+          assinaturaCasalDataUrl: assinaturaDataUrl,
+          assinaturaJordanDataUrl: c.jordan_assinatura_dataurl || null,
+          signatario: { nome: nome, cpf: cpf, email: email },
+          assinadoEm: assinadoEm
+        });
+      } else {
+        pdfBytes = await gerarContratoPdf({
+          snapshot: c.snapshot || {},
+          assinaturaCasalDataUrl: assinaturaDataUrl,
+          assinaturaJordanDataUrl: c.jordan_assinatura_dataurl || null,
+          signatario: { nome: nome, cpf: cpf, email: email },
+          assinadoEm: assinadoEm
+        });
+      }
       const doc_sha256 = await sha256hex(pdfBytes);
       const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 

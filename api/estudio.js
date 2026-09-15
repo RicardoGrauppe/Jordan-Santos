@@ -78,15 +78,50 @@ async function ultimoContrato(clienteId) {
   try {
     const linhas = await rest(
       "contratos?cliente_id=eq." + clienteId +
-      "&select=id,token,status,criado_em,enviado_em,visualizado_em,assinado_em,expira_em,snapshot," +
+      "&select=id,token,status,versao,criado_em,enviado_em,visualizado_em,assinado_em,expira_em,snapshot," +
       "jordan_confirmado_em,jordan_assinatura_tipo,jordan_assinatura_dataurl,jordan_assinatura_nome," +
       /* trilha de auditoria da assinatura do casal — é o que o contrato diz
          que "fica preservado no sistema do fotógrafo", então o Jordan precisa
          conseguir ver isso no /estudio, não só via SQL no Supabase.
          pdf_base64 fica de fora de propósito (blob grande; o schema avisa). */
       "signatario_nome,signatario_cpf,signatario_email,assinante_ip,assinante_ua," +
-      "doc_sha256,aceite_texto,aceite_em,verificado_em,verificacao_metodo" +
+      "doc_sha256,aceite_texto,aceite_em,verificado_em,verificacao_metodo," +
+      "template_id,template_nome,template_html_snapshot" +
       "&order=criado_em.desc&limit=1"
+    );
+    const contrato = (linhas && linhas[0]) || null;
+    if (contrato) {
+      /* prefere o snapshot congelado (editar o modelo depois não afeta este
+         contrato); só cai no join do modelo vivo pra contratos antigos gerados
+         antes do snapshot existir. */
+      if (contrato.template_html_snapshot) {
+        contrato.template_html = contrato.template_html_snapshot;
+      } else if (contrato.template_id) {
+        try {
+          const tpl = await rest(
+            "contrato_templates?id=eq." + contrato.template_id + "&select=conteudo_html&limit=1"
+          );
+          contrato.template_html = (tpl && tpl[0] && tpl[0].conteudo_html) || null;
+        } catch (_) { contrato.template_html = null; }
+      } else {
+        contrato.template_html = null;
+      }
+    }
+    return contrato;
+  } catch (_) {
+    return null;
+  }
+}
+
+/* modelo padrão no momento (ou null) — usado só na geração de um contrato
+   novo, pra CONGELAR o texto dele no próprio contrato. Como os modelos são
+   editáveis in place em /configuracoes, guardar só o template_id não bastava:
+   editar o modelo depois mudaria retroativamente contratos já gerados/assinados.
+   Por isso a geração grava um snapshot (html + json + nome) no contrato. */
+async function modeloPadrao() {
+  try {
+    const linhas = await rest(
+      "contrato_templates?ativo=eq.true&select=id,nome,conteudo_html,conteudo_json&limit=1"
     );
     return (linhas && linhas[0]) || null;
   } catch (_) {
@@ -151,13 +186,12 @@ export default async function handler(req, res) {
     if (acao === "atualizar") {
       const limpo = limparCliente(req.body.cliente || {});
       const contrato = await ultimoContrato(id);
-      const travado = !!(contrato && contrato.jordan_confirmado_em);
-      /* depois que o Jordan confirma a assinatura dele, o snapshot do contrato
-         já foi gerado (ver "gerar-contrato" e "confirmar-contrato") — aceitar
-         mudança de itens/total/entrada aqui criaria uma divergência silenciosa
-         entre a ficha do cliente e o documento que já saiu pra assinatura.
-         Reforça em código o que a UI já trava visualmente. */
-      if (travado) {
+      /* Só `status = "assinado"` trava de vez (2026-09-01): antes disso a
+         ficha é editável a qualquer momento, mesmo depois de confirmado ou já
+         enviado ao casal — se a noiva desiste de um item no meio do processo,
+         o Jordan corrige aqui em vez de cancelar o contrato inteiro. */
+      const assinado = !!(contrato && contrato.status === "assinado");
+      if (assinado) {
         delete limpo.itens;
         delete limpo.total;
         delete limpo.entrada;
@@ -165,19 +199,57 @@ export default async function handler(req, res) {
 
       await rest("clientes?id=eq." + id, { method: "PATCH", body: limpo });
 
-      /* enquanto ainda é rascunho não confirmado, mantém o snapshot do
-         contrato em dia com o que o Jordan for ajustando — sem isso ele
-         assinaria (e o casal receberia) um valor que já ficou pra trás */
-      const mudouValores = "itens" in limpo || "total" in limpo || "entrada" in limpo;
-      if (!travado && contrato && contrato.status === "rascunho" && mudouValores) {
+      /* QUALQUER campo do snapshot (não só itens/total/entrada, como era antes
+         de 2026-09-01 — quando só o valor travava, o resto do formulário nunca
+         precisou sincronizar pós-geração). Agora nome/CPF/endereço/data também
+         editam depois de gerado, então precisam entrar na mesma sincronização
+         — senão o cliente muda e o documento revisado continua com o dado
+         velho, exatamente o bug que a edição inline expôs. */
+      const mudouSnapshot = CAMPOS_SNAPSHOT.some(function (k) { return k in limpo; });
+      if (!assinado && contrato && mudouSnapshot) {
         const linhas = await rest("clientes?id=eq." + id + "&select=*");
         const clienteAtual = linhas && linhas[0];
-        if (clienteAtual) {
-          const snapshot = {};
-          CAMPOS_SNAPSHOT.forEach(function (k) { snapshot[k] = clienteAtual[k]; });
+        if (!clienteAtual) return res.status(200).json({ ok: true });
+
+        const snapshot = {};
+        CAMPOS_SNAPSHOT.forEach(function (k) { snapshot[k] = clienteAtual[k]; });
+
+        /* Contrato ainda rascunho E ninguém confirmou nada: ninguém viu esse
+           conteúdo ainda, então só atualiza o snapshot em dia, sem versionar
+           (não há o que preservar como "versão anterior"). */
+        if (contrato.status === "rascunho" && !contrato.jordan_confirmado_em) {
           await rest("contratos?id=eq." + contrato.id, {
             method: "PATCH",
             body: { snapshot: snapshot }
+          });
+        } else {
+          /* Já foi confirmado pelo Jordan e/ou enviado ao casal: preserva o
+             que estava valendo até agora em contrato_versoes, sobe a versão,
+             e limpa a confirmação do Jordan — a assinatura dele valia pro
+             conteúdo antigo, precisa reconfirmar sobre o novo antes de
+             liberar de novo (ver "confirmar-contrato" mais abaixo). */
+          await rest("contrato_versoes", {
+            method: "POST",
+            body: {
+              contrato_id: contrato.id,
+              versao: contrato.versao || 1,
+              snapshot: contrato.snapshot,
+              jordan_assinatura_tipo: contrato.jordan_assinatura_tipo,
+              jordan_assinatura_dataurl: contrato.jordan_assinatura_dataurl,
+              jordan_assinatura_nome: contrato.jordan_assinatura_nome,
+              jordan_confirmado_em: contrato.jordan_confirmado_em
+            }
+          });
+          await rest("contratos?id=eq." + contrato.id, {
+            method: "PATCH",
+            body: {
+              snapshot: snapshot,
+              versao: (contrato.versao || 1) + 1,
+              jordan_confirmado_em: null,
+              jordan_assinatura_tipo: null,
+              jordan_assinatura_dataurl: null,
+              jordan_assinatura_nome: null
+            }
           });
         }
       }
@@ -225,6 +297,13 @@ export default async function handler(req, res) {
       if (!(ativos && ativos.length && new Date(ativos[0].expira_em) > new Date())) {
         const snapshot = {};
         CAMPOS_SNAPSHOT.forEach(function (k) { snapshot[k] = cliente[k]; });
+        /* fixa pra sempre qual versão do TEXTO do contrato este contrato usa —
+           editar o modelo depois (em /configuracoes) não muda isto, porque
+           gravamos o snapshot do html/json/nome aqui. template_id fica de
+           referência (qual modelo deu origem), mas as telas leem o snapshot.
+           Sem nenhum modelo padrão ainda, tudo fica null e as telas caem de
+           volta pro CONTRATO_TEMPLATE.html({modo}) fixo de sempre. */
+        const modelo = await modeloPadrao();
         await rest("contratos", {
           method: "POST",
           body: {
@@ -232,7 +311,11 @@ export default async function handler(req, res) {
             token: tokenForte(),
             status: "rascunho",
             expira_em: new Date(Date.now() + 30 * 86400000).toISOString(),
-            snapshot: snapshot
+            snapshot: snapshot,
+            template_id: modelo ? modelo.id : null,
+            template_nome: modelo ? modelo.nome : null,
+            template_html_snapshot: modelo ? modelo.conteudo_html : null,
+            template_json_snapshot: modelo ? modelo.conteudo_json : null
           }
         });
       }
@@ -254,18 +337,15 @@ export default async function handler(req, res) {
       }
       const ativos = await rest(
         "contratos?cliente_id=eq." + id +
-        "&status=eq.rascunho&select=id,jordan_confirmado_em&order=criado_em.desc&limit=1"
+        "&status=in.(rascunho,enviado,visualizado)" +
+        "&select=id,jordan_confirmado_em&order=criado_em.desc&limit=1"
       );
       const contrato = ativos && ativos[0];
       if (!contrato) return res.status(404).json({ erro: "gere o contrato antes de confirmar" });
-      /* UMA assinatura do Jordan por contrato. Trocar a assinatura depois de
-         assinado mudaria o documento que a trilha de auditoria já registra —
-         pra assinar de novo, cancele o contrato e gere outro. (A trava
-         equivalente do casal vive em api/assinatura.js: 409 "contrato já
-         assinado".) */
-      if (contrato.jordan_confirmado_em) {
-        return res.status(409).json({ erro: "este contrato já foi assinado por você" });
-      }
+      /* Reconfirmar é o fluxo normal depois de uma edição da ficha que subiu a
+         versão do contrato (ver "atualizar" acima, que limpa
+         jordan_confirmado_em nesse caso) — a trava de "já assinado" é só a do
+         casal, em api/assinatura.js (409 "contrato já assinado"). */
 
       await rest("contratos?id=eq." + contrato.id, {
         method: "PATCH",

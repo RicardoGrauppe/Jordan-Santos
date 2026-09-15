@@ -367,8 +367,9 @@
     transition:opacity .2s ease;
   }
   .cta svg{width:19px;height:19px;flex-shrink:0}
-  .cta:hover{opacity:.85}
-  .cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+  @media (hover:hover){.cta:hover{opacity:.85}}
+  /* :focus-visible sem outline (regra do vault: sem anel de foco). */
+  .cta:focus-visible{outline:none}
   .cta-whats{
     background:#25D366;
     color:#fff;
@@ -384,7 +385,7 @@
   .fim img{width:270px;margin:0 auto 44px}
   .fim p{font-size:15px;max-width:440px;margin:0 auto 40px;line-height:2}
   .fim a{color:#fff;text-decoration:none;display:block;padding:4px 0;letter-spacing:.06em}
-  .fim a:hover{color:var(--accent)}
+  @media (hover:hover){.fim a:hover{color:var(--accent)}}
   .fim .ano{margin-top:60px;font-size:11px;letter-spacing:.2em;color:#6d6d6d}
 
   /* ---------- reveal ---------- */
