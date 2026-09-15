@@ -61,21 +61,25 @@ create trigger prospectos_atualizado before update on public.prospectos
 alter table public.prospectos enable row level security;
 
 -- ───────────────────── contrato_templates ─────────────────────
--- Texto do contrato editável pelo Jordan (editor Tiptap em /configuracoes),
--- no lugar do contrato-template.js hardcoded. Nunca edita uma linha existente:
--- salvar sempre insere uma versão nova e desativa a anterior — mesmo
--- princípio de imutabilidade de contrato_versoes (mais abaixo). Cada contrato
--- grava, em contratos.template_id, qual versão estava ativa quando ele foi
--- gerado, então editar o template depois não muda contratos já em andamento
--- ou assinados. Vem ANTES de contratos no arquivo de propósito: a FK precisa
--- da tabela já existir.
+-- Modelos de contrato editáveis pelo Jordan (editor Tiptap em /configuracoes),
+-- no lugar do contrato-template.js hardcoded. São VÁRIOS, cada um com nome, e
+-- editar acontece EM CIMA da mesma linha, com salvamento automático — não é uma
+-- tabela imutável (foi, no desenho original; ver migracao-modelos-nomeados.sql).
+-- `ativo` marca qual é o modelo PADRÃO, o usado ao gerar um contrato novo.
+-- Editar um modelo não muda contrato já gerado porque a geração congela o
+-- conteúdo dentro do próprio contrato (template_html_snapshot /
+-- template_json_snapshot / template_nome); o template_id ficou como referência
+-- de origem. Vem ANTES de contratos no arquivo de propósito: a FK precisa da
+-- tabela já existir.
 create table public.contrato_templates (
   id             uuid primary key default gen_random_uuid(),
+  nome           text not null default 'Novo modelo',  -- rótulo do card em /configuracoes
   conteudo_json  jsonb not null,   -- doc do Tiptap (fonte editável)
   conteudo_html  text not null,    -- HTML exportado — mesma forma que contrato-template.js
                                     -- produzia (<span class="campo" data-campo="...">, tabela, etc.)
-  ativo          boolean not null default false,
-  criado_em      timestamptz not null default now()
+  ativo          boolean not null default false,  -- é o modelo padrão
+  criado_em      timestamptz not null default now(),
+  atualizado_em  timestamptz not null default now()
 );
 create unique index contrato_templates_um_ativo on contrato_templates (ativo) where ativo;
 alter table public.contrato_templates enable row level security;
@@ -157,3 +161,24 @@ create table public.config (
   atualizado_em timestamptz not null default now()
 );
 alter table public.config enable row level security;
+
+-- ─────────────────────── assinaturas ───────────────────────
+-- Assinaturas salvas do Jordan, editáveis em /configuracoes. São VÁRIAS, com
+-- nome, e `ativo` marca a padrão: é ela que já vem aplicada quando ele confirma
+-- um contrato em /revisar-contrato, no lugar de reescrever ou redesenhar a
+-- assinatura a cada contrato. Trocar a padrão não mexe em contrato já assinado,
+-- porque cada contrato guarda a sua cópia em contratos.jordan_assinatura_dataurl.
+-- Substituiu public.assinatura_padrao, que era tabela de linha única (PK
+-- booleana com check(id)) e não comportava mais de uma; ver
+-- migracao-assinaturas.sql.
+create table public.assinaturas (
+  id             uuid primary key default gen_random_uuid(),
+  nome           text not null default 'Nova assinatura',  -- rótulo do card em /configuracoes
+  tipo           text not null check (tipo in ('cursiva','rubrica','imagem')),
+  valor          text not null,   -- cursiva: o texto assinado. rubrica/imagem: data URL do PNG
+  ativo          boolean not null default false,           -- é a assinatura padrão
+  criado_em      timestamptz not null default now(),
+  atualizado_em  timestamptz not null default now()
+);
+create unique index assinaturas_uma_padrao on assinaturas (ativo) where ativo;
+alter table public.assinaturas enable row level security;
