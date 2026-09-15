@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brandbook · Estúdio · Jordan Santos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  :root{
+    --paper:#FFFFFF;
+    --ink:#1F2329;
+    --ink-soft:#6B7280;
+    --accent:#003646;
+    --accent-deep:#4F6278;
+    --noir:#1D1D1B;
+    --line:#E4E6EA;
+    --soft:#F6F7F9;
+    --ok:#2E6B4F;
+    --erro:#A33B3B;
+    --sans:"Inter","Helvetica Neue",sans-serif;
+    --sombra-card:0 1px 2px rgba(29,29,27,.04), 0 6px 16px rgba(29,29,27,.05);
+    --sombra-card-hover:0 1px 2px rgba(29,29,27,.04), 0 10px 24px rgba(29,29,27,.07);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{overflow-y:scroll}
+  body{background:var(--paper);color:var(--ink);font:400 14.5px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+
+  header.topo{
+    padding:64px 40px 40px;max-width:1180px;margin:0 auto;
+  }
+  header.topo h1{font-size:34px;font-weight:600;letter-spacing:-.02em;color:var(--accent)}
+  header.topo p{margin-top:8px;color:var(--ink-soft);font-size:15px;max-width:640px;line-height:1.6}
+  header.topo .meta{margin-top:16px;font-size:12px;color:var(--ink-soft);letter-spacing:.06em;text-transform:uppercase}
+
+  .miolo{max-width:1180px;margin:0 auto;padding:0 40px 120px}
+  .secao{margin-top:56px}
+  .secao > h2{
+    display:flex;align-items:center;gap:12px;font-size:18px;font-weight:600;color:var(--ink);
+    margin-bottom:6px;
+  }
+  .secao > h2 .num{
+    width:28px;height:28px;border-radius:10px;background:var(--soft);color:var(--ink-soft);
+    display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;
+  }
+  .secao > p.legenda{color:var(--ink-soft);font-size:13.5px;margin-bottom:22px;max-width:640px;line-height:1.6}
+
+  /* ---------- swatches de cor ---------- */
+  .paleta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+  .swatch{
+    border-radius:16px;padding:14px;background:var(--paper);box-shadow:var(--sombra-card);
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .swatch-quadrado{
+    height:88px;border-radius:12px;position:relative;overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);
+  }
+  .swatch-nome{font-weight:600;font-size:13px;color:var(--ink)}
+  .swatch-uso{font-size:12px;color:var(--ink-soft);line-height:1.5}
+  .swatch-token{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--accent);background:#EAF1F3;border-radius:8px;padding:2px 6px;display:inline-block;width:fit-content}
+
+  /* ---------- tipografia ---------- */
+  .tipo-grade{display:grid;gap:14px}
+  .tipo-linha{
+    background:var(--paper);border-radius:14px;box-shadow:var(--sombra-card);
+    padding:18px 20px;display:grid;grid-template-columns:minmax(220px,1fr) 300px;gap:16px;align-items:center;
+  }
+  .tipo-nome{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
+  .tipo-spec{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--ink-soft)}
+
+  /* elementos vivos: mesmo CSS do estúdio, prefixados pra não brigar */
+  .demo-h1{font-weight:600;font-size:22px;letter-spacing:-.01em;color:var(--ink)}
+  .demo-kpi-num{font-size:28px;font-weight:600;color:var(--accent);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .demo-kpi-rot{font-size:12.5px;color:var(--ink-soft)}
+  .demo-label{font-size:12.5px;font-weight:500;color:var(--ink-soft)}
+  .demo-body{font-size:14.5px;color:var(--ink)}
+  .demo-legenda{font-size:13.5px;color:var(--ink-soft);line-height:1.6}
+  .demo-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+
+  /* ---------- botões ---------- */
+  .botoes-grade{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  /* botões: transição em transform + filter pra micro-animação estilo Framer.
+     hover: brilho .96 (leve), tap: scale .96 (retorno tátil). */
+  /* botões: transição em transform + box-shadow pra micro-animação Framer.
+     hover: sobe 1px com sombra sutil premium. tap: scale .96 (retorno tátil). */
+  .botao-primario,.botao-secundario,.botao-fantasma{
+    transition:background .15s ease, color .15s ease, box-shadow .18s ease, transform .12s ease;
+    will-change:transform;
+  }
+  .botao-secundario:hover,.botao-fantasma:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(29,29,27,.08)}
+  .botao-secundario:active,.botao-fantasma:active{transform:scale(.96);box-shadow:none}
+
+  .botao-primario{
+    display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;
+    background:var(--accent);color:#fff;font:600 13.5px/1 var(--sans);
+    box-shadow:0 1px 2px rgba(0,54,70,.22);border:0;cursor:pointer;
+  }
+  .botao-primario:hover{background:#00485c;transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,54,70,.22)}
+  .botao-primario:active{transform:scale(.96);box-shadow:0 1px 2px rgba(0,54,70,.22)}
+  .botao-primario.perigo{background:var(--erro);box-shadow:0 1px 2px rgba(163,59,59,.25)}
+  .botao-primario.perigo:hover{background:#8F3333;box-shadow:0 6px 16px rgba(163,59,59,.25)}
+  .botao-primario.perigo:active{box-shadow:0 1px 2px rgba(163,59,59,.25)}
+  .botao-primario svg{width:16px;height:16px}
+
+  .botao-secundario{
+    display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;
+    background:var(--soft);color:var(--accent);border:0;
+    font:600 13.5px/1 var(--sans);text-decoration:none;cursor:pointer;
+  }
+  .botao-secundario svg{width:16px;height:16px}
+
+  .botao-fantasma{
+    padding:10px 18px;border-radius:12px;font:600 13.5px/1 var(--sans);border:0;cursor:pointer;
+    color:var(--ink-soft);background:var(--soft);
+  }
+  .botao-fantasma:hover{color:var(--ink)}
+
+  /* voltar (desktop em conteúdo / mobile só ícone no header) */
+  .voltar-conteudo-demo{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;
+    color:var(--ink-soft);font:inherit;font-size:12.5px;background:none;border:0;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .voltar-conteudo-demo svg{width:14px;height:14px}
+  .voltar-conteudo-demo:hover{background:var(--line);color:var(--accent)}
+  .voltar-header-demo{
+    display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;
+    color:var(--ink);background:none;border:0;cursor:pointer;transition:background .15s;
+  }
+  .voltar-header-demo svg{width:20px;height:20px}
+  .voltar-header-demo:hover{background:var(--soft)}
+
+  /* ícones-pastilha */
+  .icone-pill{
+    display:inline-flex;align-items:center;justify-content:center;
+    background:#EAF1F3;color:var(--accent);border-radius:12px;
+    width:36px;height:36px;
+  }
+  .icone-pill svg{width:16px;height:16px}
+  .icone-pill.sm{width:28px;height:28px;border-radius:10px}
+  .icone-pill.sm svg{width:14px;height:14px}
+
+  /* ---------- cards ---------- */
+  /* um card só: as 4 células divididas por hairlines (fundo --line pelo gap) */
+  .cards-grade{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--sombra-card);
+  }
+  @media (max-width:700px){ .cards-grade{grid-template-columns:1fr 1fr} }
+  .kpi{position:relative;padding:20px 22px;background:var(--paper)}
+  .kpi-icone{
+    position:absolute;top:14px;right:14px;width:34px;height:34px;border-radius:12px;
+    background:#EAF1F3;color:var(--accent);
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .kpi-icone svg{width:16px;height:16px}
+  .kpi-num{font-size:28px;font-weight:600;color:var(--accent);letter-spacing:-.01em;line-height:1.1;font-variant-numeric:tabular-nums;padding-right:44px}
+  .kpi-num-data{font-size:19px;padding-top:5px}
+  .kpi-rotulo{font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--ink-soft);margin-top:8px;line-height:1.4}
+
+  /* card precisa de atenção */
+  .card-atencao{
+    width:100%;display:flex;align-items:center;gap:13px;text-align:left;
+    background:#F8F4EE;border:0;border-radius:16px;padding:13px 15px;margin:0 0 18px;cursor:pointer;
+    box-shadow:var(--sombra-card);
+    transition:transform .12s ease, box-shadow .18s ease;
+  }
+  .card-atencao:hover{transform:translateY(-1px);box-shadow:var(--sombra-card-hover)}
+  .card-atencao-icone{
+    flex-shrink:0;width:36px;height:36px;border-radius:11px;
+    display:inline-flex;align-items:center;justify-content:center;background:#EBE2D3;color:#8A6A3C;
+  }
+  .card-atencao-icone svg{width:18px;height:18px}
+  .card-atencao-texto{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .card-atencao-titulo{font-size:14px;font-weight:600;color:var(--ink);line-height:1.3}
+  .card-atencao-sub{font-size:12.5px;color:var(--ink-soft);line-height:1.35}
+  .card-atencao-conta{
+    flex-shrink:0;min-width:23px;height:23px;padding:0 8px;border-radius:999px;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:#EBE2D3;color:#6F5228;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;
+  }
+  .card-atencao-seta{width:17px;height:17px;color:#B4A489;flex-shrink:0}
+
+  /* grupos de pendência */
+  .pend-grupo{margin-bottom:22px}
+  .pend-grupo-topo{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+  .pend-grupo-icone{flex-shrink:0;width:32px;height:32px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;background:#EAF1F3;color:var(--accent)}
+  .pend-grupo-icone svg{width:16px;height:16px}
+  .pend-grupo-titulo{font-size:14px;font-weight:600;color:var(--ink)}
+  .pend-grupo-conta{margin-left:auto;font-size:12.5px;color:var(--ink-soft);font-weight:500}
+  .pend-lista{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .pend-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--soft);cursor:pointer;transition:background .12s ease, transform .12s ease}
+  .pend-item:hover{background:var(--line);transform:translateY(-1px)}
+  .pend-item-nome{flex:1;min-width:0;font-weight:500;color:var(--ink)}
+  .pend-item-data{flex-shrink:0;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  /* botão "Limpar" (verde): tira a pendência da lista, com confirmação */
+  .pend-limpar{
+    flex-shrink:0;display:inline-flex;align-items:center;gap:6px;
+    padding:7px 12px;border:0;border-radius:10px;cursor:pointer;
+    background:#3E9E6C;color:#fff;font-size:12.5px;font-weight:600;
+    box-shadow:0 1px 2px rgba(62,158,108,.28);
+    transition:background .12s ease, transform .1s ease, box-shadow .18s ease;
+  }
+  .pend-limpar:hover{background:#369061;transform:translateY(-1px);box-shadow:0 6px 16px rgba(62,158,108,.24)}
+  .pend-limpar:active{transform:scale(.96)}
+  .pend-limpar svg{width:14px;height:14px}
+  .pagina-sub{margin:0;font-size:14px;color:var(--ink-soft);line-height:1.4}
+
+  /* saudação (home): emoji + "Bom dia," leve + só o NOME em bold, tudo inline
+     na 1ª linha; a frase leve quebra pra baixo como subtítulo em itálico */
+  .saud-demo{display:block;font-weight:400;line-height:1.3;font-size:22px;letter-spacing:-.01em}
+  .saud-demo .saud-emoji{margin-right:10px;vertical-align:middle}
+  .saud-demo .saud-ola{font-weight:400;color:var(--ink)}
+  .saud-demo .saud-forte{font-weight:800;color:var(--ink)}
+  .saud-demo .saud-leve{display:block;margin-top:6px;font-size:14.5px;font-style:italic;font-weight:400;color:var(--ink-soft);line-height:1.4}
+
+  /* ---------- notificações (dropdown) ---------- */
+  .dropdown-notificacao{
+    position:absolute;top:calc(100% + 10px);right:0;width:340px;max-width:88vw;
+    background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 10px 34px rgba(29,29,27,.14);z-index:30;overflow:hidden;
+  }
+  .dropdown-notificacao[hidden]{display:none}
+  .notif-topo{
+    padding:14px 16px 12px;font-size:13px;font-weight:600;color:var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+  /* altura travada: independe da quantidade, muitas notificações rolam dentro.
+     scrollbar-gutter reserva o espaço da barra pra o layout não pular. */
+  .notif-lista{max-height:min(56vh,400px);overflow-y:auto;scrollbar-gutter:stable;padding:6px}
+  /* estilo WhatsApp: o kebab desliza o conteúdo pra a esquerda e revela a ação
+     que estava ATRÁS, encostada na direita. */
+  .notif-item{
+    position:relative;width:100%;border-radius:12px;overflow:hidden;background:none;
+  }
+  .notif-acao-fundo{position:absolute;top:0;right:0;bottom:0;display:flex;align-items:stretch;z-index:0}
+  .notif-acao{
+    width:132px;border:0;cursor:pointer;background:var(--accent);color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    font-size:11.5px;font-weight:600;line-height:1.25;text-align:center;padding:0 12px;
+    transition:background .12s ease;
+  }
+  .notif-acao:hover{background:#00485c}
+  .notif-acao svg{width:18px;height:18px}
+  .notif-desliza{
+    position:relative;z-index:1;display:flex;align-items:stretch;width:100%;
+    background:var(--paper);transition:transform .28s cubic-bezier(.22,.61,.36,1);
+  }
+  .notif-item:hover .notif-desliza{background:var(--soft)}
+  .notif-item.aberto .notif-desliza{transform:translateX(-132px)}
+  .notif-abrir{
+    flex:1;min-width:0;display:flex;gap:11px;align-items:flex-start;text-align:left;
+    padding:11px 12px;background:none;border:0;cursor:pointer;
+  }
+  .notif-acoes{flex-shrink:0;display:flex;align-items:center;padding-right:6px}
+  .notif-kebab{
+    width:28px;height:28px;border-radius:8px;border:0;background:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+    transition:background .12s ease,color .12s ease;
+  }
+  .notif-kebab:hover,.notif-kebab[aria-expanded="true"]{background:var(--line);color:var(--ink)}
+  .notif-kebab svg{width:16px;height:16px}
+  .notif-icone{
+    width:32px;height:32px;border-radius:11px;flex-shrink:0;margin-top:1px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .notif-icone svg{width:16px;height:16px}
+  .notif-icone.proposta{background:#E3EDF0;color:var(--accent)}
+  .notif-icone.prazo{background:#FBEBD0;color:#C08A2D}
+  .notif-icone.contrato{background:#E7F1EC;color:var(--ok)}
+  .notif-icone.assinado{background:#E7F1EC;color:var(--ok)}
+  .notif-texto{min-width:0}
+  /* título numa linha só (o evento); sub numa linha só (o casal). Corta com
+     reticências pra o aviso caber certinho sem quebrar o layout do dropdown. */
+  .notif-titulo{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .notif-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ---------- ícones do topo: avatar + sino ---------- */
+  .botao-notificacao{
+    position:relative;width:38px;height:38px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);border:0;background:none;cursor:pointer;
+    transition:background .15s ease,color .15s ease,transform .22s cubic-bezier(.34,1.4,.5,1),box-shadow .2s ease;
+  }
+  /* mesmo movimento do avatar: pop sutil + sombra suave atrás (combinam) */
+  .botao-notificacao:hover,.botao-notificacao[aria-expanded="true"]{
+    background:var(--soft);color:var(--ink);
+    transform:scale(1.08);box-shadow:0 5px 16px rgba(29,29,27,.18);
+  }
+  .botao-notificacao:active{transform:scale(1.02)}
+  .botao-notificacao svg{width:19px;height:19px}
+  .avatar-topo{
+    width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;
+    display:block;transition:transform .22s cubic-bezier(.34,1.4,.5,1), box-shadow .2s ease;
+  }
+  /* Sem anel (regra do vault: sem ring de foco/estado). Feedback por um pop
+     sutil + sombra suave atrás; o menu abrindo já sinaliza o estado aberto. */
+  .avatar-topo-botao{border:0;background:none;padding:0;cursor:pointer}
+  .avatar-topo-botao:hover .avatar-topo,
+  .avatar-topo-botao[aria-expanded="true"] .avatar-topo{
+    transform:scale(1.08);
+    box-shadow:0 5px 16px rgba(29,29,27,.24);
+  }
+  .avatar-topo-botao:active .avatar-topo{transform:scale(1.02)}
+
+  fieldset.demo-secao{
+    border:0;border-radius:22px;background:var(--paper);padding:22px 24px 24px;
+    box-shadow:var(--sombra-card);
+  }
+  fieldset.demo-secao legend{
+    float:left;width:100%;font-family:var(--sans);font-weight:600;font-size:13px;color:var(--ink);
+    margin:0 0 18px;padding:0;display:flex;align-items:center;gap:9px;
+  }
+  .legend-icone{
+    width:30px;height:30px;border-radius:11px;background:#EAF1F3;color:var(--accent);
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .legend-icone svg{width:15px;height:15px;stroke-width:2}
+  fieldset.demo-secao legend + *{clear:both}
+  .demo-lista{list-style:none;font-size:14.5px;display:flex;flex-direction:column;gap:8px}
+  .demo-lista li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#F7F9FA;box-shadow:0 1px 2px rgba(29,41,61,.03);transition:background .12s, transform .12s}
+  .demo-lista li:hover{transform:translateY(-1px);background:#F0F4F6;cursor:pointer}
+  .demo-lista .avatar-nome{min-width:0}
+  .demo-lista .evento-texto{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .evento-quando{flex-shrink:0;white-space:nowrap}
+  .evento-data{font-size:14px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  @media (max-width:600px){
+    .demo-lista .evento-texto{flex-direction:column;align-items:flex-start;gap:3px}
+    .evento-data{font-size:13px;color:var(--ink-soft)}
+  }
+  .avatar-mini{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:#EAF1F3;color:var(--accent);
+  }
+  .avatar-mini svg{width:15px;height:15px}
+
+  /* hero */
+  .hero{
+    position:relative;overflow:hidden;color:#fff;border-radius:24px;isolation:isolate;
+    padding:30px 32px 28px;min-height:74px;
+    background:
+      radial-gradient(130% 150% at 12% -10%, rgba(255,255,255,.12), transparent 46%),
+      linear-gradient(135deg,#013243 0%,#003646 46%,#0b4d61 100%);
+    box-shadow:0 14px 34px rgba(0,54,70,.22), inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  .hero::after{content:"";position:absolute;right:-70px;top:-80px;width:250px;height:250px;z-index:-1;border-radius:50%;background:radial-gradient(circle at 35% 35%, rgba(255,255,255,.14), rgba(255,255,255,.03) 60%, transparent 72%);pointer-events:none}
+  .hero::before{content:"";position:absolute;right:14%;bottom:-140px;width:230px;height:230px;z-index:-1;border-radius:50%;background:radial-gradient(circle, rgba(15,90,113,.55), transparent 70%);pointer-events:none}
+  .hero h3{position:relative;z-index:1;font-size:24px;font-weight:600;letter-spacing:-.01em}
+  .hero p{position:relative;z-index:1;color:rgba(255,255,255,.75);margin-top:6px;font-size:13.5px}
+  .hero-chips-demo{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;position:relative;z-index:1}
+  .hero-chip-demo{
+    display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;
+    background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.10);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    font-size:13px;color:rgba(255,255,255,.94);
+  }
+  .hero-chip-demo svg{width:14px;height:14px;opacity:.8}
+  .hero-chip-demo.destaque{background:#fff;border-color:transparent;color:var(--accent);font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.16)}
+  .hero-chip-demo.destaque svg{opacity:1}
+  .hero-meta-demo{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-top:12px;position:relative;z-index:1}
+  .hero-meta-item-demo{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:rgba(255,255,255,.72)}
+  .hero-meta-item-demo svg{width:14px;height:14px;opacity:.7}
+  .hero-meta-item-demo + .hero-meta-item-demo::before{content:"";width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.35);margin-right:10px}
+  .hero-topo-demo{position:absolute;top:22px;right:24px;display:flex;gap:10px;z-index:5}
+  .hero-icone-demo{
+    width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    color:rgba(255,255,255,.78);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.20);cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .hero-icone-demo:hover{background:rgba(255,255,255,.22);color:#fff}
+  .hero-icone-demo.perigo:hover{background:#A33B3B;border-color:transparent;color:#fff}
+  .hero-icone-demo svg{width:15px;height:15px}
+  .hero-corpo-demo{display:flex;align-items:center;gap:22px;position:relative;z-index:1;padding-right:80px}
+  .hero-avatar-demo{
+    width:74px;height:74px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:#fff;
+    background:linear-gradient(150deg, rgba(255,255,255,.20), rgba(255,255,255,.08));
+    border:1px solid rgba(255,255,255,.30);
+    box-shadow:0 8px 22px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .hero-avatar-demo svg{width:30px;height:30px;stroke-width:1.6}
+  .hero-info-demo{min-width:0}
+
+  /* ---------- modal look ---------- */
+  .modal-demo{
+    background:var(--paper);border-radius:18px;padding:32px 32px 26px;max-width:420px;
+    box-shadow:0 12px 30px rgba(29,29,27,.15);
+  }
+  .modal-demo h3{
+    font-weight:600;font-size:22px;color:var(--ink);margin:0 0 14px;
+    display:flex;align-items:center;gap:12px;line-height:1.25;
+  }
+  .mc-icone{
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+    width:32px;height:32px;border-radius:10px;background:#EAF1F3;color:var(--accent);
+  }
+  .mc-icone svg{width:16px;height:16px}
+  .modal-demo p{font-size:14.5px;color:var(--ink-soft);line-height:1.6}
+  .modal-acoes{display:flex;justify-content:flex-end;gap:10px;margin-top:28px}
+  .banner-liberado{
+    background:#FBF6E8;color:#7A5A11;padding:12px 14px;border-radius:10px;
+    font-size:13px;line-height:1.55;margin:20px 0 0;display:flex;align-items:flex-start;gap:10px;
+  }
+  .banner-liberado svg{width:16px;height:16px;flex-shrink:0;color:#C9A227;margin-top:1px}
+
+  /* inputs */
+  .form-grade{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .campo-form{display:flex;flex-direction:column}
+  .campo-form label{font-size:12.5px;font-weight:500;color:var(--ink-soft);margin-bottom:6px}
+  input,select,textarea{
+    font:inherit;color:var(--ink);background:var(--soft);border:0;border-radius:10px;
+    padding:9px 12px;-webkit-appearance:none;
+  }
+  input:focus,select:focus,textarea:focus{outline:none;background:#EEF0F3}
+
+  /* login (card estilo shadcn) */
+  .login-card{
+    width:100%;max-width:400px;background:var(--paper);border-radius:24px;padding:36px 32px 32px;
+    box-shadow:0 1px 2px rgba(29,29,27,.05), 0 14px 36px rgba(29,29,27,.10);
+  }
+  .login-card .topo{padding:0;text-align:center}
+  .login-card .topo img{width:154px;margin:0 auto;display:block}
+  .login-card h3{text-align:center;color:var(--ink);font-size:22px;font-weight:500;letter-spacing:-.01em;margin:20px 0 28px}
+  .login-card .campo-form{margin-bottom:18px}
+  .label-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .label-row label{margin-bottom:0}
+  .link-esqueci{font-size:12.5px;font-weight:500;color:var(--accent);background:none;border:0;cursor:pointer;padding:0}
+  .link-esqueci:hover{color:#00485c;text-decoration:underline}
+  .campo-senha{position:relative}
+  .campo-senha input{width:100%;padding-right:42px}
+  .alternar-senha{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;color:var(--ink-soft);background:none;border:0;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .alternar-senha:hover{background:var(--line);color:var(--accent)}
+  .alternar-senha svg{width:18px;height:18px}
+  .login-cta{
+    display:flex;align-items:center;justify-content:center;width:100%;height:46px;padding:0 20px;margin-top:10px;
+    background:var(--accent);color:#fff;font:600 14px/1 var(--sans);border:0;border-radius:12px;cursor:pointer;
+    box-shadow:0 1px 2px rgba(0,54,70,.22);transition:background .15s, transform .1s, box-shadow .18s;
+  }
+  .login-cta:hover{background:#00485c;transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,54,70,.22)}
+  .login-cta:active{transform:scale(.98)}
+
+  /* ---------- timeline demo ---------- */
+  .timeline-contrato{list-style:none;font-size:13.5px}
+  .timeline-passo{position:relative;display:flex;gap:12px;padding-bottom:14px}
+  .timeline-passo:last-child{padding-bottom:0}
+  .timeline-passo:not(:last-child)::before{
+    content:"";position:absolute;left:13px;top:28px;bottom:2px;width:2px;background:var(--line);border-radius:2px;
+  }
+  .timeline-passo.concluido:not(:last-child)::before{background:var(--accent)}
+  .timeline-badge{
+    width:28px;height:28px;border-radius:50%;flex-shrink:0;position:relative;z-index:1;
+    background:var(--soft);color:var(--ink-soft);
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .timeline-badge svg{width:14px;height:14px;stroke-width:2}
+  .timeline-passo.concluido .timeline-badge{background:var(--accent);color:#fff}
+  .timeline-passo.assinado .timeline-badge{background:var(--ok);color:#fff}
+  .timeline-info{padding-top:3px}
+  .timeline-titulo{font-weight:500;color:var(--ink);line-height:1.35}
+  .timeline-passo:not(.concluido) .timeline-titulo{color:var(--ink-soft)}
+  .timeline-data{color:var(--ink-soft);font-size:12.5px;margin-top:2px}
+
+  /* ---------- toast demo ---------- */
+  .toast-demo{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:10px 18px;border-radius:14px;background:var(--noir);color:#fff;
+    font-size:13.5px;font-weight:500;box-shadow:0 12px 30px rgba(0,0,0,.22);
+  }
+  .toast-demo svg{width:16px;height:16px;color:#7BC29A}
+
+  /* skeleton */
+  @keyframes sk-brilho{0%{background-position:180% 0}100%{background-position:-80% 0}}
+  .sk{background:linear-gradient(100deg, var(--soft) 38%, #EEF0F3 50%, var(--soft) 62%);background-size:280% 100%;animation:sk-brilho 2.1s ease-in-out infinite;border-radius:8px;display:block}
+  .sk-num{height:26px;width:44px;margin-bottom:12px}
+  .sk-linha{height:13px;border-radius:6px}
+  .sk-circulo{width:34px;height:34px;border-radius:50%;flex-shrink:0}
+  /* chip + ring do pull-to-refresh */
+  @keyframes sk-rodar{to{transform:rotate(360deg)}}
+  .ptr-chip-demo{display:inline-flex;align-items:center;gap:9px;padding:8px 16px 8px 12px;border-radius:999px;background:#F7F9FA;flex-shrink:0}
+  .ptr-ring-demo{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:2px solid var(--line);border-top-color:var(--accent);animation:sk-rodar .65s linear infinite}
+  .ptr-texto-demo{font-size:13px;font-weight:500;color:var(--ink-soft)}
+
+  /* ---------- callout de regra ---------- */
+  .regra{
+    display:flex;gap:12px;background:#FBF6E8;color:#7A5A11;
+    padding:14px 16px;border-radius:14px;font-size:13.5px;line-height:1.55;
+  }
+  .regra svg{width:16px;height:16px;flex-shrink:0;color:#B99524;margin-top:2px}
+  .regra strong{color:#5c4310}
+
+  /* utilidades */
+  .grade-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:820px){
+    .grade-2, .form-grade{grid-template-columns:1fr}
+    .tipo-linha{grid-template-columns:1fr}
+    .miolo, header.topo{padding-left:20px;padding-right:20px}
+  }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <h1>Brandbook do Estúdio</h1>
+  <p>Sistema visual da área de trabalho do Jordan (<code>estudio.html</code>, <code>configuracoes.html</code>, <code>revisar-contrato.html</code>, <code>assinar.html</code>). Não vale pra portfólio, cadastro público nem impressos.</p>
+  <div class="meta">Snapshot 2026-09-09</div>
+</header>
+
+<div class="miolo">
+
+  <div class="regra">
+    <i data-lucide="info"></i>
+    <div><strong>Três regras que não se dobram.</strong> Nada de borda pra diferenciar seção ou estado (bg diferente + sombra resolvem). Nada de focus ring (feedback vem por bg sutil). Nada de travessão em texto de tela (vírgula, dois-pontos, parêntese).</div>
+  </div>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">1</span>Paleta</h2>
+    <p class="legenda">Petróleo (<code>--accent</code>) é a cor de ação e destaque. Preto e cinzas são texto. <code>--soft</code> e <code>--line</code> só aparecem como fundo (nunca como borda pra separar).</p>
+
+    <div class="paleta">
+      <div class="swatch"><div class="swatch-quadrado" style="background:#FFFFFF;box-shadow:inset 0 0 0 1px #E4E6EA"></div><div><div class="swatch-nome">Paper</div><div class="swatch-token">--paper #FFFFFF</div></div><div class="swatch-uso">Fundo do body e dos cartões elevados.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#003646"></div><div><div class="swatch-nome">Accent (petróleo)</div><div class="swatch-token">--accent #003646</div></div><div class="swatch-uso">Ações primárias, ícones em pill, hero, títulos de destaque.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#4F6278"></div><div><div class="swatch-nome">Accent deep (aço)</div><div class="swatch-token">--accent-deep #4F6278</div></div><div class="swatch-uso">Uso pontual em valores/preços.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#1F2329"></div><div><div class="swatch-nome">Ink</div><div class="swatch-token">--ink #1F2329</div></div><div class="swatch-uso">Corpo de texto principal.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#6B7280"></div><div><div class="swatch-nome">Ink soft</div><div class="swatch-token">--ink-soft #6B7280</div></div><div class="swatch-uso">Label, legenda, texto de estado pendente.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#F6F7F9"></div><div><div class="swatch-nome">Soft</div><div class="swatch-token">--soft #F6F7F9</div></div><div class="swatch-uso">Fundo de input, hover primário, chip cinza.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#E4E6EA"></div><div><div class="swatch-nome">Line</div><div class="swatch-token">--line #E4E6EA</div></div><div class="swatch-uso">Hover secundário (bg de estado). NUNCA como borda.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#EAF1F3"></div><div><div class="swatch-nome">Pill pastel</div><div class="swatch-token">#EAF1F3</div></div><div class="swatch-uso">Fundo das pills de ícone (kpi-icone, legend-icone, mc-icone).</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#FBF6E8"></div><div><div class="swatch-nome">Âmbar suave</div><div class="swatch-token">#FBF6E8 / #B99524</div></div><div class="swatch-uso">Banner âmbar (aviso, rascunho). Ícone e texto em #B99524/#7A5A11.</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#2E6B4F"></div><div><div class="swatch-nome">OK (verde)</div><div class="swatch-token">--ok #2E6B4F</div></div><div class="swatch-uso">Sucesso, timeline "assinado".</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#A33B3B"></div><div><div class="swatch-nome">Erro</div><div class="swatch-token">--erro #A33B3B</div></div><div class="swatch-uso">Perigo (excluir, cancelar contrato).</div></div>
+      <div class="swatch"><div class="swatch-quadrado" style="background:#1D1D1B"></div><div><div class="swatch-nome">Noir</div><div class="swatch-token">--noir #1D1D1B</div></div><div class="swatch-uso">Toast, texto de tooltip.</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">2</span>Tipografia</h2>
+    <p class="legenda">Uma família só, <strong>Inter</strong>. <code>--serif</code> existe pra compatibilidade com o resto do código, mas aponta pra Inter também. Par serifada+sans é regra do que o casal vê (portfólio, cadastro, revisar, assinar).</p>
+
+    <div class="tipo-grade">
+      <div class="tipo-linha">
+        <div><div class="tipo-nome">Título de tela · h1</div><div class="demo-h1">Bom dia, Jordan. Bora fazer um dia bonito acontecer. ☀️</div></div>
+        <div class="tipo-spec">22px · peso 600 · letter-spacing -.01em</div>
+      </div>
+      <div class="tipo-linha">
+        <div><div class="tipo-nome">Corpo</div><div class="demo-body">Este contrato ainda é rascunho, você pode editar clicando nos campos.</div></div>
+        <div class="tipo-spec">14.5px · peso 400 · line-height 1.55</div>
+      </div>
+      <div class="tipo-linha">
+        <div><div class="tipo-nome">Legenda</div><div class="demo-legenda">Abra o contrato e assine pra liberar o link do casal.</div></div>
+        <div class="tipo-spec">13.5px · peso 400 · --ink-soft · line-height 1.6</div>
+      </div>
+      <div class="tipo-linha">
+        <div><div class="tipo-nome">Label de campo</div><div class="demo-label">Nome do noivo</div></div>
+        <div class="tipo-spec">12.5px · peso 500 · --ink-soft</div>
+      </div>
+      <div class="tipo-linha">
+        <div><div class="tipo-nome">Rótulo de KPI</div><div class="demo-kpi-rot">Clientes novos</div></div>
+        <div class="tipo-spec">12.5px · caixa normal · --ink-soft</div>
+      </div>
+      <div class="tipo-linha">
+        <div><div class="tipo-nome">Número (KPI, valor)</div><div class="demo-kpi-num">3</div></div>
+        <div class="tipo-spec">28px · peso 600 · tabular-nums · --accent</div>
+      </div>
+      <div class="tipo-linha">
+        <div><div class="tipo-nome">Monospace (id, hash, ip)</div><div class="demo-mono">025a1b42-d925-4bc6-a708</div></div>
+        <div class="tipo-spec">12.5px · ui-monospace</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">3</span>Botões</h2>
+    <p class="legenda">Ordem hierárquica: primário → secundário → fantasma. Perigo só usa cor no primário; nunca colore uma seção inteira.</p>
+
+    <div class="botoes-grade">
+      <button class="botao-primario"><i data-lucide="copy"></i>Copiar link</button>
+      <button class="botao-secundario"><i data-lucide="file-text"></i>Abrir rascunho do contrato</button>
+      <button class="botao-fantasma">Cancelar</button>
+      <button class="botao-primario perigo"><i data-lucide="trash-2"></i>Excluir de vez</button>
+    </div>
+
+    <h3 style="margin:24px 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Voltar</h3>
+    <p class="legenda" style="margin-bottom:14px">No <strong>desktop</strong>, botão de voltar em conteúdo com ícone + rótulo. No <strong>mobile</strong>, vira só ícone ancorado à esquerda do header (o de conteúdo some). Nunca os dois juntos.</p>
+    <div class="botoes-grade">
+      <button class="voltar-conteudo-demo"><i data-lucide="arrow-left"></i> Início</button>
+      <button class="voltar-header-demo" aria-label="Voltar"><i data-lucide="arrow-left"></i></button>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">4</span>Ícones em pill</h2>
+    <p class="legenda">Ícone Lucide num quadradinho pastel <code>#EAF1F3</code> com cor <code>--accent</code>. Duas variantes: <strong>sm</strong> (28×28, radius 8, ícone 14px) e <strong>md</strong> (36×36, radius 10, ícone 16px). O pattern é usado no kpi-icone, legend-icone, mc-icone.</p>
+
+    <div class="botoes-grade">
+      <span class="icone-pill sm"><i data-lucide="heart"></i></span>
+      <span class="icone-pill sm"><i data-lucide="calendar-heart"></i></span>
+      <span class="icone-pill sm"><i data-lucide="map-pin"></i></span>
+      <span class="icone-pill sm"><i data-lucide="notebook-pen"></i></span>
+      <span class="icone-pill sm"><i data-lucide="file-text"></i></span>
+      <span class="icone-pill"><i data-lucide="sparkles"></i></span>
+      <span class="icone-pill"><i data-lucide="circle-check"></i></span>
+      <span class="icone-pill"><i data-lucide="link"></i></span>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">5</span>Cartões e elevação</h2>
+    <p class="legenda">Três níveis: body branco → seção (fieldset/KPI) branco com sombra dupla → hero petróleo com sombra maior. Nada usa borda pra elevar.</p>
+
+    <h3 style="margin:20px 0 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">KPIs</h3>
+    <div class="cards-grade">
+      <div class="kpi">
+        <span class="kpi-icone"><i data-lucide="sparkles"></i></span>
+        <div class="kpi-num">3</div><div class="kpi-rotulo">Clientes novos</div>
+      </div>
+      <div class="kpi">
+        <span class="kpi-icone"><i data-lucide="circle-check"></i></span>
+        <div class="kpi-num">0</div><div class="kpi-rotulo">Clientes confirmados</div>
+      </div>
+      <div class="kpi">
+        <span class="kpi-icone"><i data-lucide="heart"></i></span>
+        <div class="kpi-num">0</div><div class="kpi-rotulo">Casamentos realizados</div>
+      </div>
+      <div class="kpi">
+        <span class="kpi-icone"><i data-lucide="calendar-heart"></i></span>
+        <div class="kpi-num kpi-num-data">1 dez 2027</div><div class="kpi-rotulo">Próximo casamento</div>
+      </div>
+    </div>
+
+    <h3 style="margin:26px 0 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Seção (fieldset)</h3>
+    <div class="grade-2">
+      <fieldset class="demo-secao">
+        <legend><span class="legend-icone"><i data-lucide="calendar-heart"></i></span>Próximos eventos</legend>
+        <ul class="demo-lista">
+          <li><span class="avatar-mini"><i data-lucide="users"></i></span><span class="evento-texto"><span class="avatar-nome">Mahmoud El Zein &amp; Aya Zaraket</span><span class="evento-quando"><span class="evento-data">24 out 2026</span></span></span></li>
+          <li><span class="avatar-mini"><i data-lucide="users"></i></span><span class="evento-texto"><span class="avatar-nome">Cliente Teste &amp; Noiva Teste</span><span class="evento-quando"><span class="evento-data">1 dez 2027</span></span></span></li>
+        </ul>
+      </fieldset>
+      <fieldset class="demo-secao">
+        <legend><span class="legend-icone"><i data-lucide="heart"></i></span>O casal</legend>
+        <div class="form-grade">
+          <div class="campo-form"><label>Nome do noivo</label><input value="Cliente Teste"></div>
+          <div class="campo-form"><label>Nome da noiva</label><input value="Noiva Teste"></div>
+        </div>
+      </fieldset>
+    </div>
+
+    <h3 style="margin:26px 0 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Hero do cliente</h3>
+    <p class="legenda" style="margin-bottom:14px">Hierarquia, não parede de pílulas: só a <strong>data/contagem</strong> é pílula em destaque; local e valor viram meta leve embaixo. Sem badge de status e sem ação de contrato no topo (redundantes) — o topo guarda só arquivar e excluir.</p>
+    <div class="hero">
+      <div class="hero-topo-demo">
+        <button class="hero-icone-demo" title="Arquivar"><i data-lucide="archive"></i></button>
+        <button class="hero-icone-demo perigo" title="Excluir"><i data-lucide="trash-2"></i></button>
+      </div>
+      <div class="hero-corpo-demo">
+        <div class="hero-avatar-demo"><i data-lucide="users"></i></div>
+        <div class="hero-info-demo">
+          <h3>Cliente Teste &amp; Noiva Teste</h3>
+          <div class="hero-chips-demo">
+            <span class="hero-chip-demo destaque"><i data-lucide="calendar"></i>01/12/2027 · faltam 448 dias</span>
+          </div>
+          <div class="hero-meta-demo">
+            <span class="hero-meta-item-demo"><i data-lucide="map-pin"></i>Local de Teste</span>
+            <span class="hero-meta-item-demo"><i data-lucide="dollar-sign"></i>R$ 10.850,00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">6</span>Precisa de atenção</h2>
+    <p class="legenda">Card na home (some quando não há pendência) que leva à página de pendências. Fundo terroso suave (<code>#F8F4EE</code>, âmbar puxado pro taupe pra matar o brilho amarelo); ícone e contagem em taupe (<code>#EBE2D3</code>) com texto marrom. Sombra leve. A página agrupa o que precisa de ação por frente de trabalho.</p>
+
+    <button class="card-atencao" style="max-width:520px">
+      <span class="card-atencao-icone"><i data-lucide="triangle-alert"></i></span>
+      <span class="card-atencao-texto">
+        <span class="card-atencao-titulo">Precisa de atenção</span>
+        <span class="card-atencao-sub">2 pendências pra resolver</span>
+      </span>
+      <span class="card-atencao-conta">2</span>
+      <i class="card-atencao-seta" data-lucide="chevron-right"></i>
+    </button>
+
+    <div style="max-width:520px;margin-top:22px">
+      <div class="pend-grupo">
+        <div class="pend-grupo-topo">
+          <span class="pend-grupo-icone"><i data-lucide="file-text"></i></span>
+          <span class="pend-grupo-titulo">Contrato não enviado</span>
+          <span class="pend-grupo-conta">1</span>
+        </div>
+        <ul class="pend-lista">
+          <li class="pend-item"><span class="avatar-mini"><i data-lucide="users"></i></span><span class="pend-item-nome">Cliente Teste &amp; Noiva Teste</span><span class="pend-item-data">1 dez 2027</span><button type="button" class="pend-limpar"><i data-lucide="check"></i>Limpar</button></li>
+        </ul>
+      </div>
+      <div class="pend-grupo">
+        <div class="pend-grupo-topo">
+          <span class="pend-grupo-icone"><i data-lucide="clock"></i></span>
+          <span class="pend-grupo-titulo">Aguardando o casal assinar</span>
+          <span class="pend-grupo-conta">1</span>
+        </div>
+        <ul class="pend-lista">
+          <li class="pend-item"><span class="avatar-mini"><i data-lucide="users"></i></span><span class="pend-item-nome">Mahmoud El Zein &amp; Aya Zaraket</span><span class="pend-item-data">24 out 2026</span><button type="button" class="pend-limpar"><i data-lucide="check"></i>Limpar</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="legenda" style="margin-top:22px">O botão <strong>Limpar</strong> (verde sólido à direita de cada linha) dispensa a pendência localmente (via <code>localStorage</code>, com modal de confirmação antes): a linha some da lista e do contador, mas nada é tocado no banco. Se o status do contrato mudar, a pendência reaparece.</p>
+    <p class="pagina-sub" style="margin-top:14px">Pontas soltas e passos esquecidos: rascunhos pra enviar, contratos esperando assinatura e clientes confirmados sem contrato.</p>
+    <p class="legenda" style="margin-top:6px">Subtítulo padrão da página de pendências (<code>.pagina-sub</code>, 14px, <code>--ink-soft</code>).</p>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">7</span>Modais e banners</h2>
+    <p class="legenda">Card branco radius 16 com padding <code>32 32 26</code>. Ícone em pill sempre INLINE ao lado do h3, nunca acima (2026-09-09). Corpo em <code>--ink-soft</code> line-height 1.6. Banner âmbar entra abaixo do campo quando o link é liberado pela primeira vez.</p>
+
+    <div class="grade-2">
+      <div class="modal-demo">
+        <h3><span class="mc-icone"><i data-lucide="info"></i></span>Abrir contrato pra revisar?</h3>
+        <p>Vai criar um rascunho editável e abrir a página de revisão. Nada é enviado pro casal enquanto você não copiar o link.</p>
+        <div class="modal-acoes">
+          <button class="botao-fantasma">Cancelar</button>
+          <button class="botao-primario">Abrir</button>
+        </div>
+      </div>
+      <div class="modal-demo">
+        <h3><span class="mc-icone"><i data-lucide="send"></i></span>Link pro casal</h3>
+        <div style="position:relative;margin-top:22px">
+          <input value="https://jordansantosfotografia.com/assinar?token=..." style="width:100%;padding:12px 48px 12px 13px;border-radius:12px;background:var(--soft);border:0;font-size:13px;color:var(--ink-soft)" readonly>
+        </div>
+        <div class="banner-liberado">
+          <i data-lucide="info"></i>
+          <span>Assim que você mandar o link, o contrato vai pro casal. Qualquer edição depois disso pede uma nova reconfirmação.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">8</span>Timeline do contrato</h2>
+    <p class="legenda">Passos verticais com linha conectora fina. Concluído: <code>--accent</code> + <code>check</code>. Assinado: <code>--ok</code>. Pendente: <code>--soft</code> + <code>circle-dashed</code>. Título do passo pendente fica em <code>--ink-soft</code>.</p>
+
+    <fieldset class="demo-secao" style="max-width:420px">
+      <legend><span class="legend-icone"><i data-lucide="file-text"></i></span>Assinatura do contrato</legend>
+      <ol class="timeline-contrato">
+        <li class="timeline-passo concluido">
+          <span class="timeline-badge"><i data-lucide="check"></i></span>
+          <div class="timeline-info"><div class="timeline-titulo">Contrato criado</div><div class="timeline-data">09/09/2026 às 03:58</div></div>
+        </li>
+        <li class="timeline-passo concluido">
+          <span class="timeline-badge"><i data-lucide="check"></i></span>
+          <div class="timeline-info"><div class="timeline-titulo">Confirmado</div><div class="timeline-data">09/09/2026 às 04:12</div></div>
+        </li>
+        <li class="timeline-passo">
+          <span class="timeline-badge"><i data-lucide="circle-dashed"></i></span>
+          <div class="timeline-info"><div class="timeline-titulo">Enviado ao casal</div><div class="timeline-data">Pendente</div></div>
+        </li>
+        <li class="timeline-passo">
+          <span class="timeline-badge"><i data-lucide="circle-dashed"></i></span>
+          <div class="timeline-info"><div class="timeline-titulo">Visualizado</div><div class="timeline-data">Pendente</div></div>
+        </li>
+        <li class="timeline-passo assinado">
+          <span class="timeline-badge"><i data-lucide="check"></i></span>
+          <div class="timeline-info"><div class="timeline-titulo">Assinado</div><div class="timeline-data">Cor de sucesso quando ambos assinam</div></div>
+        </li>
+      </ol>
+    </fieldset>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">9</span>Contrato e assinatura (configurações)</h2>
+    <p class="legenda">Em <code>/configuracoes → Contrato e assinatura</code>, duas telas: um <strong>índice</strong> com os modelos salvos + a assinatura padrão, e um <strong>editor full-width</strong> (sidebar some) que abre ao clicar num modelo. Editar um modelo nunca muda contratos já gerados: a geração congela um snapshot do texto no próprio contrato.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:640px;margin-bottom:22px">
+      <div style="position:relative;background:var(--paper);border-radius:16px;box-shadow:var(--sombra-card);padding:18px">
+        <span style="position:absolute;top:14px;right:14px;font-size:11px;font-weight:600;color:var(--accent);background:#EAF1F3;padding:3px 9px;border-radius:999px">Padrão</span>
+        <span class="legend-icone"><i data-lucide="file-text"></i></span>
+        <div style="font-weight:600;margin-top:12px">Contrato de fotografia</div>
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-top:4px">Atualizado 09/09/2026</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--paper);border:1.5px dashed var(--line);border-radius:16px;padding:18px;color:var(--ink-soft)">
+        <i data-lucide="plus"></i>
+        <span style="font-size:13px">Novo modelo</span>
+      </div>
+    </div>
+
+    <p class="legenda">Assinatura padrão: preview grande em cima, três modos exclusivos (cursiva rende o nome em fonte script, desenhar abre canvas, enviar imagem faz upload) e <code>Definir como padrão</code>. É a assinatura que entra quando o Jordan confirma um contrato.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button style="border:0;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff">Fonte cursiva</button>
+      <button style="border:0;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--soft);color:var(--ink-soft)">Desenhar</button>
+      <button style="border:0;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;background:var(--soft);color:var(--ink-soft)">Enviar imagem</button>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">10</span>Saudação (home)</h2>
+    <p class="legenda">O título da home é um cumprimento com peso brincado: o horário (<code>Bom dia,</code>) fica leve (peso 400) e só o <strong>nome completo</strong> vem pesado (peso 800). A frase de apoio vira subtítulo menor em itálico na 2ª linha (<code>--ink-soft</code>).</p>
+
+    <h1 class="saud-demo">
+      <span class="saud-emoji">☀️</span><span class="saud-ola">Bom dia, </span><span class="saud-forte">Jordan Santos.</span>
+      <span class="saud-leve">Bora fazer um dia bonito acontecer.</span>
+    </h1>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">11</span>Notificações</h2>
+    <p class="legenda">Dropdown de altura travada (400px) com scroll interno: <code>scrollbar-gutter</code> reserva o espaço da barra pra o layout não pular. Cada item tem título em negrito (o evento: Novo cliente, Contrato assinado, Casal abriu o contrato, Aguardando assinatura, Casamento em X dias) e sub com o casal (sem telefone). O kebab desliza o item pra esquerda (estilo WhatsApp) revelando "Marcar como não lida" atrás, sem menu popover.</p>
+
+    <div class="dropdown-notificacao" style="position:static;width:340px;max-width:100%">
+      <div class="notif-topo">Notificações</div>
+      <div class="notif-lista">
+        <div class="notif-item">
+          <div class="notif-acao-fundo">
+            <button type="button" class="notif-acao"><i data-lucide="mail"></i><span>Marcar como<br>não lida</span></button>
+          </div>
+          <div class="notif-desliza">
+            <button type="button" class="notif-abrir">
+              <div class="notif-icone proposta"><i data-lucide="user-plus"></i></div>
+              <div class="notif-texto">
+                <div class="notif-titulo">Novo cliente</div>
+                <div class="notif-sub">Cliente Teste &amp; Noiva Teste</div>
+              </div>
+            </button>
+            <div class="notif-acoes"><button type="button" class="notif-kebab"><i data-lucide="more-vertical"></i></button></div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-acao-fundo">
+            <button type="button" class="notif-acao"><i data-lucide="mail"></i><span>Marcar como<br>não lida</span></button>
+          </div>
+          <div class="notif-desliza">
+            <button type="button" class="notif-abrir">
+              <div class="notif-icone assinado"><i data-lucide="file-check"></i></div>
+              <div class="notif-texto">
+                <div class="notif-titulo">Contrato assinado</div>
+                <div class="notif-sub">Mahmoud El Zein &amp; Aya Zaraket</div>
+              </div>
+            </button>
+            <div class="notif-acoes"><button type="button" class="notif-kebab"><i data-lucide="more-vertical"></i></button></div>
+          </div>
+        </div>
+        <div class="notif-item aberto">
+          <div class="notif-acao-fundo">
+            <button type="button" class="notif-acao"><i data-lucide="mail"></i><span>Marcar como<br>não lida</span></button>
+          </div>
+          <div class="notif-desliza">
+            <button type="button" class="notif-abrir">
+              <div class="notif-icone proposta"><i data-lucide="file-text"></i></div>
+              <div class="notif-texto">
+                <div class="notif-titulo">Casal abriu o contrato</div>
+                <div class="notif-sub">Cliente Teste &amp; Noiva Teste</div>
+              </div>
+            </button>
+            <div class="notif-acoes"><button type="button" class="notif-kebab" aria-expanded="true"><i data-lucide="more-vertical"></i></button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">12</span>Ícones do topo: avatar e sino</h2>
+    <p class="legenda">Avatar e sino compartilham a mesma animação (pop <code>scale 1.08</code> + sombra suave atrás, <code>cubic-bezier(.34,1.4,.5,1)</code>, sem anel) pra combinarem. No touch a animação é neutralizada (o feedback fica no repouso).</p>
+
+    <div class="botoes-grade">
+      <button type="button" class="avatar-topo-botao"><img class="avatar-topo" src="img/jordan-perfil.webp" alt="Jordan Santos"></button>
+      <button type="button" class="botao-notificacao" aria-label="Notificações"><i data-lucide="bell"></i></button>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">13</span>Inputs</h2>
+    <p class="legenda">Sem borda. Bg <code>--soft</code>, radius 8, padding <code>9px 12px</code>. Foco muda o bg pra <code>#EEF0F3</code>, nada de anel colorido.</p>
+
+    <div class="form-grade" style="max-width:640px">
+      <div class="campo-form">
+        <label>Nome do noivo</label>
+        <input value="Cliente Teste">
+      </div>
+      <div class="campo-form">
+        <label>CPF do noivo</label>
+        <input value="111.222.333-44" inputmode="numeric">
+      </div>
+      <div class="campo-form">
+        <label>Data do evento</label>
+        <input type="date" value="2027-12-01">
+      </div>
+      <div class="campo-form">
+        <label>Total (R$)</label>
+        <input value="10.850,00" inputmode="decimal">
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">14</span>Toast</h2>
+    <p class="legenda">Confirmação leve pro Jordan: fixo em <code>bottom:28px</code>, centro. Fade + slide-up 150ms. Aparece a cada autosave.</p>
+    <div class="toast-demo"><i data-lucide="check"></i>Salvo</div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">15</span>Skeleton e pull-to-refresh</h2>
+    <p class="legenda">Toda página de lista mostra skeleton enquanto carrega (shimmer lento <code>--soft → #EEF0F3</code>, 2.1s, segurado ~900ms no refresh pra não piscar) cobrindo tudo (saudação, card de atenção, KPIs, listas). Quando o conteúdo real entra, os blocos fazem um <strong>fade + slide-up escalonado</strong> (estilo Framer, <code>animarEntrada</code>, 65ms por bloco) pra a troca não ser abrupta. No mobile, puxar a lista pra baixo (só no topo) traz a página junto (rubber-band) e mostra um chip branco com um ring estilo shadcn, que <strong>surge crescendo (scale .6 → 1) + fade-in</strong> conforme o puxão e some com fade ao terminar. O detalhe fica fora do pull-to-refresh (é form em edição).</p>
+
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <span class="ptr-chip-demo"><span class="ptr-ring-demo"></span><span class="ptr-texto-demo">Carregando</span></span>
+      <span style="font-size:13px;color:var(--ink-soft)">pill do pull-to-refresh (ring + texto)</span>
+    </div>
+
+    <div style="max-width:520px">
+      <div class="cards-grade" style="margin-bottom:16px">
+        <div class="kpi"><div class="sk sk-num"></div><div class="sk sk-linha" style="width:72%"></div></div>
+        <div class="kpi"><div class="sk sk-num"></div><div class="sk sk-linha" style="width:72%"></div></div>
+        <div class="kpi"><div class="sk sk-num"></div><div class="sk sk-linha" style="width:72%"></div></div>
+        <div class="kpi"><div class="sk sk-num"></div><div class="sk sk-linha" style="width:72%"></div></div>
+      </div>
+      <ul class="demo-lista">
+        <li><span class="sk sk-circulo"></span><span class="sk sk-linha" style="flex:1"></span><span class="sk sk-linha" style="width:70px"></span></li>
+        <li><span class="sk sk-circulo"></span><span class="sk sk-linha" style="flex:1"></span><span class="sk sk-linha" style="width:70px"></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">16</span>Login</h2>
+    <p class="legenda">Card estilo shadcn: branco radius 22 com sombra premium sobre fundo <code>--soft</code> (salta por bg+sombra, não por borda). Logo no topo, saudação leve com emoji, link "Esqueci a senha" na linha do label da senha, botão retangular petróleo com a micro-animação Framer. Sem focus ring, sem título redundante.</p>
+
+    <div style="background:var(--soft);border-radius:12px;padding:56px 24px;display:flex;justify-content:center">
+      <div class="login-card">
+        <header class="topo"><img src="img/logo-principal-petroleo.png" alt="Jordan Santos"></header>
+        <h3>Bem-vindo de volta 👋</h3>
+        <div class="campo-form">
+          <label>E-mail</label>
+          <input type="email" placeholder="voce@exemplo.com">
+        </div>
+        <div class="campo-form">
+          <div class="label-row">
+            <label>Senha</label>
+            <button type="button" class="link-esqueci">Esqueci a senha</button>
+          </div>
+          <div class="campo-senha">
+            <input type="password" placeholder="Sua senha">
+            <button type="button" class="alternar-senha"><i data-lucide="eye"></i></button>
+          </div>
+        </div>
+        <button class="login-cta">Entrar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">17</span>Não faz</h2>
+    <ul style="list-style:none;display:grid;gap:10px;max-width:640px">
+      <li class="regra"><i data-lucide="x"></i><div>Não usa serifada. Só Inter.</div></li>
+      <li class="regra"><i data-lucide="x"></i><div>Não usa focus ring em botão, input, link nem custom.</div></li>
+      <li class="regra"><i data-lucide="x"></i><div>Não usa borda pra separar seções ou estados. <code>--line</code> só entra como bg de hover.</div></li>
+      <li class="regra"><i data-lucide="x"></i><div>Não usa travessão em texto de tela. Vírgula, dois-pontos, parêntese.</div></li>
+      <li class="regra"><i data-lucide="x"></i><div>Não colore card inteiro por status. Cor só no chip/badge/ícone, card permanece branco.</div></li>
+      <li class="regra"><i data-lucide="x"></i><div>Não mantém hover no touch. Em <code>@media (hover: none)</code> todo <code>:hover</code> volta ao repouso (o feedback fica no <code>:active</code>), pra não grudar depois do toque no celular.</div></li>
+    </ul>
+  </section>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
