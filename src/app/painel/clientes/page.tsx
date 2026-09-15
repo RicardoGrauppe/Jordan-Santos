@@ -9,6 +9,13 @@
     coluna. O original fazia isso com CSS em cima da mesma <table>; aqui cada
     linha é um grid que muda de forma no breakpoint.
   - Nenhuma linha entre as linhas: só o respiro e o hover separam.
+
+  Camada de celular: puxar a lista pra baixo recarrega no lugar, com o
+  skeleton de volta. O excluir continua sendo o botão da própria linha, e não
+  um deslize: aqui a linha é a MESMA no computador (tabela de cinco colunas) e
+  no celular (cartão), e embrulhar isso numa camada que anda pro lado
+  desmontaria o alinhamento das colunas sem ganhar nada em cima do botão que
+  já existe. No original esta tela também não deslizava.
 */
 "use client";
 
@@ -18,6 +25,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, Trash2 } from "lucide-react";
 import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
+import { PuxarPraAtualizar } from "@/components/PuxarPraAtualizar";
 import { SkLinha } from "@/components/Skeleton";
 import { moeda } from "@/lib/util";
 import {
@@ -26,6 +34,8 @@ import {
 } from "@/lib/painel";
 
 const HOVER = "[@media(hover:hover)]:";
+/* mínimo pra o skeleton do puxar aparecer de verdade em vez de piscar */
+const MIN_ATUALIZAR_MS = 900;
 
 const FILTROS: { valor: string; rotulo: string }[] = [
   { valor: "", rotulo: "Todos os status" },
@@ -74,6 +84,14 @@ export default function ListaClientes() {
       .catch(() => { /* falha de rede: fica no skeleton */ });
   }, [carregar]);
 
+  /* puxar pra atualizar: volta pro skeleton e refaz a busca no lugar */
+  const atualizar = useCallback(async () => {
+    setClientes(null);
+    await carregar(MIN_ATUALIZAR_MS)
+      .then((l) => { if (l && montado.current) setClientes(l); })
+      .catch(() => { /* fica no skeleton */ });
+  }, [carregar]);
+
   const visiveis = useMemo(() => {
     if (!clientes) return [];
     const termo = busca.trim().toLowerCase();
@@ -106,6 +124,7 @@ export default function ListaClientes() {
   }
 
   return (
+    <PuxarPraAtualizar aoAtualizar={atualizar}>
     <div className="mx-auto max-w-[1100px]">
       <div className="mb-[18px] flex items-center justify-between gap-4">
         <h1 className="m-0 flex items-center gap-2.5 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px]">
@@ -214,6 +233,7 @@ export default function ListaClientes() {
         )}
       </div>
     </div>
+    </PuxarPraAtualizar>
   );
 }
 

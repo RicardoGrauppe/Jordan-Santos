@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "contrato:regerar": "node --experimental-websocket tools/contrato-template/rodar.mjs",
+    "contrato:verificar": "node tools/contrato-template/verificar.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

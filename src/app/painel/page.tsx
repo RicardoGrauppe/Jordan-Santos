@@ -10,6 +10,12 @@
   O clima tem teto de 5s: depende de API externa e fetch não tem timeout
   próprio. Estourou, a home renderiza com a saudação da hora e o clima real
   entra sozinho quando (e se) chegar.
+
+  Camada de celular (portada junto com o resto do app):
+  - Puxar pra atualizar recarrega a home no lugar, com o skeleton de volta.
+  - Cada evento desliza pro lado revelando "Abrir" e "Copiar" do contrato
+    (no computador, o mesmo par sai pelo botão de opções da linha).
+  - Com clima na mão, o emoji e o resumo viram link pra previsão completa.
 */
 "use client";
 
@@ -17,9 +23,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  CalendarHeart, Check, ChevronRight, CircleCheck, Copy, Heart, Link2, Sparkles, TriangleAlert, Users,
+  CalendarHeart, Check, ChevronRight, CircleCheck, Copy, FileCheck2, FilePlus2, FileText,
+  Heart, Link2, Sparkles, TriangleAlert, Users,
 } from "lucide-react";
 import { Secao } from "@/components/ui";
+import { Deslizar, type AcaoDeslizar } from "@/components/Deslizar";
+import { PuxarPraAtualizar } from "@/components/PuxarPraAtualizar";
+import { ModalLink, type DadosLink } from "@/components/ModalLink";
+import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
 import { Sk, SkCirculo, SkLinha } from "@/components/Skeleton";
 import { copiarTexto } from "@/lib/ficha";
@@ -30,6 +41,8 @@ import {
 
 const HOVER = "[@media(hover:hover)]:";
 const TETO_CLIMA_MS = 5000;
+/* mínimo pra o skeleton do puxar aparecer de verdade em vez de piscar */
+const MIN_ATUALIZAR_MS = 900;
 /* cor fixa por ponta: mín sempre um azul sutil, máx sempre um vermelho sutil.
    O contraste entre as duas já entrega "mais frio / mais quente". */
 const COR_MIN = "#5B87B3";
@@ -43,9 +56,25 @@ type Dados = {
   clima: ClimaAgora | null;
 };
 
+/** o contrato já existe em alguma forma (rascunho pra cima) */
+function temContrato(status?: string | null): boolean {
+  return status === "rascunho" || status === "enviado" || status === "visualizado" || status === "assinado";
+}
+
+function iconeContrato(status?: string | null): ReactNode {
+  if (status === "assinado") return <FileCheck2 size={17} strokeWidth={1.8} />;
+  if (temContrato(status)) return <FileText size={17} strokeWidth={1.8} />;
+  return <FilePlus2 size={17} strokeWidth={1.8} />;
+}
+
+type RespostaLiberar = { link: string; mensagem?: string; assinado?: boolean };
+
 export default function Home() {
   const router = useRouter();
+  const confirmar = useConfirmar();
+  const { mostrar, elemento: aviso } = useToast();
   const [dados, setDados] = useState<Dados | null>(null);
+  const [modalLink, setModalLink] = useState<DadosLink | null>(null);
   const montado = useRef(true);
 
   useEffect(() => {
@@ -83,20 +112,60 @@ export default function Home() {
     };
   }, [router]);
 
+  const aplicar = useCallback((r: Awaited<ReturnType<typeof carregar>>) => {
+    if (!r || !montado.current) return;
+    setDados(r.dados);
+    r.climaTarde?.then((tarde) => {
+      if (tarde && montado.current) setDados((d) => (d ? { ...d, clima: tarde } : d));
+    });
+  }, []);
+
   useEffect(() => {
     carregar()
-      .then((r) => {
-        if (!r || !montado.current) return;
-        setDados(r.dados);
-        r.climaTarde?.then((tarde) => {
-          if (tarde && montado.current) setDados((d) => (d ? { ...d, clima: tarde } : d));
-        });
-      })
+      .then(aplicar)
       .catch(() => { /* falha de rede: fica no skeleton */ });
-  }, [carregar]);
+  }, [carregar, aplicar]);
 
-  if (!dados) return <HomeSkeleton />;
+  /* puxar pra atualizar: volta pro skeleton e refaz a busca no lugar, sem
+     recarregar a página (é o que o recarregarHome fazia no original) */
+  const atualizar = useCallback(async () => {
+    setDados(null);
+    await carregar(MIN_ATUALIZAR_MS).then(aplicar).catch(() => { /* fica no skeleton */ });
+  }, [carregar, aplicar]);
 
+  return (
+    <>
+      <PuxarPraAtualizar aoAtualizar={atualizar}>
+        <div className="mx-auto max-w-[960px]">
+          {dados ? (
+            <Conteudo
+              dados={dados}
+              confirmar={confirmar}
+              mostrar={mostrar}
+              router={router}
+              aoAbrirModalLink={setModalLink}
+            />
+          ) : (
+            <HomeSkeleton />
+          )}
+        </div>
+      </PuxarPraAtualizar>
+      {/* fora do bloco que anda no puxão: modal e aviso são `fixed` */}
+      {modalLink ? <ModalLink dados={modalLink} onFechar={() => setModalLink(null)} /> : null}
+      {aviso}
+    </>
+  );
+}
+
+function Conteudo({
+  dados, confirmar, mostrar, router, aoAbrirModalLink,
+}: {
+  dados: Dados;
+  confirmar: ReturnType<typeof useConfirmar>;
+  mostrar: ReturnType<typeof useToast>["mostrar"];
+  router: ReturnType<typeof useRouter>;
+  aoAbrirModalLink: (d: DadosLink) => void;
+}) {
   const { clientes, nome, saudacao, frase, clima } = dados;
   const pendentes = totalPendencias(pendenciasDe(clientes));
   const proximos = proximosEventos(clientes);
@@ -107,20 +176,102 @@ export default function Home() {
     { num: proximos.length ? dataCurta(proximos[0].data_evento) : "sem data", rotulo: "Próximo casamento", icone: <CalendarHeart size={16} />, data: true },
   ];
 
+  function falhou(e: unknown, msg: string) {
+    if ((e as Error).message === ERRO_SESSAO) router.replace("/entrar");
+    else mostrar(msg);
+  }
+
+  /* "Abrir": com contrato na mão vai direto pra revisão; sem contrato, confirma
+     e gera o rascunho antes (mesmo fluxo de abrirContratoDoEvento no original) */
+  async function abrirContratoDoEvento(c: ClienteLista) {
+    const destino = "/painel/clientes/" + encodeURIComponent(c.id) + "/contrato";
+    if (temContrato(c.contrato_status)) { router.push(destino); return; }
+    const ok = await confirmar({
+      titulo: "Abrir contrato pra revisar?",
+      texto: "Cria o contrato de " + nomeCasal(c) + " como rascunho e abre pra você revisar. O casal só vê depois que você copiar o link.",
+      rotuloOk: "Abrir",
+    });
+    if (!ok) return;
+    try {
+      await api("/api/estudio", { acao: "gerar-contrato", id: c.id });
+      router.push(destino);
+    } catch (e) { falhou(e, "Não deu pra abrir o contrato. Tente de novo."); }
+  }
+
+  /* "Copiar": libera o link do casal e reaproveita o pop-up da ficha. O
+     ClipboardItem com Promise é o pulo do gato do Safari do iOS: a escrita
+     precisa COMEÇAR dentro do gesto, e o texto só existe depois do fetch. */
+  async function copiarContratoDoEvento(c: ClienteLista) {
+    const eraRascunho = c.contrato_status === "rascunho";
+    const pedido = api<RespostaLiberar>("/api/estudio", { acao: "liberar-contrato-cliente", id: c.id });
+
+    let copiando: Promise<boolean> = Promise.resolve(false);
+    if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
+      const blob = pedido.then((r) => new Blob([r.mensagem || r.link], { type: "text/plain" }));
+      copiando = navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })]).then(() => true, () => false);
+    }
+
+    try {
+      const [r, copiouNoGesto] = await Promise.all([pedido, copiando]);
+      const copiou = copiouNoGesto || await copiarTexto(r.mensagem || r.link);
+      aoAbrirModalLink({
+        link: r.link,
+        mensagem: r.mensagem || r.link,
+        assinado: !!r.assinado,
+        primeiraLiberacao: eraRascunho,
+        jaCopiou: copiou,
+      });
+    } catch (e) { falhou(e, "Não deu pra liberar o link do contrato."); }
+  }
+
+  function acoesDoEvento(c: ClienteLista): AcaoDeslizar[] {
+    return [
+      {
+        chave: "abrir",
+        rotulo: "Abrir",
+        icone: iconeContrato(c.contrato_status),
+        classe: `bg-accent ${HOVER}hover:bg-accent-hover`,
+        aoAcionar: () => { void abrirContratoDoEvento(c); },
+      },
+      {
+        chave: "copiar",
+        rotulo: "Copiar",
+        icone: <Copy size={17} strokeWidth={1.8} />,
+        classe: `bg-accent-deep ${HOVER}hover:bg-[#3f5064]`,
+        desativada: !temContrato(c.contrato_status),
+        aoAcionar: () => { void copiarContratoDoEvento(c); },
+      },
+    ];
+  }
+
   return (
-    <div className="mx-auto max-w-[960px]">
+    <>
       {/* saudação: nome forte, clima (ou frase da hora) como subtítulo */}
       <Bloco ordem={0} className="mb-6 flex items-center gap-4">
-        <span className="shrink-0 text-[40px] leading-none sm:text-[46px]" aria-hidden>
-          {clima ? clima.emoji : saudacao.emoji}
-        </span>
+        {clima ? (
+          /* com previsão na mão, o emoji abre a página do tempo */
+          <Link
+            href="/painel/tempo"
+            aria-label="Ver a previsão do tempo"
+            className={`shrink-0 text-[40px] leading-none no-underline sm:text-[46px] ${HOVER}hover:opacity-75`}
+          >
+            <span aria-hidden>{clima.emoji}</span>
+          </Link>
+        ) : (
+          <span className="shrink-0 text-[40px] leading-none sm:text-[46px]" aria-hidden>
+            {saudacao.emoji}
+          </span>
+        )}
         <div className="flex min-w-0 flex-col gap-[3px]">
           <h1 className="m-0 text-[22px] font-semibold leading-tight tracking-tight text-ink sm:text-[26px]">
             <span className="font-normal text-ink-soft">{saudacao.texto}{nome ? ", " : "."}</span>
             {nome ? <span>{nome}.</span> : null}
           </h1>
           {clima ? (
-            <p className="m-0 text-[14.5px] leading-[1.4] text-ink-soft">
+            <Link
+              href="/painel/tempo"
+              className={`m-0 block text-[14.5px] leading-[1.4] text-ink-soft no-underline ${HOVER}hover:text-ink`}
+            >
               {clima.desc}, {clima.temp}°
               {clima.min != null && clima.max != null ? (
                 <span className="ml-2.5 inline-flex gap-2.5 tabular-nums">
@@ -128,7 +279,7 @@ export default function Home() {
                   <span style={{ color: COR_MAX }}>↑ {clima.max}°</span>
                 </span>
               ) : null}
-            </p>
+            </Link>
           ) : (
             <p className="m-0 text-[14.5px] italic leading-[1.4] text-ink-soft">{frase}</p>
           )}
@@ -185,22 +336,25 @@ export default function Home() {
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {proximos.slice(0, 5).map((c) => (
                 <li key={c.id}>
-                  <Link
-                    href={"/painel/clientes/" + c.id}
-                    className={
-                      "flex w-full items-center gap-3.5 rounded-[14px] bg-[#F7F9FA] px-3.5 py-3 no-underline shadow-[0_1px_2px_rgba(29,41,61,.03)] " +
-                      `transition-[transform,background] duration-150 ${HOVER}hover:-translate-y-px ${HOVER}hover:bg-[#F0F4F6]`
-                    }
+                  <Deslizar
+                    acoes={acoesDoEvento(c)}
+                    rotuloOpcoes={"Opções do contrato de " + nomeCasal(c)}
+                    className="rounded-[14px] bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)]"
+                    classeFrente={`gap-3.5 bg-[#F7F9FA] py-3 pl-3.5 pr-2 ${HOVER}hover:bg-[#F0F4F6]`}
                   >
-                    <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-accent-tint text-accent">
-                      <Users size={15} />
-                    </span>
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-[14.5px] font-medium leading-[1.3] text-ink">{nomeCasal(c)}</span>
-                      <span className="text-[12.5px] font-medium tabular-nums tracking-[.01em] text-ink-soft">{dataCurta(c.data_evento)}</span>
-                    </span>
-                    <ChevronRight size={16} className="shrink-0 text-ink-soft/70" />
-                  </Link>
+                    <Link
+                      href={"/painel/clientes/" + c.id}
+                      className="flex min-w-0 flex-1 items-center gap-3.5 no-underline"
+                    >
+                      <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-accent-tint text-accent">
+                        <Users size={15} />
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate text-[14.5px] font-medium leading-[1.3] text-ink">{nomeCasal(c)}</span>
+                        <span className="text-[12.5px] font-medium tabular-nums tracking-[.01em] text-ink-soft">{dataCurta(c.data_evento)}</span>
+                      </span>
+                    </Link>
+                  </Deslizar>
                 </li>
               ))}
             </ul>
@@ -212,10 +366,10 @@ export default function Home() {
 
       <Bloco ordem={4}>
         <Secao icone={<Link2 size={16} />} titulo="Links pro cliente">
-          <LinksCliente />
+          <LinksCliente mostrar={mostrar} />
         </Secao>
       </Bloco>
-    </div>
+    </>
   );
 }
 
@@ -232,8 +386,7 @@ function Bloco({ ordem, className = "", children }: { ordem: number; className?:
 /* ---------- links pro cliente ----------
    O card inteiro é o botão: clicar já copia o link, sem campo pra selecionar.
    Link fixo, então dispensa o truque do ClipboardItem-com-Promise do contrato. */
-function LinksCliente() {
-  const { mostrar, elemento } = useToast();
+function LinksCliente({ mostrar }: { mostrar: ReturnType<typeof useToast>["mostrar"] }) {
   const [copiado, setCopiado] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -254,48 +407,45 @@ function LinksCliente() {
   }
 
   return (
-    <>
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        {cards.map((c) => {
-          const ativo = copiado === c.id;
-          return (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => copiar(c.id, c.caminho)}
-              className={
-                "block w-full cursor-pointer overflow-hidden rounded-2xl bg-[#F7F9FA] p-0 text-left shadow-[0_0_22px_rgba(29,41,61,.13)] " +
-                `transition-[transform,background,box-shadow] duration-150 ${HOVER}hover:-translate-y-px ${HOVER}hover:bg-[#F0F4F6] ${HOVER}hover:shadow-[0_0_28px_rgba(29,41,61,.17)] group`
-              }
-            >
-              <span className="relative block aspect-[12/5] bg-soft">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.imagem} alt="" loading="lazy" className="block h-full w-full object-cover object-top" />
-                <span
-                  aria-hidden
-                  className={
-                    "absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ok text-white transition-[opacity,transform] duration-200 " +
-                    (ativo ? "scale-100 opacity-100" : "scale-[.7] opacity-0")
-                  }
-                >
-                  <Check size={13} />
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+      {cards.map((c) => {
+        const ativo = copiado === c.id;
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => copiar(c.id, c.caminho)}
+            className={
+              "block w-full cursor-pointer overflow-hidden rounded-2xl bg-[#F7F9FA] p-0 text-left shadow-[0_0_22px_rgba(29,41,61,.13)] " +
+              `transition-[transform,background,box-shadow] duration-150 ${HOVER}hover:-translate-y-px ${HOVER}hover:bg-[#F0F4F6] ${HOVER}hover:shadow-[0_0_28px_rgba(29,41,61,.17)] group`
+            }
+          >
+            <span className="relative block aspect-[12/5] bg-soft">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={c.imagem} alt="" loading="lazy" className="block h-full w-full object-cover object-top" />
+              <span
+                aria-hidden
+                className={
+                  "absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ok text-white transition-[opacity,transform] duration-200 " +
+                  (ativo ? "scale-100 opacity-100" : "scale-[.7] opacity-0")
+                }
+              >
+                <Check size={13} />
+              </span>
+            </span>
+            <span className="flex items-center justify-between gap-2 px-[13px] py-3">
+              <span className="min-w-0">
+                <span className="block text-[12.5px] font-semibold text-ink">{c.titulo}</span>
+                <span className={"mt-0.5 block text-[11px] " + (ativo ? "font-semibold text-ok" : "text-ink-soft")}>
+                  {ativo ? "Link copiado ✓" : "Toque para copiar o link"}
                 </span>
               </span>
-              <span className="flex items-center justify-between gap-2 px-[13px] py-3">
-                <span className="min-w-0">
-                  <span className="block text-[12.5px] font-semibold text-ink">{c.titulo}</span>
-                  <span className={"mt-0.5 block text-[11px] " + (ativo ? "font-semibold text-ok" : "text-ink-soft")}>
-                    {ativo ? "Link copiado ✓" : "Toque para copiar o link"}
-                  </span>
-                </span>
-                <Copy size={15} className={"shrink-0 transition-colors " + (ativo ? "text-ok" : `text-ink-soft ${HOVER}group-hover:text-accent`)} />
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      {elemento}
-    </>
+              <Copy size={15} className={"shrink-0 transition-colors " + (ativo ? "text-ok" : `text-ink-soft ${HOVER}group-hover:text-accent`)} />
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -313,7 +463,7 @@ function CabecalhoSk() {
 
 function HomeSkeleton() {
   return (
-    <div className="mx-auto max-w-[960px]" aria-busy="true" aria-label="Carregando">
+    <div aria-busy="true" aria-label="Carregando">
       <div className="mb-6 flex items-center gap-4">
         <Sk className="h-11 w-11 rounded-[14px]" />
         <div className="flex min-w-0 flex-1 flex-col gap-2.5">

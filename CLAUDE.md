@@ -62,8 +62,6 @@ entra como migração, nunca por `alter table` solto no psql.
   saudação do WhatsApp em `api/estudio`, remetente e `DESTINO_JORDAN` em
   `lib/email.ts`, e-mails de `api/orcamento`, e as imagens em `public/img/`.
   Tudo isso precisa sair de `config` (perfil) quando houver mais de um estúdio.
-- Home: eventos e pendências não têm o gesto de deslizar do original nem
-  pull-to-refresh; o clima não abre página de previsão.
 - E-mail: com `RESEND_API_KEY` vazia todo envio falha e vai pro `console.error`,
   mas nada trava: cadastro do casal e assinatura gravam e respondem `ok` do
   mesmo jeito (best-effort nos dois). Sem domínio verificado no Resend, só o

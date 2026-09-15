@@ -251,7 +251,7 @@
     }
   ],
   "geradoDe": {
-    "arquivo": "contrato-template.js",
-    "sha256": "7699fcc4cbf792482dc73962fee68f044c5a35c5f0a78d70ddcaa6fb5880ba58"
+    "arquivo": "src/lib/contrato-template.ts",
+    "sha256": "5d0a2c9987763d90bd22e34e3087715173c577bb54e774b3a4841c3e5f52db9e"
   }
 }

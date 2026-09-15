@@ -1,16 +1,25 @@
 /*
-  Entrada do painel. Portado da tela de login do estudio.html.
+  Entrada do painel. Portada da tela de login do estudio.html.
 
-  Duas coisas herdadas de lá e mantidas de propósito: a mensagem de erro é
-  sempre a mesma, sem dizer se o e-mail existe, e a recuperação responde igual
-  tenha ou não conta naquele e-mail.
+  Herdado de lá e mantido de propósito:
+  - A mensagem de erro é sempre a mesma, sem dizer se o e-mail existe, e a
+    recuperação responde igual tenha ou não conta naquele e-mail.
+  - "Esqueci a senha" fica na LINHA DO RÓTULO da senha, não embaixo do botão:
+    ali competiria com o "Entrar".
+  - No celular a tela é ESTÁTICA (fixa, sem rolagem e sem gesto de pan): é um
+    cartão só, e deixar rolar dava aquela borracha de página web no que devia
+    parecer app. Os campos vão a 16px no celular porque abaixo disso o iOS dá
+    zoom ao focar e não desfaz sozinho.
 */
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { Botao, Campo, Estado } from "@/components/ui";
+
+const HOVER = "[@media(hover:hover)]:";
 
 export default function Entrar() {
   const router = useRouter();
@@ -53,28 +62,47 @@ export default function Entrar() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-soft p-5">
-      <div className="w-full max-w-[380px] rounded-[18px] bg-paper p-8 shadow-card">
-        <h1 className="m-0 mb-1 text-[22px] font-semibold text-ink">Estúdio</h1>
-        <p className="m-0 mb-6 text-sm text-ink-soft">Entre pra ver seus clientes e contratos.</p>
+    <main className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden bg-soft p-5 md:static md:min-h-dvh md:touch-auto md:overflow-auto">
+      <div className="w-full max-w-[400px] rounded-[20px] bg-paper px-7 py-9 shadow-alta sm:px-9">
+        <img
+          src="/img/logo-principal-petroleo.png"
+          alt="Jordan Santos"
+          className="mx-auto block w-[154px]"
+        />
+        <h1 className="m-0 mb-7 mt-5 text-center text-[22px] font-medium tracking-[-.01em] text-ink">
+          Bem-vindo de volta 👋
+        </h1>
 
         <form onSubmit={enviar}>
           <Campo
             id="email" rotulo="E-mail" type="email" autoComplete="email" required
+            placeholder="voce@exemplo.com"
+            className="text-base md:text-sm"
             value={email} onChange={(e) => setEmail(e.target.value)}
           />
 
           <div className="relative">
             <Campo
               id="senha" rotulo="Senha" type={vendo ? "text" : "password"}
-              autoComplete="current-password" required className="pr-11"
+              autoComplete="current-password" required
+              placeholder="Sua senha"
+              className="pr-11 text-base md:text-sm"
               value={senha} onChange={(e) => setSenha(e.target.value)}
+              acao={
+                <button
+                  type="button"
+                  onClick={recuperar}
+                  className={`cursor-pointer bg-transparent p-0 text-[12.5px] font-medium text-ink-soft ${HOVER}hover:text-accent`}
+                >
+                  Esqueci a senha
+                </button>
+              }
             />
             <button
               type="button"
               onClick={() => setVendo((v) => !v)}
               aria-label={vendo ? "Ocultar senha" : "Mostrar senha"}
-              className="absolute right-2 top-[30px] inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-ink-soft [@media(hover:hover)]:hover:bg-soft"
+              className={`absolute right-2 top-[30px] inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-ink-soft ${HOVER}hover:bg-line`}
             >
               {vendo ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -86,17 +114,9 @@ export default function Entrar() {
           </Botao>
         </form>
 
-        <div className="mt-3">
+        <div className="mt-3 text-center">
           <Estado texto={msg.texto} tom={msg.tom} />
         </div>
-
-        <button
-          type="button"
-          onClick={recuperar}
-          className="mt-2 cursor-pointer bg-transparent p-0 text-[13px] text-ink-soft underline-offset-2 [@media(hover:hover)]:hover:text-accent [@media(hover:hover)]:hover:underline"
-        >
-          Esqueci minha senha
-        </button>
       </div>
     </main>
   );

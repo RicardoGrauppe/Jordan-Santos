@@ -51,11 +51,18 @@ const BASE_CAMPO =
   "outline-none transition-colors focus:bg-[#EEF0F3]";
 
 export function Campo({
-  rotulo, dica, className = "", id, ...props
-}: InputHTMLAttributes<HTMLInputElement> & { rotulo?: string; dica?: string }) {
+  rotulo, dica, acao, className = "", id, ...props
+}: InputHTMLAttributes<HTMLInputElement> & { rotulo?: string; dica?: string; acao?: ReactNode }) {
   return (
     <div className="mb-3.5">
-      {rotulo ? <label htmlFor={id} className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">{rotulo}</label> : null}
+      {/* `acao` vai na MESMA linha do rótulo (é onde mora o "Esqueci a senha"),
+         não embaixo do campo: ali competiria com o botão de entrar */}
+      {rotulo ? (
+        <div className="mb-1.5 flex items-center justify-between gap-3">
+          <label htmlFor={id} className="block text-[12.5px] font-medium text-ink-soft">{rotulo}</label>
+          {acao}
+        </div>
+      ) : null}
       <input id={id} className={BASE_CAMPO + " " + className} {...props} />
       {dica ? <span className="mt-1.5 block text-[11.5px] text-ink-soft/85">{dica}</span> : null}
     </div>

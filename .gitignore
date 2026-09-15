@@ -46,3 +46,7 @@ supabase/.branches/
 
 # o exemplo (sem segredo) É versionado; o .env* acima pegaria ele junto
 !.env.local.example
+
+# gerador de template do contrato: artefatos locais
+tools/contrato-template/.tmp/
+tools/contrato-template/.gerador-compilado.html
