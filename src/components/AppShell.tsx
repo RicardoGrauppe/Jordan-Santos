@@ -28,7 +28,7 @@ import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Pa
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
-import { useCabecalhoMobile } from "@/components/cabecalho-mobile";
+import { acionarAcaoMobile, useCabecalhoMobile } from "@/components/cabecalho-mobile";
 import { registrarNavegacao, useVoltar } from "@/lib/voltar";
 
 const CHAVE_RECOLHIDO = "menu-recolhido";
@@ -483,9 +483,25 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   <ArrowLeft size={18} />
                 </Link>
               ) : null}
-              <h1 className="m-0 truncate text-[22px] font-bold tracking-tight text-ink">
+              <h1 className="m-0 flex-1 truncate text-[22px] font-bold tracking-tight text-ink">
                 {cabecalhoCelular.titulo}
               </h1>
+              {/* Canto de ação da tela, no mesmo formato do "marcar todas como
+                  lidas" das Notificações: redondo, só ícone, fundo soft. No
+                  celular o botão escrito por extenso da página come a linha
+                  inteira, e ele é sempre a MESMA ação daquela tela — cabe no
+                  canto que já existe. */}
+              {cabecalhoCelular.acao ? (
+                <button
+                  type="button"
+                  aria-label={cabecalhoCelular.acao.rotulo}
+                  title={cabecalhoCelular.acao.rotulo}
+                  onClick={acionarAcaoMobile}
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-soft text-accent active:bg-line active:text-ink"
+                >
+                  <cabecalhoCelular.acao.Icone size={20} />
+                </button>
+              ) : null}
             </div>
           ) : (
             <Link

@@ -24,9 +24,21 @@
   da lateral recolhida, no AppShell.
 */
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore, type ComponentType } from "react";
 
-export type CabecalhoMobile = { titulo: string; voltar: string | null };
+/** Botão de ação no canto direito do cabeçalho, no formato do "marcar todas
+ *  como lidas" da tela de Notificações: só ícone, redondo, fundo soft. */
+export type AcaoMobile = {
+  rotulo: string;
+  Icone: ComponentType<{ size?: number }>;
+  aoAcionar: () => void;
+};
+
+export type CabecalhoMobile = {
+  titulo: string;
+  voltar: string | null;
+  acao: Omit<AcaoMobile, "aoAcionar"> | null;
+};
 
 /* `voltar: null` = destino da barra de baixo, que não tem pra onde voltar.
    A ficha do cliente volta pra Home, e não pra lista, porque é o que o botão
@@ -48,43 +60,78 @@ const TELAS: { rota: RegExp; titulo: string; voltar: string | null }[] = [
   { rota: /^\/painel\/tempo\/?$/, titulo: "Previsão do tempo", voltar: "/painel" },
 ];
 
-/* ---------- loja do título que só a página sabe ---------- */
+/* ---------- loja do que só a página sabe ---------- */
 
-let tituloDaPagina: string | null = null;
+type DaPagina = { titulo: string | null; acao: Omit<AcaoMobile, "aoAcionar"> | null };
+
+let daPagina: DaPagina = { titulo: null, acao: null };
+/* O que o botão FAZ fica fora da loja, numa caixa à parte: ele é uma função
+   nova a cada render da página, e guardá-lo na loja faria notificar todo
+   mundo toda vez — a moldura re-renderiza, a página re-renderiza, e a gente
+   entra em laço. A loja só guarda o que se DESENHA (rótulo e ícone), que é
+   estável. */
+let executarAcao: (() => void) | null = null;
+
 const ouvintes = new Set<() => void>();
 
 function assinar(cb: () => void) {
   ouvintes.add(cb);
   return () => { ouvintes.delete(cb); };
 }
-function ler() { return tituloDaPagina; }
+function ler() { return daPagina; }
 
-function definir(titulo: string | null) {
-  if (titulo === tituloDaPagina) return;
-  tituloDaPagina = titulo;
+const VAZIO: DaPagina = { titulo: null, acao: null };
+
+function definir(novo: DaPagina) {
+  const igual =
+    novo.titulo === daPagina.titulo &&
+    novo.acao?.rotulo === daPagina.acao?.rotulo &&
+    novo.acao?.Icone === daPagina.acao?.Icone;
+  if (igual) return;
+  daPagina = novo;
   ouvintes.forEach((cb) => cb());
 }
 
+/** Dispara o que a página registrou; a moldura chama sem saber o que é. */
+export function acionarAcaoMobile() {
+  executarAcao?.();
+}
+
 /**
- * Põe no cabeçalho do celular um título que só a página conhece (o nome do
- * casal, por exemplo). Não desenha nada: enquanto não houver texto, vale o do
- * mapa. Ao sair da tela o título é devolvido, senão ele vazaria pra próxima.
+ * Põe no cabeçalho do celular o que só a página conhece: um título (o nome do
+ * casal, por exemplo) e/ou um botão de ação no canto direito. Não desenha
+ * nada. Enquanto não houver título, vale o do mapa; ao sair da tela, os dois
+ * são devolvidos, senão vazariam pra próxima.
  */
-export function TituloMobile({ titulo }: { titulo?: string | null }) {
+export function TituloMobile({ titulo, acao }: { titulo?: string | null; acao?: AcaoMobile }) {
+  const aoAcionar = acao?.aoAcionar;
+  /* sem lista de dependências de propósito: o callback é trocado a cada
+     render e isto NÃO notifica ninguém */
   useEffect(() => {
-    definir(titulo?.trim() || null);
-    return () => definir(null);
-  }, [titulo]);
+    executarAcao = aoAcionar ?? null;
+  });
+
+  const rotulo = acao?.rotulo;
+  const Icone = acao?.Icone;
+  useEffect(() => {
+    definir({
+      titulo: titulo?.trim() || null,
+      acao: rotulo && Icone ? { rotulo, Icone } : null,
+    });
+    return () => definir(VAZIO);
+  }, [titulo, rotulo, Icone]);
+
   return null;
 }
 
 /** O que o cabeçalho do celular deve mostrar nesta rota, ou null pra manter a logo. */
 export function useCabecalhoMobile(caminho: string): CabecalhoMobile | null {
-  const daPagina = useSyncExternalStore(assinar, ler, () => null);
+  const pagina = useSyncExternalStore(assinar, ler, () => VAZIO);
   const tela = TELAS.find((t) => t.rota.test(caminho));
   if (!tela) return null;
   return {
-    titulo: daPagina || tela.titulo,
+    titulo: pagina.titulo || tela.titulo,
     voltar: tela.voltar,
+    acao: pagina.acao,
   };
 }
