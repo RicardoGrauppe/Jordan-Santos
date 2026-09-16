@@ -127,6 +127,27 @@ hairline interna.
   "Cancelar" dos modais.
 - `perigo`: vermelho sólido com texto branco. Excluir, cancelar contrato.
 
+### Moldura: lateral inteira, cabeçalho só sobre o conteúdo
+
+**Divergência consciente do estúdio original** (16/09/2026). Lá o cabeçalho
+atravessava a tela e a lateral começava abaixo dele. Aqui a lateral vai do topo
+ao rodapé, leva a marca junto, e o cabeçalho cobre só a coluna do conteúdo.
+
+Três razões, e a primeira é a que pesa:
+
+1. **Não existe mais alinhamento pra manter.** Com a marca no cabeçalho, a
+   coluna dele tinha que ser sincronizada à mão com a largura do menu, e
+   qualquer mudança de um lado desalinhava o outro. Dentro da lateral, a marca
+   está no mesmo bloco que o menu por construção.
+2. O bloco escuro vira uma coluna contínua, em vez de ser cortado por uma faixa
+   branca em cima.
+3. A busca centraliza no conteúdo, que é onde ela procura.
+
+No celular não existe lateral, então lá a marca continua no cabeçalho. Na
+lateral a logo é a versão **offwhite** (o fundo é escuro) e a faixa dela tem a
+mesma altura do cabeçalho, pra as duas nascerem na mesma linha. Recolhida, entra
+o símbolo quadrado: a assinatura em 62px fica ilegível.
+
 ### Avatar e sino do cabeçalho
 
 Compartilham a MESMA animação, pra combinarem: no hover e com o menu aberto,
