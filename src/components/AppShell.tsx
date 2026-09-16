@@ -87,6 +87,52 @@ function gravarRecolhido(v: boolean) {
   ouvintesRecolhido.forEach((cb) => cb());
 }
 
+/*
+  Envelope da página que desliza na troca de rota.
+
+  O estado "estou deslizando" mora AQUI, e não no AppShell, porque este
+  componente é remontado a cada rota (ele leva `key={caminho}`): assim ele volta
+  a `true` sozinho em QUALQUER navegação, inclusive as que não passam pela barra
+  de baixo, como clicar num casal da lista ou no card de pendências. No AppShell
+  ele precisaria ser religado a cada troca, e religar estado numa mudança de
+  rota só daria certo dentro de um efeito, que é o que a regra de lint do
+  projeto proíbe.
+
+  Enquanto ele vale, a regra `[data-deslizando] .animate-entra` do globals.css
+  segura a entrada escalonada dos blocos: as duas juntas eram sete animações na
+  mesma navegação, e a tela entrava e depois ficava se remexendo.
+*/
+function PaginaQueDesliza({ lado, children }: { lado: "dir" | "esq"; children: ReactNode }) {
+  const [deslizando, setDeslizando] = useState(true);
+
+  /* Rede de segurança, e não é teórica: o deslize NÃO roda no computador
+     (`md:animate-none`) nem pra quem pediu menos movimento. Sem animação não
+     existe `animationend`, então sem isto o atributo ficaria pra sempre e a
+     entrada escalonada dos blocos morreria justamente onde o deslize não
+     acontece. O tempo é o da animação com folga. */
+  useEffect(() => {
+    const t = setTimeout(() => setDeslizando(false), 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div
+      data-deslizando={deslizando ? "" : undefined}
+      onAnimationEnd={(ev) => {
+        /* só o deslize desta caixa encerra o estado: as animações dos filhos
+           sobem por bubbling e encerrariam antes da hora */
+        if (ev.target === ev.currentTarget) setDeslizando(false);
+      }}
+      className={
+        "overflow-x-clip motion-reduce:animate-none md:animate-none " +
+        (lado === "esq" ? "animate-desliza-esq" : "animate-desliza-dir")
+      }
+    >
+      {children}
+    </div>
+  );
+}
+
 /** contador vermelho do sino, nos dois lugares em que ele aparece */
 function Contador({ quantos, className = "" }: { quantos: number; className?: string }) {
   if (!quantos) return null;
@@ -455,15 +501,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             {/* a página nova entra pelo lado que a barra pede; no computador
                 não desliza, porque lá a troca não vem de um gesto. `key` no
                 caminho é o que faz a animação tocar de novo a cada rota. */}
-            <div
-              key={caminho}
-              className={
-                "overflow-x-clip motion-reduce:animate-none md:animate-none " +
-                (ladoDaRota === "esq" ? "animate-desliza-esq" : "animate-desliza-dir")
-              }
-            >
-              {children}
-            </div>
+            <PaginaQueDesliza key={caminho} lado={ladoDaRota}>{children}</PaginaQueDesliza>
           </main>
         </div>
       </div>

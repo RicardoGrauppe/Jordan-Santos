@@ -53,18 +53,21 @@
   /* Troca de tela no celular: a página nova entra pelo lado que o dedo pede,
      conforme a ordem dos ícones na barra de baixo (ver POSICAO_NAV no
      AppShell). Valores do estúdio original: 34px de deslocamento, opacidade
-     saindo de .3. É deslocamento curto de propósito: a tela inteira vindo de
-     fora parece transição de slide, não navegação. O tempo subiu de 300 pra
-     340ms junto com a curva nova: com quase todo o movimento no começo, sobra
-     mais tempo pro freio sem a troca parecer lenta. */
-  --animate-desliza-dir: desliza-de-direita 0.34s var(--ease-desliza);
+     saindo de .3. Deslocamento curto de propósito: a tela inteira vindo de fora
+     parece transição de slide, não navegação.
+
+     Os números saíram de 34px/300ms (herdados) pra 48px/420ms com a curva nova.
+     Mais caminho e mais tempo porque, com quase todo o movimento concentrado no
+     começo, o que se percebe é a partida: encurtar deixava a troca abrupta em
+     vez de rápida. */
+  --animate-desliza-dir: desliza-de-direita 0.42s var(--ease-desliza);
   @keyframes desliza-de-direita {
-    from { transform: translateX(34px); opacity: .3; }
+    from { transform: translateX(48px); opacity: .3; }
     to { transform: translateX(0); opacity: 1; }
   }
-  --animate-desliza-esq: desliza-de-esquerda 0.34s var(--ease-desliza);
+  --animate-desliza-esq: desliza-de-esquerda 0.42s var(--ease-desliza);
   @keyframes desliza-de-esquerda {
-    from { transform: translateX(-34px); opacity: .3; }
+    from { transform: translateX(-48px); opacity: .3; }
     to { transform: translateX(0); opacity: 1; }
   }
   /* entrada dos blocos depois do skeleton: fade + slide-up, escalonado por
@@ -140,6 +143,14 @@ html, body {
 @media (max-width: 820px) {
   input, select, textarea { font-size: 16px !important; }
 }
+
+/* Enquanto a página DESLIZA, os blocos não fazem a entrada escalonada deles.
+   Os dois juntos eram sete animações na mesma navegação: o deslize acabava em
+   420ms e os blocos seguiam chegando por mais 700, então a tela entrava e
+   depois ficava se remexendo. A entrada escalonada continua valendo pra onde
+   ela foi feita: a troca do esqueleto pelo conteúdo, na primeira carga e no
+   puxar pra atualizar, quando não há deslize nenhum acontecendo. */
+[data-deslizando] .animate-entra { animation: none; }
 
 /* ---------- editor de contrato (Tiptap) ----------
    Vive aqui e não no componente porque o reset global zera margem dentro do
