@@ -24,7 +24,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Bell, ChevronRight, FileText, House, LogOut, Menu, PanelLeft, Search, Settings, Users } from "lucide-react";
+import { Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, PanelLeft, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
@@ -46,6 +46,19 @@ const RAIO_MARCA = "rounded-md";
    pontos viram um contorno visível em volta dela. Como isto é cor de ARTE, não
    de interface, ela mora aqui junto do arquivo de onde saiu, e não no tema. */
 const FUNDO_MARCA = "#003344";
+
+/* Pacote contratado, escrito no cartão do menu da conta. Fixo enquanto a
+   plataforma é só do Jordan (ver "Nome e marca" nas dívidas do CLAUDE.md);
+   quando houver mais de um estúdio, isto vem do banco junto do nome. */
+const PACOTE = "Legacy Package";
+/* Dourado do cartão premium, amostrado do estúdio original. É cor de ARTE (só
+   este cartão usa), então mora aqui e não no tema. */
+const OURO = "#F2D9A0";
+
+/* Caixa dos itens do menu da conta no computador. Os dois links e o Sair têm a
+   mesma medida; o Sair só troca as cores. */
+const itemMenuConta =
+  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline hover:bg-soft";
 
 const ITENS = [
   { href: "/painel", rotulo: "Home", Icone: House },
@@ -478,11 +491,19 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                 />
               </button>
               {menuAberto ? (
-                <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[200px] rounded-xl bg-paper p-1.5 shadow-alta">
-                  <div className="px-3 pb-2 pt-1.5 text-[12px] text-ink-soft">{nome ?? "Conta"}</div>
+                <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[288px] rounded-xl bg-paper p-1.5 shadow-alta">
+                  {/* o cartão JÁ diz de quem é a conta: repetir o nome numa
+                      linha cinza acima dele só empurrava o menu pra baixo */}
+                  <CartaoPlano nome={nome} compacto />
+                  <Link href="/painel/configuracoes/contrato" onClick={() => setMenuAberto(false)}
+                    className={itemMenuConta}>
+                    <FileText size={15} className="opacity-85" /> Contrato e assinatura
+                    <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
+                  </Link>
                   <Link href="/painel/configuracoes" onClick={() => setMenuAberto(false)}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline hover:bg-soft`}>
+                    className={itemMenuConta}>
                     <Settings size={15} className="opacity-85" /> Configurações
+                    <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
                   </Link>
                   <button type="button" onClick={sair}
                     className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] text-erro hover:bg-erro-tint`}>
@@ -579,11 +600,80 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
   );
 }
 
+/* ---------- cartão do pacote (menu da conta) ----------
+   Portado do `.conta-plano` do estúdio original: é a única peça "de coleção"
+   do app, e o que distingue o menu da conta de uma lista de links qualquer.
+   Fundo preto, fio e brilho dourados, coroa num disco no canto da foto e o
+   pacote num pill dourado.
+
+   Duas medidas do MESMO cartão, porque ele serve o dropdown do computador e a
+   tela cheia do celular. No compacto o nome perde o recuo e o pill fecha o
+   espaçamento entre letras: com .42em de tracking num menu de 288px o
+   "Legacy Package" quebrava em duas linhas. */
+function CartaoPlano({ nome, compacto = false }: { nome?: string; compacto?: boolean }) {
+  return (
+    <div
+      className={
+        "relative isolate flex items-center overflow-hidden text-white " +
+        "bg-[linear-gradient(150deg,#161616,#0b0b0b_55%,#000)] " +
+        "border border-[rgba(242,217,160,.5)] " +
+        "shadow-[0_6px_16px_rgba(0,0,0,.18),inset_0_1px_0_rgba(242,217,160,.14)] " +
+        (compacto
+          ? "mx-0.5 mb-2 mt-0.5 gap-[13px] rounded-[18px] px-4 py-3.5"
+          : "mb-5 gap-[15px] rounded-[26px] p-[18px]")
+      }
+    >
+      {/* brilho dourado difuso no canto superior direito */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-[40%] -right-[15%] h-[180px] w-[180px] rounded-full bg-[radial-gradient(circle,rgba(242,217,160,.16),transparent_70%)]"
+      />
+      <span className="relative inline-flex shrink-0">
+        <img
+          src={FOTO_PERFIL}
+          alt=""
+          className={
+            "rounded-full object-cover shadow-[0_0_0_2px_rgba(242,217,160,.55),0_0_0_4px_rgba(255,255,255,.08)] " +
+            (compacto ? "h-[46px] w-[46px]" : "h-16 w-16")
+          }
+        />
+        <span
+          aria-hidden
+          className={
+            "absolute flex items-center justify-center rounded-full " +
+            "bg-[radial-gradient(circle_at_35%_30%,#2a2a2a,#050505_75%)] " +
+            "shadow-[0_3px_8px_rgba(0,0,0,.45),0_0_0_1.5px_rgba(242,217,160,.6),inset_0_1px_0_rgba(255,255,255,.12)] " +
+            (compacto ? "-right-[5px] -bottom-[5px] h-[22px] w-[22px]" : "-right-1.5 -bottom-1.5 h-7 w-7")
+          }
+        >
+          <Crown size={compacto ? 12 : 15} strokeWidth={2} color={OURO} />
+        </span>
+      </span>
+      <div className="relative min-w-0">
+        <div className={"truncate font-semibold text-white " + (compacto ? "text-[16px]" : "pl-[11px] text-[26px]")}>
+          {nome ?? "Conta"}
+        </div>
+        <div
+          className={
+            "inline-flex items-center rounded-full font-bold uppercase text-[#3a2b06] " +
+            "bg-[linear-gradient(135deg,#f6e3ad,#e7c46a_45%,#d9ad4e)] " +
+            "shadow-[0_2px_8px_rgba(217,173,78,.35),inset_0_1px_0_rgba(255,255,255,.5)] " +
+            (compacto
+              ? "mt-[5px] whitespace-nowrap px-2.5 py-[3px] text-[10px] tracking-[.1em]"
+              : "mt-1.5 ml-2.5 px-[11px] py-1 text-[11px] tracking-[.42em]")
+          }
+        >
+          {PACOTE}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- menu da conta em tela cheia (celular) ----------
    Portado de `#conta-mobile`. No computador o mesmo conteúdo é o dropdown do
    avatar; aqui ele ganha a tela toda porque é onde cabe o toque.
-   O cartão escuro do topo é o do original, sem o nome do plano: por enquanto
-   este produto não tem planos, e um selo inventado seria mentira na tela. */
+   O cartão escuro do topo é o `CartaoPlano`, o mesmo que o dropdown usa. */
 function TelaContaMobile({
   nome, aberta, daEsquerda, aoFechar, aoSair,
 }: { nome?: string; aberta: boolean; daEsquerda?: boolean; aoFechar: () => void; aoSair: () => void }) {
@@ -597,15 +687,7 @@ function TelaContaMobile({
       </TopoTelaMobile>
 
       <CorpoTelaMobile>
-        <div className="mb-5 flex items-center gap-4 rounded-[26px] bg-[linear-gradient(150deg,#161616,#0b0b0b_55%,#000)] p-[18px] text-white shadow-[0_6px_16px_rgba(0,0,0,.18)]">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-[22px] font-semibold text-white shadow-[0_0_0_2px_rgba(255,255,255,.14)]">
-            {(nome ?? "E").slice(0, 1).toUpperCase()}
-          </span>
-          <div className="min-w-0">
-            <div className="truncate text-[24px] font-semibold text-white">{nome ?? "Conta"}</div>
-            <div className="mt-0.5 text-[12px] text-white/60">Seu estúdio</div>
-          </div>
-        </div>
+        <CartaoPlano nome={nome} />
 
         <Link href="/painel/configuracoes/contrato" tabIndex={aba} onClick={aoFechar} className={item}>
           <FileText size={19} className="shrink-0 text-ink-soft" />
