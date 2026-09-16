@@ -164,6 +164,18 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
   const itemNav = "flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 text-[11px] no-underline";
 
+  /* Sem navegação nenhuma, a moldura vira uma casca vazia: devolve a página
+     crua, que é o que a revisão do contrato era no estúdio original. */
+  if (semNavegacao) {
+    return (
+      <div className="min-h-dvh bg-soft">
+        {/* mesmo respiro do <main> das outras telas: sem ele o título encostava
+            no topo da janela */}
+        <main className="min-w-0 px-5 pb-10 pt-6 md:px-8">{children}</main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-dvh bg-soft">
       <header className="sticky top-0 z-30 grid h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-paper px-4 shadow-card">

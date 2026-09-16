@@ -1025,7 +1025,7 @@ export default function PaginaRevisarContrato() {
           className={
             "fixed inset-y-0 right-0 z-50 w-[min(340px,88vw)] overflow-y-auto bg-paper pt-[var(--sat)] shadow-alta transition-transform duration-200 " +
             (sidebarAberta ? "translate-x-0" : "translate-x-full") +
-            " xl:sticky xl:inset-auto xl:top-20 xl:z-auto xl:max-h-[calc(100dvh-6.5rem)] xl:w-auto xl:translate-x-0 xl:rounded-2xl xl:pt-0 xl:shadow-card"
+            " xl:sticky xl:inset-auto xl:top-6 xl:z-auto xl:max-h-[calc(100dvh-3rem)] xl:w-auto xl:translate-x-0 xl:rounded-2xl xl:pt-0 xl:shadow-card"
           }
           aria-label="Assinantes e histórico"
         >
