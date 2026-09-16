@@ -159,11 +159,6 @@ export function BuscaTopo() {
 
 /* ---------- celular: tela cheia, resultado a cada tecla ---------- */
 
-/* Quanto o foco espera depois de abrir a busca. A folha leva 340ms pra subir
-   (--ease-desliza, no TelaMobile); os 40ms a mais deixam ela assentar antes do
-   teclado entrar em cena. */
-const ESPERA_TECLADO = 380;
-
 /* Sem `daEsquerda`: a busca não entra pelo lado, entra de baixo, então a
    posição do ícone na barra não diz nada sobre ela. */
 export function TelaBuscaMobile({ aberta, aoFechar }: { aberta: boolean; aoFechar: () => void }) {
@@ -172,21 +167,21 @@ export function TelaBuscaMobile({ aberta, aoFechar }: { aberta: boolean; aoFecha
   const campo = useRef<HTMLInputElement>(null);
   const clientes = useClientesDaBusca(aberta);
 
-  /* O foco espera a folha terminar de subir: com os dois ao mesmo tempo, o
-     teclado sobe por cima de uma tela que ainda está andando e as duas
-     animações brigam. `preventScroll` porque, sem ele, o navegador rola pra
-     trazer o campo à vista.
+  /* O foco é dado JÁ, sem esperar, e isso é de propósito: no Safari do iOS o
+     teclado só sobe quando o `focus()` acontece dentro do gesto que abriu a
+     tela. Agendado num temporizador, ele foca o campo e o teclado não vem —
+     medido e conferido na documentação do comportamento do iOS. Não existe
+     API de "abrir o teclado agora" no Safari, então um teclado ATRASADO e
+     automático não é possível.
 
-     ATENÇÃO, e isto vale pro iPhone: o Safari do iOS só abre o teclado quando
-     o `focus()` acontece DENTRO do gesto que o usuário fez. Chamado de um
-     temporizador, como aqui, ele foca o campo mas NÃO levanta o teclado — quem
-     abre é o primeiro toque no campo. No Android e no computador o teclado
-     sobe sozinho depois da espera. Baixar ESPERA_TECLADO pra 0 devolve o
-     comportamento antigo (teclado imediato em toda plataforma). */
+     O que dá pra ter é a ORDEM: a folha sobe em 200ms (ver `duracao` no
+     TelaMobile) e o teclado do iPhone leva uns 250ms, então ela chega primeiro
+     e ele entra depois, sem os dois andando juntos.
+
+     `preventScroll` porque, sem ele, o navegador rola pra trazer o campo à
+     vista enquanto a folha ainda está subindo. */
   useEffect(() => {
-    if (!aberta) return;
-    const t = setTimeout(() => campo.current?.focus({ preventScroll: true }), ESPERA_TECLADO);
-    return () => clearTimeout(t);
+    if (aberta) campo.current?.focus({ preventScroll: true });
   }, [aberta]);
 
   function fechar() {

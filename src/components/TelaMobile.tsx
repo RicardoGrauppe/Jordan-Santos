@@ -38,6 +38,12 @@ export function TelaMobile({
     ? "translate-y-full"
     : daEsquerda ? "-translate-x-full" : "translate-x-full";
 
+  /* A folha que sobe CORRE CONTRA O TECLADO, então ela anda mais rápido: o
+     teclado do iPhone leva uns 250ms e começa junto com o toque, e o que a
+     gente quer é a folha já parada quando ele chega. As telas laterais não
+     disputam com nada e ficam nos 340ms de sempre. */
+  const duracao = de === "baixo" ? ".2s" : ".34s";
+
   return (
     <div
       role="dialog"
@@ -46,9 +52,14 @@ export function TelaMobile({
       className={
         "fixed inset-0 z-60 flex flex-col bg-paper pt-[var(--sat)] md:hidden " +
         (aberta
-          ? "visible translate-x-0 translate-y-0 [transition:translate_.34s_var(--ease-desliza)]"
-          : "invisible [transition:translate_.34s_var(--ease-desliza),visibility_0s_linear_.34s] " + repouso)
+          ? "visible translate-x-0 translate-y-0"
+          : "invisible " + repouso)
       }
+      style={{
+        transition: aberta
+          ? `translate ${duracao} var(--ease-desliza)`
+          : `translate ${duracao} var(--ease-desliza), visibility 0s linear ${duracao}`,
+      }}
     >
       {children}
     </div>
