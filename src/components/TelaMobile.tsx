@@ -3,9 +3,11 @@
   de `.tela-mobile` / `abrirTelaMobile` do estudio.html do Jordan.
 
   Ela entra deslizando pelo lado que o dedo pede (ver `daEsquerda`) e sai pelo
-  mesmo caminho. O truque das
+  mesmo caminho, na mesma curva da troca de rota (`--ease-desliza`): dispara e
+  assenta. Antes era `ease` puro, que é lento nas DUAS pontas e fazia a tela
+  parecer pesada de arrastar. O truque das
   classes: fechada, a visibilidade só muda DEPOIS dos 260ms da transição
-  (`visibility 0s linear .26s`), senão a tela some no ato e o deslize de saída
+  (`visibility 0s linear .34s`), senão a tela some no ato e o deslize de saída
   não aparece. Fechada também sai da ordem de tabulação, porque
   `visibility:hidden` tira o conteúdo do alcance do teclado.
 
@@ -28,8 +30,8 @@ export function TelaMobile({
       className={
         "fixed inset-0 z-60 flex flex-col bg-paper pt-[var(--sat)] md:hidden " +
         (aberta
-          ? "visible translate-x-0 [transition:transform_.26s_ease]"
-          : "invisible [transition:transform_.26s_ease,visibility_0s_linear_.26s] " +
+          ? "visible translate-x-0 [transition:transform_.34s_var(--ease-desliza)]"
+          : "invisible [transition:transform_.34s_var(--ease-desliza),visibility_0s_linear_.34s] " +
             /* de que lado ela espera: quem vem de um ícone À ESQUERDA do atual
                entra pela esquerda, e sai por lá também */
             (daEsquerda ? "-translate-x-full" : "translate-x-full"))

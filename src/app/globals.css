@@ -43,17 +43,26 @@
     0% { background-position: 180% 0; }
     100% { background-position: -80% 0; }
   }
+  /* Curva da navegação do celular: sai DISPARADO e assenta de leve
+     (easeOutExpo). Quase todo o movimento acontece no primeiro terço, e o
+     resto é o freio, que é o que dá a sensação de seda no fim.
+     Mora num token só porque vale pra troca de rota E pras telas cheias: se
+     uma tivesse curva diferente da outra, a navegação teria dois pesos. */
+  --ease-desliza: cubic-bezier(0.16, 1, 0.3, 1);
+
   /* Troca de tela no celular: a página nova entra pelo lado que o dedo pede,
      conforme a ordem dos ícones na barra de baixo (ver POSICAO_NAV no
      AppShell). Valores do estúdio original: 34px de deslocamento, opacidade
-     saindo de .3, 300ms. É deslocamento curto de propósito: a tela inteira
-     vindo de fora parece transição de slide, não navegação. */
-  --animate-desliza-dir: desliza-de-direita 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+     saindo de .3. É deslocamento curto de propósito: a tela inteira vindo de
+     fora parece transição de slide, não navegação. O tempo subiu de 300 pra
+     340ms junto com a curva nova: com quase todo o movimento no começo, sobra
+     mais tempo pro freio sem a troca parecer lenta. */
+  --animate-desliza-dir: desliza-de-direita 0.34s var(--ease-desliza);
   @keyframes desliza-de-direita {
     from { transform: translateX(34px); opacity: .3; }
     to { transform: translateX(0); opacity: 1; }
   }
-  --animate-desliza-esq: desliza-de-esquerda 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+  --animate-desliza-esq: desliza-de-esquerda 0.34s var(--ease-desliza);
   @keyframes desliza-de-esquerda {
     from { transform: translateX(-34px); opacity: .3; }
     to { transform: translateX(0); opacity: 1; }
