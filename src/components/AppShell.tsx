@@ -623,7 +623,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
       {/* telas cheias do celular. Ficam sempre montadas: é o que deixa a entrada
           e a saída deslizarem, em vez de piscarem. */}
       <TelaAvisosMobile avisos={avisos} aberta={tela === "avisos"} daEsquerda={!!ladoPorTela.avisos} aoFechar={() => setTela(null)} />
-      <TelaBuscaMobile aberta={tela === "busca"} daEsquerda={!!ladoPorTela.busca} aoFechar={() => setTela(null)} />
+      <TelaBuscaMobile aberta={tela === "busca"} aoFechar={() => setTela(null)} />
       <TelaContaMobile
         nome={nome}
         aberta={tela === "conta"}

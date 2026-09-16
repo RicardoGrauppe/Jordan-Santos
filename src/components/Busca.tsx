@@ -159,17 +159,34 @@ export function BuscaTopo() {
 
 /* ---------- celular: tela cheia, resultado a cada tecla ---------- */
 
-export function TelaBuscaMobile({ aberta, daEsquerda, aoFechar }: { aberta: boolean; daEsquerda?: boolean; aoFechar: () => void }) {
+/* Quanto o foco espera depois de abrir a busca. A folha leva 340ms pra subir
+   (--ease-desliza, no TelaMobile); os 40ms a mais deixam ela assentar antes do
+   teclado entrar em cena. */
+const ESPERA_TECLADO = 380;
+
+/* Sem `daEsquerda`: a busca não entra pelo lado, entra de baixo, então a
+   posição do ícone na barra não diz nada sobre ela. */
+export function TelaBuscaMobile({ aberta, aoFechar }: { aberta: boolean; aoFechar: () => void }) {
   const router = useRouter();
   const [termo, setTermo] = useState("");
   const campo = useRef<HTMLInputElement>(null);
   const clientes = useClientesDaBusca(aberta);
 
-  /* abriu a tela, o teclado sobe junto. preventScroll porque, sem ele, o
-     browser rola pra trazer o campo à vista no instante em que a tela ainda
-     está deslizando fora do lugar. */
+  /* O foco espera a folha terminar de subir: com os dois ao mesmo tempo, o
+     teclado sobe por cima de uma tela que ainda está andando e as duas
+     animações brigam. `preventScroll` porque, sem ele, o navegador rola pra
+     trazer o campo à vista.
+
+     ATENÇÃO, e isto vale pro iPhone: o Safari do iOS só abre o teclado quando
+     o `focus()` acontece DENTRO do gesto que o usuário fez. Chamado de um
+     temporizador, como aqui, ele foca o campo mas NÃO levanta o teclado — quem
+     abre é o primeiro toque no campo. No Android e no computador o teclado
+     sobe sozinho depois da espera. Baixar ESPERA_TECLADO pra 0 devolve o
+     comportamento antigo (teclado imediato em toda plataforma). */
   useEffect(() => {
-    if (aberta) campo.current?.focus({ preventScroll: true });
+    if (!aberta) return;
+    const t = setTimeout(() => campo.current?.focus({ preventScroll: true }), ESPERA_TECLADO);
+    return () => clearTimeout(t);
   }, [aberta]);
 
   function fechar() {
@@ -179,7 +196,7 @@ export function TelaBuscaMobile({ aberta, daEsquerda, aoFechar }: { aberta: bool
   }
 
   return (
-    <TelaMobile aberta={aberta} daEsquerda={daEsquerda} rotulo="Buscar casal">
+    <TelaMobile aberta={aberta} de="baixo" rotulo="Buscar casal">
       <TopoTelaMobile>
         <label className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full bg-soft px-4 py-2.5">
           <Search size={17} className="shrink-0 text-ink-soft" />

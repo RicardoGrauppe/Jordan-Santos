@@ -2,9 +2,14 @@
   Moldura das telas cheias do celular (avisos, busca e menu da conta). Portada
   de `.tela-mobile` / `abrirTelaMobile` do estudio.html do Jordan.
 
-  Ela entra deslizando pelo lado que o dedo pede (ver `daEsquerda`) e sai pelo
-  mesmo caminho, na mesma curva da troca de rota (`--ease-desliza`): dispara e
-  assenta. Antes era `ease` puro, que é lento nas DUAS pontas e fazia a tela
+  Ela entra deslizando e sai pelo mesmo caminho, na mesma curva da troca de
+  rota (`--ease-desliza`): dispara e assenta.
+
+  Por onde ela entra depende de `de`. As telas que são DESTINO da barra de
+  baixo (avisos, menu) entram pelo lado que o dedo pede, na posição do ícone
+  (ver `daEsquerda`). A BUSCA entra de baixo pra cima, cobrindo o que estava na
+  tela: ela não é um lugar pra onde se vai, é uma folha que se puxa por cima do
+  que já estava aberto — e é também de onde o teclado vem. Antes era `ease` puro, que é lento nas DUAS pontas e fazia a tela
   parecer pesada de arrastar. O truque das
   classes: fechada, a visibilidade só muda DEPOIS dos 260ms da transição
   (`visibility 0s linear .34s`), senão a tela some no ato e o deslize de saída
@@ -20,8 +25,19 @@
 import type { ReactNode } from "react";
 
 export function TelaMobile({
-  aberta, rotulo, daEsquerda = false, children,
-}: { aberta: boolean; rotulo: string; daEsquerda?: boolean; children: ReactNode }) {
+  aberta, rotulo, daEsquerda = false, de = "lado", children,
+}: {
+  aberta: boolean;
+  rotulo: string;
+  daEsquerda?: boolean;
+  /** por onde ela entra: pelo lado (avisos, menu) ou de baixo (busca) */
+  de?: "lado" | "baixo";
+  children: ReactNode;
+}) {
+  const repouso = de === "baixo"
+    ? "translate-y-full"
+    : daEsquerda ? "-translate-x-full" : "translate-x-full";
+
   return (
     <div
       role="dialog"
@@ -30,11 +46,8 @@ export function TelaMobile({
       className={
         "fixed inset-0 z-60 flex flex-col bg-paper pt-[var(--sat)] md:hidden " +
         (aberta
-          ? "visible translate-x-0 [transition:transform_.34s_var(--ease-desliza)]"
-          : "invisible [transition:transform_.34s_var(--ease-desliza),visibility_0s_linear_.34s] " +
-            /* de que lado ela espera: quem vem de um ícone À ESQUERDA do atual
-               entra pela esquerda, e sai por lá também */
-            (daEsquerda ? "-translate-x-full" : "translate-x-full"))
+          ? "visible translate-x-0 translate-y-0 [transition:translate_.34s_var(--ease-desliza)]"
+          : "invisible [transition:translate_.34s_var(--ease-desliza),visibility_0s_linear_.34s] " + repouso)
       }
     >
       {children}
