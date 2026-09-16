@@ -101,33 +101,30 @@ export default function EditorModelo({ params }: { params: Promise<{ id: string 
     router.push("/painel/configuracoes/contrato");
   }
 
-  if (!modelo) return <p className="text-[13px] text-ink-soft">Abrindo…</p>;
+  if (!modelo) return <p className="px-5 pt-6 text-[13px] text-ink-soft">Abrindo…</p>;
 
   return (
-    <div className="-mx-5 md:-mx-8">
-      {/* header da página e barra do editor num bloco fixo só */}
-      {/* no celular esta barra É o cabeçalho (ver `topoProprioNoCelular` no
-          AppShell), então ela encosta no topo e segura o --sat */}
-      <div className="sticky top-0 z-10 bg-paper px-5 pt-[calc(0.25rem+var(--sat))] shadow-card md:top-14 md:px-8 md:pt-1">
-        <div className="flex items-start gap-2">
+    /* Página inteira, não um retângulo dentro do painel: aqui não há moldura
+       do app (ver `telaEditor` no AppShell), como no original, onde abrir o
+       editor escondia a lateral e tirava o limite de largura da página. */
+    <EditorContrato
+      conteudoInicial={modelo.conteudo_json}
+      aoMudar={aoMudar}
+      topo={
+        <div className="flex items-start gap-2 pt-2">
           <button type="button" onClick={voltar} aria-label="Voltar pros modelos"
-            className={`mt-2 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-soft hover:text-ink`}>
+            className={`mt-1 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-line hover:text-accent`}>
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0 flex-1">
             {/* o título É o campo: sem nome duplicado na mesma dobra */}
             <input type="text" value={nome} maxLength={80} aria-label="Nome do modelo"
               onChange={(e) => { setNome(e.target.value); nomeRef.current = e.target.value; agendar(); }}
-              className={`-ml-1.5 w-full max-w-[560px] rounded-lg bg-transparent px-1.5 py-0.5 text-[22px] font-bold text-ink outline-none hover:bg-soft focus:bg-soft`} />
-            <p className={"m-0 text-[12.5px] " + (estado.tom === "ok" ? "text-ok" : estado.tom === "erro" ? "text-erro" : "text-ink-soft")}>{estado.texto}</p>
+              className={`-ml-1.5 w-full max-w-[560px] rounded-lg bg-transparent px-1.5 py-0.5 text-[22px] font-bold text-ink outline-none hover:bg-soft focus:bg-soft md:text-[26px]`} />
+            <p className={"m-0 pl-1.5 text-[12.5px] " + (estado.tom === "ok" ? "text-ok" : estado.tom === "erro" ? "text-erro" : "text-ink-soft")}>{estado.texto}</p>
           </div>
         </div>
-        {/* a barra de formatação é renderizada pelo EditorContrato logo abaixo */}
-      </div>
-
-      <div className="px-5 pb-10 md:px-8">
-        <EditorContrato conteudoInicial={modelo.conteudo_json} aoMudar={aoMudar} />
-      </div>
-    </div>
+      }
+    />
   );
 }

@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
+import type { ReactNode } from "react";
 import {
   AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Italic, List, ListOrdered, PenTool, Plus, Table,
 } from "lucide-react";
@@ -31,9 +32,15 @@ export type EditorContratoProps = {
   conteudoInicial: JSONContent | null;
   /** chamado a cada mudança com o JSON e o HTML já serializado */
   aoMudar: (json: JSONContent, html: string) => void;
+  /** Faixa que entra ACIMA da barra de formatação, dentro do mesmo cabeçalho
+   *  grudado: é onde a página põe o voltar, o nome do arquivo e o estado do
+   *  salvamento. Fica aqui, e não na página, pra os dois serem um bloco só —
+   *  se a página desenhasse a sua faixa por fora, seriam dois cabeçalhos
+   *  empilhados de novo. */
+  topo?: ReactNode;
 };
 
-export function EditorContrato({ conteudoInicial, aoMudar }: EditorContratoProps) {
+export function EditorContrato({ conteudoInicial, aoMudar, topo }: EditorContratoProps) {
   const editor = useEditor({
     extensions: EXTENSOES,
     content: conteudoInicial ?? "<p></p>",
@@ -85,10 +92,18 @@ export function EditorContrato({ conteudoInicial, aoMudar }: EditorContratoProps
   const divisor = <span className="mx-1.5 h-5 w-px shrink-0 self-center bg-line" aria-hidden />;
 
   return (
-    <div className="editor-contrato">
-      {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
-          ao desktop, onde tudo cabe numa só */}
-      <div className="flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap">
+    <div className="editor-contrato flex min-h-dvh flex-col bg-paper">
+      {/* UM cabeçalho só: o nome do arquivo e a barra de formatação são faixas
+          do mesmo bloco, mesmo fundo e sem linha entre elas — foi o que o
+          original fez ao abrir o editor (`.editor-aberto .topo-estudio
+          {border-bottom:0}`), porque um fio no meio partia o cabeçalho ao
+          meio. A única separação é embaixo, entre o cabeçalho inteiro e o
+          documento. Grudado no topo: só o documento rola. */}
+      <div className="sticky top-0 z-10 shrink-0 bg-paper px-5 pt-[var(--sat)] shadow-card md:px-7">
+        {topo}
+        {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
+            ao desktop, onde tudo cabe numa só */}
+        <div className="flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap">
         <select
           aria-label="Estilo do texto"
           value={estiloAtual}
@@ -146,8 +161,11 @@ export function EditorContrato({ conteudoInicial, aoMudar }: EditorContratoProps
         </div>
       </div>
 
-      <EditorContent editor={editor} className="documento-editor" />
+      </div>
 
+      {/* a folha ocupa a largura toda, sem moldura de "caixinha" (o original
+          chamava de .editor-folha) */}
+      <EditorContent editor={editor} className="documento-editor flex-1 px-5 pb-24 md:px-7" />
     </div>
   );
 }

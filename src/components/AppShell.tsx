@@ -265,17 +265,21 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      um arquivo separado, sem shell nenhum. */
   const semNavegacao = /^\/painel\/clientes\/[^/]+\/contrato(\/|$)/.test(caminho);
 
+  /* O EDITOR DE MODELO vai um passo além: nem o respiro de página ele quer. O
+     cabeçalho dele (nome do arquivo + barra de formatação, num bloco só) gruda
+     na borda da janela e o documento rola por baixo, como no original, onde
+     abrir o editor escondia a lateral e tirava o limite de largura
+     (`.editor-aberto .conteudo-config.largo { max-width:none; padding:0 }`).
+     Qualquer padding aqui deixaria uma faixa de página acima de um topo que
+     deveria estar colado. */
+  const telaEditor = /^\/painel\/configuracoes\/contrato\/[^/]+$/.test(caminho);
+
   /* No celular a Home não leva cabeçalho: ali ele só carregaria a logo (busca,
      sino e conta já vivem na barra de baixo), e uma faixa de 56px só com a
      marca é espaço que a saudação e os indicadores usam melhor. Quem abre a
      Home já sabe de quem é o app. No computador ele continua, porque lá é onde
      moram a busca e os menus. */
-  /* O editor de modelo tem topo PRÓPRIO: o nome do arquivo é um campo
-     editável, com o estado do salvamento embaixo. No celular ele assume o
-     lugar do cabeçalho em vez de ficar uma faixa abaixo dele — dois topos
-     empilhados, um deles só com a logo, comem metade da primeira dobra. */
-  const topoProprioNoCelular = /^\/painel\/configuracoes\/contrato\/[^/]+$/.test(caminho);
-  const semCabecalhoNoCelular = caminho === "/painel" || topoProprioNoCelular;
+  const semCabecalhoNoCelular = caminho === "/painel";
 
   /* Largura do menu, num lugar só: o cabeçalho usa pra alinhar a logo com a
      lateral, e a grade usa pra abrir a coluna. Antes eram dois literais
@@ -316,6 +320,8 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
   /* Sem navegação nenhuma, a moldura vira uma casca vazia: devolve a página
      crua, que é o que a revisão do contrato era no estúdio original. */
+  if (telaEditor) return <div className="min-h-dvh bg-paper">{children}</div>;
+
   if (semNavegacao) {
     return (
       <div className="min-h-dvh bg-soft">
@@ -548,10 +554,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           <main
             className={
               "min-w-0 px-5 pb-24 md:px-8 md:pb-10 md:pt-6 " +
-              /* quem tem topo próprio encosta no topo da janela: o respiro da
-                 barra de status é a barra DELE que segura, senão sobraria uma
-                 faixa de página acima de um topo grudado */
-              (topoProprioNoCelular ? "pt-0" : semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
+              (semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
             }
           >
             {/* a página nova entra pelo lado que a barra pede; no computador
