@@ -165,6 +165,11 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      moram a busca e os menus. */
   const semCabecalhoNoCelular = caminho === "/painel";
 
+  /* Largura do menu, num lugar só: o cabeçalho usa pra alinhar a logo com a
+     lateral, e a grade usa pra abrir a coluna. Antes eram dois literais
+     soltos, e alinhar um sem o outro era questão de tempo. */
+  const larguraMenu = recolhido ? 62 : 190;
+
   /* no celular, quem manda no destaque é a tela cheia aberta; sem nenhuma, a
      rota é que decide */
   const ativoMobile = (href: string) => tela === null && ativo(href);
@@ -185,17 +190,45 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
   return (
     <div className="min-h-dvh bg-soft">
-      <header className={
-        "sticky top-0 z-30 h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-paper px-4 shadow-card md:grid " +
-        (semCabecalhoNoCelular ? "hidden" : "grid")
-      }>
-        <Link href="/painel" aria-label="Ir pro início do estúdio" className="justify-self-start no-underline">
-          <img src="/img/logo-principal-petroleo.png" alt={nome ?? "Estúdio"} className="block h-7 w-auto" />
+      {/* No computador as duas colunas laterais têm a LARGURA DO MENU, com o
+          conteúdo centralizado nelas: a logo fica centrada sobre a lateral, e a
+          margem da direita sai igual à da esquerda por construção, sem número
+          mágico pra manter sincronizado. A da direita pode crescer se os ícones
+          não couberem (acontece com o menu recolhido, em 62px).
+          No celular não existe lateral, então vale o respiro simples das
+          bordas. */}
+      <header
+        className={
+          "sticky top-0 z-30 h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-paper px-4 shadow-card " +
+          "md:grid md:gap-4 md:px-0 " +
+          (semCabecalhoNoCelular ? "hidden" : "grid")
+        }
+        style={{ ["--col-menu" as string]: larguraMenu + "px" }}
+      >
+        <Link
+          href="/painel"
+          aria-label="Ir pro início do estúdio"
+          className="flex items-center justify-self-start overflow-hidden no-underline md:w-[var(--col-menu)] md:justify-center md:justify-self-auto"
+        >
+          {/* Com o menu recolhido a assinatura não cabe em 62px: espremida ela
+              fica ilegível e encosta nas bordas. Aí entra o SÍMBOLO, quadrado,
+              que é o padrão de toda lateral recolhível e usa o ícone que o app
+              já tem. No celular vale sempre a assinatura, porque lá não existe
+              lateral pra acompanhar. */}
+          <img
+            src={recolhido ? "/img/icone-192.png" : "/img/logo-principal-petroleo.png"}
+            alt={nome ?? "Estúdio"}
+            className={"block object-contain " + (recolhido ? "h-7 w-7 rounded-md md:h-8 md:w-8" : "h-7 w-auto max-w-full")}
+          />
         </Link>
 
         <BuscaTopo />
 
-        <div className="flex items-center gap-1">
+        {/* `px-4` só entra em jogo quando os ícones são MAIS LARGOS que a
+            coluna (menu recolhido, 62px): aí ele garante o respiro da borda.
+            Com o menu aberto a coluna é maior que o conteúdo e a centralização
+            manda, então o padding não muda nada. */}
+        <div className="flex items-center justify-center gap-1 md:min-w-[var(--col-menu)] md:px-4">
           {/* sino: no computador abre o dropdown aqui do lado; no celular ele
               some, porque o mesmo destino já está na barra de baixo */}
           <div ref={notifRef} className="relative hidden md:block">
@@ -261,7 +294,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           grid continuasse, o <main> cairia na primeira faixa de 240px */}
       <div
         className="md:grid transition-[grid-template-columns] duration-200"
-        style={{ gridTemplateColumns: semNavegacao ? "1fr" : recolhido ? "62px 1fr" : "190px 1fr" }}
+        style={{ gridTemplateColumns: semNavegacao ? "1fr" : larguraMenu + "px 1fr" }}
       >
         {/* Menu escuro (--noir), como no estúdio original: ele não disputa com o
             conteúdo, que é todo claro, e some do caminho sem precisar de borda.
