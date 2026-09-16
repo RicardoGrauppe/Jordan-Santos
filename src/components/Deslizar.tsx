@@ -27,7 +27,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { EllipsisVertical } from "lucide-react";
 
-const HOVER = "[@media(hover:hover)]:";
 
 /** tempo até a linha aberta recolher sozinha */
 const MS_AUTO_FECHAR = 3500;
@@ -40,7 +39,7 @@ export type AcaoDeslizar = {
   chave: string;
   rotulo: string;
   icone: ReactNode;
-  /** classes de cor do fundo revelado (inclua o hover em @media(hover:hover)) */
+  /** classes de cor do fundo revelado (o `hover:` simples já basta) */
   classe: string;
   aoAcionar: () => void;
   desativada?: boolean;
@@ -289,7 +288,7 @@ export function Deslizar({
             className={
               "ml-1 inline-flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-[9px] " +
               "text-ink-soft transition-colors " +
-              (aberto ? "bg-line text-ink " : "") + `${HOVER}hover:bg-line ${HOVER}hover:text-ink`
+              (aberto ? "bg-line text-ink " : "") + `hover:bg-line hover:text-ink`
             }
           >
             <EllipsisVertical size={17} />

@@ -26,7 +26,6 @@ import {
   type Dia, type EstadoTempo, type Faixa, type Hora, type Janela, type Luz, type Previsao,
 } from "@/lib/tempo";
 
-const HOVER = "[@media(hover:hover)]:";
 
 /* cores das fases de luz, iguais às da barra: o tile do ícone repete a cor da
    faixa que ele explica, então a lista se lê junto com a timeline */
@@ -89,7 +88,7 @@ export default function Tempo() {
     <div className="mx-auto max-w-[960px]">
       <Link
         href="/painel"
-        className={`-ml-2.5 mb-0.5 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`}
+        className={`-ml-2.5 mb-0.5 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline hover:bg-soft hover:text-ink`}
       >
         <ArrowLeft size={16} /> Início
       </Link>
@@ -140,7 +139,7 @@ function Pills({ previsao }: { previsao: Previsao }) {
           className={
             "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-[7px] text-[12.5px] font-semibold " +
             "transition-[background,color] duration-150 [-webkit-tap-highlight-color:transparent] " +
-            (ativo === s.id ? "bg-accent text-white" : `bg-soft text-ink-soft ${HOVER}hover:bg-line ${HOVER}hover:text-ink`)
+            (ativo === s.id ? "bg-accent text-white" : `bg-soft text-ink-soft hover:bg-line hover:text-ink`)
           }
         >
           {s.icone}
@@ -554,7 +553,7 @@ function Vazio() {
       Você ainda não definiu sua cidade.
       <br />
       Defina em{" "}
-      <Link href="/painel/configuracoes" className={`font-semibold text-accent no-underline ${HOVER}hover:underline`}>
+      <Link href="/painel/configuracoes" className={`font-semibold text-accent no-underline hover:underline`}>
         Configurações, em Localização
       </Link>
       {" "}pra ver a previsão aqui.
@@ -570,7 +569,7 @@ function Erro({ aoTentar }: { aoTentar: () => void }) {
       <button
         type="button"
         onClick={aoTentar}
-        className={`mt-3.5 inline-flex cursor-pointer items-center gap-2 rounded-[10px] bg-soft px-4 py-2.5 text-[13px] font-semibold text-ink ${HOVER}hover:bg-line`}
+        className={`mt-3.5 inline-flex cursor-pointer items-center gap-2 rounded-[10px] bg-soft px-4 py-2.5 text-[13px] font-semibold text-ink hover:bg-line`}
       >
         <RotateCw size={15} /> Tentar de novo
       </button>

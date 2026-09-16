@@ -8,22 +8,21 @@
   2. Nenhum anel de foco colorido. Foco muda o fundo, sutil.
   3. Hover só dentro de `@media (hover:hover)`, senão no celular o estado fica
      preso depois do toque. Em Tailwind isso é o prefixo `hover:` combinado com
-     `[@media(hover:hover)]:`.
+     ``.
 */
 import { X } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
-const HOVER = "[@media(hover:hover)]:";
 
 /* ---------- botão ---------- */
 
 type Variante = "primario" | "secundario" | "fantasma" | "perigo";
 
 const VARIANTE: Record<Variante, string> = {
-  primario: `bg-accent text-white shadow-[0_1px_2px_rgba(0,54,70,.22)] ${HOVER}hover:bg-accent-hover`,
-  secundario: `bg-soft text-ink ${HOVER}hover:bg-line`,
-  fantasma: `bg-transparent text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`,
-  perigo: `bg-erro text-white ${HOVER}hover:brightness-90`,
+  primario: `bg-accent text-white shadow-[0_1px_2px_rgba(0,54,70,.22)] hover:bg-accent-hover`,
+  secundario: `bg-soft text-ink hover:bg-line`,
+  fantasma: `bg-transparent text-ink-soft hover:bg-soft hover:text-ink`,
+  perigo: `bg-erro text-white hover:brightness-90`,
 };
 
 export function Botao({

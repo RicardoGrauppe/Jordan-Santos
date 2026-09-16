@@ -33,7 +33,6 @@ import {
   type ClienteLista, type RespostaLista,
 } from "@/lib/painel";
 
-const HOVER = "[@media(hover:hover)]:";
 /* mínimo pra o skeleton do puxar aparecer de verdade em vez de piscar */
 const MIN_ATUALIZAR_MS = 900;
 
@@ -195,7 +194,7 @@ export default function ListaClientes() {
                     className={
                       "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-3.5 pr-[46px] no-underline shadow-card " +
                       "md:items-center md:rounded-none md:px-[18px] md:py-[17px] md:shadow-none " +
-                      `transition-colors ${HOVER}hover:bg-soft ` + COLUNAS
+                      `transition-colors hover:bg-soft ` + COLUNAS
                     }
                   >
                     <span className="col-span-2 flex items-center gap-3 md:col-span-1">
@@ -222,7 +221,7 @@ export default function ListaClientes() {
                     className={
                       "absolute right-1.5 top-1.5 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ink-soft opacity-30 transition-[opacity,color,background] " +
                       "md:right-3 md:top-1/2 md:h-7 md:w-7 md:-translate-y-1/2 " +
-                      `${HOVER}group-hover:opacity-65 ${HOVER}hover:!opacity-100 ${HOVER}hover:bg-[rgba(163,59,59,.08)] ${HOVER}hover:text-erro`
+                      `group-hover:opacity-65 hover:!opacity-100 hover:bg-[rgba(163,59,59,.08)] hover:text-erro`
                     }
                   >
                     <Trash2 size={15} />

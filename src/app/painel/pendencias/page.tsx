@@ -27,7 +27,6 @@ import {
   type ClienteLista, type GrupoPendencia, type RespostaLista,
 } from "@/lib/painel";
 
-const HOVER = "[@media(hover:hover)]:";
 /* mínimo pra o skeleton do puxar aparecer de verdade em vez de piscar */
 const MIN_ATUALIZAR_MS = 900;
 /* largura da ação revelada: a mesma do original nesta tela */
@@ -105,7 +104,7 @@ export default function Pendencias() {
       <div className="mx-auto max-w-[960px]">
         <Link
           href="/painel"
-          className={`-ml-2.5 mb-0.5 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`}
+          className={`-ml-2.5 mb-0.5 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline hover:bg-soft hover:text-ink`}
         >
           <ArrowLeft size={16} /> Início
         </Link>
@@ -135,12 +134,12 @@ export default function Pendencias() {
                       larguraAcao={LARGURA_LIMPAR}
                       rotuloOpcoes={"Opções da pendência de " + nomeCasal(c)}
                       className="rounded-[14px] bg-soft"
-                      classeFrente={`gap-3 bg-soft py-2.5 pl-3.5 pr-2 ${HOVER}hover:bg-line`}
+                      classeFrente={`gap-3 bg-soft py-2.5 pl-3.5 pr-2 hover:bg-line`}
                       acoes={[{
                         chave: "limpar",
                         rotulo: "Limpar",
                         icone: <Check size={18} strokeWidth={2} />,
-                        classe: `bg-[#3E9E6C] ${HOVER}hover:bg-[#369061]`,
+                        classe: `bg-[#3E9E6C] hover:bg-[#369061]`,
                         aoAcionar: () => { void limpar(s.grupo, c); },
                       }]}
                     >

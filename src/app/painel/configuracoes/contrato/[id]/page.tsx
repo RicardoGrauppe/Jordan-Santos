@@ -18,7 +18,6 @@ import { EditorContrato } from "@/components/EditorContrato";
 
 const ESPERA_MS = 700;
 const AVISO = "Editar aqui não muda contratos já gerados.";
-const HOVER = "[@media(hover:hover)]:";
 
 type Modelo = { id: string; nome: string; conteudo_json: JSONContent; conteudo_html: string };
 
@@ -110,14 +109,14 @@ export default function EditorModelo({ params }: { params: Promise<{ id: string 
       <div className="sticky top-14 z-10 bg-paper px-5 pt-1 shadow-card md:px-8">
         <div className="flex items-start gap-2">
           <button type="button" onClick={voltar} aria-label="Voltar pros modelos"
-            className={`mt-2 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`}>
+            className={`mt-2 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-soft hover:text-ink`}>
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0 flex-1">
             {/* o título É o campo: sem nome duplicado na mesma dobra */}
             <input type="text" value={nome} maxLength={80} aria-label="Nome do modelo"
               onChange={(e) => { setNome(e.target.value); nomeRef.current = e.target.value; agendar(); }}
-              className={`-ml-1.5 w-full max-w-[560px] rounded-lg bg-transparent px-1.5 py-0.5 text-[22px] font-bold text-ink outline-none ${HOVER}hover:bg-soft focus:bg-soft`} />
+              className={`-ml-1.5 w-full max-w-[560px] rounded-lg bg-transparent px-1.5 py-0.5 text-[22px] font-bold text-ink outline-none hover:bg-soft focus:bg-soft`} />
             <p className={"m-0 text-[12.5px] " + (estado.tom === "ok" ? "text-ok" : estado.tom === "erro" ? "text-erro" : "text-ink-soft")}>{estado.texto}</p>
           </div>
         </div>

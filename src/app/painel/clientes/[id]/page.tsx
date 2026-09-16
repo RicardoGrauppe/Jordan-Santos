@@ -47,7 +47,6 @@ import {
   type CampoFicha, type Cliente, type Contrato, type Ficha, type ItemContrato,
 } from "@/lib/ficha";
 
-const HOVER = "[@media(hover:hover)]:";
 const ESPERA_AUTOSAVE = 700;
 
 const ORIGENS = ["Orçamento do site", "Instagram", "Indicação", "WhatsApp", "Google", "Outro"];
@@ -724,7 +723,7 @@ function Voltar() {
   return (
     <Link
       href="/painel"
-      className={`-ml-2.5 mb-0.5 mt-1 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[12.5px] tracking-[.02em] text-ink-soft no-underline transition-colors ${HOVER}hover:bg-line ${HOVER}hover:text-accent`}
+      className={`-ml-2.5 mb-0.5 mt-1 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[12.5px] tracking-[.02em] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent`}
     >
       <ArrowLeft size={14} />
       Início

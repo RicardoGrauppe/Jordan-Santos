@@ -11,7 +11,6 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
-const HOVER = "[@media(hover:hover)]:";
 
 export function SecaoFicha({
   icone, titulo, acao, abertaInicial = false, children,
@@ -40,7 +39,7 @@ export function SecaoFicha({
           onClick={() => setAberta((v) => !v)}
           aria-expanded={aberta}
           aria-label={aberta ? "Fechar seção" : "Abrir seção"}
-          className={`inline-flex h-[26px] w-[26px] shrink-0 cursor-pointer items-center justify-center rounded-[9px] bg-soft text-ink-soft transition-colors ${HOVER}hover:bg-line ${HOVER}hover:text-accent`}
+          className={`inline-flex h-[26px] w-[26px] shrink-0 cursor-pointer items-center justify-center rounded-[9px] bg-soft text-ink-soft transition-colors hover:bg-line hover:text-accent`}
         >
           <ChevronDown size={14} className={"transition-transform duration-200 " + (aberta ? "" : "-rotate-90")} />
         </button>
@@ -63,7 +62,7 @@ export function AcaoSecao({
       disabled={disabled}
       title={rotulo}
       aria-label={rotulo}
-      className={`inline-flex h-[26px] w-[26px] shrink-0 cursor-pointer items-center justify-center rounded-[9px] bg-soft text-ink-soft transition-colors disabled:cursor-default disabled:opacity-30 ${HOVER}hover:bg-line ${HOVER}hover:text-accent`}
+      className={`inline-flex h-[26px] w-[26px] shrink-0 cursor-pointer items-center justify-center rounded-[9px] bg-soft text-ink-soft transition-colors disabled:cursor-default disabled:opacity-30 hover:bg-line hover:text-accent`}
     >
       {children}
     </button>

@@ -39,7 +39,6 @@ import {
   type Aviso, type EstadoAvisos, type FiltroAviso, type TipoAviso,
 } from "@/lib/notificacoes";
 
-const HOVER = "[@media(hover:hover)]:";
 /** largura das duas ações escondidas atrás do aviso (88 + 88) */
 /** tempo até um aviso deslizado se recolher sozinho */
 
@@ -171,21 +170,21 @@ function ItemAviso({
       rotuloOpcoes="Opções do aviso"
       classeFrente={
         (grande ? "px-1.5 " : "px-1.5 ") +
-        (naoLido ? `bg-accent-tint ${HOVER}hover:bg-[#dfe9ec]` : `bg-paper ${HOVER}hover:bg-soft`)
+        (naoLido ? `bg-accent-tint hover:bg-[#dfe9ec]` : `bg-paper hover:bg-soft`)
       }
       acoes={[
         {
           chave: "nao-lida",
           rotulo: "Não lida",
           icone: <Mail size={17} />,
-          classe: `bg-accent ${HOVER}hover:bg-accent-hover`,
+          classe: `bg-accent hover:bg-accent-hover`,
           aoAcionar: () => aoMarcarNaoLida(aviso),
         },
         {
           chave: "apagar",
           rotulo: "Apagar",
           icone: <Trash2 size={17} />,
-          classe: `bg-erro ${HOVER}hover:brightness-90`,
+          classe: `bg-erro hover:brightness-90`,
           aoAcionar: () => aoApagar(aviso),
         },
       ]}
@@ -255,7 +254,7 @@ export function DropdownAvisos({ avisos, aoFechar }: { avisos: Avisos; aoFechar:
           title="Marcar todas como lidas"
           aria-label="Marcar todas como lidas"
           onClick={avisos.marcarTodasComoLidas}
-          className={`flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-full text-accent ${HOVER}hover:bg-soft`}
+          className={`flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-full text-accent hover:bg-soft`}
         >
           <MailCheck size={17} />
         </button>

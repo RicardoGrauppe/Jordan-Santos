@@ -25,7 +25,6 @@ import { ADICIONAIS, CATALOGO, PACOTES } from "@/lib/catalogo";
 import { formatarMoeda, parseMoeda, type ItemContrato } from "@/lib/ficha";
 import { moeda } from "@/lib/util";
 
-const HOVER = "[@media(hover:hover)]:";
 
 export function PillsPacote({
   itens, travado, onAlternar, onEditarValor,
@@ -78,7 +77,7 @@ function Linha({
   const classe =
     "flex w-full min-w-0 items-center gap-2.5 rounded-[10px] py-[11px] pl-2 pr-2 text-left text-sm text-ink transition-colors " +
     (ativo ? "bg-soft font-semibold " : "") +
-    (travado ? "opacity-70 " : `cursor-pointer ${HOVER}hover:bg-soft `);
+    (travado ? "opacity-70 " : `cursor-pointer hover:bg-soft `);
 
   const marcador = (
     <span

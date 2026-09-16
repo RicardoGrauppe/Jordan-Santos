@@ -3,8 +3,13 @@
   celular. Portado do estúdio do Jordan.
 
   Decisões herdadas de lá, que custaram tempo e não devem ser redescobertas:
-  - Hover SÓ com `[@media(hover:hover)]`. Sem isso, no celular o item fica
-    preso no estado de hover depois do toque e não volta.
+  - Hover é escrito SIMPLES (`hover:`), sem envolver num media query à mão. No
+    Tailwind 4 o `hover` já nasce dentro de `@media (hover: hover)`, que é o que
+    impede o estado de ficar preso depois do toque no celular. O projeto usava
+    o prefixo `[@media(hover:hover)]:` empilhado, e isso NÃO funcionava: o
+    Tailwind gerava a regra com o nome simples e a classe empilhada que ficava
+    no HTML não casava com seletor nenhum. Hover morto em 142 lugares até
+    16/09/2026.
   - O menu lateral tem fundo próprio (não o da página) pra se distinguir sem
     precisar de borda.
   - A preferência de recolhido persiste, senão ele reabre a cada navegação e
@@ -24,7 +29,6 @@ import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
 
-const HOVER = "[@media(hover:hover)]:";
 const CHAVE_RECOLHIDO = "menu-recolhido";
 /* Foto do fotógrafo no avatar. Hoje é arquivo fixo, como o resto da marca dele
    (ver "Nome e marca" nas dívidas do CLAUDE.md); quando houver mais de um
@@ -388,7 +392,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   (recolhido ? "justify-center px-0 " : "px-3 ") +
                   (ativo(href)
                     ? "bg-white/12 text-white"
-                    : `text-white/60 ${HOVER}hover:bg-white/8 ${HOVER}hover:text-white`)
+                    : `text-white/60 hover:bg-white/8 hover:text-white`)
                 }
               >
                 <Icone size={15} className="shrink-0" />
@@ -443,7 +447,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   "transition-[transform,box-shadow,background-color] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] active:scale-[1.02] " +
                   (notifAberto
                     ? "scale-[1.08] bg-soft text-ink shadow-[0_5px_16px_rgba(29,29,27,.18)]"
-                    : `text-ink-soft ${HOVER}hover:scale-[1.08] ${HOVER}hover:bg-soft ${HOVER}hover:text-ink ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.18)]`)
+                    : `text-ink-soft hover:scale-[1.08] hover:bg-soft hover:text-ink hover:shadow-[0_5px_16px_rgba(29,29,27,.18)]`)
                 }
               >
                 <Bell size={17} />
@@ -469,7 +473,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   className={
                     "block h-[38px] w-[38px] rounded-full object-cover transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] " +
                     (menuAberto ? "scale-[1.08] shadow-[0_5px_16px_rgba(29,29,27,.24)] " : "") +
-                    `${HOVER}hover:scale-[1.08] ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.24)] active:scale-[1.02]`
+                    `hover:scale-[1.08] hover:shadow-[0_5px_16px_rgba(29,29,27,.24)] active:scale-[1.02]`
                   }
                 />
               </button>
@@ -477,11 +481,11 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                 <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[200px] rounded-xl bg-paper p-1.5 shadow-alta">
                   <div className="px-3 pb-2 pt-1.5 text-[12px] text-ink-soft">{nome ?? "Conta"}</div>
                   <Link href="/painel/configuracoes" onClick={() => setMenuAberto(false)}
-                    className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline ${HOVER}hover:bg-soft`}>
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline hover:bg-soft`}>
                     <Settings size={15} className="opacity-85" /> Configurações
                   </Link>
                   <button type="button" onClick={sair}
-                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] text-erro ${HOVER}hover:bg-erro-tint`}>
+                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] text-erro hover:bg-erro-tint`}>
                     <LogOut size={15} className="opacity-85" /> Sair
                   </button>
                 </div>

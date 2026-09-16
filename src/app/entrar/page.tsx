@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { Botao, Campo, Estado } from "@/components/ui";
 
-const HOVER = "[@media(hover:hover)]:";
 
 export default function Entrar() {
   const router = useRouter();
@@ -98,7 +97,7 @@ export default function Entrar() {
                 <button
                   type="button"
                   onClick={recuperar}
-                  className={`cursor-pointer bg-transparent p-0 text-[12.5px] font-medium text-ink-soft ${HOVER}hover:text-accent`}
+                  className={`cursor-pointer bg-transparent p-0 text-[12.5px] font-medium text-ink-soft hover:text-accent`}
                 >
                   Esqueci a senha
                 </button>
@@ -108,7 +107,7 @@ export default function Entrar() {
               type="button"
               onClick={() => setVendo((v) => !v)}
               aria-label={vendo ? "Ocultar senha" : "Mostrar senha"}
-              className={`absolute right-2 top-[30px] inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-ink-soft ${HOVER}hover:bg-line`}
+              className={`absolute right-2 top-[30px] inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-line`}
             >
               {vendo ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>

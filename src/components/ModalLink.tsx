@@ -16,7 +16,6 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Info, Send, X } from "lucide-react";
 import { copiarTexto } from "@/lib/ficha";
 
-const HOVER = "[@media(hover:hover)]:";
 
 export type DadosLink = {
   link: string;
@@ -62,7 +61,7 @@ export function ModalLink({ dados, onFechar }: { dados: DadosLink; onFechar: () 
           type="button"
           onClick={onFechar}
           aria-label="Fechar"
-          className={`absolute right-4 top-4 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`}
+          className={`absolute right-4 top-4 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] text-ink-soft hover:bg-soft hover:text-ink`}
         >
           <X size={16} />
         </button>
@@ -97,7 +96,7 @@ export function ModalLink({ dados, onFechar }: { dados: DadosLink; onFechar: () 
             title="Copiar mensagem"
             className={
               "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[9px] transition-colors " +
-              (copiou ? "text-ok" : `text-ink-soft ${HOVER}hover:bg-line ${HOVER}hover:text-accent`)
+              (copiou ? "text-ok" : `text-ink-soft hover:bg-line hover:text-accent`)
             }
           >
             {copiou ? <Check size={16} /> : <Copy size={16} />}

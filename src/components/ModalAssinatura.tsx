@@ -30,7 +30,6 @@ type Props = {
   aoSalvar: (a: Assinatura) => Promise<void>;
 };
 
-const HOVER = "[@media(hover:hover)]:";
 
 function proximoNome(existentes: Assinatura[]): string {
   const usados = new Set(existentes.map((a) => a.nome.trim().toLowerCase()));
@@ -118,7 +117,7 @@ function FormularioAssinatura({ aberto, editando, existentes, aoFechar, aoSalvar
     <button
       type="button" role="tab" aria-selected={modo === m} onClick={() => trocarModo(m)}
       className={"relative flex-1 cursor-pointer whitespace-nowrap px-1 py-3 text-[12px] font-medium transition-colors md:text-[13px] " +
-        (modo === m ? "font-semibold text-accent after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent" : `text-ink-soft ${HOVER}hover:text-ink`)}
+        (modo === m ? "font-semibold text-accent after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent" : `text-ink-soft hover:text-ink`)}
     >{rotulo}</button>
   );
 
@@ -134,7 +133,7 @@ function FormularioAssinatura({ aberto, editando, existentes, aoFechar, aoSalvar
         className="relative z-[1] flex h-[80dvh] w-full flex-col overflow-y-auto rounded-t-[18px] bg-paper p-5 pb-[calc(20px+var(--sab))] shadow-alta md:h-auto md:max-h-[calc(100dvh-40px)] md:max-w-[520px] md:rounded-[18px] md:p-8 md:pb-6"
       >
         <button type="button" onClick={aoFechar} aria-label="Fechar"
-          className={`absolute right-[18px] top-[18px] inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[9px] text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`}>
+          className={`absolute right-[18px] top-[18px] inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[9px] text-ink-soft hover:bg-soft hover:text-ink`}>
           <X size={17} />
         </button>
 
@@ -156,7 +155,7 @@ function FormularioAssinatura({ aberto, editando, existentes, aoFechar, aoSalvar
               <div className="flex min-h-0 flex-1 items-center justify-center px-1 pb-3.5 pt-2.5">
                 {modo === "imagem" && !valor ? (
                   <button type="button" onClick={() => fileRef.current?.click()}
-                    className={`flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 self-stretch rounded-[10px] p-3 text-ink-soft ${HOVER}hover:bg-paper`}>
+                    className={`flex flex-1 cursor-pointer flex-col items-center justify-center gap-2 self-stretch rounded-[10px] p-3 text-ink-soft hover:bg-paper`}>
                     <span className="inline-flex h-11 w-11 items-center justify-center rounded-[14px] bg-accent-tint text-accent"><ImagePlus size={20} /></span>
                     <span className="text-[13.5px] font-semibold text-ink">Escolher uma imagem</span>
                     <span className="text-[11.5px]">PNG, JPG ou WEBP, até 1,5 MB</span>
@@ -177,7 +176,7 @@ function FormularioAssinatura({ aberto, editando, existentes, aoFechar, aoSalvar
             ) : modo === "imagem" ? (
               <>
                 <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => escolherArquivo(e.target.files?.[0])} />
-                {valor ? <button type="button" onClick={() => fileRef.current?.click()} className={`mt-2 inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg px-2 py-1.5 text-[13px] text-ink-soft ${HOVER}hover:bg-paper`}><ImagePlus size={14} /> Trocar imagem</button> : null}
+                {valor ? <button type="button" onClick={() => fileRef.current?.click()} className={`mt-2 inline-flex cursor-pointer items-center gap-1.5 self-start rounded-lg px-2 py-1.5 text-[13px] text-ink-soft hover:bg-paper`}><ImagePlus size={14} /> Trocar imagem</button> : null}
               </>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col">
@@ -186,7 +185,7 @@ function FormularioAssinatura({ aberto, editando, existentes, aoFechar, aoSalvar
                   style={{ background: "linear-gradient(var(--color-line),var(--color-line)) no-repeat, #fff", backgroundSize: "calc(100% - 44px) 1px, auto", backgroundPosition: "22px calc(100% - 30px), 0 0" }} />
                 <div className="mt-2 flex shrink-0 justify-end">
                   <button type="button" onClick={() => { const c = canvasRef.current; c?.getContext("2d")?.clearRect(0, 0, c.width, c.height); setValor(""); }}
-                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] text-ink-soft ${HOVER}hover:bg-paper`}><Eraser size={14} /> Limpar</button>
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] text-ink-soft hover:bg-paper`}><Eraser size={14} /> Limpar</button>
                 </div>
               </div>
             )}

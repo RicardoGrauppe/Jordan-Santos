@@ -16,7 +16,6 @@ import { Archive, Calendar, DollarSign, FileText, MapPin, Trash2, UserPlus, User
 import { diasAte, type Cliente } from "@/lib/ficha";
 import { fmtData, moeda } from "@/lib/util";
 
-const HOVER = "[@media(hover:hover)]:";
 
 export function HeroCliente({
   cliente, contratoAssinado, onArquivar, onExcluir,
@@ -84,7 +83,7 @@ export function HeroCliente({
             onClick={onArquivar}
             title="Arquivar (some da lista de ativos)"
             aria-label="Arquivar"
-            className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors ${HOVER}hover:bg-white/25 ${HOVER}hover:text-white`}
+            className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors hover:bg-white/25 hover:text-white`}
           >
             <Archive size={15} />
           </button>
@@ -94,7 +93,7 @@ export function HeroCliente({
           onClick={onExcluir}
           title="Excluir de vez (apaga permanentemente)"
           aria-label="Excluir de vez"
-          className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors ${HOVER}hover:bg-erro ${HOVER}hover:text-white`}
+          className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors hover:bg-erro hover:text-white`}
         >
           <Trash2 size={15} />
         </button>

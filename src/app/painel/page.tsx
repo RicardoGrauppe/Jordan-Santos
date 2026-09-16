@@ -39,7 +39,6 @@ import {
   ERRO_SESSAO, type ClienteLista, type ClimaAgora, type Config, type RespostaLista, type Saudacao,
 } from "@/lib/painel";
 
-const HOVER = "[@media(hover:hover)]:";
 const TETO_CLIMA_MS = 5000;
 /* mínimo pra o skeleton do puxar aparecer de verdade em vez de piscar */
 const MIN_ATUALIZAR_MS = 900;
@@ -230,14 +229,14 @@ function Conteudo({
         chave: "abrir",
         rotulo: "Abrir",
         icone: iconeContrato(c.contrato_status),
-        classe: `bg-accent ${HOVER}hover:bg-accent-hover`,
+        classe: `bg-accent hover:bg-accent-hover`,
         aoAcionar: () => { void abrirContratoDoEvento(c); },
       },
       {
         chave: "copiar",
         rotulo: "Copiar",
         icone: <Copy size={17} strokeWidth={1.8} />,
-        classe: `bg-accent-deep ${HOVER}hover:bg-[#3f5064]`,
+        classe: `bg-accent-deep hover:bg-[#3f5064]`,
         desativada: !temContrato(c.contrato_status),
         aoAcionar: () => { void copiarContratoDoEvento(c); },
       },
@@ -256,7 +255,7 @@ function Conteudo({
           <Link
             href="/painel/tempo"
             aria-label="Ver a previsão do tempo"
-            className={`shrink-0 text-[40px] leading-none no-underline sm:text-[46px] ${HOVER}hover:opacity-75`}
+            className={`shrink-0 text-[40px] leading-none no-underline sm:text-[46px] hover:opacity-75`}
           >
             <span aria-hidden>{clima.emoji}</span>
           </Link>
@@ -273,7 +272,7 @@ function Conteudo({
           {clima ? (
             <Link
               href="/painel/tempo"
-              className={`m-0 block text-[14.5px] leading-[1.4] text-ink-soft no-underline ${HOVER}hover:text-ink`}
+              className={`m-0 block text-[14.5px] leading-[1.4] text-ink-soft no-underline hover:text-ink`}
             >
               {clima.desc}, {clima.temp}°
               {clima.min != null && clima.max != null ? (
@@ -297,7 +296,7 @@ function Conteudo({
           href="/painel/pendencias"
           className={
             "flex w-full items-center gap-[13px] rounded-2xl bg-[#F8F4EE] px-[15px] py-[13px] text-left no-underline shadow-card " +
-            `transition-[transform,box-shadow] duration-150 ${HOVER}hover:-translate-y-px ${HOVER}hover:shadow-card-hover`
+            `transition-[transform,box-shadow] duration-150 hover:-translate-y-px hover:shadow-card-hover`
           }
         >
           <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#EBE2D3] text-[#8A6A3C]">
@@ -343,7 +342,7 @@ function Conteudo({
                     acoes={acoesDoEvento(c)}
                     rotuloOpcoes={"Opções do contrato de " + nomeCasal(c)}
                     className="rounded-[14px] bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)]"
-                    classeFrente={`gap-3.5 bg-[#F7F9FA] py-3 pl-3.5 pr-2 ${HOVER}hover:bg-[#F0F4F6]`}
+                    classeFrente={`gap-3.5 bg-[#F7F9FA] py-3 pl-3.5 pr-2 hover:bg-[#F0F4F6]`}
                   >
                     <Link
                       href={"/painel/clientes/" + c.id}
@@ -420,7 +419,7 @@ function LinksCliente({ mostrar }: { mostrar: ReturnType<typeof useToast>["mostr
             onClick={() => copiar(c.id, c.caminho)}
             className={
               "block w-full cursor-pointer overflow-hidden rounded-2xl bg-[#F7F9FA] p-0 text-left shadow-[0_0_22px_rgba(29,41,61,.13)] " +
-              `transition-[transform,background,box-shadow] duration-150 ${HOVER}hover:-translate-y-px ${HOVER}hover:bg-[#F0F4F6] ${HOVER}hover:shadow-[0_0_28px_rgba(29,41,61,.17)] group`
+              `transition-[transform,background,box-shadow] duration-150 hover:-translate-y-px hover:bg-[#F0F4F6] hover:shadow-[0_0_28px_rgba(29,41,61,.17)] group`
             }
           >
             <span className="relative block aspect-[12/5] bg-soft">
@@ -443,7 +442,7 @@ function LinksCliente({ mostrar }: { mostrar: ReturnType<typeof useToast>["mostr
                   {ativo ? "Link copiado ✓" : "Toque para copiar o link"}
                 </span>
               </span>
-              <Copy size={15} className={"shrink-0 transition-colors " + (ativo ? "text-ok" : `text-ink-soft ${HOVER}group-hover:text-accent`)} />
+              <Copy size={15} className={"shrink-0 transition-colors " + (ativo ? "text-ok" : `text-ink-soft group-hover:text-accent`)} />
             </span>
           </button>
         );

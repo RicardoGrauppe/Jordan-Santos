@@ -12,7 +12,6 @@ import { useRef, useState, type InputHTMLAttributes } from "react";
 import { Check, Copy } from "lucide-react";
 import { copiarTexto, soDigitos } from "@/lib/ficha";
 
-const HOVER = "[@media(hover:hover)]:";
 
 const BASE_CAMPO =
   "h-11 w-full rounded-[10px] bg-soft px-3.5 text-sm text-ink placeholder:text-ink-soft/70 " +
@@ -81,7 +80,7 @@ export function CampoCopiavel({
               title="Copiar"
               className={
                 "absolute right-1 top-1/2 inline-flex h-[30px] w-[30px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-[9px] transition-colors " +
-                (copiou ? "text-ok" : `text-ink-soft ${HOVER}hover:bg-line ${HOVER}hover:text-accent`)
+                (copiou ? "text-ok" : `text-ink-soft hover:bg-line hover:text-accent`)
               }
             >
               {copiou ? <Check size={15} /> : <Copy size={15} />}
@@ -98,7 +97,7 @@ export function CampoCopiavel({
             className={
               "inline-flex w-10 shrink-0 cursor-pointer items-center justify-center rounded-[10px] bg-soft transition-colors " +
               "disabled:cursor-default disabled:opacity-40 disabled:text-ink-soft " +
-              `text-[#1EA34E] ${HOVER}hover:enabled:bg-[#1EA34E] ${HOVER}hover:enabled:text-white`
+              `text-[#1EA34E] hover:enabled:bg-[#1EA34E] hover:enabled:text-white`
             }
           >
             <IconeWhatsApp />

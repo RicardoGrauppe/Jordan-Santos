@@ -24,7 +24,6 @@ import { Check, ChevronDown, CircleDashed, Copy, ExternalLink, FileCheck, FileTe
 import { Botao } from "./ui";
 import { copiarTexto, fmtDataHora, mascarar, type Contrato } from "@/lib/ficha";
 
-const HOVER = "[@media(hover:hover)]:";
 
 export function TimelineContrato({
   contrato, onAbrirContrato, onCopiarLink, avisar,
@@ -175,7 +174,7 @@ function TrilhaAuditoria({ contrato, avisar }: { contrato: Contrato; avisar: (te
         type="button"
         onClick={() => setAberta((v) => !v)}
         aria-expanded={aberta}
-        className={`flex w-full cursor-pointer items-center gap-2 rounded-lg p-0 text-left text-[13px] font-medium text-accent ${HOVER}hover:text-accent-hover`}
+        className={`flex w-full cursor-pointer items-center gap-2 rounded-lg p-0 text-left text-[13px] font-medium text-accent hover:text-accent-hover`}
       >
         <Lock size={15} className="shrink-0" aria-hidden />
         <span className="flex-1">Comprovante de assinatura</span>

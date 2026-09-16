@@ -24,7 +24,6 @@ import { filtrarClientes, garantirClientes } from "@/lib/busca";
 import { dataCurta, iniciais, nomeCasal, ROTULO_STATUS, type ClienteLista } from "@/lib/painel";
 import { moeda } from "@/lib/util";
 
-const HOVER = "[@media(hover:hover)]:";
 
 /* ---------- uma linha de resultado, igual nos dois lugares ---------- */
 
@@ -37,7 +36,7 @@ function LinhaResultado({ cliente, grande, aoEscolher }: { cliente: ClienteLista
       onClick={aoEscolher}
       className={
         "grid w-full cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl text-left " +
-        `${HOVER}hover:bg-soft ` + (grande ? "px-2 py-3" : "px-2.5 py-2.5")
+        `hover:bg-soft ` + (grande ? "px-2 py-3" : "px-2.5 py-2.5")
       }
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft text-[12px] font-semibold text-accent">

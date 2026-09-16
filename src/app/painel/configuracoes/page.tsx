@@ -160,7 +160,7 @@ export default function Configuracoes() {
           <TituloCard icone={<FileText size={16} />}>Contrato e assinatura</TituloCard>
           <p className="m-0 mb-4 text-[13px] text-ink-soft">Seus modelos de contrato e suas assinaturas.</p>
           <div className="flex justify-end">
-            <Link href="/painel/configuracoes/contrato" className="inline-flex h-11 items-center rounded-[10px] bg-soft px-5 text-sm font-semibold text-ink no-underline [@media(hover:hover)]:hover:bg-line">
+            <Link href="/painel/configuracoes/contrato" className="inline-flex h-11 items-center rounded-[10px] bg-soft px-5 text-sm font-semibold text-ink no-underline hover:bg-line">
               Abrir
             </Link>
           </div>

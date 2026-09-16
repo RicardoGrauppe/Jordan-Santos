@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { EXTENSOES, ROTULOS_CAMPO, jsonParaHtml } from "@/lib/contrato-editor";
 
-const HOVER = "[@media(hover:hover)]:";
 type Estilo = "p" | "h2" | "h3";
 type Alinhamento = "left" | "center" | "right" | "justify";
 
@@ -81,7 +80,7 @@ export function EditorContrato({ conteudoInicial, aoMudar }: EditorContratoProps
 
   const icone = (ativo: boolean) =>
     "inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors " +
-    (ativo ? "bg-accent-tint text-accent" : `text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`);
+    (ativo ? "bg-accent-tint text-accent" : `text-ink-soft hover:bg-soft hover:text-ink`);
 
   const divisor = <span className="mx-1.5 h-5 w-px shrink-0 self-center bg-line" aria-hidden />;
 
@@ -94,7 +93,7 @@ export function EditorContrato({ conteudoInicial, aoMudar }: EditorContratoProps
           aria-label="Estilo do texto"
           value={estiloAtual}
           onChange={(e) => definirEstilo(e.target.value as Estilo)}
-          className={`order-1 h-8 min-w-[132px] shrink-0 cursor-pointer appearance-none rounded-lg bg-transparent pl-2 pr-6 text-[13px] text-ink ${HOVER}hover:bg-soft focus:bg-soft md:order-none md:min-w-[140px]`}
+          className={`order-1 h-8 min-w-[132px] shrink-0 cursor-pointer appearance-none rounded-lg bg-transparent pl-2 pr-6 text-[13px] text-ink hover:bg-soft focus:bg-soft md:order-none md:min-w-[140px]`}
           style={{ backgroundImage: "url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center" }}
         >
           <option value="p">Texto normal</option>
@@ -126,7 +125,7 @@ export function EditorContrato({ conteudoInicial, aoMudar }: EditorContratoProps
             type="button"
             aria-haspopup="true" aria-expanded={menuAberto} aria-label="Inserir" title="Inserir"
             onClick={() => setMenuAberto((v) => !v)}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] ${menuAberto ? "bg-soft text-ink" : `text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`}`}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] ${menuAberto ? "bg-soft text-ink" : `text-ink-soft hover:bg-soft hover:text-ink`}`}
           >
             <Plus size={16} /><span>Inserir</span><ChevronDown size={14} className="opacity-70" />
           </button>
@@ -135,13 +134,13 @@ export function EditorContrato({ conteudoInicial, aoMudar }: EditorContratoProps
               <div className="px-2.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[.06em] text-ink-soft">Campos do casal</div>
               {Object.entries(ROTULOS_CAMPO).map(([nome, rotulo]) => (
                 <button key={nome} type="button" onClick={() => { editor.chain().focus().insertContent({ type: "campo", attrs: { campo: nome } }).run(); setMenuAberto(false); }}
-                  className={`flex w-full cursor-pointer items-center rounded-lg px-2.5 py-2 text-left text-[13.5px] text-ink ${HOVER}hover:bg-soft`}>{rotulo}</button>
+                  className={`flex w-full cursor-pointer items-center rounded-lg px-2.5 py-2 text-left text-[13.5px] text-ink hover:bg-soft`}>{rotulo}</button>
               ))}
               <div className="px-2.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[.06em] text-ink-soft">Blocos</div>
               <button type="button" onClick={() => { editor.chain().focus().insertContent({ type: "tabelaItens" }).run(); setMenuAberto(false); }}
-                className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] text-ink ${HOVER}hover:bg-soft`}><Table size={15} className="opacity-80" />Tabela de itens</button>
+                className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] text-ink hover:bg-soft`}><Table size={15} className="opacity-80" />Tabela de itens</button>
               <button type="button" onClick={() => { editor.chain().focus().insertContent({ type: "blocoAssinaturas" }).run(); setMenuAberto(false); }}
-                className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] text-ink ${HOVER}hover:bg-soft`}><PenTool size={15} className="opacity-80" />Bloco de assinaturas</button>
+                className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] text-ink hover:bg-soft`}><PenTool size={15} className="opacity-80" />Bloco de assinaturas</button>
             </div>
           ) : null}
         </div>

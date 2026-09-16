@@ -20,7 +20,6 @@ import { fmtData } from "@/lib/util";
 type Modelo = { id: string; nome: string; ativo: boolean; atualizado_em: string };
 type AssinaturaSalva = Assinatura & { id: string; atualizado_em: string };
 
-const HOVER = "[@media(hover:hover)]:";
 
 async function api<T = unknown>(corpo?: unknown): Promise<T> {
   const r = await fetch("/api/templates", corpo
@@ -46,7 +45,7 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
   }, [aberto]);
 
   return (
-    <div className={`relative rounded-2xl bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)] transition-[transform,background] ${HOVER}hover:-translate-y-px ${HOVER}hover:bg-[#F0F4F6]`}>
+    <div className={`relative rounded-2xl bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)] transition-[transform,background] hover:-translate-y-px hover:bg-[#F0F4F6]`}>
       <button type="button" onClick={aoAbrir}
         className={"flex w-full min-h-[120px] cursor-pointer flex-col items-start gap-2.5 bg-transparent px-[18px] pb-4 text-left " + (amostra ? "pt-[46px]" : "pt-[18px]")}>
         {amostra ?? <span className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-accent-tint text-accent">{icone}</span>}
@@ -58,7 +57,7 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
         {ativo ? <Selo tom="accent">Padrão</Selo> : null}
         <button type="button" aria-label="Opções" aria-haspopup="true" aria-expanded={aberto}
           onPointerDown={(e) => e.stopPropagation()} onClick={() => setAberto((v) => !v)}
-          className={`inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-ink-soft ${HOVER}hover:bg-line ${HOVER}hover:text-ink ` + (aberto ? "bg-line text-ink" : "")}>
+          className={`inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-line hover:text-ink ` + (aberto ? "bg-line text-ink" : "")}>
           <EllipsisVertical size={16} />
         </button>
       </div>
@@ -69,7 +68,7 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
             <button key={m.rotulo} type="button" disabled={m.disabled} title={m.titulo}
               onClick={() => { setAberto(false); m.acao(); }}
               className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-[11px] py-[9px] text-left text-[13.5px] disabled:cursor-not-allowed disabled:opacity-40 ` +
-                (m.perigo ? `text-erro ${HOVER}hover:bg-erro-tint` : `text-ink ${HOVER}hover:bg-soft`)}>
+                (m.perigo ? `text-erro hover:bg-erro-tint` : `text-ink hover:bg-soft`)}>
               <span className="opacity-85">{m.icone}</span>{m.rotulo}
             </button>
           ))}
@@ -82,7 +81,7 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
 function CardNovo({ rotulo, aoClicar }: { rotulo: string; aoClicar: () => void }) {
   return (
     <button type="button" onClick={aoClicar}
-      className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-transparent text-[13px] font-medium text-ink-soft transition-colors ${HOVER}hover:border-accent ${HOVER}hover:bg-soft ${HOVER}hover:text-accent`}>
+      className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-transparent text-[13px] font-medium text-ink-soft transition-colors hover:border-accent hover:bg-soft hover:text-accent`}>
       <Plus size={22} />{rotulo}
     </button>
   );
@@ -178,7 +177,7 @@ export default function ContratoIndice() {
   return (
     <div className="mx-auto max-w-[880px]">
       <button type="button" onClick={() => router.push("/painel/configuracoes")}
-        className={`mb-3 -ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`}>
+        className={`mb-3 -ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] text-ink-soft hover:bg-soft hover:text-ink`}>
         <ArrowLeft size={15} /> Configurações
       </button>
       <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>

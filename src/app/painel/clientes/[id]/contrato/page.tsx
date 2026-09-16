@@ -40,7 +40,6 @@ import { useConfirmar } from "@/components/ModalConfirmar";
 import { fmtData, moeda } from "@/lib/util";
 import { htmlContratoTemplate } from "@/lib/contrato-template";
 
-const HOVER = "[@media(hover:hover)]:";
 
 /* a cursiva da assinatura: a mesma fonte alimenta o preview na tela e o canvas
    que vira o PNG gravado no contrato */
@@ -1033,7 +1032,7 @@ export default function PaginaRevisarContrato() {
             <div className="flex items-center gap-3.5 px-4 pb-3.5 pt-4">
               <Link
                 href={hrefCliente}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft no-underline transition-colors ${HOVER}hover:bg-line ${HOVER}hover:text-accent`}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent`}
                 aria-label="Voltar pra ficha do cliente"
               >
                 <ArrowLeft size={14} />
@@ -1057,7 +1056,7 @@ export default function PaginaRevisarContrato() {
                     "relative inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-2 py-3.5 text-[13px] tracking-[.03em] transition-colors " +
                     (aba === chave
                       ? "font-medium text-accent after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent"
-                      : `text-ink-soft ${HOVER}hover:bg-line ${HOVER}hover:text-accent`)
+                      : `text-ink-soft hover:bg-line hover:text-accent`)
                   }
                 >
                   <Icone size={15} />
@@ -1172,7 +1171,7 @@ export default function PaginaRevisarContrato() {
                   type="button"
                   onClick={() => setSidebarAberta(true)}
                   aria-label="Assinantes e histórico"
-                  className={`inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[10px] bg-soft text-ink-soft transition-colors xl:hidden ${HOVER}hover:bg-line ${HOVER}hover:text-accent`}
+                  className={`inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[10px] bg-soft text-ink-soft transition-colors xl:hidden hover:bg-line hover:text-accent`}
                 >
                   <Users size={18} />
                 </button>
@@ -1184,7 +1183,7 @@ export default function PaginaRevisarContrato() {
                     aria-expanded={menuAberto}
                     aria-label="Opções"
                     onClick={(e) => { e.stopPropagation(); setMenuAberto((v) => !v); }}
-                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft transition-colors ${HOVER}hover:bg-line ${HOVER}hover:text-accent`}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft transition-colors hover:bg-line hover:text-accent`}
                   >
                     Opções
                     <EllipsisVertical size={14} />
@@ -1274,7 +1273,7 @@ export default function PaginaRevisarContrato() {
           className={
             "fixed bottom-[calc(76px+var(--sab))] right-[18px] z-[60] inline-flex cursor-pointer items-center gap-2 rounded-full bg-accent px-[22px] py-3.5 " +
             "text-[12.5px] uppercase tracking-[.08em] text-white shadow-[0_12px_30px_rgba(0,54,70,.28)] transition-[background,transform] duration-150 " +
-            `md:bottom-7 md:right-7 ${HOVER}hover:-translate-y-px ${HOVER}hover:bg-accent-hover`
+            `md:bottom-7 md:right-7 hover:-translate-y-px hover:bg-accent-hover`
           }
         >
           <Pencil size={16} />
@@ -1305,7 +1304,7 @@ export default function PaginaRevisarContrato() {
           type="button"
           onClick={() => setModalAberto(false)}
           aria-label="Fechar"
-          className={`absolute right-3.5 top-2.5 inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[10px] bg-soft text-ink-soft transition-colors sm:top-3.5 ${HOVER}hover:bg-line ${HOVER}hover:text-accent`}
+          className={`absolute right-3.5 top-2.5 inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[10px] bg-soft text-ink-soft transition-colors sm:top-3.5 hover:bg-line hover:text-accent`}
         >
           <X size={18} />
         </button>
@@ -1344,7 +1343,7 @@ export default function PaginaRevisarContrato() {
                     type="button"
                     onClick={copiarSoLink}
                     aria-label="Copiar link"
-                    className={`absolute right-1.5 top-[7px] inline-flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-[7px] text-ink-soft transition-colors ${HOVER}hover:bg-line ${HOVER}hover:text-ink`}
+                    className={`absolute right-1.5 top-[7px] inline-flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-[7px] text-ink-soft transition-colors hover:bg-line hover:text-ink`}
                   >
                     <Copy size={16} />
                   </button>
@@ -1356,7 +1355,7 @@ export default function PaginaRevisarContrato() {
             ) : null}
             <div className="mt-3"><Estado texto={avisoLink.texto} tom={avisoLink.tom} /></div>
 
-            <Link href={hrefCliente} className={`mt-[18px] block text-center text-[13px] text-ink-soft no-underline ${HOVER}hover:text-accent`}>
+            <Link href={hrefCliente} className={`mt-[18px] block text-center text-[13px] text-ink-soft no-underline hover:text-accent`}>
               {"← Voltar pra ficha do cliente"}
             </Link>
           </div>
@@ -1382,7 +1381,7 @@ export default function PaginaRevisarContrato() {
                   onClick={() => setModo(chave)}
                   className={
                     "flex-1 cursor-pointer rounded-[10px] px-2 py-[11px] text-[13px] tracking-[.03em] transition-colors " +
-                    (modo === chave ? "bg-accent text-white" : `bg-soft text-ink-soft ${HOVER}hover:bg-line`)
+                    (modo === chave ? "bg-accent text-white" : `bg-soft text-ink-soft hover:bg-line`)
                   }
                 >
                   {rotulo}
@@ -1408,7 +1407,7 @@ export default function PaginaRevisarContrato() {
                 <button
                   type="button"
                   onClick={() => padRef.current?.clear()}
-                  className={`absolute right-2.5 top-2 cursor-pointer text-[12px] uppercase tracking-[.1em] text-ink-soft ${HOVER}hover:text-accent`}
+                  className={`absolute right-2.5 top-2 cursor-pointer text-[12px] uppercase tracking-[.1em] text-ink-soft hover:text-accent`}
                 >
                   Limpar
                 </button>
@@ -1492,7 +1491,7 @@ function ItemMenu({ perigo, className = "", children, ...props }: ButtonHTMLAttr
       className={
         "flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-4 py-3.5 text-left text-[15px] transition-colors " +
         "sm:rounded-lg sm:px-3 sm:py-[9px] sm:text-[13.5px] disabled:cursor-not-allowed disabled:opacity-40 " +
-        (perigo ? `bg-erro-tint text-erro ${HOVER}hover:bg-[#F5D8D8]` : `text-ink ${HOVER}hover:enabled:bg-soft`) +
+        (perigo ? `bg-erro-tint text-erro hover:bg-[#F5D8D8]` : `text-ink hover:enabled:bg-soft`) +
         " " + className
       }
       {...props}
