@@ -158,6 +158,13 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      um arquivo separado, sem shell nenhum. */
   const semNavegacao = /^\/painel\/clientes\/[^/]+\/contrato(\/|$)/.test(caminho);
 
+  /* No celular a Home não leva cabeçalho: ali ele só carregaria a logo (busca,
+     sino e conta já vivem na barra de baixo), e uma faixa de 56px só com a
+     marca é espaço que a saudação e os indicadores usam melhor. Quem abre a
+     Home já sabe de quem é o app. No computador ele continua, porque lá é onde
+     moram a busca e os menus. */
+  const semCabecalhoNoCelular = caminho === "/painel";
+
   /* no celular, quem manda no destaque é a tela cheia aberta; sem nenhuma, a
      rota é que decide */
   const ativoMobile = (href: string) => tela === null && ativo(href);
@@ -178,7 +185,10 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
   return (
     <div className="min-h-dvh bg-soft">
-      <header className="sticky top-0 z-30 grid h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-paper px-4 shadow-card">
+      <header className={
+        "sticky top-0 z-30 h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-paper px-4 shadow-card md:grid " +
+        (semCabecalhoNoCelular ? "hidden" : "grid")
+      }>
         <Link href="/painel" aria-label="Ir pro início do estúdio" className="justify-self-start no-underline">
           <img src="/img/logo-principal-petroleo.png" alt={nome ?? "Estúdio"} className="block h-7 w-auto" />
         </Link>
@@ -297,7 +307,18 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
         </aside>
         )}
 
-        <main className={"min-w-0 px-5 pt-6 md:px-8 md:pb-10 " + (semNavegacao ? "pb-10" : "pb-24")}>{children}</main>
+        {/* sem cabeçalho no celular, é o <main> que precisa descer abaixo da
+            barra de status do iPhone: era o cabeçalho quem segurava esse
+            respiro (--sat só devolve valor por causa do viewport-fit=cover) */}
+        <main
+          className={
+            "min-w-0 px-5 md:px-8 md:pb-10 md:pt-6 " +
+            (semNavegacao ? "pb-10 " : "pb-24 ") +
+            (semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
+          }
+        >
+          {children}
+        </main>
       </div>
 
       {/* telas cheias do celular. Ficam sempre montadas: é o que deixa a entrada
