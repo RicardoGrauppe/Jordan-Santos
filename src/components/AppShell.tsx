@@ -335,7 +335,15 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      rota é que decide */
   const ativoMobile = (href: string) => tela === null && ativo(href);
 
-  const itemNav = "flex flex-1 cursor-pointer flex-col items-center gap-1 py-2.5 text-[11px] no-underline";
+  /* Item da barra flutuante: só o ícone, num alvo redondo. O rótulo saiu da
+     tela mas continua no aria-label, senão quem usa leitor de tela perderia o
+     nome do destino.
+     O ativo é marcado por FUNDO, não só por cor: sem o rótulo embaixo, a
+     diferença de cor sozinha num ícone de 20px é pouca — e fundo em vez de
+     borda é a regra da casa. */
+  const itemNav =
+    "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full no-underline transition-colors";
+  const tomItem = (ligado: boolean) => (ligado ? " bg-accent-tint text-accent" : " text-ink-soft");
 
   /* Sem navegação nenhuma, a moldura vira uma casca vazia: devolve a página
      crua, que é o que a revisão do contrato era no estúdio original. */
@@ -624,9 +632,14 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
         aoSair={sair}
       />
 
-      {/* celular: o menu vira barra embaixo, ao alcance do polegar */}
+      {/* Celular: o menu vira uma barra FLUTUANTE embaixo, ao alcance do
+          polegar. Ela não encosta nas bordas nem na faixa do indicador do
+          iPhone (--sab), e não leva borda nem sombra: o fundo branco sobre a
+          página soft já a separa. Só ícones — cinco destinos fixos, e o rótulo
+          que sobrava embaixo comia altura sem dizer nada novo depois do
+          primeiro uso. */}
       <nav className={
-        "fixed inset-x-0 bottom-0 z-70 items-center justify-around bg-paper pb-[var(--sab)] shadow-[0_-1px_2px_rgba(29,29,27,.06)] md:hidden " +
+        "fixed inset-x-4 bottom-[calc(0.75rem+var(--sab))] z-70 mx-auto h-14 max-w-[420px] items-center justify-around rounded-full bg-paper px-2 md:hidden " +
         (semNavegacao ? "hidden" : "flex")
       }>
         {ITENS.map(({ href, rotulo, Icone }) => (
@@ -637,10 +650,11 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
               setTela(null);
               setDeslize({ caminho: href, lado: posicaoDaRota(href) < posAtual ? "esq" : "dir" });
             }}
-            className={itemNav + " " + (ativoMobile(href) ? "text-accent" : "text-ink-soft")}
+            aria-label={rotulo}
+            title={rotulo}
+            className={itemNav + tomItem(ativoMobile(href))}
           >
-            <Icone size={19} />
-            {rotulo}
+            <Icone size={20} />
           </Link>
         ))}
 
@@ -648,33 +662,33 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           type="button"
           aria-label="Notificações"
           onClick={() => alternarTela("avisos")}
-          className={itemNav + " " + (tela === "avisos" ? "text-accent" : "text-ink-soft")}
+          title="Notificações"
+          className={itemNav + tomItem(tela === "avisos")}
         >
           <span className="relative inline-flex">
-            <Bell size={19} />
+            <Bell size={20} />
             <Contador quantos={avisos.naoLidos} className="-right-2 -top-1.5" />
           </span>
-          Avisos
         </button>
 
         <button
           type="button"
           aria-label="Buscar casal"
           onClick={() => alternarTela("busca")}
-          className={itemNav + " " + (tela === "busca" ? "text-accent" : "text-ink-soft")}
+          title="Buscar casal"
+          className={itemNav + tomItem(tela === "busca")}
         >
-          <Search size={19} />
-          Buscar
+          <Search size={20} />
         </button>
 
         <button
           type="button"
           aria-label="Menu da conta"
           onClick={() => alternarTela("conta")}
-          className={itemNav + " " + (tela === "conta" ? "text-accent" : "text-ink-soft")}
+          title="Menu da conta"
+          className={itemNav + tomItem(tela === "conta")}
         >
-          <Menu size={19} />
-          Menu
+          <Menu size={20} />
         </button>
       </nav>
     </div>
