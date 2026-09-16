@@ -17,10 +17,13 @@ import { useConfirmar } from "@/components/ModalConfirmar";
 import { ModalAssinatura, type Assinatura } from "@/components/ModalAssinatura";
 import { fmtData } from "@/lib/util";
 
-/* O que esta tela é, em uma frase. Fixo: vale com tudo em ordem e vale
-   enquanto falta algo — o que muda nesse caso é a cor e o título da faixa. */
+/* O que a tela FAZ, em uma frase. Fixo: vale com tudo em ordem e vale enquanto
+   falta algo — o que muda nesse caso é a cor da faixa.
+   Não diz mais "Seus modelos de contrato e suas assinaturas": o título da
+   página e os dois cabeçalhos de seção já dizem isso três vezes. Sobra só o
+   que não está escrito em lugar nenhum. */
 const TEXTO_DA_TELA =
-  "Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.";
+  "A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.";
 
 type Modelo = { id: string; nome: string; ativo: boolean; atualizado_em: string };
 type AssinaturaSalva = Assinatura & { id: string; atualizado_em: string };
