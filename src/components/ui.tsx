@@ -10,7 +10,8 @@
      preso depois do toque. Em Tailwind isso é o prefixo `hover:` combinado com
      ``.
 */
-import { X } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, X } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
 
@@ -124,6 +125,23 @@ export function BotaoLimparBusca({ aoLimpar, rotulo = "Limpar busca" }: { aoLimp
   toda a home e na ficha): com o ícone em pill ao lado, viravam dois enfeites
   disputando a mesma linha.
 */
+/* Voltar pro nível de cima, acima do título da página. O rótulo é o NOME do
+   destino, não a palavra "Voltar": quem olha já sabe que a seta volta, e o que
+   ele não sabe é pra onde. Vira <Link> quando tem `href` (o navegador ganha o
+   endereço no hover e o abrir-em-nova-aba funciona) e <button> quando quem
+   chama precisa rodar algo antes de sair, como salvar o pendente. */
+export function BotaoVoltar(
+  props: { rotulo: string } & ({ href: string } | { aoVoltar: () => void }),
+) {
+  const classe =
+    "mb-3 -ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 " +
+    "text-[13px] text-ink-soft no-underline hover:bg-soft hover:text-ink";
+  const miolo = <><ArrowLeft size={15} /> {props.rotulo}</>;
+  return "href" in props
+    ? <Link href={props.href} className={classe}>{miolo}</Link>
+    : <button type="button" onClick={props.aoVoltar} className={classe}>{miolo}</button>;
+}
+
 export function Secao({ icone, titulo, children }: { icone?: ReactNode; titulo: string; children: ReactNode }) {
   return (
     <section className="mb-4 rounded-[22px] bg-paper px-6 pb-6 pt-[22px] shadow-card">

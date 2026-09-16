@@ -11,8 +11,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CircleCheck, EllipsisVertical, FileText, Pencil, PenTool, Plus, Trash2 } from "lucide-react";
-import { Secao, Selo } from "@/components/ui";
+import { CircleCheck, EllipsisVertical, FileText, Pencil, PenTool, Plus, Trash2 } from "lucide-react";
+import { BotaoVoltar, Secao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { ModalAssinatura, type Assinatura } from "@/components/ModalAssinatura";
 import { fmtData } from "@/lib/util";
@@ -176,10 +176,7 @@ export default function ContratoIndice() {
 
   return (
     <div className="mx-auto max-w-[880px]">
-      <button type="button" onClick={() => router.push("/painel/configuracoes")}
-        className={`mb-3 -ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] text-ink-soft hover:bg-soft hover:text-ink`}>
-        <ArrowLeft size={15} /> Configurações
-      </button>
+      <BotaoVoltar href="/painel/configuracoes" rotulo="Configurações" />
       <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>
       <p className="m-0 mb-7 max-w-[560px] text-[13.5px] leading-[1.55] text-ink-soft">
         Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.

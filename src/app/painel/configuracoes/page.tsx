@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { Lock, MapPin, Shield, User } from "lucide-react";
-import { Botao, Campo, Cartao, Estado } from "@/components/ui";
+import { Botao, BotaoVoltar, Campo, Cartao, Estado } from "@/components/ui";
 
 type Msg = { texto: string; tom?: "ok" | "erro" };
 
@@ -105,6 +105,11 @@ export default function Configuracoes() {
 
   return (
     <div className="mx-auto max-w-[640px]">
+      {/* No original esta era uma página fora do estúdio e o topo dela existia
+          só pra sair: a seta voltava pro /estudio com o menu da conta aberto.
+          Aqui a moldura já fica em volta, mas o caminho de volta some no
+          celular, onde não há lateral — daí a seta continuar. */}
+      <BotaoVoltar href="/painel" rotulo="Home" />
       <h1 className="m-0 mb-6 text-[26px] font-bold text-ink">Configurações</h1>
 
       <div className="flex flex-col gap-5">
