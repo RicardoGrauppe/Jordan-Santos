@@ -190,119 +190,43 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
   return (
     <div className="min-h-dvh bg-soft">
-      {/* No computador as duas colunas laterais têm a LARGURA DO MENU, com o
-          conteúdo centralizado nelas: a logo fica centrada sobre a lateral, e a
-          margem da direita sai igual à da esquerda por construção, sem número
-          mágico pra manter sincronizado. A da direita pode crescer se os ícones
-          não couberem (acontece com o menu recolhido, em 62px).
-          No celular não existe lateral, então vale o respiro simples das
-          bordas. */}
-      <header
-        className={
-          "sticky top-0 z-30 h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-paper px-4 shadow-card " +
-          "md:grid md:gap-4 md:px-0 " +
-          (semCabecalhoNoCelular ? "hidden" : "grid")
-        }
-        style={{ ["--col-menu" as string]: larguraMenu + "px" }}
-      >
-        <Link
-          href="/painel"
-          aria-label="Ir pro início do estúdio"
-          className="flex items-center justify-self-start overflow-hidden no-underline md:w-[var(--col-menu)] md:justify-center md:justify-self-auto"
-        >
-          {/* Com o menu recolhido a assinatura não cabe em 62px: espremida ela
-              fica ilegível e encosta nas bordas. Aí entra o SÍMBOLO, quadrado,
-              que é o padrão de toda lateral recolhível e usa o ícone que o app
-              já tem. No celular vale sempre a assinatura, porque lá não existe
-              lateral pra acompanhar. */}
-          <img
-            src={recolhido ? "/img/icone-192.png" : "/img/logo-principal-petroleo.png"}
-            alt={nome ?? "Estúdio"}
-            className={"block object-contain " + (recolhido ? "h-7 w-7 rounded-md md:h-8 md:w-8" : "h-7 w-auto max-w-full")}
-          />
-        </Link>
-
-        <BuscaTopo />
-
-        {/* `px-4` só entra em jogo quando os ícones são MAIS LARGOS que a
-            coluna (menu recolhido, 62px): aí ele garante o respiro da borda.
-            Com o menu aberto a coluna é maior que o conteúdo e a centralização
-            manda, então o padding não muda nada. */}
-        <div className="flex items-center justify-center gap-1 md:min-w-[var(--col-menu)] md:px-4">
-          {/* sino: no computador abre o dropdown aqui do lado; no celular ele
-              some, porque o mesmo destino já está na barra de baixo */}
-          <div ref={notifRef} className="relative hidden md:block">
-            <button
-              type="button"
-              aria-label="Notificações"
-              aria-haspopup="true"
-              aria-expanded={notifAberto}
-              onClick={alternarNotifDesktop}
-              className={
-                "relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] " +
-                "transition-[transform,box-shadow,background-color] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] active:scale-[1.02] " +
-                (notifAberto
-                  ? "scale-[1.08] bg-soft text-ink shadow-[0_5px_16px_rgba(29,29,27,.18)]"
-                  : `text-ink-soft ${HOVER}hover:scale-[1.08] ${HOVER}hover:bg-soft ${HOVER}hover:text-ink ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.18)]`)
-              }
-            >
-              <Bell size={17} />
-              <Contador quantos={avisos.naoLidos} className="right-1 top-1" />
-            </button>
-            {notifAberto ? <DropdownAvisos avisos={avisos} aoFechar={() => setNotifAberto(false)} /> : null}
-          </div>
-
-          {/* menu do usuário: fecha com clique fora (pointerdown no document) */}
-          <div ref={menuRef} className="relative ml-1 hidden md:block">
-            <button
-              type="button"
-              aria-label="Menu da conta" aria-haspopup="true" aria-expanded={menuAberto}
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => setMenuAberto((v) => !v)}
-              className="inline-flex cursor-pointer items-center justify-center rounded-full bg-transparent p-0"
-            >
-              {/* Sem anel (regra da casa). O retorno é um pop com sombra atrás,
-                  no hover e com o menu aberto, e o mesmo vale pro sino. */}
-              <img
-                src={FOTO_PERFIL}
-                alt={nome ?? "Conta"}
-                className={
-                  "block h-[38px] w-[38px] rounded-full object-cover transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] " +
-                  (menuAberto ? "scale-[1.08] shadow-[0_5px_16px_rgba(29,29,27,.24)] " : "") +
-                  `${HOVER}hover:scale-[1.08] ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.24)] active:scale-[1.02]`
-                }
-              />
-            </button>
-            {menuAberto ? (
-              <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[200px] rounded-xl bg-paper p-1.5 shadow-alta">
-                <div className="px-3 pb-2 pt-1.5 text-[12px] text-ink-soft">{nome ?? "Conta"}</div>
-                <Link href="/painel/configuracoes" onClick={() => setMenuAberto(false)}
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline ${HOVER}hover:bg-soft`}>
-                  <Settings size={15} className="opacity-85" /> Configurações
-                </Link>
-                <button type="button" onClick={sair}
-                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] text-erro ${HOVER}hover:bg-erro-tint`}>
-                  <LogOut size={15} className="opacity-85" /> Sair
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </header>
 
       {/* grid SÓ a partir de md: no celular o aside some (display:none) e, se o
-          grid continuasse, o <main> cairia na primeira faixa de 240px */}
+          grid continuasse, o conteúdo cairia na faixa do menu */}
       <div
         className="md:grid transition-[grid-template-columns] duration-200"
-        style={{ gridTemplateColumns: semNavegacao ? "1fr" : larguraMenu + "px 1fr" }}
+        style={{ gridTemplateColumns: larguraMenu + "px 1fr" }}
       >
         {/* Menu escuro (--noir), como no estúdio original: ele não disputa com o
             conteúdo, que é todo claro, e some do caminho sem precisar de borda.
             Os itens ficam CENTRADOS na vertical (justify-center num flex-1):
             com duas entradas só, empilhadas no topo, sobrava um vazio enorme
             embaixo. */}
-        {semNavegacao ? null : (
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] flex-col gap-3.5 bg-noir px-3 py-4 text-white md:flex">
+        <aside className="sticky top-0 hidden h-dvh flex-col gap-3.5 bg-noir px-3 pb-4 text-white md:flex">
+          {/* A MARCA VIVE AQUI, não no cabeçalho (decisão de 16/09/2026, e é uma
+              divergência consciente do estúdio original, onde o cabeçalho
+              atravessava a tela e a lateral começava abaixo dele). Com a marca
+              dentro da lateral não existe mais nada pra alinhar entre as duas,
+              e o bloco escuro vira uma coluna contínua em vez de ser cortado
+              por uma faixa branca em cima.
+              A faixa tem a mesma altura do cabeçalho (h-14) pra a marca e a
+              busca nascerem na mesma linha. */}
+          <Link
+            href="/painel"
+            aria-label="Ir pro início do estúdio"
+            className="flex h-14 shrink-0 items-center justify-center overflow-hidden no-underline"
+          >
+            {/* recolhida, a assinatura não cabe em 62px: espremida fica
+                ilegível e encosta nas bordas. Ali entra o símbolo quadrado, que
+                é o padrão de lateral recolhível. A versão clara porque o fundo
+                aqui é escuro. */}
+            <img
+              src={recolhido ? "/img/icone-192.png" : "/img/logo-principal-offwhite.png"}
+              alt={nome ?? "Estúdio"}
+              className={"block object-contain " + (recolhido ? "h-8 w-8 rounded-md" : "h-7 w-auto max-w-full")}
+            />
+          </Link>
+
           <nav className="flex flex-1 flex-col justify-center gap-[3px]">
             {ITENS.map(({ href, rotulo, Icone }) => (
               <Link
@@ -338,20 +262,109 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             {!recolhido ? <span>Recolher</span> : null}
           </button>
         </aside>
-        )}
 
+        {/* coluna do conteúdo: o cabeçalho mora AQUI dentro, então ele começa
+            depois da lateral em vez de passar por cima dela */}
+        <div className="flex min-w-0 flex-col">
+        {/* O cabeçalho cobre só a COLUNA DO CONTEÚDO: a lateral vai do topo ao
+            rodapé e leva a marca junto. Por isso a busca centraliza no conteúdo,
+            que é onde ela procura, e não na janela inteira.
+            Flex e não grid: no computador a logo some daqui e o flex fecha o
+            buraco sozinho, sem coluna fantasma. */}
+        <header
+          className={
+            "sticky top-0 z-30 h-14 items-center gap-4 bg-paper px-4 shadow-card " +
+            (semCabecalhoNoCelular ? "hidden md:flex" : "flex")
+          }
+        >
+          {/* no celular não existe lateral, então a marca vive aqui */}
+          <Link
+            href="/painel"
+            aria-label="Ir pro início do estúdio"
+            className="flex shrink-0 items-center no-underline md:hidden"
+          >
+            <img
+              src="/img/logo-principal-petroleo.png"
+              alt={nome ?? "Estúdio"}
+              className="block h-7 w-auto object-contain"
+            />
+          </Link>
+
+          <BuscaTopo />
+
+          <div className="flex shrink-0 items-center gap-1">
+            {/* sino: no computador abre o dropdown aqui do lado; no celular ele
+                some, porque o mesmo destino já está na barra de baixo */}
+            <div ref={notifRef} className="relative hidden md:block">
+              <button
+                type="button"
+                aria-label="Notificações"
+                aria-haspopup="true"
+                aria-expanded={notifAberto}
+                onClick={alternarNotifDesktop}
+                className={
+                  "relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] " +
+                  "transition-[transform,box-shadow,background-color] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] active:scale-[1.02] " +
+                  (notifAberto
+                    ? "scale-[1.08] bg-soft text-ink shadow-[0_5px_16px_rgba(29,29,27,.18)]"
+                    : `text-ink-soft ${HOVER}hover:scale-[1.08] ${HOVER}hover:bg-soft ${HOVER}hover:text-ink ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.18)]`)
+                }
+              >
+                <Bell size={17} />
+                <Contador quantos={avisos.naoLidos} className="right-1 top-1" />
+              </button>
+              {notifAberto ? <DropdownAvisos avisos={avisos} aoFechar={() => setNotifAberto(false)} /> : null}
+            </div>
+
+            {/* menu do usuário: fecha com clique fora (pointerdown no document) */}
+            <div ref={menuRef} className="relative ml-1 hidden md:block">
+              <button
+                type="button"
+                aria-label="Menu da conta" aria-haspopup="true" aria-expanded={menuAberto}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setMenuAberto((v) => !v)}
+                className="inline-flex cursor-pointer items-center justify-center rounded-full bg-transparent p-0"
+              >
+                {/* Sem anel (regra da casa). O retorno é um pop com sombra atrás,
+                    no hover e com o menu aberto, e o mesmo vale pro sino. */}
+                <img
+                  src={FOTO_PERFIL}
+                  alt={nome ?? "Conta"}
+                  className={
+                    "block h-[38px] w-[38px] rounded-full object-cover transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] " +
+                    (menuAberto ? "scale-[1.08] shadow-[0_5px_16px_rgba(29,29,27,.24)] " : "") +
+                    `${HOVER}hover:scale-[1.08] ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.24)] active:scale-[1.02]`
+                  }
+                />
+              </button>
+              {menuAberto ? (
+                <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[200px] rounded-xl bg-paper p-1.5 shadow-alta">
+                  <div className="px-3 pb-2 pt-1.5 text-[12px] text-ink-soft">{nome ?? "Conta"}</div>
+                  <Link href="/painel/configuracoes" onClick={() => setMenuAberto(false)}
+                    className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline ${HOVER}hover:bg-soft`}>
+                    <Settings size={15} className="opacity-85" /> Configurações
+                  </Link>
+                  <button type="button" onClick={sair}
+                    className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] text-erro ${HOVER}hover:bg-erro-tint`}>
+                    <LogOut size={15} className="opacity-85" /> Sair
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </header>
         {/* sem cabeçalho no celular, é o <main> que precisa descer abaixo da
             barra de status do iPhone: era o cabeçalho quem segurava esse
             respiro (--sat só devolve valor por causa do viewport-fit=cover) */}
-        <main
-          className={
-            "min-w-0 px-5 md:px-8 md:pb-10 md:pt-6 " +
-            (semNavegacao ? "pb-10 " : "pb-24 ") +
-            (semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
-          }
-        >
-          {children}
-        </main>
+          <main
+            className={
+              "min-w-0 px-5 pb-24 md:px-8 md:pb-10 md:pt-6 " +
+              (semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
+            }
+          >
+            {children}
+          </main>
+        </div>
       </div>
 
       {/* telas cheias do celular. Ficam sempre montadas: é o que deixa a entrada
