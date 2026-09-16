@@ -32,12 +32,15 @@
 
   DUAS MUDANÇAS em relação ao original, decididas em 16/09/2026:
 
-  1. **Quem move a página é o elástico do navegador, não a gente.** Antes este
-     componente aplicava o próprio `translateY` no conteúdo, e isso SOMAVA ao
-     bounce nativo: o movimento saía em dobro. Agora o `overscroll-behavior-y:
-     contain` (em globals.css) desliga só o pull-to-refresh do navegador e
-     preserva o elástico, então o movimento é o nativo, que é o que dá a
-     sensação boa, e a gente desenha só o indicador por cima.
+  1. **O conteúdo desce junto, e é isso que REVELA o indicador.** A pílula nasce
+     46px acima da primeira dobra e desce com o puxão; se só ela se mexesse,
+     ela passaria por cima da saudação em vez de aparecer num espaço que se
+     abre. Descer o conteúdo é o que transforma o gesto em "puxar uma cortina",
+     que é como o original fazia e como o iOS faz nas listas dele.
+
+     Houve uma versão intermediária em que só o indicador se movia, pra não
+     somar ao elástico do navegador. Deixou de fazer sentido quando o gesto
+     passou a rodar SÓ onde o nativo não existe: não há mais nada pra somar.
 
   2. **O indicador segue a MECÂNICA do padrão** (swipe to refresh do Material):
      entra transladando, escalando e girando conforme o puxão, precisa cruzar
@@ -71,6 +74,7 @@ export function PuxarPraAtualizar({
   aoAtualizar: () => unknown;
   children: ReactNode;
 }) {
+  const conteudo = useRef<HTMLDivElement>(null);
   const chip = useRef<HTMLDivElement>(null);
   const anel = useRef<HTMLSpanElement>(null);
   const acao = useRef(aoAtualizar);
@@ -104,17 +108,24 @@ export function PuxarPraAtualizar({
 
     const nossoGestoVale = () => noToque() && (instalado() || !safariDoIos());
 
-    /* d = quanto o dedo andou, já com resistência. Só o INDICADOR se move: o
-       conteúdo fica com o elástico do navegador. Ele cresce de 0,6 a 1 e
-       aparece conforme o puxão, então entra em vez de surgir pronto. */
+    /* d = quanto o dedo andou, já com resistência. Conteúdo e indicador descem
+       JUNTOS: como a pílula começa acima da dobra, o que ela ocupa é o espaço
+       que o conteúdo abriu, e não o texto da saudação. Ela ainda cresce de 0,6
+       a 1, então entra em vez de surgir pronta. */
     function posicionar(d: number, comTransicao: boolean) {
+      const c = conteudo.current;
+      if (c) {
+        c.style.transition = comTransicao ? "transform .28s " + CURVA : "none";
+        c.style.transform = d > 0 ? "translateY(" + d + "px)" : "";
+      }
       const s = chip.current;
-      if (!s) return;
-      const prog = Math.min(d / LIMIAR, 1);
-      s.style.transition = comTransicao ? "opacity .22s ease, transform .28s " + CURVA : "none";
-      s.style.opacity = d > 4 ? String(prog) : "0";
-      s.style.transform =
-        "translateX(-50%) translateY(" + Math.max(d, 0) + "px) scale(" + (0.6 + 0.4 * prog) + ")";
+      if (s) {
+        const prog = Math.min(d / LIMIAR, 1);
+        s.style.transition = comTransicao ? "opacity .22s ease, transform .28s " + CURVA : "none";
+        s.style.opacity = d > 4 ? String(prog) : "0";
+        s.style.transform =
+          "translateX(-50%) translateY(" + Math.max(d, 0) + "px) scale(" + (0.6 + 0.4 * prog) + ")";
+      }
     }
 
     posicionar(0, false);
@@ -196,7 +207,7 @@ export function PuxarPraAtualizar({
         <span className="text-[13px] font-medium tracking-[.01em] text-ink-soft">Carregando</span>
       </div>
 
-      {children}
+      <div ref={conteudo}>{children}</div>
     </div>
   );
 }
