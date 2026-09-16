@@ -30,6 +30,18 @@ const CHAVE_RECOLHIDO = "menu-recolhido";
    (ver "Nome e marca" nas dívidas do CLAUDE.md); quando houver mais de um
    estúdio, sai daqui pro perfil. */
 const FOTO_PERFIL = "/img/jordan-perfil.webp";
+/* Raio da pastilha da marca, num lugar só: ele vale pro ícone quadrado que
+   aparece com a lateral recolhida E pro fundo que acende no hover da faixa. Os
+   dois PRECISAM casar, então não podem ser dois literais. */
+const RAIO_MARCA = "rounded-md";
+
+/* Cor de fundo do ÍCONE da marca, amostrada do pixel do próprio arquivo
+   (public/img/icone-192.png). Não é o token `accent` (#003646): o ícone é
+   #003344, dois pontos abaixo. A diferença é invisível isolada, mas com a
+   lateral recolhida a pastilha fica DENTRO do fundo do hover, e aí os dois
+   pontos viram um contorno visível em volta dela. Como isto é cor de ARTE, não
+   de interface, ela mora aqui junto do arquivo de onde saiu, e não no tema. */
+const FUNDO_MARCA = "#003344";
 
 const ITENS = [
   { href: "/painel", rotulo: "Home", Icone: House },
@@ -235,20 +247,25 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             onClick={alternar}
             aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
             title={recolhido ? "Expandir menu" : "Recolher menu"}
-            className={`group relative flex h-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[10px] transition-colors ${HOVER}hover:bg-white/8`}
+            style={{ ["--fundo-marca" as string]: FUNDO_MARCA }}
+            className={
+              "group relative flex h-14 shrink-0 cursor-pointer items-center justify-center " +
+              "overflow-hidden transition-colors " + RAIO_MARCA +
+              " hover:bg-[var(--fundo-marca)]"
+            }
           >
             <img
               src={recolhido ? "/img/icone-192.png" : "/img/logo-principal-offwhite.png"}
               alt={nome ?? "Estúdio"}
               className={
                 "block object-contain transition-opacity duration-150 " +
-                (recolhido ? "h-8 w-8 rounded-md" : "h-7 w-auto max-w-full") +
+                (recolhido ? "h-8 w-8 " + RAIO_MARCA : "h-7 w-auto max-w-full") +
                 " group-hover:opacity-0"
               }
             />
             <span
               aria-hidden
-              className="absolute inset-0 flex items-center justify-center text-white/70 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              className="absolute inset-0 flex items-center justify-center text-white/90 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
             >
               <PanelLeft size={17} className={recolhido ? "rotate-180" : ""} />
             </span>
