@@ -1151,9 +1151,27 @@ export default function PaginaRevisarContrato() {
         <div className="min-w-0">
           <header className="mx-auto mb-4 w-full max-w-[794px]">
             <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 items-start gap-2">
+                {/* Esta tela roda SEM a moldura do app (ver `semNavegacao` no
+                    AppShell), então o caminho de volta tem que ser dela. Até o
+                    xl o "Voltar" da coluna lateral fica escondido na gaveta, e
+                    sem esta seta só sobrava o gesto do sistema. Só o ícone,
+                    como no resto do celular. */}
+                <Link
+                  href={hrefCliente}
+                  aria-label="Voltar pra ficha do cliente"
+                  className={`-ml-1.5 mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-ink-soft no-underline transition-colors xl:hidden hover:bg-line hover:text-accent`}
+                >
+                  <ArrowLeft size={18} />
+                </Link>
               <div className="min-w-0">
-                <h1 className="m-0 text-[18px] font-bold leading-[1.3] tracking-[.01em] text-ink">
-                  Contrato de Fotografia ({casal || "cliente sem nome"})
+                {/* No celular a frase inteira quebrava em quatro linhas e
+                    empurrava o documento pra fora da primeira dobra. Ali ela
+                    vira uma linha só, com o mesmo conteúdo em forma curta:
+                    o que é (Contrato) e de quem (o casal). */}
+                <h1 className="m-0 truncate text-[18px] font-bold leading-[1.3] tracking-[.01em] text-ink">
+                  <span className="max-md:hidden">Contrato de Fotografia ({casal || "cliente sem nome"})</span>
+                  <span className="md:hidden">Contrato{casal ? " · " + casal : ""}</span>
                 </h1>
                 <p className="m-0 mt-1.5 text-[12.5px] text-ink-soft">
                   {contrato?.criado_em ? "Criado em " + fmtData(contrato.criado_em) : ""}
@@ -1164,6 +1182,7 @@ export default function PaginaRevisarContrato() {
                   </Selo>
                   {versao > 1 ? <Selo><span className="uppercase">Versão {versao}</span></Selo> : null}
                 </div>
+              </div>
               </div>
 
               <div className="flex shrink-0 items-center gap-2">

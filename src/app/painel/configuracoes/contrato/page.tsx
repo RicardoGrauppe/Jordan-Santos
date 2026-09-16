@@ -176,8 +176,11 @@ export default function ContratoIndice() {
 
   return (
     <div className="mx-auto max-w-[880px]">
-      <BotaoVoltar href="/painel/configuracoes" rotulo="Configurações" />
-      <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>
+      {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
+      <div className="max-md:hidden">
+        <BotaoVoltar href="/painel/configuracoes" rotulo="Configurações" />
+        <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>
+      </div>
       <p className="m-0 mb-7 max-w-[560px] text-[13.5px] leading-[1.55] text-ink-soft">
         Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.
       </p>

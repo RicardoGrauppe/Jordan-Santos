@@ -109,8 +109,11 @@ export default function Configuracoes() {
           só pra sair: a seta voltava pro /estudio com o menu da conta aberto.
           Aqui a moldura já fica em volta, mas o caminho de volta some no
           celular, onde não há lateral — daí a seta continuar. */}
-      <BotaoVoltar href="/painel" rotulo="Home" />
-      <h1 className="m-0 mb-6 text-[26px] font-bold text-ink">Configurações</h1>
+      {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
+      <div className="max-md:hidden">
+        <BotaoVoltar href="/painel" rotulo="Home" />
+        <h1 className="m-0 mb-6 text-[26px] font-bold text-ink">Configurações</h1>
+      </div>
 
       <div className="flex flex-col gap-5">
         <Cartao>

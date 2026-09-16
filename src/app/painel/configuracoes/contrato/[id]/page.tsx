@@ -106,7 +106,9 @@ export default function EditorModelo({ params }: { params: Promise<{ id: string 
   return (
     <div className="-mx-5 md:-mx-8">
       {/* header da página e barra do editor num bloco fixo só */}
-      <div className="sticky top-14 z-10 bg-paper px-5 pt-1 shadow-card md:px-8">
+      {/* no celular esta barra É o cabeçalho (ver `topoProprioNoCelular` no
+          AppShell), então ela encosta no topo e segura o --sat */}
+      <div className="sticky top-0 z-10 bg-paper px-5 pt-[calc(0.25rem+var(--sat))] shadow-card md:top-14 md:px-8 md:pt-1">
         <div className="flex items-start gap-2">
           <button type="button" onClick={voltar} aria-label="Voltar pros modelos"
             className={`mt-2 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-soft hover:text-ink`}>

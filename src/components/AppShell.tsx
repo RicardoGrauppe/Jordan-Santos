@@ -24,10 +24,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, PanelLeft, Search, Settings, Users } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, PanelLeft, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
+import { useCabecalhoMobile } from "@/components/cabecalho-mobile";
 
 const CHAVE_RECOLHIDO = "menu-recolhido";
 /* Foto do fotógrafo no avatar. Hoje é arquivo fixo, como o resto da marca dele
@@ -170,6 +171,8 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
   const caminho = usePathname();
   const router = useRouter();
   const recolhido = useSyncExternalStore(assinarRecolhido, lerRecolhido, () => false);
+  /* no celular o cabeçalho deixa de ser a logo e vira seta + nome da tela */
+  const cabecalhoCelular = useCabecalhoMobile(caminho);
   const [menuAberto, setMenuAberto] = useState(false);
   const [notifAberto, setNotifAberto] = useState(false);
   const [tela, setTela] = useState<TelaMobileAberta>(null);
@@ -267,7 +270,12 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      marca é espaço que a saudação e os indicadores usam melhor. Quem abre a
      Home já sabe de quem é o app. No computador ele continua, porque lá é onde
      moram a busca e os menus. */
-  const semCabecalhoNoCelular = caminho === "/painel";
+  /* O editor de modelo tem topo PRÓPRIO: o nome do arquivo é um campo
+     editável, com o estado do salvamento embaixo. No celular ele assume o
+     lugar do cabeçalho em vez de ficar uma faixa abaixo dele — dois topos
+     empilhados, um deles só com a logo, comem metade da primeira dobra. */
+  const topoProprioNoCelular = /^\/painel\/configuracoes\/contrato\/[^/]+$/.test(caminho);
+  const semCabecalhoNoCelular = caminho === "/painel" || topoProprioNoCelular;
 
   /* Largura do menu, num lugar só: o cabeçalho usa pra alinhar a logo com a
      lateral, e a grade usa pra abrir a coluna. Antes eram dois literais
@@ -430,18 +438,38 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             (semCabecalhoNoCelular ? "hidden md:flex" : "flex")
           }
         >
-          {/* no celular não existe lateral, então a marca vive aqui */}
-          <Link
-            href="/painel"
-            aria-label="Ir pro início do estúdio"
-            className="flex shrink-0 items-center no-underline md:hidden"
-          >
-            <img
-              src="/img/logo-principal-petroleo.png"
-              alt={nome ?? "Estúdio"}
-              className="block h-7 w-auto object-contain"
-            />
-          </Link>
+          {/* No celular não existe lateral, então este canto é da PÁGINA: seta
+              de voltar e nome da tela, como no topo próprio que cada página
+              tinha no original. Só a Home (e o que não está no mapa) fica com
+              a logo, porque lá não há de onde voltar nem nome a repetir. */}
+          {cabecalhoCelular ? (
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 md:hidden">
+              {cabecalhoCelular.voltar ? (
+                <Link
+                  href={cabecalhoCelular.voltar}
+                  aria-label="Voltar"
+                  className="-ml-1.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent active:bg-line"
+                >
+                  <ArrowLeft size={18} />
+                </Link>
+              ) : null}
+              <h1 className="m-0 truncate text-[22px] font-bold tracking-tight text-ink">
+                {cabecalhoCelular.titulo}
+              </h1>
+            </div>
+          ) : (
+            <Link
+              href="/painel"
+              aria-label="Ir pro início do estúdio"
+              className="flex shrink-0 items-center no-underline md:hidden"
+            >
+              <img
+                src="/img/logo-principal-petroleo.png"
+                alt={nome ?? "Estúdio"}
+                className="block h-7 w-auto object-contain"
+              />
+            </Link>
+          )}
 
           <BuscaTopo />
 
@@ -520,7 +548,10 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           <main
             className={
               "min-w-0 px-5 pb-24 md:px-8 md:pb-10 md:pt-6 " +
-              (semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
+              /* quem tem topo próprio encosta no topo da janela: o respiro da
+                 barra de status é a barra DELE que segura, senão sobraria uma
+                 faixa de página acima de um topo grudado */
+              (topoProprioNoCelular ? "pt-0" : semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
             }
           >
             {/* a página nova entra pelo lado que a barra pede; no computador

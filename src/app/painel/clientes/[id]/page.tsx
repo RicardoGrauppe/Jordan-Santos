@@ -37,6 +37,7 @@ import { useToast } from "@/components/Toast";
 import { SecaoFicha, AcaoSecao } from "@/components/SecaoFicha";
 import { CampoCopiavel } from "@/components/CampoCopiavel";
 import { HeroCliente } from "@/components/HeroCliente";
+import { TituloMobile } from "@/components/cabecalho-mobile";
 import { PillsPacote, ResumoItens } from "@/components/PillsPacote";
 import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
@@ -568,8 +569,15 @@ export default function PaginaCliente() {
     );
   }
 
+  /* mesma regra do herói: os dois nomes, ou "Novo cliente" enquanto a ficha
+     está em branco. Vai pro cabeçalho do celular, que no computador não existe. */
+  const nomeDoCasal = ehNovo
+    ? "Novo cliente"
+    : [ficha.noivo, ficha.noiva].filter(Boolean).join(" & ");
+
   return (
     <div className="mx-auto max-w-[1280px]">
+      <TituloMobile titulo={nomeDoCasal} />
       <Voltar />
 
       {carregando ? (
@@ -723,7 +731,8 @@ function Voltar() {
   return (
     <Link
       href="/painel"
-      className={`-ml-2.5 mb-0.5 mt-1 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[12.5px] tracking-[.02em] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent`}
+      /* no celular quem volta é a seta do cabeçalho (ver cabecalho-mobile.tsx) */
+      className={`-ml-2.5 mb-0.5 mt-1 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[12.5px] tracking-[.02em] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent max-md:hidden`}
     >
       <ArrowLeft size={14} />
       Início
