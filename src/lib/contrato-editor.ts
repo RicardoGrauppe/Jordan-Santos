@@ -7,7 +7,7 @@
     tabelaItens      → bloco atômico, vira a <table aria-label="Serviços contratados">
     blocoAssinaturas → bloco atômico, vira o <div class="assinaturas" id="bloco-assinaturas">
 
-  São os MESMOS três nós que `contrato-pdf/gerar-pdfmake.js` sabe converter pra
+  São os MESMOS três nós que `contrato-pdf/gerar-pdfmake.ts` sabe converter pra
   PDF, e a MESMA estrutura HTML que as telas de revisão e assinatura preenchem
   via [data-campo]. Mudar a marcação aqui quebra as duas pontas.
 

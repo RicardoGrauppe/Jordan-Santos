@@ -135,8 +135,8 @@ nem o fotógrafo receberia.
   o aparelho do casal. Hoje o browser manda só o PNG da assinatura (~15 KB) e o
   servidor monta o documento.
 - **Dois caminhos de PDF.** Contrato **com modelo** (o normal) vai pelo
-  `gerar-pdfmake.js`, que monta o PDF do zero a partir do JSON do Tiptap.
-  Contrato **sem modelo** (antigo, de antes dos modelos) vai pelo `gerar.js`,
+  `gerar-pdfmake.ts`, que monta o PDF do zero a partir do JSON do Tiptap.
+  Contrato **sem modelo** (antigo, de antes dos modelos) vai pelo `gerar.ts`,
   que preenche as lacunas de um template vetorial com pdf-lib. O template não é
   escrito à mão: sai do `src/lib/contrato-template.ts` via
   `npm run contrato:regerar`, e `npm run contrato:verificar` acusa quando os

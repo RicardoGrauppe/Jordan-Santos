@@ -7,7 +7,7 @@ Ferramenta **local**. Nunca roda em produção: o Next só empacota o que enxerg
 O PDF do contrato assinado **não** é mais um screenshot da tela. Ele é montado assim:
 
 1. **Aqui** (uma vez, offline): o `src/lib/contrato-template.ts`, a fonte única do texto do contrato, é paginado em folhas A4 e impresso pelo Chrome como **PDF vetorial**, com os campos variáveis virando lacunas em branco. Junto sai um mapa (`coords.json`) com a posição exata de cada lacuna.
-2. **Na assinatura**: `src/lib/contrato-pdf/gerar.js` abre esse template com `pdf-lib` e escreve os valores do casal nas lacunas, desenha a tabela de itens e carimba as duas assinaturas.
+2. **Na assinatura**: `src/lib/contrato-pdf/gerar.ts` abre esse template com `pdf-lib` e escreve os valores do casal nas lacunas, desenha a tabela de itens e carimba as duas assinaturas.
 
 Ou seja: o Chrome roda **aqui**, não na Vercel. É o que evita ter que empacotar um Chromium de ~50 MB na serverless function.
 
@@ -38,8 +38,8 @@ Depois, **confira um PDF preenchido de verdade antes de commitar** — assine um
 ## Este caminho é LEGADO
 
 Todo contrato gerado hoje carrega o snapshot de um modelo (o que o fotógrafo
-edita em Configurações) e sai pelo `gerar-pdfmake.js`, que monta o PDF do zero
-e não toca em template nenhum. O `gerar.js` com este `template.pdf` só entra em
+edita em Configurações) e sai pelo `gerar-pdfmake.ts`, que monta o PDF do zero
+e não toca em template nenhum. O `gerar.ts` com este `template.pdf` só entra em
 contrato **sem** modelo, ou seja, contrato antigo, de antes dos modelos
 existirem. Continua aqui pra esses poderem ser reimpressos.
 
@@ -68,6 +68,6 @@ Todos estes já causaram texto caindo fora da lacuna. Se mexer no gerador, não 
 - **Uma sessão só do Chrome**, via DevTools Protocol. Rodar `--dump-dom` e `--print-to-pdf` como dois comandos separados pegava estados diferentes da paginação.
 - **Cada lacuna tem um `&nbsp;` dentro.** Um `inline-block` vazio não tem baseline de texto — o navegador usa a borda de baixo da caixa —, e a lacuna afundava em relação ao texto vizinho.
 - **A altura medida sai da caixa do TEXTO (via `Range`), não do `inline-block`.** A caixa do elemento desliza pra cima ou pra baixo conforme seja maior ou menor que a `line-height` da linha.
-- **As coordenadas são relativas ao `.conteudo-pag`**, não à `.pagina-a4`, e o `gerar.js` soma as margens de volta (`margemTopoMm`/`margemEsquerdaMm` vão no JSON).
+- **As coordenadas são relativas ao `.conteudo-pag`**, não à `.pagina-a4`, e o `gerar.ts` soma as margens de volta (`margemTopoMm`/`margemEsquerdaMm` vão no JSON).
 - **A logo tem altura fixa no CSS** (`67.16px`, a proporção real do arquivo). Sem isso, medir antes de a imagem carregar deslocava todos os campos.
 - **Lacuna nova precisa de largura em `LARGURAS`.** O que não estiver lá cai no padrão de 140px, mesmo que o HTML diga outra coisa.

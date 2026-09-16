@@ -1,44 +1,65 @@
 /*
   Monta o PDF do contrato quando o template do TEXTO é o editável do Jordan
-  (contrato_templates, editor Tiptap em /configuracoes) em vez do
-  contrato-template.js hardcoded.
+  (contrato_templates, editor Tiptap em /painel/configuracoes/contrato) em vez
+  do contrato-template.ts hardcoded.
 
-  gerar.js escreve valores num PDF vetorial pré-paginado (template.pdf/coords.json,
-  gerados offline a partir do contrato-template.js fixo). Aqui não existe PDF
+  gerar.ts escreve valores num PDF vetorial pré-paginado (template.pdf/coords.json,
+  gerados offline a partir do contrato-template.ts fixo). Aqui não existe PDF
   pré-paginado nenhum — o texto muda a qualquer momento — então o documento é
   montado do zero, direto do doc do Tiptap (conteudo_json), via pdfmake.
 
   Contrato com template_id usa este módulo; contrato sem template_id (o texto
-  fixo de sempre) continua em gerar.js, intocado.
+  fixo de sempre) continua em gerar.ts, intocado.
+
+  Veio do estúdio do Jordan em JavaScript e foi passado pra TypeScript em
+  16/09/2026, comportamento idêntico — ver o cabeçalho de gerar.ts.
 */
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import PdfPrinter from "pdfmake";
+import type { Content, ContentText, TDocumentDefinitions, TFontDictionary } from "pdfmake/interfaces";
 import {
-  ehPacote, moeda, cpfFormatado, cepFormatado, dataExtenso, dataEventoExtenso
-} from "./gerar.js";
+  ehPacote, moeda, cpfFormatado, cepFormatado, dataExtenso, dataEventoExtenso,
+  type ItemContrato, type SnapshotContrato, type Signatario,
+} from "./gerar";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
-const FONTES = {
+const FONTES: TFontDictionary = {
   Roboto: {
     normal: join(AQUI, "fonts", "Roboto-Regular.ttf"),
     bold: join(AQUI, "fonts", "Roboto-Medium.ttf"),
     italics: join(AQUI, "fonts", "Roboto-Italic.ttf"),
-    bolditalics: join(AQUI, "fonts", "Roboto-MediumItalic.ttf")
-  }
+    bolditalics: join(AQUI, "fonts", "Roboto-MediumItalic.ttf"),
+  },
 };
 
 const TINTA = "#1D1D1B";
 const LINHA = "#C9C4BD";
 const FUNDO_TH = "#F6F3F0";
 
+/* O que o resto do módulo precisa saber do documento do Tiptap. É de
+   propósito frouxo: o JSON vem do banco, escrito por uma versão do editor que
+   pode ser mais nova que este código, e `converterNo` já ignora nó que não
+   conhece em vez de derrubar a geração. */
+type NoTiptap = {
+  type?: string;
+  text?: string;
+  attrs?: Record<string, unknown> | null;
+  marks?: { type?: string }[] | null;
+  content?: NoTiptap[] | null;
+};
+
+/** o que não vem do snapshot: quem assinou e quando */
+type Extra = { signatario: Signatario; assinadoEm: Date };
+/** as duas assinaturas já em data URL, prontas pra virar `image` do pdfmake */
+type Assinaturas = { casal: string | null; jordan: string | null };
+
 /* Todo campo que o texto do contrato pode referenciar (nó "campo" do editor),
-   igual à lista de lacunas de gerar.js — mas aqui devolve string direto pro
+   igual à lista de lacunas de gerar.ts — mas aqui devolve string direto pro
    pdfmake, sem coordenada nenhuma envolvida. Sem valor: "—" (convenção de
    dado ausente, exceção do tom de voz — não é prosa). */
-function valorDoCampo(nome, dados, extra) {
+function valorDoCampo(nome: string, dados: SnapshotContrato, extra: Extra): string {
   const soNoiva = !dados.noivo && !!dados.noiva;
   switch (nome) {
     case "noivo": return dados.noivo || "";
@@ -65,16 +86,16 @@ function valorDoCampo(nome, dados, extra) {
   }
 }
 
-function valorTotal(dados) { return Number(dados.total) || 0; }
-function valorEntrada(dados) {
+function valorTotal(dados: SnapshotContrato): number { return Number(dados.total) || 0; }
+function valorEntrada(dados: SnapshotContrato): number {
   const total = valorTotal(dados);
-  return (dados.entrada != null && dados.entrada !== "") ? Number(dados.entrada) : total * 0.3;
+  return (dados.entrada != null && (dados.entrada as unknown) !== "") ? Number(dados.entrada) : total * 0.3;
 }
 
 /* marks do Tiptap (bold/italic) → run inline do pdfmake */
-function inlineDe(node, dados, extra) {
+function inlineDe(node: NoTiptap, dados: SnapshotContrato, extra: Extra): ContentText {
   if (node.type === "text") {
-    const run = { text: node.text || "" };
+    const run: ContentText = { text: node.text || "" };
     (node.marks || []).forEach(function (m) {
       if (m.type === "bold") run.bold = true;
       if (m.type === "italic") run.italics = true;
@@ -82,29 +103,31 @@ function inlineDe(node, dados, extra) {
     return run;
   }
   if (node.type === "campo") {
-    return { text: valorDoCampo((node.attrs || {}).campo, dados, extra) };
+    return { text: valorDoCampo(String((node.attrs || {}).campo ?? ""), dados, extra) };
   }
   if (node.type === "hardBreak") return { text: "\n" };
   return { text: "" };
 }
 
-function tabelaItens(dados) {
-  const itens = Array.isArray(dados.itens) ? dados.itens : [];
+function tabelaItens(dados: SnapshotContrato): Content {
+  const itens: ItemContrato[] = Array.isArray(dados.itens) ? dados.itens : [];
   const pacote = itens.find(ehPacote);
   const adicionais = itens.filter(function (i) { return !ehPacote(i); });
   const linhas = [
-    { desc: pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados" }
+    { desc: pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados" },
   ].concat(adicionais.map(function (a) { return { desc: a.nome || a.id }; }));
 
-  const cab = function (t) { return { text: t, bold: true, fontSize: 8.5, fillColor: FUNDO_TH }; };
-  const body = [
-    [cab("QTD"), cab("DESCRIÇÃO DOS SERVIÇOS"), cab("VALOR TOTAL")]
-  ].concat(linhas.map(function (l) {
+  const cab = function (t: string): ContentText {
+    return { text: t, bold: true, fontSize: 8.5, fillColor: FUNDO_TH };
+  };
+  const body: ContentText[][] = ([
+    [cab("QTD"), cab("DESCRIÇÃO DOS SERVIÇOS"), cab("VALOR TOTAL")],
+  ] as ContentText[][]).concat(linhas.map(function (l): ContentText[] {
     return [
-      { text: "1" }, { text: l.desc }, { text: "" }
+      { text: "1" }, { text: l.desc ?? "" }, { text: "" },
     ];
   })).concat([
-    [{ text: "" }, { text: "VALOR TOTAL", bold: true }, { text: moeda(valorTotal(dados)), bold: true }]
+    [{ text: "" }, { text: "VALOR TOTAL", bold: true }, { text: moeda(valorTotal(dados)), bold: true }],
   ]);
 
   return {
@@ -113,16 +136,19 @@ function tabelaItens(dados) {
       hLineColor: function () { return LINHA; },
       vLineColor: function () { return LINHA; },
       hLineWidth: function () { return 0.75; },
-      vLineWidth: function () { return 0.75; }
+      vLineWidth: function () { return 0.75; },
     },
-    margin: [0, 4, 0, 10]
+    margin: [0, 4, 0, 10],
   };
 }
 
-function blocoAssinaturas(dados, extra, assinaturaCasalDataUrl, assinaturaJordanDataUrl) {
-  const conteudo = [
+function blocoAssinaturas(
+  dados: SnapshotContrato, extra: Extra,
+  assinaturaCasalDataUrl: string | null, assinaturaJordanDataUrl: string | null,
+): Content[] {
+  const conteudo: Content[] = [
     { text: valorDoCampo("cidade-assinatura", dados, extra) + ", " + valorDoCampo("data-assinatura", dados, extra), margin: [0, 10, 0, 14] },
-    { text: extra.signatario.nome + (extra.signatario.cpf ? " – CPF " + cpfFormatado(extra.signatario.cpf) : "") + " – CONTRATANTE", margin: [0, 0, 0, 4] }
+    { text: extra.signatario.nome + (extra.signatario.cpf ? " – CPF " + cpfFormatado(extra.signatario.cpf) : "") + " – CONTRATANTE", margin: [0, 0, 0, 4] },
   ];
   if (assinaturaCasalDataUrl) {
     conteudo.push({ image: assinaturaCasalDataUrl, width: 160, margin: [0, 2, 0, 8] });
@@ -135,25 +161,29 @@ function blocoAssinaturas(dados, extra, assinaturaCasalDataUrl, assinaturaJordan
 }
 
 /* converte content[] do Tiptap (doc.content) pra content[] do pdfmake, nó a
-   nó — a mesma estrutura que configuracoes-editor.js sabe montar */
-function converterNos(nos, dados, extra, assinaturas) {
-  const saida = [];
+   nó — a mesma estrutura que o editor do modelo sabe montar */
+function converterNos(
+  nos: NoTiptap[] | null | undefined, dados: SnapshotContrato, extra: Extra, assinaturas: Assinaturas,
+): Content[] {
+  const saida: Content[] = [];
   (nos || []).forEach(function (no) {
-    saida.push.apply(saida, converterNo(no, dados, extra, assinaturas));
+    saida.push(...converterNo(no, dados, extra, assinaturas));
   });
   return saida;
 }
 
 /* Alinhamento escolhido no editor do modelo (atributo textAlign do nó, posto
-   pela extensão TextAlign em configuracoes-editor.js). O padrão do contrato é
-   justificado, então é o que vale quando o nó não traz nada — sem isso, um
-   parágrafo alinhado na tela sairia diferente no PDF assinado. */
-function alinhamentoDo(no) {
+   pela extensão TextAlign do Tiptap). O padrão do contrato é justificado,
+   então é o que vale quando o nó não traz nada — sem isso, um parágrafo
+   alinhado na tela sairia diferente no PDF assinado. */
+function alinhamentoDo(no: NoTiptap): "left" | "center" | "right" | "justify" {
   const a = (no.attrs || {}).textAlign;
   return a === "left" || a === "center" || a === "right" ? a : "justify";
 }
 
-function converterNo(no, dados, extra, assinaturas) {
+function converterNo(
+  no: NoTiptap, dados: SnapshotContrato, extra: Extra, assinaturas: Assinaturas,
+): Content[] {
   if (!no || !no.type) return [];
 
   if (no.type === "paragraph") {
@@ -161,7 +191,7 @@ function converterNo(no, dados, extra, assinaturas) {
     return [{ text: runs.length ? runs : "", alignment: alinhamentoDo(no), margin: [0, 0, 0, 8] }];
   }
   if (no.type === "heading") {
-    const nivel = (no.attrs || {}).level || 2;
+    const nivel = Number((no.attrs || {}).level) || 2;
     const runs = converterInline(no.content, dados, extra);
     return [{ text: runs, bold: true, fontSize: nivel <= 2 ? 13 : 11, alignment: alinhamentoDo(no), margin: [0, 12, 0, 6] }];
   }
@@ -169,8 +199,9 @@ function converterNo(no, dados, extra, assinaturas) {
     const itens = (no.content || []).map(function (li) {
       return converterNos(li.content, dados, extra, assinaturas);
     });
-    const chave = no.type === "orderedList" ? "ol" : "ul";
-    return [{ [chave]: itens, margin: [0, 0, 0, 8] }];
+    return no.type === "orderedList"
+      ? [{ ol: itens, margin: [0, 0, 0, 8] }]
+      : [{ ul: itens, margin: [0, 0, 0, 8] }];
   }
   if (no.type === "tabelaItens") {
     return [tabelaItens(dados)];
@@ -182,14 +213,16 @@ function converterNo(no, dados, extra, assinaturas) {
   return [];
 }
 
-function converterInline(nos, dados, extra) {
+function converterInline(
+  nos: NoTiptap[] | null | undefined, dados: SnapshotContrato, extra: Extra,
+): ContentText[] {
   return (nos || []).map(function (n) { return inlineDe(n, dados, extra); });
 }
 
-/* mesma página de auditoria final de gerar.js, sem IP (fica só na tabela
+/* mesma página de auditoria final de gerar.ts, sem IP (fica só na tabela
    contratos) */
-function paginaAuditoria(extra) {
-  const linhas = [["Signatário:", extra.signatario.nome]];
+function paginaAuditoria(extra: Extra): Content {
+  const linhas: [string, string][] = [["Signatário:", extra.signatario.nome]];
   if (extra.signatario.cpf) linhas.push(["CPF:", cpfFormatado(extra.signatario.cpf)]);
   if (extra.signatario.email) linhas.push(["E-mail:", extra.signatario.email]);
   const quando = extra.assinadoEm.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
@@ -200,15 +233,15 @@ function paginaAuditoria(extra) {
 
   return {
     pageBreak: "before",
-    stack: linhas.map(function (par) {
+    stack: linhas.map(function (par): Content {
       return {
         columns: [
           { text: par[0], bold: true, width: 90 },
-          { text: par[1] }
+          { text: par[1] },
         ],
-        margin: [0, 0, 0, 6]
+        margin: [0, 0, 0, 6],
       };
-    })
+    }),
   };
 }
 
@@ -218,28 +251,36 @@ export async function gerarContratoPdfDinamico({
   assinaturaCasalDataUrl,
   assinaturaJordanDataUrl,
   signatario,
-  assinadoEm
-}) {
-  const dados = snapshot || {};
-  const extra = { signatario: signatario, assinadoEm: assinadoEm };
-  const doc = templateJson && templateJson.type === "doc" ? templateJson : { content: [] };
+  assinadoEm,
+}: {
+  templateJson: unknown;
+  snapshot: SnapshotContrato;
+  assinaturaCasalDataUrl?: string | null;
+  assinaturaJordanDataUrl?: string | null;
+  signatario: Signatario;
+  assinadoEm: Date;
+}): Promise<Buffer> {
+  const dados: SnapshotContrato = snapshot || {};
+  const extra: Extra = { signatario: signatario, assinadoEm: assinadoEm };
+  const entrada = templateJson as NoTiptap | null | undefined;
+  const doc: NoTiptap = entrada && entrada.type === "doc" ? entrada : { content: [] };
 
   const corpo = converterNos(doc.content, dados, extra, {
-    casal: assinaturaCasalDataUrl || null, jordan: assinaturaJordanDataUrl || null
+    casal: assinaturaCasalDataUrl || null, jordan: assinaturaJordanDataUrl || null,
   });
 
   const printer = new PdfPrinter(FONTES);
-  const docDefinition = {
+  const docDefinition: TDocumentDefinitions = {
     pageSize: "A4",
     pageMargins: [56, 56, 56, 56],
     defaultStyle: { font: "Roboto", fontSize: 10, color: TINTA },
-    content: corpo.concat([paginaAuditoria(extra)])
+    content: corpo.concat([paginaAuditoria(extra)]),
   };
 
   const pdfDoc = printer.createPdfKitDocument(docDefinition);
-  const chunks = [];
-  return new Promise(function (resolve, reject) {
-    pdfDoc.on("data", function (c) { chunks.push(c); });
+  const chunks: Buffer[] = [];
+  return new Promise<Buffer>(function (resolve, reject) {
+    pdfDoc.on("data", function (c: Buffer) { chunks.push(c); });
     pdfDoc.on("end", function () { resolve(Buffer.concat(chunks)); });
     pdfDoc.on("error", reject);
     pdfDoc.end();

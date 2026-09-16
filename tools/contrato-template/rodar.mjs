@@ -7,9 +7,9 @@
 
   Saída (sobrescreve): src/lib/contrato-pdf/template.pdf + coords.json
 
-  ESTE CAMINHO É LEGADO. Ele alimenta o `gerar.js` (pdf-lib), que só entra em
+  ESTE CAMINHO É LEGADO. Ele alimenta o `gerar.ts` (pdf-lib), que só entra em
   contrato SEM modelo. Todo contrato gerado hoje carrega o snapshot de um
-  modelo e sai pelo `gerar-pdfmake.js`, que monta o PDF do zero e não usa
+  modelo e sai pelo `gerar-pdfmake.ts`, que monta o PDF do zero e não usa
   template nenhum. Isto continua aqui pra contrato antigo, de antes dos
   modelos, ainda poder ser reimpresso.
 

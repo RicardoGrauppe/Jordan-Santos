@@ -7,14 +7,14 @@
   por pixel (linha cortada ao meio). Agora:
 
     1. tools/contrato-template/ gera, OFFLINE, um PDF vetorial já paginado a
-       partir do contrato-template.js, com os campos variáveis em branco;
+       partir do contrato-template.ts, com os campos variáveis em branco;
     2. este módulo abre esse template e escreve os valores nas lacunas.
 
   Resultado: ~240 KB, texto de verdade (selecionável e pesquisável) e sempre
   idêntico, independente do aparelho de quem assina.
 
   O template.pdf / coords.json desta pasta são GERADOS — não edite à mão.
-  Mexeu numa cláusula do contrato-template.js? Regere (veja
+  Mexeu numa cláusula do contrato-template.ts? Regere (veja
   tools/contrato-template/README.md), senão o PDF sai com o texto antigo.
 
   Template ÚNICO desde 2026-08-08. Existiam três (P/M/G) porque a tabela de
@@ -22,23 +22,56 @@
   lista o pacote e os adicionais (sem valor unitário — só o total), mas mora
   numa caixa de altura FIXA e se encaixa nela: um contrato de 1 item sai
   folgado, um de 10 sai apertado, e os dois ocupam o mesmo espaço na folha.
+
+  Veio do estúdio do Jordan em JavaScript e foi passado pra TypeScript em
+  16/09/2026 — o comportamento é o mesmo, linha por linha; o que mudou é que
+  agora o `tsc` enxerga o miolo, que antes ficava fora do typecheck atrás de um
+  `gerar.d.ts` escrito à mão.
 */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
+
+export type ItemContrato = { id?: string; nome?: string } & Record<string, unknown>;
+
+export type SnapshotContrato = {
+  noivo?: string | null; noiva?: string | null;
+  cpf_noivo?: string | null; cpf_noiva?: string | null;
+  tel_noivo?: string | null; tel_noiva?: string | null;
+  endereco?: string | null; numero?: string | null; bairro?: string | null;
+  cidade?: string | null; complemento?: string | null; estado?: string | null; cep?: string | null;
+  data_evento?: string | null; local_evento?: string | null; horario?: string | null;
+  itens?: ItemContrato[]; total?: number | null; entrada?: number | null;
+} & Record<string, unknown>;
+
+export type Signatario = { nome: string; cpf?: string | null; email?: string | null };
+
+/* Formato do coords.json GERADO pela ferramenta. Medidas em px de CSS; quem
+   converte pra ponto é este módulo. */
+type CampoCoord = {
+  campo: string; pagina: number;
+  x: number; y: number; w: number; h: number;
+  fontePx: number; centrado: boolean;
+};
+type CaixaCoord = { box: string; pagina: number; x: number; y: number; w: number; h: number };
+type Coords = {
+  larguraPaginaPx: number; alturaPaginaPx: number;
+  margemTopoMm?: number; margemEsquerdaMm?: number;
+  campos: CampoCoord[]; boxes: CaixaCoord[];
+};
 
 /* relativo a ESTE módulo, nunca ao cwd: o diretório de trabalho difere entre
    o dev-server local e a lambda da Vercel */
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
-/* Quais itens são PACOTE (o resto é adicional). O catalogo.js é a fonte única
-   dos produtos, mas ele é browser-only (`window.CATALOGO`) e esta function roda
-   no servidor — daí a lista aqui. Pacote novo no catálogo? Acrescente o id.
+/* Quais itens são PACOTE (o resto é adicional). O catalogo.ts é a fonte única
+   dos produtos, mas ele é browser-only e esta function roda no servidor — daí
+   a lista aqui. Pacote novo no catálogo? Acrescente o id.
    O fallback pelo nome cobre o esquecimento sem quebrar o contrato. */
-export const PACOTES = new Set(["eternal", "heritage"]);
-export function ehPacote(item) {
-  return PACOTES.has(item.id) || /^pacote\b/i.test(String(item.nome || ""));
+export const PACOTES: Set<string> = new Set(["eternal", "heritage"]);
+export function ehPacote(item: ItemContrato): boolean {
+  return PACOTES.has(String(item.id)) || /^pacote\b/i.test(String(item.nome || ""));
 }
 
 const TINTA = rgb(0.114, 0.114, 0.106);      /* --ink  #1D1D1B */
@@ -50,23 +83,23 @@ const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-export function moeda(v) {
+export function moeda(v: number | null | undefined): string {
   /* o Intl separa "R$" do número com espaço fino (U+00A0); troca por espaço
      normal só pra não depender de encoding exótico na fonte do PDF */
   return brl.format(Number(v) || 0).replace(/ /g, " ");
 }
-export function cpfFormatado(v) {
+export function cpfFormatado(v: string | null | undefined): string {
   const d = String(v || "").replace(/\D/g, "");
   return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : String(v || "");
 }
-export function cepFormatado(v) {
+export function cepFormatado(v: string | null | undefined): string {
   const d = String(v || "").replace(/\D/g, "");
   return d.length === 8 ? d.replace(/(\d{5})(\d{3})/, "$1-$2") : String(v || "");
 }
-export function dataExtenso(d) {
+export function dataExtenso(d: Date): string {
   return d.getDate() + " de " + MESES[d.getMonth()] + " de " + d.getFullYear();
 }
-export function dataEventoExtenso(iso) {
+export function dataEventoExtenso(iso: string | null | undefined): string {
   if (!iso) return "";
   const [a, m, dia] = String(iso).split("-").map(Number);
   return dia + " de " + MESES[m - 1] + " de " + a;
@@ -76,7 +109,7 @@ export function dataEventoExtenso(iso) {
    emoji nem alfabetos fora do latim-1. O pdf-lib LANÇA ERRO ao topar com um
    caractere que não consegue codificar — e o nome/local vêm do casal, texto
    livre. Sem esta limpeza, um emoji no nome derrubaria a assinatura. */
-function paraWinAnsi(texto) {
+function paraWinAnsi(texto: unknown): string {
   return String(texto == null ? "" : texto)
     .normalize("NFC")
     .replace(/[‘’‛]/g, "'")
@@ -88,7 +121,7 @@ function paraWinAnsi(texto) {
     .replace(/[^\x20-\x7E -ÿ€—…]/g, "?");
 }
 
-function bytesDeDataUrl(dataUrl) {
+function bytesDeDataUrl(dataUrl: string | null | undefined): Buffer {
   const base64 = String(dataUrl || "").split(",")[1];
   if (!base64) throw new Error("assinatura sem conteúdo");
   return Buffer.from(base64, "base64");
@@ -99,14 +132,20 @@ export async function gerarContratoPdf({
   assinaturaCasalDataUrl,
   assinaturaJordanDataUrl,
   signatario,
-  assinadoEm
-}) {
-  const dados = snapshot || {};
-  const itens = Array.isArray(dados.itens) ? dados.itens : [];
+  assinadoEm,
+}: {
+  snapshot: SnapshotContrato;
+  assinaturaCasalDataUrl?: string | null;
+  assinaturaJordanDataUrl?: string | null;
+  signatario: Signatario;
+  assinadoEm: Date;
+}): Promise<Uint8Array> {
+  const dados: SnapshotContrato = snapshot || {};
+  const itens: ItemContrato[] = Array.isArray(dados.itens) ? dados.itens : [];
 
   /* um template só: a tabela tem altura fixa (pacote + total), então a
      paginação não depende mais da quantidade de itens */
-  const coords = JSON.parse(readFileSync(join(AQUI, "coords.json"), "utf8"));
+  const coords = JSON.parse(readFileSync(join(AQUI, "coords.json"), "utf8")) as Coords;
   const doc = await PDFDocument.load(readFileSync(join(AQUI, "template.pdf")));
 
   const pages = doc.getPages();
@@ -125,7 +164,7 @@ export async function gerarContratoPdf({
   const helvBold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   /* ---------- primitivas ---------- */
-  function campoDe(nome) {
+  function campoDe(nome: string): CampoCoord {
     const c = coords.campos.find((x) => x.campo === nome);
     if (!c) throw new Error("campo sem coordenada no template: " + nome);
     return c;
@@ -135,7 +174,7 @@ export async function gerarContratoPdf({
      segunda pessoa quando o contrato tem um contratante só (2026-08-08): a
      linha NOIVA/TELEFONE NOIVA existe no template impresso, e um travessão
      ali pareceria dado faltando em vez de campo que não se aplica. */
-  function escreverCampo(nome, texto, opcional) {
+  function escreverCampo(nome: string, texto: unknown, opcional?: boolean): void {
     const c = campoDe(nome);
     if (opcional && !texto) return;
     const valor = paraWinAnsi(texto === 0 ? "0" : (texto || "—"));
@@ -147,22 +186,23 @@ export async function gerarContratoPdf({
     pages[c.pagina].drawText(valor, {
       x,
       y: pageH - margemTopo - (c.y + c.h) * sy + 2.5,   /* um tico acima do sublinhado */
-      size, font: helv, color: TINTA
+      size, font: helv, color: TINTA,
     });
   }
 
-  function caixaDe(nome) {
+  type Caixa = { page: PDFPage; x: number; largura: number; topo: number; altura: number };
+  function caixaDe(nome: string): Caixa {
     const b = coords.boxes.find((x) => x.box === nome);
     if (!b) throw new Error("caixa sem coordenada no template: " + nome);
     return {
       page: pages[b.pagina],
       x: margemX + b.x * sx, largura: b.w * sx,
-      topo: pageH - margemTopo - b.y * sy, altura: b.h * sy
+      topo: pageH - margemTopo - b.y * sy, altura: b.h * sy,
     };
   }
 
-  function quebrarEmLinhas(texto, fonte, size, maxW) {
-    const linhas = [];
+  function quebrarEmLinhas(texto: unknown, fonte: PDFFont, size: number, maxW: number): string[] {
+    const linhas: string[] = [];
     let atual = "";
     for (const palavra of paraWinAnsi(texto).split(" ")) {
       const tentativa = atual ? atual + " " + palavra : palavra;
@@ -173,7 +213,7 @@ export async function gerarContratoPdf({
     return linhas.length ? linhas : [""];
   }
 
-  function carimbarAssinatura(nomeCaixa, dataUrl) {
+  function carimbarAssinatura(nomeCaixa: string, dataUrl: string | null | undefined): void {
     if (!dataUrl) return;              /* sem assinatura, fica só a linha */
     const b = caixaDe(nomeCaixa);
     const png = pngsEmbutidos[nomeCaixa];
@@ -182,14 +222,14 @@ export async function gerarContratoPdf({
     b.page.drawImage(png, {
       x: b.x + (b.largura - w) / 2,
       y: b.topo - b.altura + 2,
-      width: w, height: h
+      width: w, height: h,
     });
   }
 
   /* as duas assinaturas já chegam como PNG (o canvas do /assinar pro casal, o
      dataurl guardado no banco pro Jordan) — o servidor só carimba imagem, por
      isso não precisa de fontkit nem de fonte cursiva aqui */
-  const pngsEmbutidos = {};
+  const pngsEmbutidos: Record<string, PDFImage> = {};
   if (assinaturaCasalDataUrl) {
     pngsEmbutidos["assinatura-casal"] = await doc.embedPng(bytesDeDataUrl(assinaturaCasalDataUrl));
   }
@@ -199,7 +239,7 @@ export async function gerarContratoPdf({
 
   /* ---------- lacunas ---------- */
   const total = Number(dados.total) || 0;
-  const entrada = (dados.entrada != null && dados.entrada !== "")
+  const entrada = (dados.entrada != null && (dados.entrada as unknown) !== "")
     ? Number(dados.entrada) : total * 0.3;
 
   /* contratantes: os dois lados são opcionais (basta um), então a lacuna de
@@ -254,7 +294,7 @@ export async function gerarContratoPdf({
     const adicionais = itens.filter((i) => !ehPacote(i));
     const itensDaTabela = [
       { desc: pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados" },
-      ...adicionais.map((a) => ({ desc: a.nome || a.id }))
+      ...adicionais.map((a) => ({ desc: a.nome || a.id })),
     ];
 
     /* A caixa do template tem altura FIXA — é ela que mantém a paginação igual
@@ -264,7 +304,8 @@ export async function gerarContratoPdf({
        caber. Um contrato de 1 item sai folgado, um de 10 sai apertado, e os
        dois ocupam exatamente o mesmo espaço na folha. */
     const N_FIXAS = 2;                         /* cabeçalho + VALOR TOTAL */
-    let fs = 9.8, respiro = 10, quebras;
+    let fs = 9.8, respiro = 10;
+    let quebras: string[][] = [];
     for (;;) {
       quebras = itensDaTabela.map((l) => quebrarEmLinhas(l.desc, helv, fs, colDesc - pad * 2));
       const linhasDeTexto = quebras.reduce((s, q) => s + q.length, 0) + N_FIXAS;
@@ -275,10 +316,14 @@ export async function gerarContratoPdf({
       break;   /* piso: melhor um leve transbordo do que texto ilegível */
     }
 
-    const linhas = [
+    type LinhaTabela = {
+      qtd: string; desc: unknown; val: string;
+      cabecalho?: boolean; destaque?: boolean; quebra?: string[];
+    };
+    const linhas: LinhaTabela[] = [
       { cabecalho: true, qtd: "QTD", desc: "DESCRIÇÃO DOS SERVIÇOS", val: "VALOR TOTAL" },
-      ...itensDaTabela.map((l, i) => ({ qtd: "1", desc: l.desc, val: "", quebra: quebras[i] })),
-      { destaque: true, qtd: "", desc: "VALOR TOTAL", val: moeda(total) }
+      ...itensDaTabela.map((l, i): LinhaTabela => ({ qtd: "1", desc: l.desc, val: "", quebra: quebras[i] })),
+      { destaque: true, qtd: "", desc: "VALOR TOTAL", val: moeda(total) },
     ];
 
     let topo = b.topo;
@@ -292,12 +337,12 @@ export async function gerarContratoPdf({
       }
       b.page.drawRectangle({
         x: b.x, y: base, width: b.largura, height: alturaLinha,
-        borderColor: LINHA, borderWidth: 0.75
+        borderColor: LINHA, borderWidth: 0.75,
       });
       for (const dx of [colQtd, colQtd + colDesc]) {
         b.page.drawLine({
           start: { x: b.x + dx, y: base }, end: { x: b.x + dx, y: base + alturaLinha },
-          color: LINHA, thickness: 0.75
+          color: LINHA, thickness: 0.75,
         });
       }
 
@@ -307,17 +352,17 @@ export async function gerarContratoPdf({
       const qtd = paraWinAnsi(l.qtd);
       b.page.drawText(qtd, {
         x: b.x + colQtd - pad - fonte.widthOfTextAtSize(qtd, size),
-        y, size, font: fonte, color: TINTA
+        y, size, font: fonte, color: TINTA,
       });
       (l.quebra || [paraWinAnsi(l.desc)]).forEach((linha, i) => {
         b.page.drawText(linha, {
-          x: b.x + colQtd + pad, y: y - i * (fs + 3.5), size, font: fonte, color: TINTA
+          x: b.x + colQtd + pad, y: y - i * (fs + 3.5), size, font: fonte, color: TINTA,
         });
       });
       const val = paraWinAnsi(l.val);
       b.page.drawText(val, {
         x: b.x + b.largura - pad - fonte.widthOfTextAtSize(val, size),
-        y, size, font: fonte, color: TINTA
+        y, size, font: fonte, color: TINTA,
       });
 
       topo = base;
@@ -336,14 +381,14 @@ export async function gerarContratoPdf({
   {
     const b = caixaDe("auditoria");
     const quando = assinadoEm.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    const linhas = [
+    const linhas: [string, string][] = [
       ["Signatário:", signatario.nome],
-      ...(signatario.cpf ? [["CPF:", cpfFormatado(signatario.cpf)]] : []),
-      ...(signatario.email ? [["E-mail:", signatario.email]] : []),
+      ...(signatario.cpf ? [["CPF:", cpfFormatado(signatario.cpf)] as [string, string]] : []),
+      ...(signatario.email ? [["E-mail:", signatario.email] as [string, string]] : []),
       ["Data e hora:", quando + " (horário de Brasília)"],
       ["Verificação:", "acesso por link eletrônico exclusivo, entregue ao contratante"],
       ["Aceite:", "os termos foram lidos e aceitos, com reconhecimento da validade da"],
-      ["", "assinatura eletrônica (MP 2.200-2/2001, art. 10, §2º)"]
+      ["", "assinatura eletrônica (MP 2.200-2/2001, art. 10, §2º)"],
     ];
     let y = b.topo - 16;
     for (const [rotulo, valor] of linhas) {

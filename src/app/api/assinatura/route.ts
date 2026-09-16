@@ -310,10 +310,10 @@ export async function POST(req: Request) {
          como assinado sem via nenhuma guardada */
       /* contrato com modelo (texto editado em /configuracoes) monta o PDF do
          zero via pdfmake; sem modelo (texto fixo de sempre) continua no
-         template.pdf pré-paginado — gerar.js intocado. Prefere o snapshot json
+         template.pdf pré-paginado — gerar.ts intocado. Prefere o snapshot json
          congelado na geração; só cai no join do modelo vivo pra contratos
          antigos, gerados antes do snapshot existir. */
-      /* Uint8Array do pdf-lib (gerar.js) ou Buffer do pdfmake (gerar-pdfmake.js);
+      /* Uint8Array do pdf-lib (gerar.ts) ou Buffer do pdfmake (gerar-pdfmake.ts);
          Buffer é Uint8Array, e os dois consumidores abaixo aceitam qualquer um */
       let pdfBytes: Uint8Array;
       if (c.template_json_snapshot || c.template_id) {

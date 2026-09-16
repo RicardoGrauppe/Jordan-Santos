@@ -29,13 +29,13 @@ src/app/assinar              onde o casal assina (?token=…)
 src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
-                             catalogo.ts, ficha.ts, email.ts, contrato-pdf/ (gerar.js, gerar-pdfmake.js, fontes)
+                             catalogo.ts, ficha.ts, email.ts, contrato-pdf/ (gerar.ts, gerar-pdfmake.ts, fontes)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco)
 ```
 
 ## Dependências travadas
 
-- **pdfmake fica na 0.2.x.** `contrato-pdf/gerar-pdfmake.js` veio do original e usa
+- **pdfmake fica na 0.2.x.** `contrato-pdf/gerar-pdfmake.ts` veio do original e usa
   `new PdfPrinter(fontes).createPdfKitDocument(...)`. A 0.3 mudou a API inteira
   (exporta uma instância, sem construtor) e a assinatura do casal quebra com
   502 "is not a constructor". Subir de major = reescrever o gerador.
