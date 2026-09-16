@@ -247,6 +247,9 @@ function Conteudo({
   return (
     <>
       {/* saudação: nome forte, clima (ou frase da hora) como subtítulo */}
+      {/* Ritmo da página: 24px depois da saudação (ela é o título, pede ar) e
+          16px entre os cartões, sempre. O original vinha com 18, 22, 28 e 16,
+          quatro vãos diferentes descendo a mesma tela, e isso se via. */}
       <Bloco ordem={0} className="mb-6 flex items-center gap-4">
         {clima ? (
           /* com previsão na mão, o emoji abre a página do tempo */
@@ -289,7 +292,7 @@ function Conteudo({
       {/* card "precisa de atenção": some quando está tudo em dia. Card neutro
           (bg + sombra), com a cor de alerta só no ícone e na contagem */}
       {pendentes > 0 ? (
-        <Bloco ordem={1} className="mb-[18px]">
+        <Bloco ordem={1} className="mb-4">
         <Link
           href="/painel/pendencias"
           className={
@@ -316,7 +319,7 @@ function Conteudo({
 
       {/* KPIs: as "linhas" entre células são o fundo line vazando pelo gap de
           1px, nada de borda por célula */}
-      <Bloco ordem={2} className="mb-7 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line shadow-card md:grid-cols-4">
+      <Bloco ordem={2} className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line shadow-card md:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.rotulo} className="relative bg-paper px-[22px] py-5">
             <span className="absolute right-3.5 top-3.5 inline-flex h-[34px] w-[34px] items-center justify-center rounded-xl bg-accent-tint text-accent">
@@ -471,7 +474,7 @@ function HomeSkeleton() {
         </div>
       </div>
 
-      <div className="mb-[18px] flex w-full items-center gap-[13px] rounded-2xl bg-[#F8F4EE] px-[15px] py-[13px] shadow-card">
+      <div className="mb-4 flex w-full items-center gap-[13px] rounded-2xl bg-[#F8F4EE] px-[15px] py-[13px] shadow-card">
         <Sk className="h-9 w-9 rounded-[11px]" />
         <div className="flex flex-1 flex-col gap-[5px]">
           <Sk className="h-3.5 w-[150px] rounded-md" />
@@ -479,7 +482,7 @@ function HomeSkeleton() {
         </div>
       </div>
 
-      <div className="mb-7 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line shadow-card md:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line shadow-card md:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="bg-paper px-[22px] py-5">
             <Sk className="h-[30px] w-[54px] rounded-[9px]" />
@@ -488,7 +491,7 @@ function HomeSkeleton() {
         ))}
       </div>
 
-      <section className="mb-7">
+      <section className="mb-4">
         <CabecalhoSk />
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {[0, 1].map((i) => (
@@ -500,7 +503,7 @@ function HomeSkeleton() {
         </ul>
       </section>
 
-      <section className="mb-7">
+      <section className="mb-4">
         <CabecalhoSk />
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           {[0, 1].map((i) => (
