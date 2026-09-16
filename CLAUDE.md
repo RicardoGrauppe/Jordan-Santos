@@ -108,3 +108,8 @@ Vieram do estúdio original e cada uma custou tempo pra descobrir:
 - O IP da trilha de auditoria da assinatura é `null` quando não dá pra saber,
   nunca `"?"`: o contrato afirma que ele fica registrado, e campo vazio é
   honesto enquanto um valor inventado não é.
+- O `Secure` do cookie de sessão acompanha a **conexão**, não o `NODE_ENV`
+  (`lib/sessao.ts`). Não troque de volta achando que afrouxa: em produção, que
+  é https, o cookie continua `Secure`. O que isso conserta é o build de
+  produção servido por http pra testar no celular, onde o navegador descarta em
+  silêncio um cookie `Secure` e o login parece recusar a senha certa.
