@@ -64,6 +64,22 @@
 html, body {
   margin: 0;
   padding: 0;
+  /* Desliga o pull-to-refresh DO NAVEGADOR e mantém o elástico.
+     É o que a especificação define pro `contain`: ele "desabilita a navegação
+     nativa do navegador, incluindo o gesto vertical de pull-to-refresh",
+     enquanto o efeito local de bounce continua acontecendo dentro do elemento.
+     `none` levaria o elástico junto, e o elástico é justamente o que dá a
+     sensação boa do gesto.
+
+     Precisa estar nos DOIS: o Chrome só respeita no body, o Safari só no html.
+     No iOS vale a partir do Safari 16; abaixo disso a regra é ignorada e o
+     gesto nativo volta, o que é degradação aceitável (o app continua
+     atualizando, só que pelo caminho do navegador).
+
+     Sem isto, o gesto do navegador e o nosso competiam: puxão curto atualizava
+     os dados, puxão longo recarregava a página inteira, e o mesmo movimento
+     dava dois resultados diferentes. */
+  overscroll-behavior-y: contain;
   background: var(--color-soft);
   color: var(--color-ink);
   font-family: var(--font-sans);

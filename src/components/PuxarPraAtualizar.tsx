@@ -7,27 +7,42 @@
   - Só no toque (`matchMedia("(hover: none)")`) e só com a página no topo. No
     computador o gesto não existe: rolar pra cima com a roda do mouse não pode
     recarregar nada.
-  - Resistência de 0,6 e teto de 90px: o conteúdo desce mais devagar do que o
-    dedo, que é o que dá a sensação de elástico.
   - Passou de 56px ao soltar, atualiza. Não passou, volta pro lugar.
   - Quem recarrega segura o skeleton por um tempo mínimo (900ms na chamada das
     telas), senão o skeleton pisca e a atualização parece não ter acontecido.
 
-  A posição é escrita direto no DOM (nada de setState por quadro) e some assim
-  que o gesto termina: nenhum `will-change` e nenhum transform de repouso, pra
-  este bloco não virar o berço de posicionamento dos modais e do aviso
-  flutuante, que são `fixed` e vivem dentro dele.
+  DUAS MUDANÇAS em relação ao original, decididas em 16/09/2026:
+
+  1. **Quem move a página é o elástico do navegador, não a gente.** Antes este
+     componente aplicava o próprio `translateY` no conteúdo, e isso SOMAVA ao
+     bounce nativo: o movimento saía em dobro. Agora o `overscroll-behavior-y:
+     contain` (em globals.css) desliga só o pull-to-refresh do navegador e
+     preserva o elástico, então o movimento é o nativo, que é o que dá a
+     sensação boa, e a gente desenha só o indicador por cima.
+
+  2. **O indicador é um círculo, sem texto.** É o padrão de mercado (swipe to
+     refresh do Material): spinner circular centralizado perto do topo, que
+     entra transladando, escalando e girando conforme o puxão, precisa cruzar
+     um limiar, e FICA VISÍVEL até a atualização terminar e o conteúdo novo
+     aparecer. A pílula escrita "Carregando" que estava aqui não é o padrão.
+
+  A posição é escrita direto no DOM (nada de setState por quadro). Nenhum
+  `will-change` e nenhum transform de repouso no conteúdo, pra este bloco não
+  virar o berço de posicionamento dos modais e do aviso flutuante, que são
+  `fixed` e vivem dentro dele.
 */
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
 
-/** quanto o conteúdo precisa descer pra valer uma atualização */
+/** quanto o dedo precisa andar (já com resistência) pra valer uma atualização */
 const LIMIAR = 56;
-/** teto do quanto o conteúdo desce, por mais que se puxe */
+/** teto do quanto o indicador desce, por mais que se puxe */
 const MAXIMO = 90;
-/** o dedo anda 100, o conteúdo anda 60 */
+/** o dedo anda 100, o indicador anda 60 */
 const RESISTENCIA = 0.6;
+/** onde o indicador nasce, acima da primeira dobra */
+const REPOUSO = -46;
 const CURVA = "cubic-bezier(.22,.61,.36,1)";
 
 export function PuxarPraAtualizar({
@@ -37,7 +52,6 @@ export function PuxarPraAtualizar({
   aoAtualizar: () => unknown;
   children: ReactNode;
 }) {
-  const conteudo = useRef<HTMLDivElement>(null);
   const chip = useRef<HTMLDivElement>(null);
   const anel = useRef<HTMLSpanElement>(null);
   const acao = useRef(aoAtualizar);
@@ -50,22 +64,17 @@ export function PuxarPraAtualizar({
     const rolagem = () => document.scrollingElement?.scrollTop ?? window.scrollY ?? 0;
     const noToque = () => window.matchMedia("(hover: none)").matches;
 
-    /* d = deslocamento em px. Move o conteúdo e o chip juntos; o chip cresce de
-       0,6 a 1 conforme o puxão, então ele aparece em vez de surgir pronto. */
+    /* d = quanto o dedo andou, já com resistência. Só o INDICADOR se move: o
+       conteúdo fica com o elástico do navegador. Ele cresce de 0,6 a 1 e
+       aparece conforme o puxão, então entra em vez de surgir pronto. */
     function posicionar(d: number, comTransicao: boolean) {
-      const c = conteudo.current;
-      if (c) {
-        c.style.transition = comTransicao ? "transform .28s " + CURVA : "none";
-        c.style.transform = d > 0 ? "translateY(" + d + "px)" : "";
-      }
       const s = chip.current;
-      if (s) {
-        const prog = Math.min(d / LIMIAR, 1);
-        s.style.transition = comTransicao ? "opacity .22s ease, transform .28s " + CURVA : "none";
-        s.style.opacity = d > 4 ? String(prog) : "0";
-        s.style.transform =
-          "translateX(-50%) translateY(" + Math.max(d, 0) + "px) scale(" + (0.6 + 0.4 * prog) + ")";
-      }
+      if (!s) return;
+      const prog = Math.min(d / LIMIAR, 1);
+      s.style.transition = comTransicao ? "opacity .22s ease, transform .28s " + CURVA : "none";
+      s.style.opacity = d > 4 ? String(prog) : "0";
+      s.style.transform =
+        "translateX(-50%) translateY(" + Math.max(d, 0) + "px) scale(" + (0.6 + 0.4 * prog) + ")";
     }
 
     posicionar(0, false);
@@ -97,7 +106,9 @@ export function PuxarPraAtualizar({
       if (g.dist >= LIMIAR) {
         g.ocupado = true;
         anel.current?.classList.add("animate-spin");
-        posicionar(LIMIAR, true);   /* segura a página com o chip cheio */
+        /* fica visível até o conteúdo novo entrar: é o que o padrão pede, e é a
+           única pista de que a atualização está em curso */
+        posicionar(LIMIAR, true);
         Promise.resolve(acao.current())
           .catch(() => { /* quem recarrega já trata: aqui só solta o gesto */ })
           .finally(() => {
@@ -125,26 +136,26 @@ export function PuxarPraAtualizar({
 
   return (
     <div className="relative">
-      {/* chip: nasce acima do conteúdo, escondido embaixo do header, e desce
-          junto com o puxão. z abaixo do header (z-30) de propósito. */}
+      {/* indicador: círculo centralizado que nasce acima da primeira dobra e
+          desce com o puxão. z abaixo do cabeçalho (z-30) de propósito. */}
       <div
         ref={chip}
         aria-hidden
         className={
-          "pointer-events-none absolute left-1/2 top-[-46px] z-10 inline-flex items-center gap-[9px] " +
-          "whitespace-nowrap rounded-full bg-[#F7F9FA] py-2 pl-3 pr-4 opacity-0 shadow-card"
+          "pointer-events-none absolute left-1/2 z-10 inline-flex h-9 w-9 items-center justify-center " +
+          "rounded-full bg-paper opacity-0 shadow-card"
         }
+        style={{ top: REPOUSO }}
       >
         {/* anel do spinner: desenho, não separação nem estado */}
         <span
           ref={anel}
-          className="h-4 w-4 shrink-0 rounded-full border-2 border-line border-t-accent"
+          className="h-[18px] w-[18px] shrink-0 rounded-full border-2 border-line border-t-accent"
           style={{ animationDuration: ".65s" }}
         />
-        <span className="text-[13px] font-medium tracking-[.01em] text-ink-soft">Carregando</span>
       </div>
 
-      <div ref={conteudo}>{children}</div>
+      {children}
     </div>
   );
 }
