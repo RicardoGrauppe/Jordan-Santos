@@ -152,6 +152,20 @@ html, body {
    puxar pra atualizar, quando não há deslize nenhum acontecendo. */
 [data-deslizando] .animate-entra { animation: none; }
 
+/* O X de limpar que o WebKit desenha sozinho em `input[type=search]` sai de
+   cena: ele é glifo do navegador, com tamanho, cor e peso próprios, e destoa de
+   tudo em volta. Quem limpa a busca é um botão nosso, com o ícone do mesmo
+   conjunto do resto do app (ver `BotaoLimparBusca` em components/ui.tsx). */
+/* `display:none` junto do `appearance` de propósito: o compilador de CSS
+   descarta o `-webkit-appearance` por considerar redundante pros alvos, e o
+   `display` nenhum otimizador tira. */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 /* ---------- editor de contrato (Tiptap) ----------
    Vive aqui e não no componente porque o reset global zera margem dentro do
    ProseMirror e as listas perdiam o recuo que faz o número ficar pendurado.

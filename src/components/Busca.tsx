@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
+import { BotaoLimparBusca } from "@/components/ui";
 import { filtrarClientes, garantirClientes } from "@/lib/busca";
 import { dataCurta, iniciais, nomeCasal, ROTULO_STATUS, type ClienteLista } from "@/lib/painel";
 import { moeda } from "@/lib/util";
@@ -145,6 +146,7 @@ export function BuscaTopo() {
           onFocus={() => { if (termo.trim()) setAberto(true); }}
           className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-soft"
         />
+        {termo ? <BotaoLimparBusca aoLimpar={() => { setTermo(""); setAberto(false); }} /> : null}
       </label>
 
       {aberto && termo.trim() ? (

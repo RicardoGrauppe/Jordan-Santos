@@ -10,6 +10,7 @@
      preso depois do toque. Em Tailwind isso é o prefixo `hover:` combinado com
      `[@media(hover:hover)]:`.
 */
+import { X } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
 const HOVER = "[@media(hover:hover)]:";
@@ -85,6 +86,32 @@ export function Area({
 
 export function Cartao({ className = "", children }: { className?: string; children: ReactNode }) {
   return <div className={"rounded-2xl bg-paper p-6 shadow-card " + className}>{children}</div>;
+}
+
+/*
+  Limpar a busca. Existe porque o X que o navegador desenha em
+  `input[type=search]` é glifo dele, com tamanho, cor e peso próprios, e destoa
+  do resto; o nativo fica escondido no globals.css e este entra no lugar.
+
+  Só aparece quando há o que limpar: um X permanente num campo vazio é ruído.
+  `onMouseDown` com preventDefault pra o campo não perder o foco antes do
+  clique, senão o teclado do celular fecha e reabre.
+*/
+export function BotaoLimparBusca({ aoLimpar, rotulo = "Limpar busca" }: { aoLimpar: () => void; rotulo?: string }) {
+  return (
+    <button
+      type="button"
+      aria-label={rotulo}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={aoLimpar}
+      className={
+        "inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full " +
+        "bg-transparent text-ink-soft transition-colors hover:bg-line hover:text-ink"
+      }
+    >
+      <X size={14} />
+    </button>
+  );
 }
 
 /** Título de seção: barrinha, ícone em pill e texto. Padrão do estúdio. */

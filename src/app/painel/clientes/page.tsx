@@ -23,7 +23,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, Trash2 } from "lucide-react";
-import { Botao, Selo } from "@/components/ui";
+import { Botao, BotaoLimparBusca, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { PuxarPraAtualizar } from "@/components/PuxarPraAtualizar";
 import { SkLinha } from "@/components/Skeleton";
@@ -152,6 +152,7 @@ export default function ListaClientes() {
             aria-label="Buscar casal"
             className="w-full bg-transparent py-2.5 text-sm text-ink outline-none placeholder:text-ink-soft/70"
           />
+          {busca ? <BotaoLimparBusca aoLimpar={() => setBusca("")} /> : null}
         </label>
         <select
           value={status}
