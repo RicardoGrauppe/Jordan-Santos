@@ -13,6 +13,7 @@
     mesmos que o computador tem espalhados pelo header e pela lateral. Avisos,
     busca e conta viram tela cheia, porque dropdown no polegar não funciona.
 */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -25,6 +26,10 @@ import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMo
 
 const HOVER = "[@media(hover:hover)]:";
 const CHAVE_RECOLHIDO = "menu-recolhido";
+/* Foto do fotógrafo no avatar. Hoje é arquivo fixo, como o resto da marca dele
+   (ver "Nome e marca" nas dívidas do CLAUDE.md); quando houver mais de um
+   estúdio, sai daqui pro perfil. */
+const FOTO_PERFIL = "/img/jordan-perfil.webp";
 
 const ITENS = [
   { href: "/painel", rotulo: "Home", Icone: House },
@@ -155,8 +160,8 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
   return (
     <div className="min-h-dvh bg-soft">
       <header className="sticky top-0 z-30 grid h-14 grid-cols-[auto_1fr_auto] items-center gap-4 bg-paper px-4 shadow-card">
-        <Link href="/painel" className="text-[15px] font-semibold tracking-tight text-ink no-underline">
-          {nome ?? "Estúdio"}
+        <Link href="/painel" aria-label="Ir pro início do estúdio" className="justify-self-start no-underline">
+          <img src="/img/logo-principal-petroleo.png" alt={nome ?? "Estúdio"} className="block h-7 w-auto" />
         </Link>
 
         <BuscaTopo />
@@ -173,7 +178,10 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
               onClick={alternarNotifDesktop}
               className={
                 "relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] " +
-                (notifAberto ? "bg-soft text-ink" : `text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`)
+                "transition-[transform,box-shadow,background-color] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] active:scale-[1.02] " +
+                (notifAberto
+                  ? "scale-[1.08] bg-soft text-ink shadow-[0_5px_16px_rgba(29,29,27,.18)]"
+                  : `text-ink-soft ${HOVER}hover:scale-[1.08] ${HOVER}hover:bg-soft ${HOVER}hover:text-ink ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.18)]`)
               }
             >
               <Bell size={17} />
@@ -189,9 +197,19 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
               aria-label="Menu da conta" aria-haspopup="true" aria-expanded={menuAberto}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setMenuAberto((v) => !v)}
-              className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-accent-tint text-[12px] font-semibold text-accent"
+              className="inline-flex cursor-pointer items-center justify-center rounded-full bg-transparent p-0"
             >
-              {(nome ?? "E").slice(0, 1).toUpperCase()}
+              {/* Sem anel (regra da casa). O retorno é um pop com sombra atrás,
+                  no hover e com o menu aberto, e o mesmo vale pro sino. */}
+              <img
+                src={FOTO_PERFIL}
+                alt={nome ?? "Conta"}
+                className={
+                  "block h-[38px] w-[38px] rounded-full object-cover transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] " +
+                  (menuAberto ? "scale-[1.08] shadow-[0_5px_16px_rgba(29,29,27,.24)] " : "") +
+                  `${HOVER}hover:scale-[1.08] ${HOVER}hover:shadow-[0_5px_16px_rgba(29,29,27,.24)] active:scale-[1.02]`
+                }
+              />
             </button>
             {menuAberto ? (
               <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[200px] rounded-xl bg-paper p-1.5 shadow-alta">
@@ -214,21 +232,29 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           grid continuasse, o <main> cairia na primeira faixa de 240px */}
       <div
         className="md:grid transition-[grid-template-columns] duration-200"
-        style={{ gridTemplateColumns: recolhido ? "64px 1fr" : "240px 1fr" }}
+        style={{ gridTemplateColumns: recolhido ? "62px 1fr" : "190px 1fr" }}
       >
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] flex-col justify-between bg-paper py-4 shadow-card md:flex">
-          <nav className="flex flex-col gap-1 px-3">
+        {/* Menu escuro (--noir), como no estúdio original: ele não disputa com o
+            conteúdo, que é todo claro, e some do caminho sem precisar de borda.
+            Os itens ficam CENTRADOS na vertical (justify-center num flex-1):
+            com duas entradas só, empilhadas no topo, sobrava um vazio enorme
+            embaixo. */}
+        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] flex-col gap-3.5 bg-noir px-3 py-4 text-white md:flex">
+          <nav className="flex flex-1 flex-col justify-center gap-[3px]">
             {ITENS.map(({ href, rotulo, Icone }) => (
               <Link
                 key={href}
                 href={href}
                 title={recolhido ? rotulo : undefined}
                 className={
-                  "flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13.5px] no-underline transition-colors " +
-                  (ativo(href) ? "bg-soft font-semibold text-ink" : `text-ink-soft ${HOVER}hover:bg-soft ${HOVER}hover:text-ink`)
+                  "flex items-center gap-[11px] overflow-hidden whitespace-nowrap rounded-[10px] py-[9px] text-[13px] font-medium tracking-[.01em] no-underline transition-colors " +
+                  (recolhido ? "justify-center px-0 " : "px-3 ") +
+                  (ativo(href)
+                    ? "bg-white/12 text-white"
+                    : `text-white/60 ${HOVER}hover:bg-white/8 ${HOVER}hover:text-white`)
                 }
               >
-                <Icone size={17} className="shrink-0" />
+                <Icone size={15} className="shrink-0" />
                 {!recolhido ? <span>{rotulo}</span> : null}
               </Link>
             ))}
@@ -238,9 +264,14 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             type="button"
             onClick={alternar}
             aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
-            className={`mx-3 flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 text-[12px] uppercase tracking-[.1em] text-ink-soft ${HOVER}hover:bg-soft`}
+            className={
+              "flex shrink-0 cursor-pointer items-center gap-[11px] overflow-hidden whitespace-nowrap rounded-[10px] py-[9px] " +
+              "text-[10.5px] uppercase tracking-[.08em] text-white/45 transition-colors " +
+              (recolhido ? "justify-center px-0 " : "px-3 ") +
+              `${HOVER}hover:bg-white/8 ${HOVER}hover:text-white`
+            }
           >
-            <PanelLeft size={16} className="shrink-0" />
+            <PanelLeft size={15} className="shrink-0" />
             {!recolhido ? <span>Recolher</span> : null}
           </button>
         </aside>

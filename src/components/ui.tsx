@@ -88,11 +88,20 @@ export function Cartao({ className = "", children }: { className?: string; child
 }
 
 /** Título de seção: barrinha, ícone em pill e texto. Padrão do estúdio. */
+/*
+  Seção é um CARD BRANCO, não um título solto na página. É assim na home, na
+  ficha e em configurações: o conteúdo vive dentro do cartão, e por isso o que
+  está dentro dele (linha de evento, card de modelo) usa o pastel petróleo
+  sutil `#F7F9FA`, senão ficaria branco sobre branco.
+
+  A barrinha vertical que existia antes do ícone SAIU (o original a esconde em
+  toda a home e na ficha): com o ícone em pill ao lado, viravam dois enfeites
+  disputando a mesma linha.
+*/
 export function Secao({ icone, titulo, children }: { icone?: ReactNode; titulo: string; children: ReactNode }) {
   return (
-    <section className="mb-7">
-      <h2 className="mb-4 flex items-center gap-2.5 text-[13px] font-semibold text-ink">
-        <span className="h-[13px] w-1 rounded-sm bg-accent" aria-hidden />
+    <section className="mb-4 rounded-[22px] bg-paper px-6 pb-6 pt-[22px] shadow-card">
+      <h2 className="m-0 mb-[18px] flex items-center gap-[9px] text-[13px] font-semibold tracking-[.02em] text-ink">
         {icone ? (
           <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
             {icone}

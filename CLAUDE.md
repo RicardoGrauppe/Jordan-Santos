@@ -50,12 +50,19 @@ entra como migração, nunca por `alter table` solto no psql.
 
 ## Dívidas conhecidas
 
-- **Multi-tenant.** Nenhuma tabela tem dono (`clientes`, `contratos`,
-  `contrato_templates`, `assinaturas`, `config`): tudo assume um fotógrafo só,
-  herdado do app original. O tipo `Sessao` já carrega `workspace`, mas
-  **nenhuma consulta filtra por ele ainda**. Quando for fazer, é aqui que dói:
-  toda consulta em `/api` passa a filtrar, e `config` (chave/valor global) vira
-  config por fotógrafo.
+- **Multi-tenant fica pra DEPOIS, por decisão do Ricardo (2026-09-16).** A
+  ordem é: primeiro este app fica pronto e alinhado pro Jordan, que vai ser o
+  único usuário; só então vira SaaS de vários fotógrafos. Ou seja, **não saia
+  generalizando nada por conta própria**: enquanto isso, o que é do Jordan pode
+  continuar fixo no código, e o trabalho é deixar a experiência dele redonda.
+
+  O estado de hoje, pra quando a hora chegar: nenhuma tabela tem dono
+  (`clientes`, `contratos`, `contrato_templates`, `assinaturas`, `config`),
+  tudo assume um fotógrafo só. O tipo `Sessao` já carrega `workspace`, mas
+  nenhuma consulta filtra por ele. Quando for fazer, é aqui que dói: toda
+  consulta em `/api` passa a filtrar e `config` (chave/valor global) vira
+  config por fotógrafo. A janela barata pra isso é a migração do banco pro
+  Supabase do Ricardo, porque o volume é pequeno (4 clientes e 4 contratos).
 - **Nome e marca do fotógrafo ainda são do Jordan** em pontos fixos: logo e
   textos de `/proposta`, `NOME_FOTOGRAFO` em `assinar/Assinar.tsx`,
   `NOME_FOTOGRAFO_PADRAO` e a legenda "CONTRATADA" em `clientes/[id]/contrato`,

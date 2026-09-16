@@ -331,7 +331,7 @@ function Conteudo({
       </Bloco>
 
       <Bloco ordem={3}>
-        <Secao icone={<CalendarHeart size={16} />} titulo="Próximos eventos">
+        <Secao icone={<CalendarHeart size={17} />} titulo="Próximos eventos">
           {proximos.length ? (
             <ul className="m-0 flex list-none flex-col gap-2 p-0">
               {proximos.slice(0, 5).map((c) => (
@@ -365,7 +365,7 @@ function Conteudo({
       </Bloco>
 
       <Bloco ordem={4}>
-        <Secao icone={<Link2 size={16} />} titulo="Links pro cliente">
+        <Secao icone={<Link2 size={17} />} titulo="Links pro cliente">
           <LinksCliente mostrar={mostrar} />
         </Secao>
       </Bloco>
@@ -454,7 +454,6 @@ function LinksCliente({ mostrar }: { mostrar: ReturnType<typeof useToast>["mostr
 function CabecalhoSk() {
   return (
     <div className="mb-4 flex items-center gap-2.5">
-      <span className="h-[13px] w-1 rounded-sm bg-line" aria-hidden />
       <Sk className="h-9 w-9 rounded-[13px]" />
       <SkLinha className="w-[140px]" />
     </div>

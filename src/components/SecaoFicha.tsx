@@ -3,8 +3,8 @@
   (.card-colapsavel): a ficha tem seis seções e aberta inteira vira uma parede
   de campos, então cada uma nasce fechada e o chevron abre só a que interessa.
 
-  O cabeçalho segue o padrão do <Secao> do kit (barrinha, ícone em pill inline
-  com o título), com espaço pra uma ação à direita antes do chevron.
+  O cabeçalho segue o padrão do <Secao> do kit (ícone em pill inline com o
+  título, sem barrinha), com espaço pra uma ação à direita antes do chevron.
 */
 "use client";
 
@@ -29,7 +29,6 @@ export function SecaoFicha({
     <section className={"mb-4 rounded-[22px] bg-paper px-6 shadow-card " + (aberta ? "py-6" : "py-[18px]")}>
       <div className={"flex items-center gap-2.5 " + (aberta ? "mb-4" : "")}>
         <h2 className="m-0 flex flex-1 items-center gap-2.5 text-[13px] font-semibold text-ink">
-          <span className="h-[13px] w-1 rounded-sm bg-accent" aria-hidden />
           <span className="inline-flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[11px] bg-accent-tint text-accent">
             {icone}
           </span>
