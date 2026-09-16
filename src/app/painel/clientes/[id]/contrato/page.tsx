@@ -1040,16 +1040,23 @@ export default function PaginaRevisarContrato() {
                 Voltar
               </Link>
             </div>
-            <div className="flex px-2 pb-2">
+            {/* Abas SUBLINHADAS, como no original: trilho de um fio sob a faixa
+                inteira (inset shadow, não borda) e traço de 2px em accent sob a
+                ativa. A pílula preenchida que estava aqui competia com o card
+                branco em volta e parecia botão, não aba: aba é uma faixa onde
+                uma está marcada, não dois botões soltos. */}
+            <div role="tablist" className="flex shadow-[inset_0_-1px_0_var(--color-line)]">
               {([["assinantes", "Assinantes", Users], ["historico", "Histórico", History]] as const).map(([chave, rotulo, Icone]) => (
                 <button
                   key={chave}
                   type="button"
+                  role="tab"
+                  aria-selected={aba === chave}
                   onClick={() => setAba(chave)}
                   className={
-                    "inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] px-2 py-3 text-[13px] tracking-[.03em] transition-colors " +
+                    "relative inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-2 py-3.5 text-[13px] tracking-[.03em] transition-colors " +
                     (aba === chave
-                      ? "bg-soft font-medium text-accent"
+                      ? "font-medium text-accent after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent"
                       : `text-ink-soft ${HOVER}hover:bg-line ${HOVER}hover:text-accent`)
                   }
                 >
