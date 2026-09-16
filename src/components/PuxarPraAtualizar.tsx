@@ -11,6 +11,25 @@
   - Quem recarrega segura o skeleton por um tempo mínimo (900ms na chamada das
     telas), senão o skeleton pisca e a atualização parece não ter acontecido.
 
+  ONDE ELE LIGA (16/09/2026, depois de ver os dois spinners juntos no iPhone):
+
+  No **Safari com barra de endereço** este gesto fica DESLIGADO, porque lá o
+  pull-to-refresh nativo não tem como ser desligado: o
+  `overscroll-behavior-y: contain` é a forma documentada, e o WebKit analisa a
+  propriedade mas não a honra pro documento (bug 176454). Insistir daria os
+  dois indicadores na mesma puxada, que foi exatamente o que apareceu no
+  aparelho.
+
+  Ele liga em todo o resto, e o "resto" é onde o produto de fato vive: no app
+  adicionado à tela de início o iOS **não tem** pull-to-refresh (sem barra de
+  endereço, sem gesto), então sem este componente não haveria atualização
+  nenhuma. No Chrome o `contain` funciona de verdade, então lá o nativo já sai
+  do caminho e o nosso é o único.
+
+  A detecção é por user agent porque não existe alternativa honesta: o Safari
+  16+ SUPORTA a propriedade (o `CSS.supports` responde que sim), ele só não a
+  respeita nesse caso. Feature detection mentiria aqui.
+
   DUAS MUDANÇAS em relação ao original, decididas em 16/09/2026:
 
   1. **Quem move a página é o elástico do navegador, não a gente.** Antes este
@@ -20,11 +39,11 @@
      preserva o elástico, então o movimento é o nativo, que é o que dá a
      sensação boa, e a gente desenha só o indicador por cima.
 
-  2. **O indicador é um círculo, sem texto.** É o padrão de mercado (swipe to
-     refresh do Material): spinner circular centralizado perto do topo, que
+  2. **O indicador segue a MECÂNICA do padrão** (swipe to refresh do Material):
      entra transladando, escalando e girando conforme o puxão, precisa cruzar
      um limiar, e FICA VISÍVEL até a atualização terminar e o conteúdo novo
-     aparecer. A pílula escrita "Carregando" que estava aqui não é o padrão.
+     aparecer. A forma é pílula com a palavra "Carregando", por escolha do
+     Ricardo: o padrão prescreve o comportamento, não o formato do recipiente.
 
   A posição é escrita direto no DOM (nada de setState por quadro). Nenhum
   `will-change` e nenhum transform de repouso no conteúdo, pra este bloco não
@@ -64,6 +83,27 @@ export function PuxarPraAtualizar({
     const rolagem = () => document.scrollingElement?.scrollTop ?? window.scrollY ?? 0;
     const noToque = () => window.matchMedia("(hover: none)").matches;
 
+    /* instalado na tela de início: aí o iOS não faz pull-to-refresh e o nosso
+       é o único */
+    const instalado = () =>
+      window.matchMedia("(display-mode: standalone)").matches ||
+      ("standalone" in navigator && (navigator as Navigator & { standalone?: boolean }).standalone === true);
+
+    /* Safari de iPhone/iPad COM barra: o nativo manda e não dá pra desligar */
+    const safariDoIos = () => {
+      const ua = navigator.userAgent;
+      const ehIos = /iP(hone|od|ad)/.test(ua) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      /* "Safari" aparece no UA de TODO navegador Chromium ("... Chrome/x
+         Safari/537.36"), então a presença da palavra não identifica nada: o
+         que identifica é a AUSÊNCIA dos outros motores e cascas. */
+      const ehSafari = /Safari/.test(ua) &&
+        !/Chrome|Chromium|Android|CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+      return ehIos && ehSafari;
+    };
+
+    const nossoGestoVale = () => noToque() && (instalado() || !safariDoIos());
+
     /* d = quanto o dedo andou, já com resistência. Só o INDICADOR se move: o
        conteúdo fica com o elástico do navegador. Ele cresce de 0,6 a 1 e
        aparece conforme o puxão, então entra em vez de surgir pronto. */
@@ -80,7 +120,7 @@ export function PuxarPraAtualizar({
     posicionar(0, false);
 
     function comecar(ev: TouchEvent) {
-      if (g.ocupado || !noToque()) return;
+      if (g.ocupado || !nossoGestoVale()) return;
       if (rolagem() > 0) return;
       g.y0 = ev.touches[0].clientY;
       g.puxando = true;
@@ -136,23 +176,24 @@ export function PuxarPraAtualizar({
 
   return (
     <div className="relative">
-      {/* indicador: círculo centralizado que nasce acima da primeira dobra e
+      {/* indicador: pílula centralizada que nasce acima da primeira dobra e
           desce com o puxão. z abaixo do cabeçalho (z-30) de propósito. */}
       <div
         ref={chip}
         aria-hidden
         className={
-          "pointer-events-none absolute left-1/2 z-10 inline-flex h-9 w-9 items-center justify-center " +
-          "rounded-full bg-paper opacity-0 shadow-card"
+          "pointer-events-none absolute left-1/2 z-10 inline-flex items-center gap-[9px] " +
+          "whitespace-nowrap rounded-full bg-paper py-2 pl-3 pr-4 opacity-0 shadow-card"
         }
         style={{ top: REPOUSO }}
       >
         {/* anel do spinner: desenho, não separação nem estado */}
         <span
           ref={anel}
-          className="h-[18px] w-[18px] shrink-0 rounded-full border-2 border-line border-t-accent"
+          className="h-4 w-4 shrink-0 rounded-full border-2 border-line border-t-accent"
           style={{ animationDuration: ".65s" }}
         />
+        <span className="text-[13px] font-medium tracking-[.01em] text-ink-soft">Carregando</span>
       </div>
 
       {children}
