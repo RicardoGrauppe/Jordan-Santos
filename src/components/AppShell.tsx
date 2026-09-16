@@ -459,7 +459,14 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             buraco sozinho, sem coluna fantasma. */}
         <header
           className={
-            "sticky top-0 z-30 h-14 items-center gap-4 bg-paper px-4 shadow-card " +
+            /* No celular a faixa é a própria página: mesmo fundo, sem sombra.
+               Ali dentro ela não é uma barra de ferramentas, é onde o nome da
+               tela mora — separar com cor e sombra a fazia parecer um segundo
+               app por cima do primeiro. É também o que as telas cheias já
+               faziam (o topo delas não tem fundo próprio).
+               No computador ela CONTINUA barra, porque lá carrega a busca e os
+               menus e precisa se distinguir do conteúdo que passa por baixo. */
+            "sticky top-0 z-30 h-14 items-center gap-4 bg-soft px-4 md:bg-paper md:shadow-card " +
             (semCabecalhoNoCelular ? "hidden md:flex" : "flex")
           }
         >

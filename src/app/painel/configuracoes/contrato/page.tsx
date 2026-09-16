@@ -17,6 +17,11 @@ import { useConfirmar } from "@/components/ModalConfirmar";
 import { ModalAssinatura, type Assinatura } from "@/components/ModalAssinatura";
 import { fmtData } from "@/lib/util";
 
+/* O que esta tela é, em uma frase. Fixo: vale com tudo em ordem e vale
+   enquanto falta algo — o que muda nesse caso é a cor e o título da faixa. */
+const TEXTO_DA_TELA =
+  "Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.";
+
 type Modelo = { id: string; nome: string; ativo: boolean; atualizado_em: string };
 type AssinaturaSalva = Assinatura & { id: string; atualizado_em: string };
 
@@ -174,38 +179,23 @@ export default function ContratoIndice() {
     </span>
   );
 
-  /* O texto desta faixa muda com o ESTADO da tela, porque a cor é sinal e não
-     enfeite: enquanto falta alguma coisa pro contrato sair inteiro, ela avisa
-     o que falta; com tudo no lugar, volta a ser a explicação da página.
+  /* O TEXTO é fixo: ele explica a tela, e isso vale sempre. O que muda com o
+     estado é a COR e o título, porque cor é sinal — enquanto falta alguma
+     coisa pro contrato sair inteiro, a faixa fica âmbar e diz o que falta, sem
+     deixar de explicar a página.
      A ordem é a da consequência: sem assinatura o casal recebe um contrato sem
      a assinatura do Jordan, o que é pior do que ele cair no texto fixo. */
   const aviso = (() => {
     if (!assinaturas.length) {
-      return {
-        tom: "atencao" as const,
-        titulo: "Falta cadastrar a sua assinatura",
-        texto: "Sem ela o contrato chega ao casal só com a assinatura deles. Crie uma aqui embaixo e marque como padrão.",
-      };
+      return { tom: "atencao" as const, titulo: "Falta cadastrar a sua assinatura" };
     }
     if (!assinaturas.some((a) => a.ativo)) {
-      return {
-        tom: "atencao" as const,
-        titulo: "Nenhuma assinatura está marcada como padrão",
-        texto: "Marque uma pra ela vir aplicada sozinha toda vez que você confirmar um contrato, sem precisar escolher na hora.",
-      };
+      return { tom: "atencao" as const, titulo: "Nenhuma assinatura está marcada como padrão" };
     }
     if (modelos.length && !modelos.some((m) => m.ativo)) {
-      return {
-        tom: "atencao" as const,
-        titulo: "Nenhum modelo está marcado como padrão",
-        texto: "Contratos novos vão sair com o texto fixo de sempre, e não com um dos modelos desta lista.",
-      };
+      return { tom: "atencao" as const, titulo: "Nenhum modelo está marcado como padrão" };
     }
-    return {
-      tom: "info" as const,
-      titulo: undefined,
-      texto: "Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.",
-    };
+    return { tom: "info" as const, titulo: undefined };
   })();
 
   return (
@@ -216,7 +206,7 @@ export default function ContratoIndice() {
         <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>
       </div>
       <div className="mb-5">
-        <CartaoAviso tom={aviso.tom} titulo={aviso.titulo}>{aviso.texto}</CartaoAviso>
+        <CartaoAviso tom={aviso.tom} titulo={aviso.titulo}>{TEXTO_DA_TELA}</CartaoAviso>
       </div>
 
       <Secao icone={<FileText size={17} />} titulo="Modelos de contrato">
