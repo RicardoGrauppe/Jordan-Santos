@@ -17,7 +17,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
 import { BotaoLimparBusca } from "@/components/ui";
 import { filtrarClientes, garantirClientes } from "@/lib/busca";
@@ -208,13 +208,18 @@ export function TelaBuscaMobile({ aberta, aoFechar }: { aberta: boolean; aoFecha
             className="w-full min-w-0 bg-transparent text-base text-ink outline-none placeholder:text-ink-soft"
           />
         </label>
+        {/* X no canto, não a palavra "Cancelar": o ícone é o mesmo em qualquer
+            idioma e devolve a largura pro campo, que é quem precisa dela.
+            Redondo e SEM fundo próprio — o campo ao lado já é `soft`, e dois
+            soft encostados viram uma mancha só; o fundo aparece no toque. */}
         <button
           type="button"
+          aria-label="Fechar busca"
           tabIndex={aberta ? 0 : -1}
           onClick={fechar}
-          className="shrink-0 cursor-pointer px-1 py-2 text-sm text-accent"
+          className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-soft transition-colors active:bg-soft active:text-ink"
         >
-          Cancelar
+          <X size={20} />
         </button>
       </TopoTelaMobile>
 
