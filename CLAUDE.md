@@ -42,6 +42,21 @@ supabase/migrations/         schema (cópia do original) + contrato_snapshot (co
 - `next.config.ts` mantém `pdfmake` e `pdf-lib` em `serverExternalPackages` e
   inclui `contrato-pdf/**` no tracing: sem isso o deploy sobe sem as fontes.
 
+## Responsivo: sempre mobile-first
+
+Nunca use as variantes `max-*` do Tailwind (`max-md:`, `max-[520px]:`). Elas
+compilam pra `@media not (min-width: …)`, sintaxe de Media Queries nível 4 que
+o Safari só entende do 16.4 pra cima — quem não entende **descarta a regra
+inteira**. O minificador do build reescreve pra `not all and (…)`, então o
+defeito só aparece no servidor de DESENVOLVIMENTO, que é justamente onde o
+Jordan e o Ricardo testam no iPhone.
+
+Escreva o estado do celular como padrão e devolva no `md:`
+(`hidden md:block`, `text-[25px] md:text-[32px]`): isso só gera
+`@media (min-width: …)`. Ao inverter, cuidado com `display`: `hidden` e
+`inline-flex` na mesma lista brigam, e quem vence é a ordem do arquivo gerado,
+não a que você digitou. Deixe só `hidden` + `md:inline-flex`.
+
 ## Banco local
 
 Sempre o Supabase local em Docker (`supabase start`, portas 553xx), nunca o
