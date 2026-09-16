@@ -342,7 +342,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      diferença de cor sozinha num ícone de 20px é pouca — e fundo em vez de
      borda é a regra da casa. */
   const itemNav =
-    "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full no-underline transition-colors";
+    "inline-flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full no-underline transition-colors";
   const tomItem = (ligado: boolean) => (ligado ? " bg-accent-tint text-accent" : " text-ink-soft");
 
   /* Sem navegação nenhuma, a moldura vira uma casca vazia: devolve a página
@@ -608,7 +608,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             respiro (--sat só devolve valor por causa do viewport-fit=cover) */}
           <main
             className={
-              "min-w-0 px-5 pb-24 md:px-8 md:pb-10 md:pt-6 " +
+              "min-w-0 px-5 pb-28 md:px-8 md:pb-10 md:pt-6 " +
               (semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
             }
           >
@@ -641,7 +641,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           o rótulo que sobrava embaixo comia altura sem dizer nada novo depois
           do primeiro uso. */}
       <nav className={
-        "fixed inset-x-4 bottom-[calc(0.75rem+var(--sab))] z-70 mx-auto h-14 max-w-[420px] items-center justify-around rounded-full px-2 md:hidden " +
+        "fixed inset-x-4 bottom-[calc(0.75rem+var(--sab))] z-70 mx-auto h-[68px] max-w-[420px] items-center justify-around rounded-full px-2.5 md:hidden " +
         "bg-[linear-gradient(180deg,#ffffff,#f9fafb)] shadow-flutuante " +
         (semNavegacao ? "hidden" : "flex")
       }>
