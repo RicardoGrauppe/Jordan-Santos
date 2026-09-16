@@ -710,9 +710,9 @@ export default function PaginaCliente() {
             </div>
           </div>
 
-          <div className="mb-16 mt-8 flex flex-wrap items-center justify-end gap-3 max-md:flex-col max-md:items-stretch">
-            <div className="max-md:text-center"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
-            <Botao type="submit" className="max-md:w-full">
+          <div className="mb-16 mt-8 flex flex-wrap flex-col items-stretch justify-end gap-3 md:flex-row md:items-center">
+            <div className="text-center md:text-left"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
+            <Botao type="submit" className="w-full md:w-auto">
               {ehNovo && !clienteId ? "Criar cliente" : "Salvar alterações"}
             </Botao>
           </div>
@@ -732,7 +732,7 @@ function Voltar() {
     <Link
       href="/painel"
       /* no celular quem volta é a seta do cabeçalho (ver cabecalho-mobile.tsx) */
-      className={`-ml-2.5 mb-0.5 mt-1 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[12.5px] tracking-[.02em] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent max-md:hidden`}
+      className={`-ml-2.5 mb-0.5 mt-1 hidden items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[12.5px] tracking-[.02em] text-ink-soft no-underline transition-colors md:inline-flex hover:bg-line hover:text-accent`}
     >
       <ArrowLeft size={14} />
       Início

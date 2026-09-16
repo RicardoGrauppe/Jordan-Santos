@@ -100,7 +100,7 @@ export function TimelineContrato({
                 : "Abra o contrato e assine pra liberar o link do casal."}
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-2.5 [&>*]:min-h-[42px] [&>*]:flex-[1_1_150px] max-[520px]:[&>*]:flex-[1_1_100%]">
+          <div className="flex flex-wrap gap-2.5 [&>*]:min-h-[42px] [&>*]:flex-[1_1_100%] min-[520px]:[&>*]:flex-[1_1_150px]">
             {assinadoFotografo || jaAssinado ? (
               <Botao onClick={onCopiarLink}>
                 <Copy size={16} />

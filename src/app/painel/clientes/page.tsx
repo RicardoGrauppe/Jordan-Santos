@@ -127,9 +127,9 @@ export default function ListaClientes() {
     <div className="mx-auto max-w-[1100px]">
       {/* justify-end no celular: sem o título, o "Novo cliente" sozinho
           escorregaria pra esquerda com o justify-between */}
-      <div className="mb-[18px] flex items-center justify-between gap-4 max-md:justify-end">
+      <div className="mb-[18px] flex items-center justify-end gap-4 md:justify-between">
         {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
-        <h1 className="m-0 flex items-center gap-2.5 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] max-md:hidden">
+        <h1 className="m-0 hidden items-center gap-2.5 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] md:flex">
           Clientes
           {clientes && visiveis.length ? (
             <span className="inline-flex h-[22px] min-w-6 items-center justify-center rounded-full bg-soft px-2 text-[12.5px] font-semibold text-ink-soft">

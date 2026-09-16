@@ -105,12 +105,12 @@ export default function Pendencias() {
         {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
         <Link
           href="/painel"
-          className={`-ml-2.5 mb-0.5 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline hover:bg-soft hover:text-ink max-md:hidden`}
+          className={`-ml-2.5 mb-0.5 hidden items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline md:inline-flex hover:bg-soft hover:text-ink`}
         >
           <ArrowLeft size={16} /> Início
         </Link>
         <div className="mb-[22px] mt-2 flex flex-col gap-[5px]">
-          <h1 className="m-0 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] max-md:hidden">Precisa de atenção</h1>
+          <h1 className="m-0 hidden text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] md:block">Precisa de atenção</h1>
           <p className="m-0 text-[14.5px] leading-[1.5] text-ink-soft">
             Pontas soltas e passos esquecidos: rascunhos pra enviar, contratos esperando assinatura e clientes confirmados sem contrato.
           </p>

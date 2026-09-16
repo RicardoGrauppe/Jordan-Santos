@@ -26,19 +26,20 @@ export function HeroCliente({
   onExcluir: () => void;
 }) {
   const fundo =
-    "relative isolate mb-10 mt-3 overflow-hidden rounded-3xl px-8 pb-7 pt-[30px] text-white " +
+    "relative isolate mb-10 mt-3 overflow-hidden text-white " +
+    "rounded-[18px] px-[22px] py-6 md:rounded-3xl md:px-8 md:pb-7 md:pt-[30px] " +
     "shadow-[0_14px_34px_rgba(0,54,70,.22),inset_0_1px_0_rgba(255,255,255,.07)] " +
     "bg-[radial-gradient(130%_150%_at_12%_-10%,rgba(255,255,255,.12),transparent_46%),linear-gradient(135deg,#013243_0%,#003646_46%,#0b4d61_100%)] " +
-    "max-md:rounded-[18px] max-md:px-[22px] max-md:py-6";
+    "";
 
   if (!cliente) {
     return (
       <div className={fundo}>
         <Esferas />
-        <div className="relative z-[1] flex items-center gap-[22px] max-md:gap-4">
+        <div className="relative z-[1] flex items-center gap-4 md:gap-[22px]">
           <Avatar><UserPlus size={30} strokeWidth={1.6} /></Avatar>
           <div className="min-w-0">
-            <h1 className="m-0 text-[32px] font-semibold leading-[1.08] max-md:text-[25px]">Novo cliente</h1>
+            <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">Novo cliente</h1>
             <div className="mt-3.5 flex flex-wrap gap-2">
               <Chip>Preencha os dados e salve para criar</Chip>
             </div>
@@ -99,10 +100,10 @@ export function HeroCliente({
         </button>
       </div>
 
-      <div className="relative z-[1] flex items-center gap-[22px] pr-20 max-md:gap-4">
+      <div className="relative z-[1] flex items-center gap-4 pr-20 md:gap-[22px]">
         <Avatar><Users size={30} strokeWidth={1.6} /></Avatar>
         <div className="min-w-0">
-          <h1 className="m-0 text-[32px] font-semibold leading-[1.08] max-md:text-[25px]">{nomes}</h1>
+          <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">{nomes}</h1>
 
           {textoData || contratoAssinado ? (
             <div className="mt-3.5 flex flex-wrap gap-2">
@@ -139,7 +140,7 @@ function Esferas() {
 
 function Avatar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[74px] w-[74px] shrink-0 items-center justify-center rounded-full bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white shadow-[0_8px_22px_rgba(0,0,0,.20),inset_0_1px_0_rgba(255,255,255,.25)] max-md:h-[60px] max-md:w-[60px]">
+    <div className="flex h-[60px] w-[60px] shrink-0 md:h-[74px] md:w-[74px] items-center justify-center rounded-full bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white shadow-[0_8px_22px_rgba(0,0,0,.20),inset_0_1px_0_rgba(255,255,255,.25)] ">
       {children}
     </div>
   );
@@ -149,7 +150,7 @@ function Chip({ destaque = false, children }: { destaque?: boolean; children: Re
   return (
     <span
       className={
-        "inline-flex items-center gap-[7px] rounded-full px-[13px] py-1.5 text-[13px] max-md:whitespace-normal " +
+        "inline-flex items-center gap-[7px] rounded-full px-[13px] py-1.5 text-[13px] whitespace-normal md:whitespace-nowrap " +
         (destaque
           ? "bg-white font-semibold text-accent shadow-[0_4px_14px_rgba(0,0,0,.16)]"
           : "bg-white/[.11] text-white/95 backdrop-blur-[6px]")

@@ -1170,7 +1170,7 @@ export default function PaginaRevisarContrato() {
                     vira uma linha só, com o mesmo conteúdo em forma curta:
                     o que é (Contrato) e de quem (o casal). */}
                 <h1 className="m-0 truncate text-[18px] font-bold leading-[1.3] tracking-[.01em] text-ink">
-                  <span className="max-md:hidden">Contrato de Fotografia ({casal || "cliente sem nome"})</span>
+                  <span className="hidden md:inline">Contrato de Fotografia ({casal || "cliente sem nome"})</span>
                   <span className="md:hidden">Contrato{casal ? " · " + casal : ""}</span>
                 </h1>
                 <p className="m-0 mt-1.5 text-[12.5px] text-ink-soft">

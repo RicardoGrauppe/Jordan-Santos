@@ -89,13 +89,13 @@ export default function Tempo() {
       {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
       <Link
         href="/painel"
-        className={`-ml-2.5 mb-0.5 inline-flex items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline hover:bg-soft hover:text-ink max-md:hidden`}
+        className={`-ml-2.5 mb-0.5 hidden items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline md:inline-flex hover:bg-soft hover:text-ink`}
       >
         <ArrowLeft size={16} /> Início
       </Link>
 
       <div className="mb-[22px] mt-2 flex flex-col gap-3">
-        <h1 className="m-0 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] max-md:hidden">Previsão do tempo</h1>
+        <h1 className="m-0 hidden text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] md:block">Previsão do tempo</h1>
         {/* atalhos pras seções: só no celular, onde a página é longa. No
             desktop ela cabe quase toda na tela e o título já basta */}
         {previsao ? <Pills previsao={previsao} /> : estado ? null : <PillsSkeleton />}

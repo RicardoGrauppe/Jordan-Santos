@@ -110,7 +110,7 @@ export default function Configuracoes() {
           Aqui a moldura já fica em volta, mas o caminho de volta some no
           celular, onde não há lateral — daí a seta continuar. */}
       {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
-      <div className="max-md:hidden">
+      <div className="hidden md:block">
         <BotaoVoltar href="/painel" rotulo="Home" />
         <h1 className="m-0 mb-6 text-[26px] font-bold text-ink">Configurações</h1>
       </div>
