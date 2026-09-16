@@ -61,19 +61,38 @@ export async function sessaoAtual(papel?: Papel): Promise<Sessao | null> {
   return sessao;
 }
 
-export async function gravarCookie(token: string, segundos: number): Promise<void> {
+/*
+  `Secure` acompanha a CONEXÃO, não o NODE_ENV.
+
+  O navegador descarta em silêncio um cookie marcado `Secure` que chega por
+  `http://`: o login responde 200, o cookie não gruda, e a pessoa volta pra tela
+  de login sem nenhuma mensagem. Era o que acontecia ao abrir um build de
+  produção pelo IP da rede pra testar no celular.
+
+  Em produção de verdade o app é servido por https, então o cookie continua
+  `Secure` como sempre foi. Isto não afrouxa nada: só para de pedir uma garantia
+  que aquela conexão não tem como dar.
+*/
+function conexaoSegura(req?: Request): boolean {
+  if (!req) return process.env.NODE_ENV === "production";
+  const proto = req.headers.get("x-forwarded-proto");
+  if (proto) return proto.split(",")[0].trim() === "https";
+  try { return new URL(req.url).protocol === "https:"; } catch { return false; }
+}
+
+export async function gravarCookie(token: string, segundos: number, req?: Request): Promise<void> {
   (await cookies()).set(NOME_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: conexaoSegura(req),
     sameSite: "lax",
     path: "/",
     maxAge: segundos,
   });
 }
 
-export async function limparCookie(): Promise<void> {
+export async function limparCookie(req?: Request): Promise<void> {
   (await cookies()).set(NOME_COOKIE, "", {
-    httpOnly: true, secure: process.env.NODE_ENV === "production",
+    httpOnly: true, secure: conexaoSegura(req),
     sameSite: "lax", path: "/", maxAge: 0,
   });
 }

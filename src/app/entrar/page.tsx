@@ -77,7 +77,6 @@ export default function Entrar() {
           <Campo
             id="email" rotulo="E-mail" type="email" autoComplete="email" required
             placeholder="voce@exemplo.com"
-            className="text-base md:text-sm"
             value={email} onChange={(e) => setEmail(e.target.value)}
           />
 
@@ -86,7 +85,7 @@ export default function Entrar() {
               id="senha" rotulo="Senha" type={vendo ? "text" : "password"}
               autoComplete="current-password" required
               placeholder="Sua senha"
-              className="pr-11 text-base md:text-sm"
+              className="pr-11"
               value={senha} onChange={(e) => setSenha(e.target.value)}
               acao={
                 <button

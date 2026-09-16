@@ -84,6 +84,23 @@ html, body {
   button { font: inherit; color: inherit; }
 }
 
+/* ---------- celular: nada de zoom ao focar campo ----------
+   O Safari do iOS dá zoom automático em QUALQUER input, select ou textarea com
+   fonte menor que 16px assim que ele recebe foco, e depois não volta: a página
+   fica deslocada, com rolagem lateral, e no login parece que o app travou.
+
+   A correção é a fonte ter 16px no toque. NÃO usar `maximum-scale` ou
+   `user-scalable=no` no viewport: isso mata o zoom de pinça, que é problema de
+   acessibilidade, e além do mais nem resolve o deslocamento. Decisão herdada do
+   estúdio original, onde está escrita com todas as letras.
+
+   O `!important` é de propósito: regras mais específicas (um `text-sm` de
+   utilitário, por exemplo) venceriam, e o zoom voltaria naquele campo. Isto não
+   é estilo, é contorno de comportamento do iOS, então tem que ganhar. */
+@media (max-width: 820px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
 /* ---------- editor de contrato (Tiptap) ----------
    Vive aqui e não no componente porque o reset global zera margem dentro do
    ProseMirror e as listas perdiam o recuo que faz o número ficar pendurado.

@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const acao = corpo?.acao;
 
     if (acao === "sair") {
-      await limparCookie();
+      await limparCookie(req);
       return NextResponse.json({ ok: true });
     }
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       if (!ehAdmin) return recusar();
 
       const token = await assinar({ sub: "estudio", role: "admin", email }, SESSAO_SEGUNDOS);
-      await gravarCookie(token, SESSAO_SEGUNDOS);
+      await gravarCookie(token, SESSAO_SEGUNDOS, req);
       return NextResponse.json({ ok: true, role: "admin" });
     }
 

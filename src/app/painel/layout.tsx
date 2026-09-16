@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { sessaoAtual } from "@/lib/sessao";
 import { rest } from "@/lib/supabase";
@@ -18,23 +18,14 @@ import { AppShell } from "@/components/AppShell";
     painel abre SEM a barra do Safari, que é o que dá cara de aplicativo.
     `statusBarStyle: "default"` (texto escuro) porque o header é claro;
     "black-translucent" deixaria a hora branca sobre fundo branco.
-  - `maximumScale`/`userScalable` travam o zoom, como o `travarZoom()` do
-    original: sem isso o iOS dá zoom ao focar um campo e não desfaz, e o duplo
-    toque empurra a tela pro lado no meio do gesto de deslizar. No original
-    isso era ligado e desligado POR TELA de propósito, pra não atrapalhar quem
-    precisa de zoom; por isso não vale na proposta, no cadastro nem na tela de
-    assinar, que são do casal.
+  - A trava de zoom (`maximumScale`/`userScalable`) NÃO entra aqui, e isso é
+    decisão, não esquecimento: ela mata o zoom de pinça, que é acessibilidade,
+    e nem resolve o problema que parecia resolver. O zoom que incomodava era o
+    do iOS ao focar um campo com fonte menor que 16px, e quem cuida disso é a
+    regra de 16px no `globals.css`.
 */
 export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Estúdio", statusBarStyle: "default" },
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover",
 };
 
 type LinhaConfig = { valor: string | null };
