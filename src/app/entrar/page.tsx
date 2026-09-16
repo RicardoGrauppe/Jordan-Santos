@@ -74,9 +74,15 @@ export default function Entrar() {
         </h1>
 
         <form onSubmit={enviar}>
+          {/* autocorreção e maiúscula automática DESLIGADAS nos dois campos. No
+              iPhone elas mexem no que a pessoa digitou: a primeira letra sobe,
+              e a "pontuação inteligente" troca o hífen comum por travessão. No
+              campo de senha isso vale principalmente quando o olho está aberto,
+              porque aí ele vira `type=text` e o teclado passa a corrigir. */}
           <Campo
             id="email" rotulo="E-mail" type="email" autoComplete="email" required
             placeholder="voce@exemplo.com"
+            autoCapitalize="none" autoCorrect="off" spellCheck={false}
             value={email} onChange={(e) => setEmail(e.target.value)}
           />
 
@@ -85,6 +91,7 @@ export default function Entrar() {
               id="senha" rotulo="Senha" type={vendo ? "text" : "password"}
               autoComplete="current-password" required
               placeholder="Sua senha"
+              autoCapitalize="none" autoCorrect="off" spellCheck={false}
               className="pr-11"
               value={senha} onChange={(e) => setSenha(e.target.value)}
               acao={
