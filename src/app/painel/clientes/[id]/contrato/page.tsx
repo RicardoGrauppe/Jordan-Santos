@@ -35,6 +35,7 @@ import {
   ArrowLeft, Check, ChevronDown, CircleX, Clock, Copy, Download, EllipsisVertical, Eye, FileCheck,
   History, Info, Pencil, Send, ShieldCheck, TriangleAlert, User, Users, X,
 } from "lucide-react";
+import { useVoltar } from "@/lib/voltar";
 import { Aviso, Botao, Campo, Cartao, Estado, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { fmtData, moeda } from "@/lib/util";
@@ -516,6 +517,8 @@ export default function PaginaRevisarContrato() {
   useEffect(() => { confirmadoRef.current = confirmadoDataUrl; }, [confirmadoDataUrl]);
 
   const hrefCliente = "/painel/clientes/" + encodeURIComponent(clienteId);
+  /* sem histórico nosso (link aberto direto) a seta cai na ficha do cliente */
+  const voltarDaqui = useVoltar(hrefCliente);
 
   /* ---------- link pro casal ----------
      Mesma ação da ficha ("liberar-contrato-cliente"), idempotente: na primeira
@@ -1159,7 +1162,12 @@ export default function PaginaRevisarContrato() {
                     como no resto do celular. */}
                 <Link
                   href={hrefCliente}
-                  aria-label="Voltar pra ficha do cliente"
+                  aria-label="Voltar"
+                  onClick={(ev) => {
+                    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+                    ev.preventDefault();
+                    void voltarDaqui();
+                  }}
                   className={`-ml-1.5 mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-ink-soft no-underline transition-colors xl:hidden hover:bg-line hover:text-accent`}
                 >
                   <ArrowLeft size={18} />

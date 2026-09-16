@@ -17,7 +17,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Check, Clock, FileText, UserPlus, Users } from "lucide-react";
+import { Check, Clock, FileText, UserPlus, Users } from "lucide-react";
+import { BotaoVoltar } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { Deslizar } from "@/components/Deslizar";
 import { PuxarPraAtualizar } from "@/components/PuxarPraAtualizar";
@@ -103,12 +104,9 @@ export default function Pendencias() {
     <PuxarPraAtualizar aoAtualizar={atualizar}>
       <div className="mx-auto max-w-[960px]">
         {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
-        <Link
-          href="/painel"
-          className={`-ml-2.5 mb-0.5 hidden items-center gap-1.5 rounded-[10px] px-2.5 py-2 text-[13px] text-ink-soft no-underline md:inline-flex hover:bg-soft hover:text-ink`}
-        >
-          <ArrowLeft size={16} /> Início
-        </Link>
+        <div className="hidden md:block">
+          <BotaoVoltar href="/painel" rotulo="Início" />
+        </div>
         <div className="mb-[22px] mt-2 flex flex-col gap-[5px]">
           <h1 className="m-0 hidden text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] md:block">Precisa de atenção</h1>
           <p className="m-0 text-[14.5px] leading-[1.5] text-ink-soft">

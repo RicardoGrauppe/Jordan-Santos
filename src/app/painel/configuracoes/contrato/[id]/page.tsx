@@ -11,10 +11,10 @@
 "use client";
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
 import { EditorContrato } from "@/components/EditorContrato";
+import { useVoltar } from "@/lib/voltar";
 
 const ESPERA_MS = 700;
 const AVISO = "Editar aqui não muda contratos já gerados.";
@@ -23,7 +23,6 @@ type Modelo = { id: string; nome: string; conteudo_json: JSONContent; conteudo_h
 
 export default function EditorModelo({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const [modelo, setModelo] = useState<Modelo | null>(null);
   const [nome, setNome] = useState("");
   const [estado, setEstado] = useState<{ texto: string; tom?: "ok" | "erro" }>({ texto: AVISO });
@@ -95,11 +94,12 @@ export default function EditorModelo({ params }: { params: Promise<{ id: string 
     agendar();
   }, [agendar]);
 
-  async function voltar() {
+  /* grava o pendente ANTES de sair, senão a última tecla se perde; só depois
+     dá o passo atrás (ou cai na lista, se não houver histórico nosso) */
+  const voltar = useVoltar("/painel/configuracoes/contrato", useCallback(async () => {
     if (timer.current) clearTimeout(timer.current);
     await salvarAgora();
-    router.push("/painel/configuracoes/contrato");
-  }
+  }, [salvarAgora]));
 
   if (!modelo) return <p className="px-5 pt-6 text-[13px] text-ink-soft">Abrindo…</p>;
 
@@ -112,8 +112,8 @@ export default function EditorModelo({ params }: { params: Promise<{ id: string 
       aoMudar={aoMudar}
       topo={
         <div className="flex items-start gap-2 pt-2">
-          <button type="button" onClick={voltar} aria-label="Voltar pros modelos"
-            className={`mt-1 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-line hover:text-accent`}>
+          <button type="button" onClick={() => { void voltar(); }} aria-label="Voltar pros modelos"
+            className={`mt-1 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-line hover:text-accent`}>
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0 flex-1">

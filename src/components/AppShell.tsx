@@ -29,6 +29,7 @@ import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
 import { useCabecalhoMobile } from "@/components/cabecalho-mobile";
+import { registrarNavegacao, useVoltar } from "@/lib/voltar";
 
 const CHAVE_RECOLHIDO = "menu-recolhido";
 /* Foto do fotógrafo no avatar. Hoje é arquivo fixo, como o resto da marca dele
@@ -173,6 +174,24 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
   const recolhido = useSyncExternalStore(assinarRecolhido, lerRecolhido, () => false);
   /* no celular o cabeçalho deixa de ser a logo e vira seta + nome da tela */
   const cabecalhoCelular = useCabecalhoMobile(caminho);
+  const voltarNoCabecalho = useVoltar(cabecalhoCelular?.voltar ?? "/painel");
+
+  /* Quem conta as navegações é a moldura, porque ela é o único lugar por onde
+     TODA rota do painel passa. A primeira pintura não conta: ela é a chegada,
+     não uma navegação, e contá-la faria o voltar de quem abriu um link direto
+     achar que existe tela nossa atrás.
+
+     Compara a ROTA em vez de usar um "já passei por aqui": no dev o React roda
+     o efeito duas vezes de propósito (StrictMode), e com a flag booleana a
+     segunda passada contava uma navegação que nunca houve — medido: abrir um
+     link direto e clicar em voltar dava back() em vez do destino de queda.
+     Comparando a rota, rodar duas vezes com o mesmo valor não muda nada. */
+  const rotaAnterior = useRef(caminho);
+  useEffect(() => {
+    if (rotaAnterior.current === caminho) return;
+    rotaAnterior.current = caminho;
+    registrarNavegacao();
+  }, [caminho]);
   const [menuAberto, setMenuAberto] = useState(false);
   const [notifAberto, setNotifAberto] = useState(false);
   const [tela, setTela] = useState<TelaMobileAberta>(null);
@@ -454,6 +473,11 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                 <Link
                   href={cabecalhoCelular.voltar}
                   aria-label="Voltar"
+                  onClick={(ev) => {
+                    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+                    ev.preventDefault();
+                    void voltarNoCabecalho();
+                  }}
                   className="-ml-1.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent active:bg-line"
                 >
                   <ArrowLeft size={18} />

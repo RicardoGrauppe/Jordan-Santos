@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, EllipsisVertical, FileText, Pencil, PenTool, Plus, Trash2 } from "lucide-react";
-import { BotaoVoltar, Secao, Selo } from "@/components/ui";
+import { BotaoVoltar, CartaoAviso, Secao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { ModalAssinatura, type Assinatura } from "@/components/ModalAssinatura";
 import { fmtData } from "@/lib/util";
@@ -174,6 +174,40 @@ export default function ContratoIndice() {
     </span>
   );
 
+  /* O texto desta faixa muda com o ESTADO da tela, porque a cor é sinal e não
+     enfeite: enquanto falta alguma coisa pro contrato sair inteiro, ela avisa
+     o que falta; com tudo no lugar, volta a ser a explicação da página.
+     A ordem é a da consequência: sem assinatura o casal recebe um contrato sem
+     a assinatura do Jordan, o que é pior do que ele cair no texto fixo. */
+  const aviso = (() => {
+    if (!assinaturas.length) {
+      return {
+        tom: "atencao" as const,
+        titulo: "Falta cadastrar a sua assinatura",
+        texto: "Sem ela o contrato chega ao casal só com a assinatura deles. Crie uma aqui embaixo e marque como padrão.",
+      };
+    }
+    if (!assinaturas.some((a) => a.ativo)) {
+      return {
+        tom: "atencao" as const,
+        titulo: "Nenhuma assinatura está marcada como padrão",
+        texto: "Marque uma pra ela vir aplicada sozinha toda vez que você confirmar um contrato, sem precisar escolher na hora.",
+      };
+    }
+    if (modelos.length && !modelos.some((m) => m.ativo)) {
+      return {
+        tom: "atencao" as const,
+        titulo: "Nenhum modelo está marcado como padrão",
+        texto: "Contratos novos vão sair com o texto fixo de sempre, e não com um dos modelos desta lista.",
+      };
+    }
+    return {
+      tom: "info" as const,
+      titulo: undefined,
+      texto: "Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.",
+    };
+  })();
+
   return (
     <div className="mx-auto max-w-[880px]">
       {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
@@ -181,9 +215,9 @@ export default function ContratoIndice() {
         <BotaoVoltar href="/painel/configuracoes" rotulo="Configurações" />
         <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>
       </div>
-      <p className="m-0 mb-7 max-w-[560px] text-[13.5px] leading-[1.55] text-ink-soft">
-        Seus modelos de contrato e suas assinaturas. A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.
-      </p>
+      <div className="mb-5">
+        <CartaoAviso tom={aviso.tom} titulo={aviso.titulo}>{aviso.texto}</CartaoAviso>
+      </div>
 
       <Secao icone={<FileText size={17} />} titulo="Modelos de contrato">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">

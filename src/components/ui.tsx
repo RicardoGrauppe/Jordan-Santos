@@ -7,11 +7,15 @@
   1. NENHUMA borda pra separar ou marcar estado. Fundo diferente mais sombra.
   2. Nenhum anel de foco colorido. Foco muda o fundo, sutil.
   3. Hover só dentro de `@media (hover:hover)`, senão no celular o estado fica
-     preso depois do toque. Em Tailwind isso é o prefixo `hover:` combinado com
-     ``.
+     preso depois do toque. Escreva `hover:` e pronto: o Tailwind 4 já envolve
+     na media query sozinho. Nada de escrever a media query à mão.
+  4. Responsivo é mobile-first. Nunca as variantes `max-*` (ver CLAUDE.md).
 */
+"use client";
+
 import Link from "next/link";
-import { ArrowLeft, X } from "lucide-react";
+import { useVoltar } from "@/lib/voltar";
+import { ArrowLeft, CircleAlert, CircleCheck, Info, TriangleAlert, X } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
 
@@ -125,21 +129,73 @@ export function BotaoLimparBusca({ aoLimpar, rotulo = "Limpar busca" }: { aoLimp
   toda a home e na ficha): com o ícone em pill ao lado, viravam dois enfeites
   disputando a mesma linha.
 */
-/* Voltar pro nível de cima, acima do título da página. O rótulo é o NOME do
-   destino, não a palavra "Voltar": quem olha já sabe que a seta volta, e o que
-   ele não sabe é pra onde. Vira <Link> quando tem `href` (o navegador ganha o
-   endereço no hover e o abrir-em-nova-aba funciona) e <button> quando quem
-   chama precisa rodar algo antes de sair, como salvar o pendente. */
-export function BotaoVoltar(
-  props: { rotulo: string } & ({ href: string } | { aoVoltar: () => void }),
-) {
-  const classe =
-    "mb-3 -ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 " +
-    "text-[13px] text-ink-soft no-underline hover:bg-soft hover:text-ink";
-  const miolo = <><ArrowLeft size={15} /> {props.rotulo}</>;
-  return "href" in props
-    ? <Link href={props.href} className={classe}>{miolo}</Link>
-    : <button type="button" onClick={props.aoVoltar} className={classe}>{miolo}</button>;
+/* Voltar pra tela anterior, acima do título da página. O rótulo é o NOME do
+   destino de queda, não a palavra "Voltar": quem olha já sabe que a seta
+   volta, e o que ele não sabe é pra onde.
+
+   O `href` continua sendo o destino real do elemento — é ele que aparece na
+   barra do navegador, que abre em nova aba e que vale quando não há histórico
+   nosso. O clique normal é interceptado pra dar um passo atrás em vez de
+   empilhar mais uma entrada (ver lib/voltar.ts); clique com ctrl/cmd/shift e
+   botão do meio passam direto, senão quebraríamos "abrir em nova aba".
+
+   Hover com `--line` e não `--soft`: a página do painel JÁ é soft, então um
+   hover soft não pinta nada. É a regra de ação secundária do DESIGN do
+   estúdio original. */
+export function BotaoVoltar({ rotulo, href }: { rotulo: string; href: string }) {
+  const voltar = useVoltar(href);
+  return (
+    <Link
+      href={href}
+      onClick={(ev) => {
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+        ev.preventDefault();
+        void voltar();
+      }}
+      className={
+        "mb-3 -ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 " +
+        "text-[13px] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent"
+      }
+    >
+      <ArrowLeft size={15} /> {rotulo}
+    </Link>
+  );
+}
+
+/* Tons do CartaoAviso. A cor é o sinal, então ela vem do ESTADO e não da
+   vontade de decorar: `info` é o texto que explica a tela e está sempre certo;
+   `atencao` é algo que o Jordan precisa resolver; `ok` é confirmação; `erro` é
+   o que já falhou. Sem borda em nenhum deles (regra da casa): quem separa do
+   fundo é a cor de fundo mais a sombra. */
+const TONS_AVISO = {
+  info: { fundo: "bg-accent-tint", pilula: "bg-white/70 text-accent", Icone: Info },
+  atencao: { fundo: "bg-[#F8F4EE]", pilula: "bg-[#EBE2D3] text-[#8A6A3C]", Icone: TriangleAlert },
+  ok: { fundo: "bg-ok-tint", pilula: "bg-white/70 text-ok", Icone: CircleCheck },
+  erro: { fundo: "bg-erro-tint", pilula: "bg-white/70 text-erro", Icone: CircleAlert },
+} as const;
+
+export type TomAviso = keyof typeof TONS_AVISO;
+
+/**
+ * Faixa de aviso com ícone, na mesma largura e no mesmo raio dos cards da
+ * página. Diferente do `Aviso`, que é uma linha de texto dentro de um card,
+ * este é um card por si — serve pra abrir uma tela dizendo em que pé ela está.
+ */
+export function CartaoAviso({
+  tom = "info", titulo, className = "", children,
+}: { tom?: TomAviso; titulo?: string; className?: string; children: ReactNode }) {
+  const { fundo, pilula, Icone } = TONS_AVISO[tom];
+  return (
+    <div className={"flex w-full items-start gap-[13px] rounded-[22px] px-[18px] py-4 shadow-card " + fundo + " " + className}>
+      <span className={"inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] " + pilula}>
+        <Icone size={18} />
+      </span>
+      <div className="min-w-0 flex-1">
+        {titulo ? <p className="m-0 mb-0.5 text-sm font-semibold leading-[1.3] text-ink">{titulo}</p> : null}
+        <p className="m-0 text-[13px] leading-[1.5] text-ink-soft">{children}</p>
+      </div>
+    </div>
+  );
 }
 
 export function Secao({ icone, titulo, children }: { icone?: ReactNode; titulo: string; children: ReactNode }) {

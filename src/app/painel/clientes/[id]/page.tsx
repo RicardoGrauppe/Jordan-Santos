@@ -28,10 +28,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen } from "lucide-react";
-import { Area, Aviso, Botao, Campo, Estado } from "@/components/ui";
+import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen } from "lucide-react";
+import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
 import { SecaoFicha, AcaoSecao } from "@/components/SecaoFicha";
@@ -725,18 +724,14 @@ export default function PaginaCliente() {
   );
 }
 
-/* botão de voltar sempre leva pra home e sempre mostra "Início": comportamento
-   previsível em vez de trocar rótulo/destino conforme a origem */
+/* No celular quem volta é a seta do cabeçalho (ver cabecalho-mobile.tsx).
+   O rótulo diz "Início" porque é onde se cai quando não há histórico nosso;
+   havendo, a seta devolve pra tela de onde se veio (ver lib/voltar.ts). */
 function Voltar() {
   return (
-    <Link
-      href="/painel"
-      /* no celular quem volta é a seta do cabeçalho (ver cabecalho-mobile.tsx) */
-      className={`-ml-2.5 mb-0.5 mt-1 hidden items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[12.5px] tracking-[.02em] text-ink-soft no-underline transition-colors md:inline-flex hover:bg-line hover:text-accent`}
-    >
-      <ArrowLeft size={14} />
-      Início
-    </Link>
+    <div className="hidden md:block">
+      <BotaoVoltar href="/painel" rotulo="Início" />
+    </div>
   );
 }
 
