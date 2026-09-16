@@ -151,6 +151,13 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
   const ativo = (href: string) =>
     href === "/painel" ? caminho === "/painel" : caminho.startsWith(href);
 
+  /* A revisão do contrato traz a PRÓPRIA navegação (voltar, abas de assinantes
+     e histórico) e é uma tela de leitura de documento, então a navegação do app
+     sai de cena ali: menu lateral e barra de baixo são a mesma coisa em dois
+     tamanhos, some com os dois ou com nenhum. No estúdio original essa tela era
+     um arquivo separado, sem shell nenhum. */
+  const semNavegacao = /^\/painel\/clientes\/[^/]+\/contrato(\/|$)/.test(caminho);
+
   /* no celular, quem manda no destaque é a tela cheia aberta; sem nenhuma, a
      rota é que decide */
   const ativoMobile = (href: string) => tela === null && ativo(href);
@@ -232,13 +239,14 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           grid continuasse, o <main> cairia na primeira faixa de 240px */}
       <div
         className="md:grid transition-[grid-template-columns] duration-200"
-        style={{ gridTemplateColumns: recolhido ? "62px 1fr" : "190px 1fr" }}
+        style={{ gridTemplateColumns: semNavegacao ? "1fr" : recolhido ? "62px 1fr" : "190px 1fr" }}
       >
         {/* Menu escuro (--noir), como no estúdio original: ele não disputa com o
             conteúdo, que é todo claro, e some do caminho sem precisar de borda.
             Os itens ficam CENTRADOS na vertical (justify-center num flex-1):
             com duas entradas só, empilhadas no topo, sobrava um vazio enorme
             embaixo. */}
+        {semNavegacao ? null : (
         <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] flex-col gap-3.5 bg-noir px-3 py-4 text-white md:flex">
           <nav className="flex flex-1 flex-col justify-center gap-[3px]">
             {ITENS.map(({ href, rotulo, Icone }) => (
@@ -275,8 +283,9 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             {!recolhido ? <span>Recolher</span> : null}
           </button>
         </aside>
+        )}
 
-        <main className="min-w-0 px-5 pb-24 pt-6 md:px-8 md:pb-10">{children}</main>
+        <main className={"min-w-0 px-5 pt-6 md:px-8 md:pb-10 " + (semNavegacao ? "pb-10" : "pb-24")}>{children}</main>
       </div>
 
       {/* telas cheias do celular. Ficam sempre montadas: é o que deixa a entrada
@@ -291,7 +300,10 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
       />
 
       {/* celular: o menu vira barra embaixo, ao alcance do polegar */}
-      <nav className="fixed inset-x-0 bottom-0 z-70 flex items-center justify-around bg-paper pb-[var(--sab)] shadow-[0_-1px_2px_rgba(29,29,27,.06)] md:hidden">
+      <nav className={
+        "fixed inset-x-0 bottom-0 z-70 items-center justify-around bg-paper pb-[var(--sab)] shadow-[0_-1px_2px_rgba(29,29,27,.06)] md:hidden " +
+        (semNavegacao ? "hidden" : "flex")
+      }>
         {ITENS.map(({ href, rotulo, Icone }) => (
           <Link
             key={href}
