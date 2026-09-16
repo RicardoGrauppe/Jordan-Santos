@@ -179,24 +179,18 @@ export default function ContratoIndice() {
     </span>
   );
 
-  /* O TEXTO é fixo: ele explica a tela, e isso vale sempre. O que muda com o
-     estado é a COR e o título, porque cor é sinal — enquanto falta alguma
-     coisa pro contrato sair inteiro, a faixa fica âmbar e diz o que falta, sem
-     deixar de explicar a página.
-     A ordem é a da consequência: sem assinatura o casal recebe um contrato sem
-     a assinatura do Jordan, o que é pior do que ele cair no texto fixo. */
-  const aviso = (() => {
-    if (!assinaturas.length) {
-      return { tom: "atencao" as const, titulo: "Falta cadastrar a sua assinatura" };
-    }
-    if (!assinaturas.some((a) => a.ativo)) {
-      return { tom: "atencao" as const, titulo: "Nenhuma assinatura está marcada como padrão" };
-    }
-    if (modelos.length && !modelos.some((m) => m.ativo)) {
-      return { tom: "atencao" as const, titulo: "Nenhum modelo está marcado como padrão" };
-    }
-    return { tom: "info" as const, titulo: undefined };
-  })();
+  /* O cartão diz SEMPRE a mesma frase, que é a explicação da tela. O que muda
+     é só a COR, porque cor é sinal: âmbar enquanto falta alguma coisa pro
+     contrato sair inteiro (assinatura cadastrada, assinatura padrão, modelo
+     padrão), neutro quando está tudo no lugar.
+
+     Um booleano só, e não um caso por falta: sem título e sem texto variável,
+     três ramos amareleriam a mesma faixa do mesmo jeito — seria distinção que
+     não chega à tela. */
+  const faltaAlgo =
+    !assinaturas.length ||
+    !assinaturas.some((a) => a.ativo) ||
+    (modelos.length > 0 && !modelos.some((m) => m.ativo));
 
   return (
     <div className="mx-auto max-w-[880px]">
@@ -206,7 +200,7 @@ export default function ContratoIndice() {
         <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>
       </div>
       <div className="mb-5">
-        <CartaoAviso tom={aviso.tom} titulo={aviso.titulo}>{TEXTO_DA_TELA}</CartaoAviso>
+        <CartaoAviso tom={faltaAlgo ? "atencao" : "info"}>{TEXTO_DA_TELA}</CartaoAviso>
       </div>
 
       <Secao icone={<FileText size={17} />} titulo="Modelos de contrato">

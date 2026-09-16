@@ -180,20 +180,20 @@ export type TomAviso = keyof typeof TONS_AVISO;
  * Faixa de aviso com ícone, na mesma largura e no mesmo raio dos cards da
  * página. Diferente do `Aviso`, que é uma linha de texto dentro de um card,
  * este é um card por si — serve pra abrir uma tela dizendo em que pé ela está.
+ *
+ * Texto e nada mais: sem linha de título. O que a faixa diz é a explicação da
+ * tela, que não muda; quem carrega o estado é a COR.
  */
 export function CartaoAviso({
-  tom = "info", titulo, className = "", children,
-}: { tom?: TomAviso; titulo?: string; className?: string; children: ReactNode }) {
+  tom = "info", className = "", children,
+}: { tom?: TomAviso; className?: string; children: ReactNode }) {
   const { fundo, pilula, Icone } = TONS_AVISO[tom];
   return (
     <div className={"flex w-full items-start gap-[13px] rounded-[22px] px-[18px] py-4 shadow-card " + fundo + " " + className}>
       <span className={"inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] " + pilula}>
         <Icone size={18} />
       </span>
-      <div className="min-w-0 flex-1">
-        {titulo ? <p className="m-0 mb-0.5 text-sm font-semibold leading-[1.3] text-ink">{titulo}</p> : null}
-        <p className="m-0 text-[13px] leading-[1.5] text-ink-soft">{children}</p>
-      </div>
+      <p className="m-0 min-w-0 flex-1 text-[13px] leading-[1.5] text-ink-soft">{children}</p>
     </div>
   );
 }
