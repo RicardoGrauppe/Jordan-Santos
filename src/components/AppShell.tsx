@@ -51,6 +51,26 @@ const ITENS = [
 /** telas cheias que só existem no celular */
 type TelaMobileAberta = null | "avisos" | "busca" | "conta";
 
+/* A ORDEM DOS ÍCONES DA BARRA É A FONTE DA VERDADE DA DIREÇÃO (portado do
+   POS_NAV do estúdio original). Ir pra um destino À DIREITA do atual faz a tela
+   entrar pela direita; à esquerda, pela esquerda. É o que faz a navegação
+   parecer acompanhar o dedo em vez de piscar.
+
+   Rota que não está na barra (ficha, pendências, tempo, configurações) conta
+   como "mais fundo": entra pela direita, e voltar dela vem pela esquerda. */
+const POSICAO_NAV: Record<string, number> = {
+  "/painel": 0,
+  "/painel/clientes": 1,
+  avisos: 2,
+  busca: 3,
+  conta: 4,
+};
+const POSICAO_FUNDO = 9;
+
+function posicaoDaRota(caminho: string): number {
+  return POSICAO_NAV[caminho] ?? POSICAO_FUNDO;
+}
+
 /* A preferência de recolhido vive no localStorage e entra pelo
    useSyncExternalStore: no servidor (e na hidratação) vale "aberto", e o
    cliente troca pro valor guardado sem setState em efeito. */
@@ -149,8 +169,17 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      X, que nenhuma dessas telas tem de propósito: a barra fica por cima delas,
      então ela é sempre o caminho de volta (mesma decisão do original). */
   function alternarTela(qual: Exclude<TelaMobileAberta, null>) {
-    setTela((atual) => (atual === qual ? null : qual));
-    if (qual === "avisos" && tela !== "avisos") avisos.aoAbrir();
+    if (tela === qual) { setTela(null); return; }
+    /* "de onde estou": a tela cheia aberta, se houver, senão a rota de baixo.
+       Rota fora da barra conta como o grupo Clientes, porque é por ali que se
+       chega nela. */
+    const origem = tela
+      ? POSICAO_NAV[tela]
+      : Math.min(posAtual, POSICAO_NAV["/painel/clientes"]);
+    setLadoPorTela((atual) => ({ ...atual, [qual]: POSICAO_NAV[qual] < origem }));
+    setTela(qual);
+    if (qual !== "avisos") return;
+    avisos.aoAbrir();
   }
 
   function alternarNotifDesktop() {
@@ -181,6 +210,32 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      lateral, e a grade usa pra abrir a coluna. Antes eram dois literais
      soltos, e alinhar um sem o outro era questão de tempo. */
   const larguraMenu = recolhido ? 62 : 190;
+
+  /* De onde a próxima tela entra. A direção é decidida NO CLIQUE, como no
+     original (lá o `mostrar()` recebia a direção de quem chamou), e fica
+     amarrada ao caminho de destino: assim ela vale só pra aquela navegação e
+     não contamina a próxima, que pode vir de um lugar que não passa por aqui
+     (clicar num casal da lista, no card de pendências, no clima).
+
+     O padrão é entrar pela DIREITA, que é o certo pra quem vai "mais fundo".
+     Voltar pelo gesto ou pelo botão do navegador entra pela esquerda, ouvindo
+     o `popstate`. */
+  const posAtual = posicaoDaRota(caminho);
+  const [deslize, setDeslize] = useState<{ caminho: string; lado: "dir" | "esq" } | null>(null);
+  const ladoDaRota = deslize?.caminho === caminho ? deslize.lado : "dir";
+
+  useEffect(() => {
+    function voltou() { setDeslize({ caminho: location.pathname, lado: "esq" }); }
+    window.addEventListener("popstate", voltou);
+    return () => window.removeEventListener("popstate", voltou);
+  }, []);
+
+  /* A direção da tela cheia é decidida NA HORA de abrir e guardada POR TELA:
+     depois de aberta não dá mais pra recalcular "de onde eu vim", e cada uma
+     precisa do lado dela pra voltar por onde veio. Guardar um lado só pras três
+     fazia a que fecha sair pro mesmo lado da que entra, e aí as duas andavam
+     juntas em vez de uma dar lugar à outra. */
+  const [ladoPorTela, setLadoPorTela] = useState<Record<string, boolean>>({});
 
   /* no celular, quem manda no destaque é a tela cheia aberta; sem nenhuma, a
      rota é que decide */
@@ -397,18 +452,30 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
               (semCabecalhoNoCelular ? "pt-[calc(1.5rem+var(--sat))]" : "pt-6")
             }
           >
-            {children}
+            {/* a página nova entra pelo lado que a barra pede; no computador
+                não desliza, porque lá a troca não vem de um gesto. `key` no
+                caminho é o que faz a animação tocar de novo a cada rota. */}
+            <div
+              key={caminho}
+              className={
+                "overflow-x-clip motion-reduce:animate-none md:animate-none " +
+                (ladoDaRota === "esq" ? "animate-desliza-esq" : "animate-desliza-dir")
+              }
+            >
+              {children}
+            </div>
           </main>
         </div>
       </div>
 
       {/* telas cheias do celular. Ficam sempre montadas: é o que deixa a entrada
           e a saída deslizarem, em vez de piscarem. */}
-      <TelaAvisosMobile avisos={avisos} aberta={tela === "avisos"} aoFechar={() => setTela(null)} />
-      <TelaBuscaMobile aberta={tela === "busca"} aoFechar={() => setTela(null)} />
+      <TelaAvisosMobile avisos={avisos} aberta={tela === "avisos"} daEsquerda={!!ladoPorTela.avisos} aoFechar={() => setTela(null)} />
+      <TelaBuscaMobile aberta={tela === "busca"} daEsquerda={!!ladoPorTela.busca} aoFechar={() => setTela(null)} />
       <TelaContaMobile
         nome={nome}
         aberta={tela === "conta"}
+        daEsquerda={!!ladoPorTela.conta}
         aoFechar={() => setTela(null)}
         aoSair={sair}
       />
@@ -422,7 +489,10 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           <Link
             key={href}
             href={href}
-            onClick={() => setTela(null)}
+            onClick={() => {
+              setTela(null);
+              setDeslize({ caminho: href, lado: posicaoDaRota(href) < posAtual ? "esq" : "dir" });
+            }}
             className={itemNav + " " + (ativoMobile(href) ? "text-accent" : "text-ink-soft")}
           >
             <Icone size={19} />
@@ -473,13 +543,13 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
    O cartão escuro do topo é o do original, sem o nome do plano: por enquanto
    este produto não tem planos, e um selo inventado seria mentira na tela. */
 function TelaContaMobile({
-  nome, aberta, aoFechar, aoSair,
-}: { nome?: string; aberta: boolean; aoFechar: () => void; aoSair: () => void }) {
+  nome, aberta, daEsquerda, aoFechar, aoSair,
+}: { nome?: string; aberta: boolean; daEsquerda?: boolean; aoFechar: () => void; aoSair: () => void }) {
   const item = "flex w-full cursor-pointer items-center gap-3 rounded-xl px-1.5 py-4 text-left text-[15.5px] text-ink no-underline active:opacity-60";
   const aba = aberta ? 0 : -1;
 
   return (
-    <TelaMobile aberta={aberta} rotulo="Menu da conta">
+    <TelaMobile aberta={aberta} daEsquerda={daEsquerda} rotulo="Menu da conta">
       <TopoTelaMobile>
         <h2 className="flex-1 text-[26px] font-bold text-ink">Menu</h2>
       </TopoTelaMobile>

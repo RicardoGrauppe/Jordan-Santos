@@ -2,7 +2,8 @@
   Moldura das telas cheias do celular (avisos, busca e menu da conta). Portada
   de `.tela-mobile` / `abrirTelaMobile` do estudio.html do Jordan.
 
-  Ela entra deslizando da direita e sai pelo mesmo caminho. O truque das
+  Ela entra deslizando pelo lado que o dedo pede (ver `daEsquerda`) e sai pelo
+  mesmo caminho. O truque das
   classes: fechada, a visibilidade só muda DEPOIS dos 260ms da transição
   (`visibility 0s linear .26s`), senão a tela some no ato e o deslize de saída
   não aparece. Fechada também sai da ordem de tabulação, porque
@@ -17,8 +18,8 @@
 import type { ReactNode } from "react";
 
 export function TelaMobile({
-  aberta, rotulo, children,
-}: { aberta: boolean; rotulo: string; children: ReactNode }) {
+  aberta, rotulo, daEsquerda = false, children,
+}: { aberta: boolean; rotulo: string; daEsquerda?: boolean; children: ReactNode }) {
   return (
     <div
       role="dialog"
@@ -28,7 +29,10 @@ export function TelaMobile({
         "fixed inset-0 z-60 flex flex-col bg-paper pt-[var(--sat)] md:hidden " +
         (aberta
           ? "visible translate-x-0 [transition:transform_.26s_ease]"
-          : "invisible translate-x-full [transition:transform_.26s_ease,visibility_0s_linear_.26s]")
+          : "invisible [transition:transform_.26s_ease,visibility_0s_linear_.26s] " +
+            /* de que lado ela espera: quem vem de um ícone À ESQUERDA do atual
+               entra pela esquerda, e sai por lá também */
+            (daEsquerda ? "-translate-x-full" : "translate-x-full"))
       }
     >
       {children}

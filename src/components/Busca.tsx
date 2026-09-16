@@ -158,7 +158,7 @@ export function BuscaTopo() {
 
 /* ---------- celular: tela cheia, resultado a cada tecla ---------- */
 
-export function TelaBuscaMobile({ aberta, aoFechar }: { aberta: boolean; aoFechar: () => void }) {
+export function TelaBuscaMobile({ aberta, daEsquerda, aoFechar }: { aberta: boolean; daEsquerda?: boolean; aoFechar: () => void }) {
   const router = useRouter();
   const [termo, setTermo] = useState("");
   const campo = useRef<HTMLInputElement>(null);
@@ -178,7 +178,7 @@ export function TelaBuscaMobile({ aberta, aoFechar }: { aberta: boolean; aoFecha
   }
 
   return (
-    <TelaMobile aberta={aberta} rotulo="Buscar casal">
+    <TelaMobile aberta={aberta} daEsquerda={daEsquerda} rotulo="Buscar casal">
       <TopoTelaMobile>
         <label className="flex min-w-0 flex-1 items-center gap-2.5 rounded-full bg-soft px-4 py-2.5">
           <Search size={17} className="shrink-0 text-ink-soft" />

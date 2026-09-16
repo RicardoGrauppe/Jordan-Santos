@@ -269,7 +269,7 @@ export function DropdownAvisos({ avisos, aoFechar }: { avisos: Avisos; aoFechar:
 
 /* ---------- celular: tela cheia com filtros e sheet de ações ---------- */
 
-export function TelaAvisosMobile({ avisos, aberta, aoFechar }: { avisos: Avisos; aberta: boolean; aoFechar: () => void }) {
+export function TelaAvisosMobile({ avisos, aberta, daEsquerda, aoFechar }: { avisos: Avisos; aberta: boolean; daEsquerda?: boolean; aoFechar: () => void }) {
   const [sheet, setSheet] = useState(false);
   const visiveis = useMemo(
     () => avisos.lista.filter((n) => passaFiltro(n, avisos.filtro)),
@@ -281,7 +281,7 @@ export function TelaAvisosMobile({ avisos, aberta, aoFechar }: { avisos: Avisos;
 
   return (
     <>
-      <TelaMobile aberta={aberta} rotulo="Notificações">
+      <TelaMobile aberta={aberta} daEsquerda={daEsquerda} rotulo="Notificações">
         <TopoTelaMobile>
           <h2 className="flex-1 text-[26px] font-bold text-ink">Notificações</h2>
           <button
