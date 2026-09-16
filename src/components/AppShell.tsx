@@ -223,51 +223,56 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
               por uma faixa branca em cima.
               A faixa tem a mesma altura do cabeçalho (h-14) pra a marca e a
               busca nascerem na mesma linha. */}
-          {/* A FAIXA DA MARCA É O BOTÃO DE RECOLHER: em repouso ela mostra a
-              marca, e no hover a marca dá lugar ao ícone. Assim o controle não
-              ocupa lugar nenhum enquanto não é procurado, e some aquele botão
-              solto no rodapé da lateral.
+          {/* A FAIXA DA MARCA É O BOTÃO DE RECOLHER: passar o mouse nela revela
+              o controle, clicar recolhe. Sem botão solto no rodapé.
 
-              Os dois ficam empilhados no mesmo lugar (`absolute`), trocando só
-              a opacidade: se um substituísse o outro no fluxo, a faixa mudaria
-              de largura no hover e a lateral tremeria.
+              ABERTA, a marca NÃO some. A primeira versão trocava a marca pelo
+              ícone no mesmo ponto, e isso lia como defeito: a assinatura tem
+              79px de largura e o ícone 17, então o olho via uma coisa larga
+              virar uma pequena no lugar de ver uma transição. Medi e não havia
+              pulo de layout nenhum, o "pulo" era essa troca de silhueta. Agora
+              a marca fica onde está, centrada, e o ícone aparece numa pastilha
+              PRÓPRIA na ponta direita da faixa. Nada se move, nada se
+              substitui.
 
-              Não é mais link pro início: "Home" é o primeiro item do menu, logo
-              abaixo, então o atalho não se perde.
+              RECOLHIDA não cabe os dois lado a lado, então ali a troca volta,
+              e ali ela funciona: a pastilha da marca e a do ícone têm o mesmo
+              tamanho e o mesmo lugar, então uma vira a outra sem mudar de
+              silhueta.
 
-              O `group-hover` aqui vai SEM o prefixo `[@media(hover:hover)]:`
-              que o resto do arquivo usa, e não é descuido: no Tailwind 4 o
-              `hover` JÁ nasce dentro de `@media (hover: hover)`. Conferido
-              lendo o CSS servido: as 41 classes de hover do app, com prefixo ou
-              sem, caem todas dentro desse bloco. O prefixo virou redundante
-              quando o projeto foi pra v4; ele continua no resto do arquivo
-              porque trocar é varredura pra outra hora. */}
+              O fundo colorido é da PASTILHA, não da faixa inteira: acender 166
+              por 56px atrás de uma marca pequena era o que fazia parecer mal
+              acabado. */}
           <button
             type="button"
             onClick={alternar}
             aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
             title={recolhido ? "Expandir menu" : "Recolher menu"}
             style={{ ["--fundo-marca" as string]: FUNDO_MARCA }}
-            className={
-              "group relative flex h-14 shrink-0 cursor-pointer items-center justify-center " +
-              "overflow-hidden transition-colors " + RAIO_MARCA +
-              " hover:bg-[var(--fundo-marca)]"
-            }
+            className="group relative flex h-14 shrink-0 cursor-pointer items-center justify-center"
           >
             <img
               src={recolhido ? "/img/icone-192.png" : "/img/logo-principal-offwhite.png"}
               alt={nome ?? "Estúdio"}
               className={
                 "block object-contain transition-opacity duration-150 " +
-                (recolhido ? "h-8 w-8 " + RAIO_MARCA : "h-7 w-auto max-w-full") +
-                " group-hover:opacity-0"
+                (recolhido ? "h-8 w-8 " + RAIO_MARCA + " group-hover:opacity-0" : "h-7 w-auto max-w-full")
               }
             />
+
+            {/* recolhida: ocupa o lugar da pastilha da marca, mesmo tamanho e
+                mesmo raio, então a troca é limpa.
+                aberta: pastilha própria, encostada na ponta direita. */}
             <span
               aria-hidden
-              className="absolute inset-0 flex items-center justify-center text-white/90 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              className={
+                "pointer-events-none absolute flex items-center justify-center text-white/90 " +
+                "opacity-0 transition-opacity duration-150 group-hover:opacity-100 " +
+                RAIO_MARCA + " bg-[var(--fundo-marca)] " +
+                (recolhido ? "inset-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2" : "right-0 h-8 w-8")
+              }
             >
-              <PanelLeft size={17} className={recolhido ? "rotate-180" : ""} />
+              <PanelLeft size={16} className={recolhido ? "rotate-180" : ""} />
             </span>
           </button>
 
