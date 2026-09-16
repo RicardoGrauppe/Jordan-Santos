@@ -35,6 +35,24 @@
   --shadow-card-hover: 0 1px 2px rgba(29, 29, 27, 0.04), 0 10px 24px rgba(29, 29, 27, 0.07);
   --shadow-alta: 0 10px 34px rgba(29, 29, 27, 0.14);
 
+  /* Peça que FLUTUA sobre a página (a barra de baixo do celular). A luz vem de
+     cima, então três coisas acontecem juntas:
+     1. a sombra cai só pra BAIXO, em camadas — uma curta e escura que ancora a
+        peça no lugar, e duas largas e claras que abrem a distância;
+     2. a aresta de cima recebe um fio de luz (inset branco), que é o que faz o
+        volume ler como volume e não como retângulo colado;
+     3. a de baixo recebe um fio de sombra, porque é a face que vira as costas
+        pra luz.
+     Os dois insets sozinhos não apareceriam num fundo branco chapado — quem os
+     revela é o degradê do próprio elemento, de branco no topo pra quase-branco
+     embaixo. */
+  --shadow-flutuante:
+    0 1px 1px rgba(29, 29, 27, 0.05),
+    0 6px 14px rgba(29, 29, 27, 0.07),
+    0 16px 34px rgba(29, 29, 27, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(29, 29, 27, 0.04);
+
   /* skeleton: brilho lento e suave (faixa larga, contraste baixo, ease-in-out
      pra parecer uma respiração, não um flash). Usado pelo <Sk> em
      components/Skeleton.tsx. */

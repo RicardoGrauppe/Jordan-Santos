@@ -634,12 +634,15 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
       {/* Celular: o menu vira uma barra FLUTUANTE embaixo, ao alcance do
           polegar. Ela não encosta nas bordas nem na faixa do indicador do
-          iPhone (--sab), e não leva borda nem sombra: o fundo branco sobre a
-          página soft já a separa. Só ícones — cinco destinos fixos, e o rótulo
-          que sobrava embaixo comia altura sem dizer nada novo depois do
-          primeiro uso. */}
+          iPhone (--sab). Sem borda: o que a destaca é a LUZ, vinda de cima —
+          degradê de branco pro quase-branco, fio claro na aresta de cima, fio
+          escuro na de baixo e a sombra caindo em camadas (ver
+          --shadow-flutuante no globals.css). Só ícones: cinco destinos fixos, e
+          o rótulo que sobrava embaixo comia altura sem dizer nada novo depois
+          do primeiro uso. */}
       <nav className={
-        "fixed inset-x-4 bottom-[calc(0.75rem+var(--sab))] z-70 mx-auto h-14 max-w-[420px] items-center justify-around rounded-full bg-paper px-2 md:hidden " +
+        "fixed inset-x-4 bottom-[calc(0.75rem+var(--sab))] z-70 mx-auto h-14 max-w-[420px] items-center justify-around rounded-full px-2 md:hidden " +
+        "bg-[linear-gradient(180deg,#ffffff,#f9fafb)] shadow-flutuante " +
         (semNavegacao ? "hidden" : "flex")
       }>
         {ITENS.map(({ href, rotulo, Icone }) => (
