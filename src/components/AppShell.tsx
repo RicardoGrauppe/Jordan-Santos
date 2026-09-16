@@ -202,7 +202,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             Os itens ficam CENTRADOS na vertical (justify-center num flex-1):
             com duas entradas só, empilhadas no topo, sobrava um vazio enorme
             embaixo. */}
-        <aside className="sticky top-0 hidden h-dvh flex-col gap-3.5 bg-noir px-3 pb-4 text-white md:flex">
+        <aside className="sticky top-0 hidden h-dvh flex-col gap-3.5 bg-noir px-3 pb-6 text-white md:flex">
           {/* A MARCA VIVE AQUI, não no cabeçalho (decisão de 16/09/2026, e é uma
               divergência consciente do estúdio original, onde o cabeçalho
               atravessava a tela e a lateral começava abaixo dele). Com a marca
@@ -211,21 +211,48 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
               por uma faixa branca em cima.
               A faixa tem a mesma altura do cabeçalho (h-14) pra a marca e a
               busca nascerem na mesma linha. */}
-          <Link
-            href="/painel"
-            aria-label="Ir pro início do estúdio"
-            className="flex h-14 shrink-0 items-center justify-center overflow-hidden no-underline"
+          {/* A FAIXA DA MARCA É O BOTÃO DE RECOLHER: em repouso ela mostra a
+              marca, e no hover a marca dá lugar ao ícone. Assim o controle não
+              ocupa lugar nenhum enquanto não é procurado, e some aquele botão
+              solto no rodapé da lateral.
+
+              Os dois ficam empilhados no mesmo lugar (`absolute`), trocando só
+              a opacidade: se um substituísse o outro no fluxo, a faixa mudaria
+              de largura no hover e a lateral tremeria.
+
+              Não é mais link pro início: "Home" é o primeiro item do menu, logo
+              abaixo, então o atalho não se perde.
+
+              O `group-hover` aqui vai SEM o prefixo `[@media(hover:hover)]:`
+              que o resto do arquivo usa, e não é descuido: no Tailwind 4 o
+              `hover` JÁ nasce dentro de `@media (hover: hover)`. Conferido
+              lendo o CSS servido: as 41 classes de hover do app, com prefixo ou
+              sem, caem todas dentro desse bloco. O prefixo virou redundante
+              quando o projeto foi pra v4; ele continua no resto do arquivo
+              porque trocar é varredura pra outra hora. */}
+          <button
+            type="button"
+            onClick={alternar}
+            aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
+            title={recolhido ? "Expandir menu" : "Recolher menu"}
+            className={`group relative flex h-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-[10px] transition-colors ${HOVER}hover:bg-white/8`}
           >
-            {/* recolhida, a assinatura não cabe em 62px: espremida fica
-                ilegível e encosta nas bordas. Ali entra o símbolo quadrado, que
-                é o padrão de lateral recolhível. A versão clara porque o fundo
-                aqui é escuro. */}
             <img
               src={recolhido ? "/img/icone-192.png" : "/img/logo-principal-offwhite.png"}
               alt={nome ?? "Estúdio"}
-              className={"block object-contain " + (recolhido ? "h-8 w-8 rounded-md" : "h-7 w-auto max-w-full")}
+              className={
+                "block object-contain transition-opacity duration-150 " +
+                (recolhido ? "h-8 w-8 rounded-md" : "h-7 w-auto max-w-full") +
+                " group-hover:opacity-0"
+              }
             />
-          </Link>
+            <span
+              aria-hidden
+              className="absolute inset-0 flex items-center justify-center text-white/70 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            >
+              <PanelLeft size={17} className={recolhido ? "rotate-180" : ""} />
+            </span>
+          </button>
 
           <nav className="flex flex-1 flex-col justify-center gap-[3px]">
             {ITENS.map(({ href, rotulo, Icone }) => (
@@ -247,20 +274,6 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             ))}
           </nav>
 
-          <button
-            type="button"
-            onClick={alternar}
-            aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
-            className={
-              "flex shrink-0 cursor-pointer items-center gap-[11px] overflow-hidden whitespace-nowrap rounded-[10px] py-[9px] " +
-              "text-[10.5px] uppercase tracking-[.08em] text-white/45 transition-colors " +
-              (recolhido ? "justify-center px-0 " : "px-3 ") +
-              `${HOVER}hover:bg-white/8 ${HOVER}hover:text-white`
-            }
-          >
-            <PanelLeft size={15} className="shrink-0" />
-            {!recolhido ? <span>Recolher</span> : null}
-          </button>
         </aside>
 
         {/* coluna do conteúdo: o cabeçalho mora AQUI dentro, então ele começa
