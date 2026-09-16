@@ -687,6 +687,13 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
    Fundo preto, fio e brilho dourados, coroa num disco no canto da foto e o
    pacote num pill dourado.
 
+   O pill NUNCA quebra linha. Medido num iPhone SE (320px de largura): com o
+   tracking de .42em do original ele não cabia na coluna de 175px e virava duas
+   linhas, "LEGACY / PACKAGE". Por isso o cartão cheio COMEÇA apertado (fonte
+   10, tracking .16em, foto de 56px) e só a partir de 375px assume as medidas
+   do estúdio original, que foram desenhadas pra telas daquele tamanho pra
+   cima.
+
    Duas medidas do MESMO cartão, porque ele serve o dropdown do computador e a
    tela cheia do celular. No compacto o nome perde o recuo e o pill fecha o
    espaçamento entre letras: com .42em de tracking num menu de 288px o
@@ -701,7 +708,7 @@ function CartaoPlano({ nome, compacto = false }: { nome?: string; compacto?: boo
         "shadow-[0_6px_16px_rgba(0,0,0,.18),inset_0_1px_0_rgba(242,217,160,.14)] " +
         (compacto
           ? "mx-0.5 mb-2 mt-0.5 gap-[13px] rounded-[18px] px-4 py-3.5"
-          : "mb-5 gap-[15px] rounded-[26px] p-[18px]")
+          : "mb-5 gap-3 rounded-[22px] p-4 min-[375px]:gap-[15px] min-[375px]:rounded-[26px] min-[375px]:p-[18px]")
       }
     >
       {/* brilho dourado difuso no canto superior direito */}
@@ -715,7 +722,7 @@ function CartaoPlano({ nome, compacto = false }: { nome?: string; compacto?: boo
           alt=""
           className={
             "rounded-full object-cover shadow-[0_0_0_2px_rgba(242,217,160,.55),0_0_0_4px_rgba(255,255,255,.08)] " +
-            (compacto ? "h-[46px] w-[46px]" : "h-16 w-16")
+            (compacto ? "h-[46px] w-[46px]" : "h-14 w-14 min-[375px]:h-16 min-[375px]:w-16")
           }
         />
         <span
@@ -724,14 +731,14 @@ function CartaoPlano({ nome, compacto = false }: { nome?: string; compacto?: boo
             "absolute flex items-center justify-center rounded-full " +
             "bg-[radial-gradient(circle_at_35%_30%,#2a2a2a,#050505_75%)] " +
             "shadow-[0_3px_8px_rgba(0,0,0,.45),0_0_0_1.5px_rgba(242,217,160,.6),inset_0_1px_0_rgba(255,255,255,.12)] " +
-            (compacto ? "-right-[5px] -bottom-[5px] h-[22px] w-[22px]" : "-right-1.5 -bottom-1.5 h-7 w-7")
+            (compacto ? "-right-[5px] -bottom-[5px] h-[22px] w-[22px]" : "-right-1 -bottom-1 h-6 w-6 min-[375px]:-right-1.5 min-[375px]:-bottom-1.5 min-[375px]:h-7 min-[375px]:w-7")
           }
         >
           <Crown size={compacto ? 12 : 15} strokeWidth={2} color={OURO} />
         </span>
       </span>
       <div className="relative min-w-0">
-        <div className={"truncate font-semibold text-white " + (compacto ? "text-[16px]" : "pl-[11px] text-[26px]")}>
+        <div className={"truncate font-semibold text-white " + (compacto ? "text-[16px]" : "pl-2 text-[21px] min-[375px]:pl-[11px] min-[375px]:text-[26px]")}>
           {nome ?? "Conta"}
         </div>
         <div
@@ -739,9 +746,11 @@ function CartaoPlano({ nome, compacto = false }: { nome?: string; compacto?: boo
             "inline-flex items-center rounded-full font-bold uppercase text-[#3a2b06] " +
             "bg-[linear-gradient(135deg,#f6e3ad,#e7c46a_45%,#d9ad4e)] " +
             "shadow-[0_2px_8px_rgba(217,173,78,.35),inset_0_1px_0_rgba(255,255,255,.5)] " +
+            "whitespace-nowrap " +
             (compacto
-              ? "mt-[5px] whitespace-nowrap px-2.5 py-[3px] text-[10px] tracking-[.1em]"
-              : "mt-1.5 ml-2.5 px-[11px] py-1 text-[11px] tracking-[.42em]")
+              ? "mt-[5px] px-2.5 py-[3px] text-[10px] tracking-[.1em]"
+              : "mt-1 ml-2 px-2.5 py-[3px] text-[10px] tracking-[.16em] " +
+                "min-[375px]:mt-1.5 min-[375px]:ml-2.5 min-[375px]:px-[11px] min-[375px]:py-1 min-[375px]:text-[11px] min-[375px]:tracking-[.42em]")
           }
         >
           {PACOTE}
