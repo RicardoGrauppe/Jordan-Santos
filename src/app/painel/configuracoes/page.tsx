@@ -6,8 +6,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { FileText, Lock, MapPin, Shield, User } from "lucide-react";
+import { Lock, MapPin, Shield, User } from "lucide-react";
 import { Botao, Campo, Cartao, Estado } from "@/components/ui";
 
 type Msg = { texto: string; tom?: "ok" | "erro" };
@@ -153,16 +152,6 @@ export default function Configuracoes() {
           <div className="flex items-center justify-end gap-3">
             <Estado texto={msgReset.texto} tom={msgReset.tom} />
             <Botao variante="secundario" onClick={enviarReset} disabled={ocupado === "reset"}>Enviar link de redefinição</Botao>
-          </div>
-        </Cartao>
-
-        <Cartao>
-          <TituloCard icone={<FileText size={16} />}>Contrato e assinatura</TituloCard>
-          <p className="m-0 mb-4 text-[13px] text-ink-soft">Seus modelos de contrato e suas assinaturas.</p>
-          <div className="flex justify-end">
-            <Link href="/painel/configuracoes/contrato" className="inline-flex h-11 items-center rounded-[10px] bg-soft px-5 text-sm font-semibold text-ink no-underline hover:bg-line">
-              Abrir
-            </Link>
           </div>
         </Cartao>
       </div>
