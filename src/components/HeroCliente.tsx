@@ -30,7 +30,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Archive, Calendar, DollarSign, EllipsisVertical, FileText, MapPin, Trash2, UserPlus, Users } from "lucide-react";
+import { Archive, Calendar, EllipsisVertical, FileText, MapPin, Tag, Trash2, UserPlus, Users } from "lucide-react";
 import { diasAte, type Cliente } from "@/lib/ficha";
 import { fmtData, moeda } from "@/lib/util";
 
@@ -121,7 +121,7 @@ export function HeroCliente({
               {/* arquivado vem primeiro: é a condição da ficha inteira, e o
                   resto só faz sentido lido depois dela */}
               {arquivado ? <Chip><Archive size={14} />Arquivado</Chip> : null}
-              {contratoAssinado ? <Chip destaque={!arquivado}><FileText size={14} />Contrato assinado</Chip> : null}
+              {contratoAssinado ? <Chip><FileText size={14} />Contrato assinado</Chip> : null}
             </div>
           ) : null}
 
@@ -133,7 +133,9 @@ export function HeroCliente({
                 <Meta forte={dataFutura && !arquivado}><Calendar size={14} className="opacity-70" />{textoData}</Meta>
               ) : null}
               {local ? <Meta><MapPin size={14} className="opacity-70" />{local}</Meta> : null}
-              {temTotal ? <Meta><DollarSign size={14} className="opacity-70" />{moeda(Number(cliente.total))}</Meta> : null}
+              {/* etiqueta, não cifrão: o valor é em R$, e um "$" ao lado de
+                  "R$ 21.000,00" diz outra moeda */}
+              {temTotal ? <Meta><Tag size={14} className="opacity-70" />{moeda(Number(cliente.total))}</Meta> : null}
             </div>
           ) : null}
         </div>
@@ -261,16 +263,14 @@ function Avatar({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Chip({ destaque = false, children }: { destaque?: boolean; children: React.ReactNode }) {
+/* Selo de ESTADO. Um estilo só, translúcido e de canto mole — o branco cheio
+   e redondo que havia aqui era a última coisa arredondada e gritada do herói,
+   depois que o bloco do ícone e o botão de ações viraram quadrados de canto
+   mole. Quem separa os dois estados é o ícone e a ordem (arquivado primeiro),
+   não o volume. */
+function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span
-      className={
-        "inline-flex items-center gap-[7px] rounded-full px-[13px] py-1.5 text-[13px] whitespace-normal md:whitespace-nowrap " +
-        (destaque
-          ? "bg-white font-semibold text-accent"
-          : "bg-white/[.11] text-white/95 backdrop-blur-[6px]")
-      }
-    >
+    <span className="inline-flex items-center gap-[7px] whitespace-normal rounded-[10px] bg-white/[.14] px-[11px] py-1.5 text-[13px] font-medium text-white backdrop-blur-[6px] md:whitespace-nowrap">
       {children}
     </span>
   );
