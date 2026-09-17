@@ -62,7 +62,7 @@ export function HeroCliente({
   const fundo =
     "relative isolate mb-10 mt-3 overflow-hidden text-white " +
     "rounded-[18px] px-[22px] py-6 md:rounded-3xl md:px-8 md:pb-7 md:pt-[30px] " +
-    "shadow-[0_14px_34px_rgba(0,54,70,.22),inset_0_1px_0_rgba(255,255,255,.07)] " +
+    " " +
     "bg-[radial-gradient(130%_150%_at_12%_-10%,rgba(255,255,255,.12),transparent_46%),linear-gradient(135deg,#013243_0%,#003646_46%,#0b4d61_100%)] " +
     "";
 
@@ -208,7 +208,7 @@ function MenuDoCadastro({
         <div
           role="menu"
           onPointerDown={(e) => e.stopPropagation()}
-          className="absolute right-0 top-11 z-[6] min-w-[208px] rounded-xl bg-paper p-1.5 shadow-alta"
+          className="absolute right-0 top-11 z-[6] min-w-[208px] rounded-xl bg-paper p-1.5 "
         >
           {podeArquivar ? (
             <button

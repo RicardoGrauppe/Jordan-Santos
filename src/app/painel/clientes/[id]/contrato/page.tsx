@@ -427,7 +427,7 @@ function IconeStatus({ status }: { status: StatusContrato }) {
 const CSS_DOCUMENTO = `
 #documento{font-family:"Times New Roman",Times,Georgia,serif}
 #documento.folhas{display:flex;flex-direction:column;align-items:center;gap:26px;max-width:none;padding:0}
-#documento .folha{width:100%;max-width:794px;aspect-ratio:210/297;background:var(--color-paper);box-shadow:var(--shadow-alta);padding:52px 58px 46px;position:relative;overflow:hidden}
+#documento .folha{width:100%;max-width:794px;aspect-ratio:210/297;background:var(--color-paper);padding:52px 58px 46px;position:relative;overflow:hidden}
 #documento .pagina-numero{position:absolute;bottom:16px;right:22px;font-size:10px;letter-spacing:.05em;color:var(--color-ink-soft)}
 #documento .logo-contrato{display:block;margin:0 auto 14px;width:190px;height:auto}
 #documento h2{font-family:inherit;font-weight:700;font-size:21px;letter-spacing:.06em;text-align:center;margin:0 0 26px}
@@ -449,7 +449,7 @@ const CSS_DOCUMENTO = `
 #documento .linha-ass{border-top:1px solid var(--color-ink);max-width:420px;margin:0 auto;padding-top:6px;text-align:center;font-size:12.5px}
 #documento .campo.editavel{cursor:text;border-radius:3px;transition:background .12s}
 @media (hover:hover){#documento .campo.editavel:hover{background:#FBF6EE}}
-#documento .campo-inline-edit{font:inherit;font-size:inherit;color:inherit;background:#FBF6EE;border:0;outline:0;border-radius:4px;padding:0 3px;width:auto;min-width:2.4em;box-shadow:0 1px 2px rgba(29,29,27,.12)}
+#documento .campo-inline-edit{font:inherit;font-size:inherit;color:inherit;background:#FBF6EE;border:0;outline:0;border-radius:4px;padding:0 3px;width:auto;min-width:2.4em}
 #documento .link-itens-estudio{display:block;text-align:right;font-size:12px;color:var(--color-accent);margin:-6px 0 14px;text-decoration:none;font-family:var(--font-sans)}
 @media (hover:hover){#documento .link-itens-estudio:hover{text-decoration:underline}}
 @media (max-width:959px){#documento .folha{padding:30px 22px 40px}}
@@ -1025,9 +1025,9 @@ export default function PaginaRevisarContrato() {
         />
         <aside
           className={
-            "fixed inset-y-0 right-0 z-50 w-[min(340px,88vw)] overflow-y-auto bg-paper pt-[var(--sat)] shadow-alta transition-transform duration-200 " +
+            "fixed inset-y-0 right-0 z-50 w-[min(340px,88vw)] overflow-y-auto bg-paper pt-[var(--sat)] transition-transform duration-200 " +
             (sidebarAberta ? "translate-x-0" : "translate-x-full") +
-            " xl:sticky xl:inset-auto xl:top-6 xl:z-auto xl:max-h-[calc(100dvh-3rem)] xl:w-auto xl:translate-x-0 xl:rounded-2xl xl:pt-0 xl:shadow-card"
+" xl:sticky xl:inset-auto xl:top-6 xl:z-auto xl:max-h-[calc(100dvh-3rem)] xl:w-auto xl:translate-x-0 xl:rounded-2xl xl:pt-0 xl:"
           }
           aria-label="Assinantes e histórico"
         >
@@ -1225,7 +1225,7 @@ export default function PaginaRevisarContrato() {
                   <div
                     role="menu"
                     className={
-                      "fixed inset-x-0 bottom-0 z-[80] flex flex-col rounded-t-[20px] bg-paper px-2.5 pb-[calc(10px+var(--sab))] pt-2.5 shadow-alta transition-transform duration-200 " +
+                      "fixed inset-x-0 bottom-0 z-[80] flex flex-col rounded-t-[20px] bg-paper px-2.5 pb-[calc(10px+var(--sab))] pt-2.5 transition-transform duration-200 " +
                       "sm:absolute sm:inset-auto sm:right-0 sm:top-[calc(100%+8px)] sm:z-30 sm:min-w-[260px] sm:rounded-xl sm:p-1.5 sm:transition-none " +
                       (menuAberto ? "translate-y-0 sm:flex" : "pointer-events-none translate-y-full sm:hidden")
                     }
@@ -1274,7 +1274,7 @@ export default function PaginaRevisarContrato() {
               serviço que este produto não opera: só o que a gente tem e pode
               provar. */}
           {assinadoPeloCasal && contrato?.doc_sha256 ? (
-            <div className="mx-auto -mt-3.5 flex w-full max-w-[794px] items-center gap-3.5 bg-paper px-6 py-4 text-[11.5px] leading-[1.7] text-ink-soft shadow-alta">
+            <div className="mx-auto -mt-3.5 flex w-full max-w-[794px] items-center gap-3.5 bg-paper px-6 py-4 text-[11.5px] leading-[1.7] text-ink-soft ">
               <ShieldCheck size={26} strokeWidth={1.6} className="shrink-0 text-accent" />
               <div>
                 Assinado com assinatura eletrônica (MP 2.200-2/2001, art. 10, §2º)<br />
@@ -1299,7 +1299,7 @@ export default function PaginaRevisarContrato() {
           onClick={() => setModalAberto(true)}
           className={
             "fixed bottom-[calc(76px+var(--sab))] right-[18px] z-[60] inline-flex cursor-pointer items-center gap-2 rounded-full bg-accent px-[22px] py-3.5 " +
-            "text-[12.5px] uppercase tracking-[.08em] text-white shadow-[0_12px_30px_rgba(0,54,70,.28)] transition-[background,transform] duration-150 " +
+            "text-[12.5px] uppercase tracking-[.08em] text-white  transition-[background,transform] duration-150 " +
             `md:bottom-7 md:right-7 hover:-translate-y-px hover:bg-accent-hover`
           }
         >
@@ -1319,7 +1319,7 @@ export default function PaginaRevisarContrato() {
         aria-modal="true"
         aria-labelledby="titulo-assinatura"
         className={
-          "fixed inset-x-0 bottom-0 z-[80] max-h-[88vh] overflow-y-auto rounded-t-[20px] bg-paper px-5 pb-[calc(20px+var(--sab))] pt-3.5 shadow-[0_24px_60px_rgba(0,0,0,.28)] transition-[opacity,transform] duration-200 " +
+          "fixed inset-x-0 bottom-0 z-[80] max-h-[88vh] overflow-y-auto rounded-t-[20px] bg-paper px-5 pb-[calc(20px+var(--sab))] pt-3.5  transition-[opacity,transform] duration-200 " +
           "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[85vh] sm:w-[min(520px,92vw)] sm:rounded-2xl sm:px-[26px] sm:py-[30px] " +
           (modalAberto
             ? "translate-y-0 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:opacity-100"
@@ -1458,7 +1458,7 @@ function CartaoAssinante({ nome, ok, badge, aberto, onToggle, children }: {
   nome: string; ok: boolean; badge: string; aberto: boolean; onToggle: () => void; children: ReactNode;
 }) {
   return (
-    <div className="mb-2.5 overflow-hidden rounded-xl bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)]">
+    <div className="mb-2.5 overflow-hidden rounded-xl bg-[#F7F9FA] ">
       <button
         type="button"
         onClick={onToggle}

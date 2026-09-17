@@ -140,7 +140,7 @@ export default function Pendencias() {
                          O trilho de trás segue soft: é ele que aparece quando
                          a linha desliza, atrás da ação. */
                       className="rounded-[14px] bg-soft"
-                      classeFrente={`gap-3 bg-paper py-2.5 pl-3.5 pr-2 shadow-[0_1px_2px_rgba(29,41,61,.04)] hover:bg-soft`}
+                      classeFrente={`gap-3 bg-paper py-2.5 pl-3.5 pr-2  hover:bg-soft`}
                       acoes={[{
                         chave: "limpar",
                         rotulo: "Limpar",

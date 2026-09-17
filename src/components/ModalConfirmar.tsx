@@ -60,7 +60,7 @@ export function ProvedorConfirmacao({ children }: { children: ReactNode }) {
             className="absolute inset-0 bg-[rgba(29,29,27,.5)] backdrop-blur-[2px]"
             onClick={() => fechar(false)}
           />
-          <div className="relative z-[1] w-full max-w-[440px] rounded-[18px] bg-paper p-8 pb-6 shadow-alta">
+          <div className="relative z-[1] w-full max-w-[440px] rounded-[18px] bg-paper p-8 pb-6 ">
             {/* ícone em pill SEMPRE inline com o título, nunca acima */}
             <h3 className="m-0 mb-3.5 flex items-center gap-3 text-[22px] font-semibold leading-[1.25] text-ink">
               <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-accent-tint text-accent">

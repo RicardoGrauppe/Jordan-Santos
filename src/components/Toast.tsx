@@ -33,7 +33,7 @@ export function useToast(): { mostrar: (texto: string, opts?: { ok?: boolean; ms
       aria-live="polite"
       className={
         "pointer-events-none fixed left-1/2 z-[300] inline-flex max-w-[calc(100vw-40px)] items-center gap-2 " +
-        "whitespace-nowrap rounded-full bg-noir px-5 py-2.5 text-[13px] font-medium text-white shadow-alta " +
+        "whitespace-nowrap rounded-full bg-noir px-5 py-2.5 text-[13px] font-medium text-white " +
         "transition-[opacity,transform] duration-150 " +
         "bottom-[calc(92px+var(--sab))] md:bottom-7 " +
         (visivel ? "-translate-x-1/2 translate-y-0 opacity-100" : "-translate-x-1/2 translate-y-2 opacity-0")

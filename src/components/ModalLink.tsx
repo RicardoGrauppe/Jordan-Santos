@@ -56,7 +56,7 @@ export function ModalLink({ dados, onFechar }: { dados: DadosLink; onFechar: () 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-5" role="dialog" aria-modal="true" aria-label="Link do contrato">
       <div className="absolute inset-0 bg-[rgba(29,29,27,.5)] backdrop-blur-[2px]" onClick={onFechar} />
-      <div className="relative z-[1] w-full max-w-[440px] rounded-[18px] bg-paper p-8 pb-6 shadow-alta">
+      <div className="relative z-[1] w-full max-w-[440px] rounded-[18px] bg-paper p-8 pb-6 ">
         <button
           type="button"
           onClick={onFechar}

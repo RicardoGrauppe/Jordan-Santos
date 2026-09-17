@@ -25,7 +25,7 @@ export function SecaoFicha({
   const [aberta, setAberta] = useState(abertaInicial);
 
   return (
-    <section className={"mb-4 rounded-[22px] bg-paper px-6 shadow-card " + (aberta ? "py-6" : "py-[18px]")}>
+    <section className={"mb-4 rounded-[22px] bg-paper px-6 " + (aberta ? "py-6" : "py-[18px]")}>
       <div className={"flex items-center gap-2.5 " + (aberta ? "mb-4" : "")}>
         <h2 className="m-0 flex flex-1 items-center gap-2.5 text-[13px] font-semibold text-ink">
           <span className="inline-flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[11px] bg-accent-tint text-accent">

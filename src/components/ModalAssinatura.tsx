@@ -130,7 +130,7 @@ function FormularioAssinatura({ aberto, editando, existentes, aoFechar, aoSalvar
       <div className="absolute inset-0 bg-[rgba(29,29,27,.5)] backdrop-blur-[2px]" onClick={aoFechar} />
       <div
         role="dialog" aria-modal="true" aria-label={editando ? "Editar assinatura" : "Nova assinatura"}
-        className="relative z-[1] flex h-[80dvh] w-full flex-col overflow-y-auto rounded-t-[18px] bg-paper p-5 pb-[calc(20px+var(--sab))] shadow-alta md:h-auto md:max-h-[calc(100dvh-40px)] md:max-w-[520px] md:rounded-[18px] md:p-8 md:pb-6"
+        className="relative z-[1] flex h-[80dvh] w-full flex-col overflow-y-auto rounded-t-[18px] bg-paper p-5 pb-[calc(20px+var(--sab))] md:h-auto md:max-h-[calc(100dvh-40px)] md:max-w-[520px] md:rounded-[18px] md:p-8 md:pb-6"
       >
         <button type="button" onClick={aoFechar} aria-label="Fechar"
           className={`absolute right-[18px] top-[18px] inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[9px] text-ink-soft hover:bg-soft hover:text-ink`}>

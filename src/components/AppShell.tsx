@@ -474,7 +474,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                faziam (o topo delas não tem fundo próprio).
                No computador ela CONTINUA barra, porque lá carrega a busca e os
                menus e precisa se distinguir do conteúdo que passa por baixo. */
-            "sticky top-0 z-30 h-14 items-center gap-4 bg-soft px-4 md:bg-paper md:shadow-card " +
+            "sticky top-0 z-30 h-14 items-center gap-4 bg-soft px-4 md:bg-paper md:" +
             (semCabecalhoNoCelular ? "hidden md:flex" : "flex")
           }
         >
@@ -548,8 +548,8 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   "relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] " +
                   "transition-[transform,box-shadow,background-color] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] active:scale-[1.02] " +
                   (notifAberto
-                    ? "scale-[1.08] bg-soft text-ink shadow-[0_5px_16px_rgba(29,29,27,.18)]"
-                    : `text-ink-soft hover:scale-[1.08] hover:bg-soft hover:text-ink hover:shadow-[0_5px_16px_rgba(29,29,27,.18)]`)
+                    ? "scale-[1.08] bg-soft text-ink "
+                    : `text-ink-soft hover:scale-[1.08] hover:bg-soft hover:text-ink hover:`)
                 }
               >
                 <Bell size={17} />
@@ -574,13 +574,13 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   alt={nome ?? "Conta"}
                   className={
                     "block h-[38px] w-[38px] rounded-full object-cover transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(.34,1.4,.5,1)] " +
-                    (menuAberto ? "scale-[1.08] shadow-[0_5px_16px_rgba(29,29,27,.24)] " : "") +
-                    `hover:scale-[1.08] hover:shadow-[0_5px_16px_rgba(29,29,27,.24)] active:scale-[1.02]`
+                    (menuAberto ? "scale-[1.08]  " : "") +
+                    `hover:scale-[1.08] hover: active:scale-[1.02]`
                   }
                 />
               </button>
               {menuAberto ? (
-                <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[288px] rounded-xl bg-paper p-1.5 shadow-alta">
+                <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[288px] rounded-xl bg-paper p-1.5 ">
                   {/* o cartão JÁ diz de quem é a conta: repetir o nome numa
                       linha cinza acima dele só empurrava o menu pra baixo */}
                   <CartaoPlano nome={nome} compacto />
@@ -642,7 +642,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           do primeiro uso. */}
       <nav className={
         "fixed inset-x-4 bottom-[calc(0.75rem+var(--sab))] z-70 mx-auto h-[68px] max-w-[420px] items-center justify-around rounded-full px-2.5 md:hidden " +
-        "bg-[linear-gradient(180deg,#ffffff,#f9fafb)] shadow-flutuante " +
+        "bg-[linear-gradient(180deg,#ffffff,#f9fafb)] " +
         (semNavegacao ? "hidden" : "flex")
       }>
         {ITENS.map(({ href, rotulo, Icone }) => (

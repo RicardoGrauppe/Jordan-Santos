@@ -62,7 +62,7 @@ export default function Entrar() {
 
   return (
     <main className="fixed inset-0 flex touch-none items-center justify-center overflow-hidden bg-soft p-5 md:static md:min-h-dvh md:touch-auto md:overflow-auto">
-      <div className="w-full max-w-[400px] rounded-[20px] bg-paper px-7 py-9 shadow-alta sm:px-9">
+      <div className="w-full max-w-[400px] rounded-[20px] bg-paper px-7 py-9 sm:px-9">
         <img
           src="/img/logo-principal-petroleo.png"
           alt="Jordan Santos"

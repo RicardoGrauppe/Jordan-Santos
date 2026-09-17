@@ -99,7 +99,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo }: EditorContrat
           {border-bottom:0}`), porque um fio no meio partia o cabeçalho ao
           meio. A única separação é embaixo, entre o cabeçalho inteiro e o
           documento. Grudado no topo: só o documento rola. */}
-      <div className="sticky top-0 z-10 shrink-0 bg-paper px-5 pt-[var(--sat)] shadow-card md:px-7">
+      <div className="sticky top-0 z-10 shrink-0 bg-paper px-5 pt-[var(--sat)] md:px-7">
         {topo}
         {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
             ao desktop, onde tudo cabe numa só */}
@@ -145,7 +145,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo }: EditorContrat
             <Plus size={16} /><span>Inserir</span><ChevronDown size={14} className="opacity-70" />
           </button>
           {menuAberto ? (
-            <div className="absolute right-0 top-[38px] z-20 max-h-[60vh] min-w-[236px] overflow-y-auto rounded-xl bg-paper p-1.5 shadow-alta md:left-0 md:right-auto">
+            <div className="absolute right-0 top-[38px] z-20 max-h-[60vh] min-w-[236px] overflow-y-auto rounded-xl bg-paper p-1.5 md:left-0 md:right-auto">
               <div className="px-2.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[.06em] text-ink-soft">Campos do casal</div>
               {Object.entries(ROTULOS_CAMPO).map(([nome, rotulo]) => (
                 <button key={nome} type="button" onClick={() => { editor.chain().focus().insertContent({ type: "campo", attrs: { campo: nome } }).run(); setMenuAberto(false); }}
