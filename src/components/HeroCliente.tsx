@@ -55,7 +55,7 @@ export function HeroCliente({
       <div className={fundo}>
         <Esferas />
         <div className="relative z-[1] flex items-stretch gap-4 md:gap-[22px]">
-          <Avatar><UserPlus size={30} strokeWidth={1.6} /></Avatar>
+          <Avatar><UserPlus strokeWidth={1.5} className="h-[30px] w-[30px] md:h-[40px] md:w-[40px]" /></Avatar>
           <div className="flex min-w-0 flex-col justify-center">
             <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">Novo cliente</h1>
             <div className="mt-3.5 flex flex-wrap gap-2">
@@ -105,7 +105,7 @@ export function HeroCliente({
       </div>
 
       <div className="relative z-[1] flex items-stretch gap-4 pr-12 md:gap-[22px]">
-        <Avatar><Users size={30} strokeWidth={1.6} /></Avatar>
+        <Avatar><Users strokeWidth={1.5} className="h-[30px] w-[30px] md:h-[40px] md:w-[40px]" /></Avatar>
         <div className="flex min-w-0 flex-col justify-center">
           <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">{nomes}</h1>
 
@@ -222,11 +222,16 @@ function Esferas() {
 /* Bloco de canto mole, no raio dos cards da página (22px no grande, 18px no
    celular), e não redondo: aqui não é foto de pessoa, é o ícone da seção.
 
-   No COMPUTADOR a altura não é fixa: ele estica junto com a linha
-   (`items-stretch` no pai), acompanha o conteúdo ao lado, e o respiro que
-   sobra em cima e embaixo é o próprio padding do herói. Fixar uma altura faria
-   essa margem mudar sozinha conforme a ficha tivesse mais ou menos linhas.
-   `min-h` igual à largura pra ele nunca ficar mais achatado que quadrado.
+   QUADRADO de 112px no computador, e é ELE quem define a altura do herói —
+   não o contrário. O caminho óbvio (esticar na linha e deixar `aspect-square`
+   achar a largura) NÃO funciona: num flex row a largura do item é resolvida
+   ANTES da altura esticada, então a proporção usa a altura automática e o
+   bloco saía 74x112 — retângulo. Medido.
+
+   Com o quadrado mandando, a margem em cima e embaixo é o padding do herói
+   (30/28) e o herói para de mudar de altura entre a ficha nova e a ficha
+   cheia: antes ele ia de 138 pra 170 conforme o conteúdo, e agora as duas
+   ficam iguais, porque o bloco é o item mais alto da linha nos dois casos.
 
    No CELULAR ele volta a ser quadrado e centrado. Ali o nome do casal quebra
    em duas linhas e a pílula da data também, então esticar transformava o bloco
@@ -237,7 +242,7 @@ function Esferas() {
    própria luz translúcida. */
 function Avatar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center self-center rounded-[18px] bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white md:h-auto md:min-h-[74px] md:w-[74px] md:self-stretch md:rounded-[22px]">
+    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center self-center rounded-[18px] bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white md:h-[112px] md:w-[112px] md:rounded-[22px]">
       {children}
     </div>
   );
