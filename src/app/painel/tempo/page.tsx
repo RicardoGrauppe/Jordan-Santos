@@ -158,7 +158,7 @@ function Corpo({ previsao }: { previsao: Previsao }) {
   return (
     <>
       <Bloco ordem={ordem++} id="tempo-agora" className="mb-6">
-        <div className="flex flex-col items-center rounded-[20px] bg-paper px-6 py-[26px] text-center shadow-card">
+        <div className="flex flex-col items-center rounded-[20px] bg-paper px-6 py-[26px] text-center">
           {local ? (
             <h2 className="m-0 mb-4 flex items-center gap-2 self-stretch text-[17px] tracking-[-.01em] text-ink">
               <MapPin size={18} strokeWidth={2} className="shrink-0 text-ink-soft" />
@@ -272,7 +272,7 @@ const FUNDO_FASE: Record<string, string> = {
 
 function LuzDoDia({ luz }: { luz: Luz }) {
   return (
-    <div className="flex flex-col items-center rounded-[18px] bg-paper px-5 pb-5 pt-6 text-center shadow-card">
+    <div className="flex flex-col items-center rounded-[18px] bg-paper px-5 pb-5 pt-6 text-center">
       {/* câmera grande à esquerda, título e faixa à direita dela */}
       <div className="flex items-center gap-4 self-center">
         <span className="flex shrink-0 -translate-y-1.5 items-center justify-center text-[72px] leading-none" aria-hidden>📷</span>
@@ -330,6 +330,10 @@ function Barra({ luz }: { luz: Luz }) {
           <span className="absolute left-1/2 top-[42px] h-3 w-0.5 -translate-x-1/2 bg-noir/25" aria-hidden />
         </div>
       ))}
+      {/* O `box-shadow` do traço abaixo NÃO é sombra: é um anel de 2px cor de
+          papel que RECORTA o traço do fundo colorido da barra. Sem ele, o
+          traço escuro some dentro do segmento azul da madrugada. Por isso ele
+          fica, mesmo com a página sem sombras. */}
       {luz.agoraPct != null ? (
         <span
           aria-label="Agora"
@@ -487,7 +491,7 @@ function Horas({ horas }: { horas: Hora[] }) {
         {horas.map((h) => (
           <div
             key={h.chave}
-            className="flex aspect-square w-[86px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] bg-paper p-1.5 text-center shadow-card"
+            className="flex aspect-square w-[86px] shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] bg-paper p-1.5 text-center"
           >
             <div className="text-xs text-ink-soft">{h.rotulo}</div>
             <div className="text-[22px] leading-none" aria-hidden>{h.emoji}</div>
@@ -520,7 +524,7 @@ function Dias({ dias }: { dias: Dia[] }) {
   return (
     /* as linhas entre os dias são o fundo line vazando pelo gap de 1px, nunca
        uma borda */
-    <div className="flex flex-col gap-px overflow-hidden rounded-[18px] bg-line shadow-card">
+    <div className="flex flex-col gap-px overflow-hidden rounded-[18px] bg-line">
       {dias.map((d) => (
         <div key={d.chave} className="flex items-center gap-3.5 bg-paper px-[18px] py-3.5">
           <span className="w-[54px] text-sm font-medium capitalize text-ink">{d.nome}</span>
@@ -542,7 +546,7 @@ function Dias({ dias }: { dias: Dia[] }) {
 
 function Caixa({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-[18px] bg-paper px-6 py-[30px] text-center text-[14.5px] leading-[1.6] text-ink-soft shadow-card">
+    <div className="rounded-[18px] bg-paper px-6 py-[30px] text-center text-[14.5px] leading-[1.6] text-ink-soft">
       {children}
     </div>
   );
@@ -593,7 +597,7 @@ function PillsSkeleton() {
 function TempoSkeleton() {
   return (
     <div aria-busy="true" aria-label="Carregando">
-      <div className="mb-6 flex flex-col items-center rounded-[20px] bg-paper px-6 py-[26px] shadow-card">
+      <div className="mb-6 flex flex-col items-center rounded-[20px] bg-paper px-6 py-[26px]">
         <Sk className="mb-4 h-5 w-[170px] self-stretch rounded-lg" />
         <div className="flex items-center gap-5">
           <Sk className="h-24 w-24 shrink-0 rounded-[20px]" />
@@ -623,7 +627,7 @@ function TempoSkeleton() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[18px] bg-paper py-2.5 shadow-card">
+      <div className="overflow-hidden rounded-[18px] bg-paper py-2.5">
         {[0, 1, 2, 3, 4].map((i) => (
           <Sk key={i} className="mx-[18px] my-3.5 h-5 rounded-[7px]" />
         ))}
