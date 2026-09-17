@@ -580,7 +580,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                 />
               </button>
               {menuAberto ? (
-                <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[288px] rounded-xl bg-paper p-1.5 ">
+                <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-0 top-10 z-40 min-w-[288px] rounded-xl bg-line p-1.5">
                   {/* o cartão JÁ diz de quem é a conta: repetir o nome numa
                       linha cinza acima dele só empurrava o menu pra baixo */}
                   <CartaoPlano nome={nome} compacto />

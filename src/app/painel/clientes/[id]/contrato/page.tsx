@@ -1226,7 +1226,7 @@ export default function PaginaRevisarContrato() {
                     role="menu"
                     className={
                       "fixed inset-x-0 bottom-0 z-[80] flex flex-col rounded-t-[20px] bg-paper px-2.5 pb-[calc(10px+var(--sab))] pt-2.5 transition-transform duration-200 " +
-                      "sm:absolute sm:inset-auto sm:right-0 sm:top-[calc(100%+8px)] sm:z-30 sm:min-w-[260px] sm:rounded-xl sm:p-1.5 sm:transition-none " +
+                      "sm:absolute sm:inset-auto sm:right-0 sm:top-[calc(100%+8px)] sm:z-30 sm:min-w-[260px] sm:rounded-xl sm:bg-line sm:p-1.5 sm:transition-none " +
                       (menuAberto ? "translate-y-0 sm:flex" : "pointer-events-none translate-y-full sm:hidden")
                     }
                   >

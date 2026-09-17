@@ -149,7 +149,7 @@ export function BuscaTopo() {
       </label>
 
       {aberto && termo.trim() ? (
-        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-40 max-h-[min(60vh,420px)] overflow-y-auto rounded-2xl bg-paper p-1.5 ">
+        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-40 max-h-[min(60vh,420px)] overflow-y-auto rounded-2xl bg-line p-1.5">
           <Resultados clientes={clientes} termo={termo} aoEscolher={escolher} />
         </div>
       ) : null}

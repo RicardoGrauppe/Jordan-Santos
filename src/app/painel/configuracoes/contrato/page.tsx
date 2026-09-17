@@ -71,7 +71,7 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
       </div>
 
       {aberto ? (
-        <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-3 top-11 z-[5] min-w-[196px] rounded-xl bg-paper p-1.5 ">
+        <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-3 top-11 z-[5] min-w-[196px] rounded-xl bg-line p-1.5">
           {menu.map((m) => (
             <button key={m.rotulo} type="button" disabled={m.disabled} title={m.titulo}
               onClick={() => { setAberto(false); m.acao(); }}

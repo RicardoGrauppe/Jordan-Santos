@@ -245,7 +245,7 @@ export function DropdownAvisos({ avisos, aoFechar }: { avisos: Avisos; aoFechar:
   return (
     <div
       onPointerDown={(e) => e.stopPropagation()}
-      className="absolute right-0 top-11 z-40 w-[340px] max-w-[88vw] overflow-hidden rounded-2xl bg-paper "
+      className="absolute right-0 top-11 z-40 w-[340px] max-w-[88vw] overflow-hidden rounded-2xl bg-line"
     >
       <div className="flex items-center justify-between gap-3 px-4 pb-1 pt-3">
         <span className="text-[19px] font-bold text-ink">Notificações</span>

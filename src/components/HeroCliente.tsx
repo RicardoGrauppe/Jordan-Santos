@@ -208,7 +208,7 @@ function MenuDoCadastro({
         <div
           role="menu"
           onPointerDown={(e) => e.stopPropagation()}
-          className="absolute right-0 top-11 z-[6] min-w-[208px] rounded-xl bg-paper p-1.5 "
+          className="absolute right-0 top-11 z-[6] min-w-[208px] rounded-xl bg-line p-1.5"
         >
           {podeArquivar ? (
             <button
