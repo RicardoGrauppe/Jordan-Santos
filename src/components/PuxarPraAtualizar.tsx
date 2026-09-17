@@ -194,7 +194,7 @@ export function PuxarPraAtualizar({
         aria-hidden
         className={
           "pointer-events-none absolute left-1/2 z-10 inline-flex items-center gap-[9px] " +
-"whitespace-nowrap rounded-full bg-paper py-2 pl-3 pr-4 opacity-0"
+          "whitespace-nowrap rounded-full bg-paper py-2 pl-3 pr-4 opacity-0 shadow-card"
         }
         style={{ top: REPOUSO }}
       >

@@ -170,7 +170,7 @@ export default function ListaClientes() {
 
       {/* no computador a lista é uma tabela num cartão só; no celular, cards
           soltos (as duas formas convivem nas mesmas linhas) */}
-      <div className="md:overflow-hidden md:rounded-[20px] md:bg-paper md:">
+      <div className="md:overflow-hidden md:rounded-[20px] md:bg-paper md:shadow-[0_1px_2px_rgba(29,29,27,.04),0_14px_32px_rgba(29,29,27,.08)]">
         <div className={"hidden bg-soft px-[18px] py-3.5 text-[11px] font-semibold uppercase tracking-[.06em] text-ink-soft md:grid " + COLUNAS}>
           <span>Casal</span><span>Data</span><span>Status</span><span className="text-right">Total</span><span aria-label="Ações" />
         </div>
@@ -193,7 +193,7 @@ export default function ListaClientes() {
                   <Link
                     href={"/painel/clientes/" + c.id}
                     className={
-                      "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-3.5 pr-[46px] no-underline " +
+                      "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-3.5 pr-[46px] no-underline shadow-card " +
                       "md:items-center md:rounded-none md:px-[18px] md:py-[17px] md:shadow-none " +
                       `transition-colors hover:bg-soft ` + COLUNAS
                     }
@@ -242,7 +242,7 @@ function ListaSkeleton() {
   return (
     <ul className="m-0 flex list-none flex-col gap-2.5 p-0 md:block" aria-busy="true" aria-label="Carregando">
       {[0, 1, 2, 3, 4].map((i) => (
-        <li key={i} className="rounded-[18px] bg-paper px-3.5 py-[18px] md:rounded-none md:px-6 md:shadow-none">
+        <li key={i} className="rounded-[18px] bg-paper px-3.5 py-[18px] shadow-card md:rounded-none md:px-6 md:shadow-none">
           <SkLinha className="h-4 w-full" />
         </li>
       ))}

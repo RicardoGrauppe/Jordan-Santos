@@ -306,8 +306,8 @@ function Conteudo({
         <Link
           href="/painel/pendencias"
           className={
-            "flex w-full items-center gap-[13px] rounded-2xl bg-[#F8F4EE] px-[15px] py-[13px] text-left no-underline " +
-            `transition-[transform,box-shadow] duration-150 hover:-translate-y-px hover:`
+            "flex w-full items-center gap-[13px] rounded-2xl bg-[#F8F4EE] px-[15px] py-[13px] text-left no-underline shadow-card " +
+            `transition-[transform,box-shadow] duration-150 hover:-translate-y-px hover:shadow-card-hover`
           }
         >
           <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#EBE2D3] text-[#8A6A3C]">
@@ -329,7 +329,7 @@ function Conteudo({
 
       {/* KPIs: as "linhas" entre células são o fundo line vazando pelo gap de
           1px, nada de borda por célula */}
-      <Bloco ordem={2} className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line md:grid-cols-4">
+      <Bloco ordem={2} className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line shadow-card md:grid-cols-4">
         {kpis.map((k) => (
           <div key={k.rotulo} className="relative bg-paper px-[22px] py-5">
             <span className="absolute right-3.5 top-3.5 inline-flex h-[34px] w-[34px] items-center justify-center rounded-xl bg-accent-tint text-accent">
@@ -352,7 +352,7 @@ function Conteudo({
                   <Deslizar
                     acoes={acoesDoEvento(c)}
                     rotuloOpcoes={"Opções do contrato de " + nomeCasal(c)}
-                    className="rounded-[14px] bg-[#F7F9FA] "
+                    className="rounded-[14px] bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)]"
                     classeFrente={`gap-3.5 bg-[#F7F9FA] py-3 pl-3.5 pr-2 hover:bg-[#F0F4F6]`}
                   >
                     <Link
@@ -429,8 +429,8 @@ function LinksCliente({ mostrar }: { mostrar: ReturnType<typeof useToast>["mostr
             type="button"
             onClick={() => copiar(c.id, c.caminho)}
             className={
-              "block w-full cursor-pointer overflow-hidden rounded-2xl bg-[#F7F9FA] p-0 text-left  " +
-              `transition-[transform,background,box-shadow] duration-150 hover:-translate-y-px hover:bg-[#F0F4F6] hover: group`
+              "block w-full cursor-pointer overflow-hidden rounded-2xl bg-[#F7F9FA] p-0 text-left shadow-[0_0_22px_rgba(29,41,61,.13)] " +
+              `transition-[transform,background,box-shadow] duration-150 hover:-translate-y-px hover:bg-[#F0F4F6] hover:shadow-[0_0_28px_rgba(29,41,61,.17)] group`
             }
           >
             <span className="relative block aspect-[12/5] bg-soft">
@@ -484,7 +484,7 @@ function HomeSkeleton() {
         </div>
       </div>
 
-      <div className="mb-4 flex w-full items-center gap-[13px] rounded-2xl bg-[#F8F4EE] px-[15px] py-[13px] ">
+      <div className="mb-4 flex w-full items-center gap-[13px] rounded-2xl bg-[#F8F4EE] px-[15px] py-[13px] shadow-card">
         <Sk className="h-9 w-9 rounded-[11px]" />
         <div className="flex flex-1 flex-col gap-[5px]">
           <Sk className="h-3.5 w-[150px] rounded-md" />
@@ -492,7 +492,7 @@ function HomeSkeleton() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line md:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-[22px] bg-line shadow-card md:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="bg-paper px-[22px] py-5">
             <Sk className="h-[30px] w-[54px] rounded-[9px]" />

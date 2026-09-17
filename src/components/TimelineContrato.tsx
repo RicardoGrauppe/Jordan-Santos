@@ -54,11 +54,11 @@ export function TimelineContrato({
        página é que é soft, então a receita se inverteu e ele sumia no fundo —
        o Ricardo perguntou cadê o card. Mesmo raio, padding e sombra do
        SecaoFicha ao lado, pra a coluna ter uma linguagem só. */
-    <div className="rounded-[22px] bg-paper px-6 py-6 ">
+    <div className="rounded-[22px] bg-paper px-6 py-6 shadow-card">
       <div className="mb-4 flex items-center gap-2.5">
         <h3 className="m-0 flex-1 text-sm font-semibold text-accent">Assinatura do Contrato</h3>
         {versao > 1 ? (
-          <span className="rounded-full bg-paper px-2.5 py-0.5 text-[11.5px] font-semibold text-ink-soft ">
+          <span className="rounded-full bg-paper px-2.5 py-0.5 text-[11.5px] font-semibold text-ink-soft shadow-card">
             Versão {versao}
           </span>
         ) : null}

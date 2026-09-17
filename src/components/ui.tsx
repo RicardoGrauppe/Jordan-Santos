@@ -28,17 +28,17 @@ type Variante = "primario" | "secundario" | "fantasma" | "perigo";
    de repouso no clique; quem não tem, perde a sombra. */
 const VARIANTE: Record<Variante, string> = {
   primario:
-    "bg-accent text-white  hover:bg-accent-hover " +
-    "enabled:hover: active:",
+    "bg-accent text-white shadow-[0_1px_2px_rgba(0,54,70,.22)] hover:bg-accent-hover " +
+    "enabled:hover:shadow-[0_6px_16px_rgba(0,54,70,.22)] active:shadow-[0_1px_2px_rgba(0,54,70,.22)]",
   secundario:
     "bg-soft text-accent hover:bg-line " +
-    "enabled:hover: active:shadow-none",
+    "enabled:hover:shadow-[0_6px_14px_rgba(29,29,27,.08)] active:shadow-none",
   fantasma:
     "bg-transparent text-ink-soft hover:bg-soft hover:text-ink " +
-    "enabled:hover: active:shadow-none",
+    "enabled:hover:shadow-[0_6px_14px_rgba(29,29,27,.08)] active:shadow-none",
   perigo:
-    "bg-erro text-white  hover:brightness-90 " +
-    "enabled:hover: active:",
+    "bg-erro text-white shadow-[0_1px_2px_rgba(163,59,59,.25)] hover:brightness-90 " +
+    "enabled:hover:shadow-[0_6px_16px_rgba(163,59,59,.25)] active:shadow-[0_1px_2px_rgba(163,59,59,.25)]",
 };
 
 export function Botao({
@@ -105,7 +105,7 @@ export function Area({
 /* ---------- superfícies ---------- */
 
 export function Cartao({ className = "", children }: { className?: string; children: ReactNode }) {
-  return <div className={"rounded-2xl bg-paper p-6 " + className}>{children}</div>;
+  return <div className={"rounded-2xl bg-paper p-6 shadow-card " + className}>{children}</div>;
 }
 
 /*
@@ -201,7 +201,7 @@ export function CartaoAviso({
 }: { tom?: TomAviso; className?: string; children: ReactNode }) {
   const { fundo, pilula, Icone } = TONS_AVISO[tom];
   return (
-    <div className={"flex w-full items-start gap-[13px] rounded-[22px] px-[18px] py-4 " + fundo + " " + className}>
+    <div className={"flex w-full items-start gap-[13px] rounded-[22px] px-[18px] py-4 shadow-card " + fundo + " " + className}>
       <span className={"inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] " + pilula}>
         <Icone size={18} />
       </span>
@@ -212,7 +212,7 @@ export function CartaoAviso({
 
 export function Secao({ icone, titulo, children }: { icone?: ReactNode; titulo: string; children: ReactNode }) {
   return (
-    <section className="mb-4 rounded-[22px] bg-paper px-6 pb-6 pt-[22px] ">
+    <section className="mb-4 rounded-[22px] bg-paper px-6 pb-6 pt-[22px] shadow-card">
       <h2 className="m-0 mb-[18px] flex items-center gap-[9px] text-[13px] font-semibold tracking-[.02em] text-ink">
         {icone ? (
           <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">

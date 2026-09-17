@@ -743,7 +743,7 @@ function Voltar() {
 }
 
 function Esqueleto() {
-  const bloco = "animate-pulse rounded-[22px] bg-paper ";
+  const bloco = "animate-pulse rounded-[22px] bg-paper shadow-card";
   return (
     <div aria-busy="true" aria-label="Carregando">
       <div className="mb-10 mt-3 h-[150px] animate-pulse rounded-3xl bg-line" />

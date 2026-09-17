@@ -245,7 +245,7 @@ export function DropdownAvisos({ avisos, aoFechar }: { avisos: Avisos; aoFechar:
   return (
     <div
       onPointerDown={(e) => e.stopPropagation()}
-      className="absolute right-0 top-11 z-40 w-[340px] max-w-[88vw] overflow-hidden rounded-2xl bg-line"
+      className="absolute right-0 top-11 z-40 w-[340px] max-w-[88vw] overflow-hidden rounded-2xl bg-paper shadow-alta"
     >
       <div className="flex items-center justify-between gap-3 px-4 pb-1 pt-3">
         <span className="text-[19px] font-bold text-ink">Notificações</span>
@@ -325,7 +325,7 @@ export function TelaAvisosMobile({ avisos, aberta, daEsquerda, aoFechar }: { avi
         />
         <div
           className={
-            "relative w-full rounded-t-[22px] bg-paper px-2.5 pb-[calc(14px+var(--sab))] pt-2  " +
+            "relative w-full rounded-t-[22px] bg-paper px-2.5 pb-[calc(14px+var(--sab))] pt-2 shadow-[0_-8px_24px_rgba(0,0,0,.18)] " +
             "transition-transform duration-[260ms] ease-[cubic-bezier(.22,.61,.36,1)] " + (sheetAberto ? "translate-y-0" : "translate-y-full")
           }
         >

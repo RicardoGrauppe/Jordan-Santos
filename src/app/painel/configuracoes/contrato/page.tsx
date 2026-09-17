@@ -53,7 +53,7 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
   }, [aberto]);
 
   return (
-    <div className={`relative rounded-2xl bg-[#F7F9FA]  transition-[transform,background] hover:-translate-y-px hover:bg-[#F0F4F6]`}>
+    <div className={`relative rounded-2xl bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)] transition-[transform,background] hover:-translate-y-px hover:bg-[#F0F4F6]`}>
       <button type="button" onClick={aoAbrir}
         className={"flex w-full min-h-[120px] cursor-pointer flex-col items-start gap-2.5 bg-transparent px-[18px] pb-4 text-left " + (amostra ? "pt-[46px]" : "pt-[18px]")}>
         {amostra ?? <span className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-accent-tint text-accent">{icone}</span>}
@@ -71,7 +71,7 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
       </div>
 
       {aberto ? (
-        <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-3 top-11 z-[5] min-w-[196px] rounded-xl bg-line p-1.5">
+        <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-3 top-11 z-[5] min-w-[196px] rounded-xl bg-paper p-1.5 shadow-alta">
           {menu.map((m) => (
             <button key={m.rotulo} type="button" disabled={m.disabled} title={m.titulo}
               onClick={() => { setAberto(false); m.acao(); }}
