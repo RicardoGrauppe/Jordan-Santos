@@ -3,7 +3,7 @@
   <div id="pagina-pendencias"> do estudio.html (carregarPendencias /
   desenharPendencias).
 
-  Três frentes, calculadas a partir do contrato_status que a lista já traz:
+  Quatro frentes: cliente novo sem contrato (o lead esperando resposta),
   rascunho não enviado, casal ainda não assinou, confirmado sem contrato.
   "Limpar" tira o item da lista até algo mudar nesse contrato (a chave inclui
   o status, então mudar de estado traz a pendência de volta).
@@ -17,7 +17,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, Clock, FileText, UserPlus, Users } from "lucide-react";
+import { Check, Clock, FilePlus, FileText, UserPlus, Users } from "lucide-react";
 import { BotaoVoltar } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { Deslizar } from "@/components/Deslizar";
@@ -33,10 +33,13 @@ const MIN_ATUALIZAR_MS = 900;
 /* largura da ação revelada: a mesma do original nesta tela */
 const LARGURA_LIMPAR = 104;
 
+/* Ordem da tela, e ela é uma opinião: o lead novo vem primeiro porque é o
+   único item da lista em que a demora custa o cliente inteiro. */
 const SECOES: { grupo: GrupoPendencia; titulo: string; icone: ReactNode }[] = [
+  { grupo: "novo", titulo: "Cliente novo pra responder", icone: <UserPlus size={16} /> },
   { grupo: "rascunho", titulo: "Contrato não enviado", icone: <FileText size={16} /> },
   { grupo: "aguardando", titulo: "Aguardando o casal assinar", icone: <Clock size={16} /> },
-  { grupo: "semContrato", titulo: "Confirmado sem contrato", icone: <UserPlus size={16} /> },
+  { grupo: "semContrato", titulo: "Confirmado sem contrato", icone: <FilePlus size={16} /> },
 ];
 
 export default function Pendencias() {
@@ -110,7 +113,7 @@ export default function Pendencias() {
         <div className="mb-[22px] mt-2 flex flex-col gap-[5px]">
           <h1 className="m-0 hidden text-[22px] font-semibold tracking-tight text-ink sm:text-[26px] md:block">Precisa de atenção</h1>
           <p className="m-0 text-[14.5px] leading-[1.5] text-ink-soft">
-            Pontas soltas e passos esquecidos: rascunhos pra enviar, contratos esperando assinatura e clientes confirmados sem contrato.
+            Pontas soltas e passos esquecidos: clientes novos esperando resposta, rascunhos pra enviar, contratos esperando assinatura e clientes confirmados sem contrato.
           </p>
         </div>
 
@@ -155,7 +158,13 @@ export default function Pendencias() {
                         </span>
                         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <span className="truncate text-[14.5px] font-medium text-ink">{nomeCasal(c)}</span>
-                          <span className="text-[12.5px] tabular-nums text-ink-soft">{dataCurta(c.data_evento)}</span>
+                          {/* no lead o que ajuda a decidir é DE ONDE ele veio,
+                              e a data do casamento quase sempre é a mesma
+                              linha do orçamento; nas outras frentes a data é
+                              o que importa, porque define a pressa */}
+                          <span className="truncate text-[12.5px] tabular-nums text-ink-soft">
+                            {s.grupo === "novo" && c.origem ? c.origem + " · " + dataCurta(c.data_evento) : dataCurta(c.data_evento)}
+                          </span>
                         </span>
                       </Link>
                     </Deslizar>

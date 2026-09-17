@@ -117,11 +117,19 @@ export function proximosEventos(clientes: ClienteLista[]): ClienteLista[] {
 }
 
 /* ---------- pendências (precisa de atenção) ----------
-   Usa o contrato_status que a lista já traz. Três frentes de trabalho:
+   Usa o contrato_status que a lista já traz. Quatro frentes de trabalho, na
+   ordem em que aparecem na tela: cliente novo que ainda não foi respondido,
    rascunho ainda não enviado, casal ainda não assinou, e cliente confirmado
-   sem contrato nenhum. Arquivado e realizado não contam. */
+   sem contrato nenhum. Arquivado e realizado não contam.
 
-export type GrupoPendencia = "rascunho" | "aguardando" | "semContrato";
+   O primeiro grupo entrou em 2026-09-17, a pedido do Ricardo. Antes a tela só
+   enxergava contrato, então um lead que caiu pelo site hoje de manhã não
+   aparecia em lugar nenhum além do sino — e é a pendência que mais custa
+   caro, porque é dinheiro esperando resposta. A regra é "novo e sem contrato
+   nenhum": quem já tem rascunho ou contrato enviado aparece no grupo do
+   contrato, senão o mesmo cliente contaria duas vezes. */
+
+export type GrupoPendencia = "novo" | "rascunho" | "aguardando" | "semContrato";
 export type Pendencias = Record<GrupoPendencia, ClienteLista[]>;
 
 /* Pendências "limpas" pelo fotógrafo. Somem da lista até algo mudar no
@@ -148,20 +156,25 @@ export function chavePend(grupo: GrupoPendencia, c: ClienteLista): string {
 /** `limpasLista` é opcional: sem ela, lê o localStorage na hora. Quem precisa
  *  reagir a "limpou agora" (a página de pendências) passa a lista como estado. */
 export function pendenciasDe(clientes: ClienteLista[], limpasLista?: string[]): Pendencias {
-  const g: Pendencias = { rascunho: [], aguardando: [], semContrato: [] };
+  const g: Pendencias = { novo: [], rascunho: [], aguardando: [], semContrato: [] };
   const limpas = new Set(limpasLista ?? lerLimpas());
   clientes.forEach((c) => {
     if (c.status === "arquivado" || c.status === "realizado") return;
     const cs = c.contrato_status;
-    if (cs === "rascunho") { if (!limpas.has(chavePend("rascunho", c))) g.rascunho.push(c); }
+    if (!cs && c.status === "novo") { if (!limpas.has(chavePend("novo", c))) g.novo.push(c); }
+    else if (cs === "rascunho") { if (!limpas.has(chavePend("rascunho", c))) g.rascunho.push(c); }
     else if (cs === "enviado" || cs === "visualizado") { if (!limpas.has(chavePend("aguardando", c))) g.aguardando.push(c); }
     else if ((!cs || cs === "cancelado") && c.status === "confirmado") { if (!limpas.has(chavePend("semContrato", c))) g.semContrato.push(c); }
   });
+  /* cliente novo é fila de resposta: o último que chegou é o que está
+     esperando há menos tempo, mas é também o que ainda dá pra impressionar
+     respondendo rápido. Mais recente primeiro, igual ao sino. */
+  g.novo.sort((a, b) => (b.criado_em || "").localeCompare(a.criado_em || ""));
   return g;
 }
 
 export function totalPendencias(g: Pendencias): number {
-  return g.rascunho.length + g.aguardando.length + g.semContrato.length;
+  return g.novo.length + g.rascunho.length + g.aguardando.length + g.semContrato.length;
 }
 
 /* ---------- saudação e clima ---------- */
