@@ -192,7 +192,18 @@ input[type="search"]::-webkit-search-decoration {
 .documento-editor .ProseMirror p, .documento-editor .ProseMirror li { margin: 0 0 10px; }
 .documento-editor .ProseMirror h2 { font-size: 20px; font-weight: 700; margin: 0 0 16px; }
 .documento-editor .ProseMirror h3 { font-size: 15px; font-weight: 700; margin: 24px 0 10px; }
-.documento-editor .ProseMirror ol, .documento-editor .ProseMirror ul { padding-left: 22px; margin: 0 0 10px; }
+/* MARCADOR DE LISTA É CONTEÚDO, não enfeite, dentro do contrato: as cláusulas
+   e a escala de multas são enumeradas, e sem o número o texto muda de sentido
+   ("comunicação de até 300 dias" solta não diz que é o item 1 de uma escala).
+   O Preflight do Tailwind zera `list-style` de ol/ul, e a regra abaixo só
+   devolvia padding — então as 12 listas do modelo e as 15 do contrato gerado
+   apareciam como parágrafos indentados. Medido no navegador em 17/09/2026.
+   Vale pro editor (.documento-editor) e pro documento renderizado (.folha),
+   que é o que o fotógrafo revisa e o que o casal assina. */
+.documento-editor .ProseMirror ol, .documento-editor .ProseMirror ul,
+.folha ol, .folha ul { padding-left: 22px; margin: 0 0 10px; }
+.documento-editor .ProseMirror ol, .folha ol { list-style: decimal; }
+.documento-editor .ProseMirror ul, .folha ul { list-style: disc; }
 .documento-editor .ProseMirror li > p { margin-bottom: 0; }
 .documento-editor .campo { background: #ede7da; border-radius: 4px; padding: 1px 5px; color: var(--color-accent); font-weight: 500; }
 .documento-editor .placeholder-no-editor { border-radius: 8px; padding: 14px; color: var(--color-ink-soft); font-size: 12.5px; text-align: center; background: var(--color-soft); margin: 8px 0; }
