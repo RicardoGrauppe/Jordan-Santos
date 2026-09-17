@@ -7,15 +7,18 @@
   valor são meta leve. O status do CONTRATO não repete aqui (vive na coluna da
   direita), só entra quando é marco forte: assinado.
 
-  O original tinha borda translúcida nos botões e no avatar; aqui saiu, e a
-  separação fica por conta do fundo translúcido mais sombra (regra da casa).
+  O original tinha borda translúcida nos botões e no avatar; aqui saiu. E
+  NADA dentro do herói projeta sombra (decisão do Ricardo em 17/09/2026): num
+  fundo escuro o branco translúcido já separa sozinho, e sombra sobre sombra
+  só suja. A única sombra da peça é a do herói inteiro, contra a página.
 
   Três coisas mudaram em 17/09/2026, depois do Ricardo pedir pra melhorar
   visual e uso:
 
-  1. O avatar traz as INICIAIS do casal, não um ícone genérico de duas
-     pessoas. É o mesmo que a lista mostra, então a ficha confirma que você
-     abriu quem queria — e um ícone igual pra todo cliente não confirma nada.
+  1. O avatar é o ÍCONE DA LATERAL (o mesmo de Clientes), num quadrado de
+     canto mole no raio dos cards — não um círculo. Chegou a mostrar as
+     iniciais do casal, mas o Ricardo preferiu o ícone da seção: ele diz onde
+     você está, e quem você abriu já está escrito ao lado em corpo 32.
   2. Arquivar e Excluir saíram de dois ícones soltos no canto pra um menu com
      RÓTULO. Eram dois alvos de 32px a 10px de distância, um some da lista e o
      outro apaga pra sempre, e no celular nem tooltip existe pra distinguir os
@@ -27,9 +30,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Archive, Calendar, DollarSign, EllipsisVertical, FileText, MapPin, Trash2, UserPlus } from "lucide-react";
+import { Archive, Calendar, DollarSign, EllipsisVertical, FileText, MapPin, Trash2, UserPlus, Users } from "lucide-react";
 import { diasAte, type Cliente } from "@/lib/ficha";
-import { iniciais } from "@/lib/painel";
 import { fmtData, moeda } from "@/lib/util";
 
 
@@ -103,7 +105,7 @@ export function HeroCliente({
       </div>
 
       <div className="relative z-[1] flex items-center gap-4 pr-12 md:gap-[22px]">
-        <Avatar>{iniciais(noivo, noiva)}</Avatar>
+        <Avatar><Users size={30} strokeWidth={1.6} /></Avatar>
         <div className="min-w-0">
           <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">{nomes}</h1>
 
@@ -168,7 +170,7 @@ function MenuDoCadastro({
         onClick={() => setAberto((v) => !v)}
         className={
           "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full " +
-          "text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors hover:bg-white/25 hover:text-white " +
+          "text-white/80 transition-colors hover:bg-white/25 hover:text-white " +
           (aberto ? "bg-white/25 text-white" : "bg-white/10")
         }
       >
@@ -217,9 +219,13 @@ function Esferas() {
   );
 }
 
+/* Quadrado de canto mole, no raio dos cards da página (22px pro tamanho
+   grande, 18px pro do celular), e não redondo: aqui não é foto de pessoa, é o
+   ícone da seção. Sem sombra — dentro do herói nada projeta sombra, quem
+   separa do fundo é a própria luz translúcida. */
 function Avatar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-[21px] font-semibold tracking-[.02em] text-white shadow-[0_8px_22px_rgba(0,0,0,.20),inset_0_1px_0_rgba(255,255,255,.25)] md:h-[74px] md:w-[74px] md:text-[26px]">
+    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white md:h-[74px] md:w-[74px] md:rounded-[22px]">
       {children}
     </div>
   );
@@ -231,7 +237,7 @@ function Chip({ destaque = false, children }: { destaque?: boolean; children: Re
       className={
         "inline-flex items-center gap-[7px] rounded-full px-[13px] py-1.5 text-[13px] whitespace-normal md:whitespace-nowrap " +
         (destaque
-          ? "bg-white font-semibold text-accent shadow-[0_4px_14px_rgba(0,0,0,.16)]"
+          ? "bg-white font-semibold text-accent"
           : "bg-white/[.11] text-white/95 backdrop-blur-[6px]")
       }
     >
