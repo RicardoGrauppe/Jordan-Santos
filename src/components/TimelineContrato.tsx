@@ -106,15 +106,19 @@ export function TimelineContrato({
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2.5 [&>*]:min-h-[42px] [&>*]:flex-[1_1_100%] min-[520px]:[&>*]:flex-[1_1_150px]">
+            {/* Rótulos curtos: a coluna é estreita e "Abrir contrato assinado"
+                quebrava em duas linhas dentro do botão. O que o rótulo deixou
+                de dizer está dito em volta — a timeline logo acima mostra se
+                foi assinado, e o ícone muda junto (FileCheck x FileText). */}
             {assinadoFotografo || jaAssinado ? (
               <Botao onClick={onCopiarLink}>
                 <Copy size={16} />
-                {jaAssinado ? "Copiar link da via" : "Copiar link"}
+                Copiar link
               </Botao>
             ) : null}
             <Botao variante="secundario" className="text-accent" onClick={onAbrirContrato}>
               {jaAssinado ? <FileCheck size={16} /> : <FileText size={16} />}
-              {jaAssinado ? "Abrir contrato assinado" : "Abrir rascunho do contrato"}
+              {jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
               <ExternalLink size={14} className="opacity-60" />
             </Botao>
           </div>
