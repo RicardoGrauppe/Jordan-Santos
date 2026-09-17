@@ -49,7 +49,12 @@ export function TimelineContrato({
   ];
 
   return (
-    <div className="rounded-[14px] bg-soft p-5">
+    /* Card branco como os vizinhos da coluna. No estúdio original este bloco
+       era `soft` sobre uma página BRANCA, e ali isso já o destacava; aqui a
+       página é que é soft, então a receita se inverteu e ele sumia no fundo —
+       o Ricardo perguntou cadê o card. Mesmo raio, padding e sombra do
+       SecaoFicha ao lado, pra a coluna ter uma linguagem só. */
+    <div className="rounded-[22px] bg-paper px-6 py-6 shadow-card">
       <div className="mb-4 flex items-center gap-2.5">
         <h3 className="m-0 flex-1 text-sm font-semibold text-accent">Assinatura do Contrato</h3>
         {versao > 1 ? (

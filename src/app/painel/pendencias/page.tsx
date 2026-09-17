@@ -132,8 +132,15 @@ export default function Pendencias() {
                     <Deslizar
                       larguraAcao={LARGURA_LIMPAR}
                       rotuloOpcoes={"Opções da pendência de " + nomeCasal(c)}
+                      /* A LINHA é branca sobre a página soft, não soft sobre
+                         soft. No estúdio original a página era BRANCA e o
+                         `soft` da linha já a destacava; aqui a página é que é
+                         soft, e a receita se inverteu — sem isto a lista fica
+                         chapada, sem nenhuma linha visível.
+                         O trilho de trás segue soft: é ele que aparece quando
+                         a linha desliza, atrás da ação. */
                       className="rounded-[14px] bg-soft"
-                      classeFrente={`gap-3 bg-soft py-2.5 pl-3.5 pr-2 hover:bg-line`}
+                      classeFrente={`gap-3 bg-paper py-2.5 pl-3.5 pr-2 shadow-[0_1px_2px_rgba(29,41,61,.04)] hover:bg-soft`}
                       acoes={[{
                         chave: "limpar",
                         rotulo: "Limpar",
@@ -172,7 +179,7 @@ function PendenciasSkeleton() {
       </div>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {[0, 1].map((i) => (
-          <li key={i} className="flex items-center gap-3.5 rounded-[14px] bg-soft px-3.5 py-2.5">
+          <li key={i} className="flex items-center gap-3.5 rounded-[14px] bg-paper px-3.5 py-2.5">
             <SkCirculo />
             <SkLinha className="flex-1" />
           </li>

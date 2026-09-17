@@ -178,7 +178,7 @@ export default function ListaClientes() {
         {!clientes ? (
           <ListaSkeleton />
         ) : !visiveis.length ? (
-          <p className="m-0 rounded-2xl bg-soft px-[18px] py-16 text-center text-[14.5px] text-ink-soft md:rounded-none md:bg-transparent">
+          <p className="m-0 rounded-2xl bg-paper px-[18px] py-16 text-center text-[14.5px] text-ink-soft md:rounded-none md:bg-transparent">
             {clientes.length
               ? "Nenhum cliente com esse filtro."
               : "Nenhum cliente ainda. O primeiro chega pelo questionário do contrato, ou crie manualmente."}
