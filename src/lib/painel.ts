@@ -38,8 +38,12 @@ export type ClienteLista = {
   tel_noivo?: string | null;
   origem?: string | null;
   local_evento?: string | null;
+  /** quando o cliente entrou (ISO); usado pela ordem de chegada do sino */
+  criado_em?: string | null;
   /** status do último contrato, que a lista já traz; null sem contrato */
   contrato_status?: string | null;
+  /** quando o contrato entrou no status acima (ISO); null sem contrato */
+  contrato_em?: string | null;
 };
 
 export type RespostaLista = { clientes?: ClienteLista[] };

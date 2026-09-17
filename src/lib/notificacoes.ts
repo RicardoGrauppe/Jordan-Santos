@@ -8,6 +8,18 @@
   quando o fato passa. Isso também é o motivo de cada aviso carregar uma
   `chave` estável: é ela, e não o texto exibido, que guarda o "já vi isto".
 
+  ORDEM: chegada, do mais novo pro mais velho. O original agrupava por tipo
+  (clientes novos, depois contratos, depois prazos) e dentro do grupo seguia a
+  ordem da lista de clientes, que é por data do casamento. Dava pra acontecer
+  o que o Ricardo viu: um cliente que entrou HOJE aparecendo abaixo de um de
+  dois dias atrás, porque casa depois. Sino é linha do tempo: o que acabou de
+  acontecer vem primeiro, sempre.
+
+  Cada aviso carrega o carimbo do fato que o criou (`quando`): o cliente
+  entrou, o contrato virou enviado/aberto/assinado. O prazo não tem fato, tem
+  janela, então o carimbo dele é o dia em que o casamento ENTROU nos 30 dias.
+  Sem isso ele mudaria de lugar todo dia, já que o texto muda todo dia.
+
   Decisões herdadas de lá:
   - A chave do prazo IGNORA a contagem regressiva, senão o mesmo casamento
     viraria aviso novo todo santo dia.
@@ -27,8 +39,8 @@ export type TipoAviso = "proposta" | "assinado" | "contrato" | "prazo";
 
 export type Aviso = {
   tipo: TipoAviso;
-  /** ordem de exibição: novos clientes primeiro, prazos por último */
-  ordem: number;
+  /** carimbo do fato (ISO). Vazio quando a linha não tem data: vai pro fim. */
+  quando: string;
   /** cliente que o aviso abre */
   cid: string;
   /** identidade estável do aviso, usada pelo "já vi" e pelo "apaguei" */
@@ -47,6 +59,9 @@ export function diasAte(iso?: string | null): number | null {
   return Math.round((d.getTime() - hoje.getTime()) / 86400000);
 }
 
+/** Quantos dias antes do casamento o aviso de prazo começa a aparecer. */
+const JANELA_PRAZO = 30;
+
 export function montarNotificacoes(clientes: ClienteLista[] | null | undefined): Aviso[] {
   const lista: Aviso[] = [];
   const todos = clientes ?? [];
@@ -54,7 +69,7 @@ export function montarNotificacoes(clientes: ClienteLista[] | null | undefined):
   todos.forEach((c) => {
     if (c.status === "novo" && c.origem === "Orçamento do site") {
       lista.push({
-        tipo: "proposta", ordem: 0, cid: c.id, chave: "proposta|" + c.id,
+        tipo: "proposta", quando: c.criado_em || "", cid: c.id, chave: "proposta|" + c.id,
         titulo: "Novo cliente", sub: nomeCasal(c),
       });
     }
@@ -63,13 +78,13 @@ export function montarNotificacoes(clientes: ClienteLista[] | null | undefined):
   todos.forEach((c) => {
     if (c.contrato_status === "assinado") {
       lista.push({
-        tipo: "assinado", ordem: 1, cid: c.id, chave: "assinado|" + c.id,
+        tipo: "assinado", quando: c.contrato_em || "", cid: c.id, chave: "assinado|" + c.id,
         titulo: "Contrato assinado", sub: nomeCasal(c),
       });
     } else if (c.contrato_status === "enviado" || c.contrato_status === "visualizado") {
       const viu = c.contrato_status === "visualizado";
       lista.push({
-        tipo: "contrato", ordem: 2, cid: c.id,
+        tipo: "contrato", quando: c.contrato_em || "", cid: c.id,
         chave: "contrato|" + c.id + "|" + c.contrato_status,
         titulo: viu ? "Casal abriu o contrato" : "Aguardando assinatura",
         sub: nomeCasal(c),
@@ -80,17 +95,31 @@ export function montarNotificacoes(clientes: ClienteLista[] | null | undefined):
   todos.forEach((c) => {
     if (c.status === "arquivado" || !c.data_evento) return;
     const d = diasAte(c.data_evento);
-    if (d == null || d < 0 || d > 30) return;
+    if (d == null || d < 0 || d > JANELA_PRAZO) return;
     const quando = d === 0 ? "Casamento é hoje"
       : d === 1 ? "Casamento é amanhã"
       : "Casamento em " + d + " dias";
     lista.push({
-      tipo: "prazo", ordem: 3 + d / 1000, cid: c.id, chave: "prazo|" + c.id,
+      tipo: "prazo", quando: entrouNaJanela(c.data_evento), cid: c.id, chave: "prazo|" + c.id,
       titulo: quando, sub: nomeCasal(c) + " · " + dataCurta(c.data_evento),
     });
   });
 
-  return lista.sort((a, b) => a.ordem - b.ordem);
+  /* mais novo primeiro; sem carimbo vai pro fim (linha velha, sem data). Em
+     empate vale a chave, só pra a ordem não dançar entre um render e outro. */
+  return lista.sort((a, b) => {
+    if (a.quando !== b.quando) return (b.quando || "").localeCompare(a.quando || "");
+    return a.chave.localeCompare(b.chave);
+  });
+}
+
+/** Dia em que o casamento entrou na janela de 30 dias, que é quando este
+ *  aviso nasceu. ISO, pra comparar com os carimbos dos outros avisos. */
+function entrouNaJanela(dataEvento: string): string {
+  const d = new Date(dataEvento + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  d.setDate(d.getDate() - JANELA_PRAZO);
+  return d.toISOString();
 }
 
 /* ---------- filtros (pills da tela cheia do celular) ---------- */

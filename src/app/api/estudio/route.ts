@@ -54,11 +54,18 @@ type LinhaClienteResumo = {
   tel_noivo: string | null;
   origem: string | null;
   local_evento: string | null;
-  /* preenchido aqui, a partir do contrato mais recente */
+  criado_em: string | null;
+  /* preenchidos aqui, a partir do contrato mais recente */
   contrato_status?: string | null;
+  /* quando o contrato ENTROU no estado atual: é o relógio que põe o aviso
+     do sino no lugar certo da ordem de chegada */
+  contrato_em?: string | null;
 };
 
-type LinhaContratoStatus = { cliente_id: string; status: string | null; assinado_em: string | null };
+type LinhaContratoStatus = {
+  cliente_id: string; status: string | null; criado_em: string | null;
+  enviado_em: string | null; visualizado_em: string | null; assinado_em: string | null;
+};
 
 type LinhaContrato = {
   id: string;
@@ -214,21 +221,26 @@ export async function GET(req: Request) {
       return NextResponse.json({ cliente: linhas[0], contrato: contrato });
     }
     const lista = await rest<LinhaClienteResumo[]>(
-      "clientes?select=id,noivo,noiva,data_evento,status,total,tel_noivo,origem,local_evento" +
+      "clientes?select=id,noivo,noiva,data_evento,status,total,tel_noivo,origem,local_evento,criado_em" +
       "&order=data_evento.asc.nullslast",
     );
     /* status do contrato por cliente (best-effort, uma consulta só) */
     let porCliente: Record<string, LinhaContratoStatus> = {};
     try {
       const cs = await rest<LinhaContratoStatus[]>(
-        "contratos?select=cliente_id,status,assinado_em&order=criado_em.desc",
+        "contratos?select=cliente_id,status,criado_em,enviado_em,visualizado_em,assinado_em&order=criado_em.desc",
       );
       (cs || []).forEach((c) => {
         if (!porCliente[c.cliente_id]) porCliente[c.cliente_id] = c; /* o mais recente */
       });
     } catch { porCliente = {}; }
     (lista || []).forEach((c) => {
-      c.contrato_status = porCliente[c.id] ? porCliente[c.id].status : null;
+      const ct = porCliente[c.id];
+      c.contrato_status = ct ? ct.status : null;
+      /* do estado mais recente pro mais antigo: o primeiro que existir é o
+         momento em que o contrato virou o que é hoje. Cai no `criado_em` do
+         contrato porque linha antiga (e semente) tem status sem carimbo. */
+      c.contrato_em = ct ? (ct.assinado_em || ct.visualizado_em || ct.enviado_em || ct.criado_em) : null;
     });
     return NextResponse.json({ clientes: lista || [] });
   } catch (e) {
