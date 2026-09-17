@@ -35,8 +35,7 @@ import { useToast } from "@/components/Toast";
 import { Sk, SkCirculo, SkLinha } from "@/components/Skeleton";
 import { copiarTexto } from "@/lib/ficha";
 import {
-  api, buscarClima, dataCurta, esperaMin, nomeCasal, pendenciasDe, proximosEventos, saudacaoDaHora, totalPendencias,
-  ERRO_SESSAO, type ClienteLista, type ClimaAgora, type Config, type RespostaLista, type Saudacao,
+  ERRO_SESSAO, abrirContratoEmNovaGuia, api, buscarClima, dataCurta, esperaMin, nomeCasal, pendenciasDe, proximosEventos, reservarGuia, rotaDoContrato, saudacaoDaHora, totalPendencias, type ClienteLista, type ClimaAgora, type Config, type RespostaLista, type Saudacao,
 } from "@/lib/painel";
 
 const TETO_CLIMA_MS = 5000;
@@ -183,18 +182,30 @@ function Conteudo({
   /* "Abrir": com contrato na mão vai direto pra revisão; sem contrato, confirma
      e gera o rascunho antes (mesmo fluxo de abrirContratoDoEvento no original) */
   async function abrirContratoDoEvento(c: ClienteLista) {
-    const destino = "/painel/clientes/" + encodeURIComponent(c.id) + "/contrato";
-    if (temContrato(c.contrato_status)) { router.push(destino); return; }
+    /* já existe contrato: abre a guia agora mesmo, no gesto do clique */
+    if (temContrato(c.contrato_status)) { abrirContratoEmNovaGuia(c.id); return; }
+
     const ok = await confirmar({
       titulo: "Abrir contrato pra revisar?",
-      texto: "Cria o contrato de " + nomeCasal(c) + " como rascunho e abre pra você revisar. O casal só vê depois que você copiar o link.",
+      texto: "Cria o contrato de " + nomeCasal(c) + " como rascunho e abre numa guia nova pra você revisar. O casal só vê depois que você copiar o link.",
       rotuloOk: "Abrir",
     });
     if (!ok) return;
+
+    /* Aqui tem uma ida ao servidor no meio do caminho, e o navegador bloqueia
+       `window.open` depois que a ativação do usuário expira. Então a guia é
+       RESERVADA agora, logo após o "Abrir" do pop-up, e só recebe o endereço
+       quando o contrato existe. Deu errado? Fecha — guia em branco pendurada
+       depois de uma falha é pior do que não ter aberto. */
+    const guia = reservarGuia();
     try {
       await api("/api/estudio", { acao: "gerar-contrato", id: c.id });
-      router.push(destino);
-    } catch (e) { falhou(e, "Não deu pra abrir o contrato. Tente de novo."); }
+      if (guia) guia.location.href = rotaDoContrato(c.id);
+      else router.push(rotaDoContrato(c.id));
+    } catch (e) {
+      guia?.close();
+      falhou(e, "Não deu pra abrir o contrato. Tente de novo.");
+    }
   }
 
   /* "Copiar": libera o link do casal e reaproveita o pop-up da ficha. O

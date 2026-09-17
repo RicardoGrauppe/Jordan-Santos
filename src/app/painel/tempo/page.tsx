@@ -307,11 +307,13 @@ function LuzDoDia({ luz }: { luz: Luz }) {
 
 /** A timeline em si. O trilho tem cantos redondos e recorte próprio; marcadores
  *  e o traço do "agora" ficam FORA dele, senão o recorte os comeria.
- *  A folga de 58px no topo é o espaço do marcador (emoji + horário, ~30px) mais
- *  a respiração até a linha de cima. */
+ *  A folga no topo é o espaço do marcador (emoji + horário) mais a respiração
+ *  até a linha de cima. O marcador sobe 42px: com os 30 de antes, o horário
+ *  terminava DEPOIS do topo do trilho e encostava nele. O traço acompanha, pra
+ *  continuar nascendo exatamente na barra. */
 function Barra({ luz }: { luz: Luz }) {
   return (
-    <div className="relative mb-2 mt-[58px] h-3 w-full self-stretch">
+    <div className="relative mb-2 mt-[70px] h-3 w-full self-stretch">
       <div className="flex h-full w-full overflow-hidden rounded-full">
         {luz.segmentos.map((s) => (
           <div key={s.chave} className="h-full" style={{ width: s.largura + "%", background: FUNDO_FASE[s.fase] }} />
@@ -320,12 +322,12 @@ function Barra({ luz }: { luz: Luz }) {
       {luz.marcas.map((m) => (
         <div
           key={m.emoji}
-          className="absolute -top-[30px] -translate-x-1/2 whitespace-nowrap text-center"
+          className="absolute -top-[42px] -translate-x-1/2 whitespace-nowrap text-center"
           style={{ left: m.pct + "%" }}
         >
           <div className="text-[15px] leading-none" aria-hidden>{m.emoji}</div>
           <div className="mt-px text-[11.5px] font-semibold tabular-nums text-ink">{m.hora}</div>
-          <span className="absolute left-1/2 top-[30px] h-3 w-0.5 -translate-x-1/2 bg-noir/25" aria-hidden />
+          <span className="absolute left-1/2 top-[42px] h-3 w-0.5 -translate-x-1/2 bg-noir/25" aria-hidden />
         </div>
       ))}
       {luz.agoraPct != null ? (

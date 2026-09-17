@@ -48,6 +48,40 @@ export const ROTULO_STATUS: Record<string, string> = {
   novo: "Novo", confirmado: "Confirmado", realizado: "Realizado", arquivado: "Arquivado",
 };
 
+/** Rota da revisão do contrato de um cliente. */
+export function rotaDoContrato(clienteId: string): string {
+  return "/painel/clientes/" + encodeURIComponent(clienteId) + "/contrato";
+}
+
+/**
+ * Abre a revisão do contrato numa GUIA NOVA, de onde quer que se clique.
+ *
+ * É documento: quem abre quase sempre quer conferir sem perder a ficha que
+ * estava preenchendo, e o botão da timeline já mostrava o ícone de link
+ * externo prometendo isso.
+ *
+ * Sem `noopener` de propósito: ele faz o `window.open` devolver `null`, e aqui
+ * a guia precisa ser devolvida pra quem gera o contrato ANTES de ter o
+ * endereço (ver `reservarGuia`). É página nossa, mesma origem, então não há o
+ * risco que o `noopener` existe pra cobrir.
+ */
+export function abrirContratoEmNovaGuia(clienteId: string): void {
+  window.open(rotaDoContrato(clienteId), "_blank");
+}
+
+/**
+ * Guia vazia aberta AGORA, no gesto do clique, pra ser preenchida depois que
+ * uma chamada ao servidor terminar.
+ *
+ * Sem isto o navegador bloqueia: `window.open` só passa enquanto a ativação do
+ * usuário está viva, e gerar o contrato leva uma ida ao servidor no meio.
+ * Quem chama preenche com `guia.location.href` no sucesso e fecha no erro —
+ * deixar uma guia em branco aberta depois de uma falha é pior que não abrir.
+ */
+export function reservarGuia(): Window | null {
+  return window.open("", "_blank");
+}
+
 export function nomeCasal(c: Pick<ClienteLista, "noivo" | "noiva">): string {
   return [c.noivo, c.noiva].filter(Boolean).join(" & ") || "(sem nome)";
 }

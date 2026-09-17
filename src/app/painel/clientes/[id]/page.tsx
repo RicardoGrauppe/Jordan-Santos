@@ -41,6 +41,7 @@ import { PillsPacote, ResumoItens } from "@/components/PillsPacote";
 import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
 import { CATALOGO, PACOTES } from "@/lib/catalogo";
+import { abrirContratoEmNovaGuia } from "@/lib/painel";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
   formatarMoeda, parseMoeda, soDigitos, copiarTexto,
@@ -420,9 +421,11 @@ export default function PaginaCliente() {
 
   /* ---------- contrato ---------- */
 
+  /* guia nova: o contrato é documento, e quem abre quase sempre quer conferir
+     sem perder a ficha que estava preenchendo */
   function abrirContrato() {
     if (!clienteIdRef.current) return;
-    router.push("/painel/clientes/" + encodeURIComponent(clienteIdRef.current) + "/contrato");
+    abrirContratoEmNovaGuia(clienteIdRef.current);
   }
 
   async function acaoDoContrato() {
