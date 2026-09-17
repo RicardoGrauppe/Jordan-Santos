@@ -561,7 +561,7 @@ export default function PaginaCliente() {
 
   if (erroCarga) {
     return (
-      <div className="mx-auto max-w-[1280px]">
+      <div className="mx-auto max-w-[1100px]">
         <Voltar />
         <div className="mt-6"><Aviso>{erroCarga}</Aviso></div>
       </div>
@@ -575,7 +575,11 @@ export default function PaginaCliente() {
     : [ficha.noivo, ficha.noiva].filter(Boolean).join(" & ");
 
   return (
-    <div className="mx-auto max-w-[1280px]">
+    /* Mesma largura da lista de onde se chega aqui. Estava em 1280, o que
+       fazia o conteúdo encostar no respiro da página e a tela parecer uma
+       moldura dentro de outra — e mais largo que a Home (960) e que a própria
+       lista (1100), então a cada clique a coluna crescia. */
+    <div className="mx-auto max-w-[1100px]">
       <TituloMobile titulo={nomeDoCasal} />
       <Voltar />
 
