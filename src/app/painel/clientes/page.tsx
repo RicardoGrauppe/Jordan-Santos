@@ -22,9 +22,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { TituloMobile } from "@/components/cabecalho-mobile";
-import { Botao, BotaoLimparBusca, Selo } from "@/components/ui";
+import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { PuxarPraAtualizar } from "@/components/PuxarPraAtualizar";
 import { SkLinha } from "@/components/Skeleton";
@@ -56,7 +56,6 @@ export default function ListaClientes() {
   const router = useRouter();
   const confirmar = useConfirmar();
   const [clientes, setClientes] = useState<ClienteLista[] | null>(null);
-  const [busca, setBusca] = useState("");
   const [status, setStatus] = useState("");
   const montado = useRef(true);
 
@@ -94,14 +93,14 @@ export default function ListaClientes() {
 
   const visiveis = useMemo(() => {
     if (!clientes) return [];
-    const termo = busca.trim().toLowerCase();
     return clientes.filter((c) => {
       if (status && c.status !== status) return false;
+      /* "Todos os status" esconde arquivado: arquivar existe justamente pra
+         tirar da frente, e só o filtro de Arquivado traz de volta */
       if (!status && c.status === "arquivado") return false;
-      const nome = ((c.noivo ?? "") + " " + (c.noiva ?? "")).toLowerCase();
-      return !termo || nome.includes(termo);
+      return true;
     });
-  }, [clientes, busca, status]);
+  }, [clientes, status]);
 
   async function excluir(c: ClienteLista) {
     const nome = nomeCasal(c);
@@ -136,49 +135,41 @@ export default function ListaClientes() {
           "marcar todas como lidas" das Notificações. */}
       <TituloMobile titulo="Clientes" acao={acaoNovoCliente} />
       <div className="mb-[18px] hidden items-center justify-between gap-4 md:flex">
-        <h1 className="m-0 flex items-center gap-2.5 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px]">
-          Clientes
-          {clientes && visiveis.length ? (
-            <span className="inline-flex h-[22px] min-w-6 items-center justify-center rounded-full bg-soft px-2 text-[12.5px] font-semibold text-ink-soft">
-              {visiveis.length}
-            </span>
-          ) : null}
-        </h1>
+        <h1 className="m-0 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px]">Clientes</h1>
         <Botao className="h-10 whitespace-nowrap px-4 text-[13.5px]" onClick={() => router.push("/painel/clientes/novo")}>
           <Plus size={16} /> Novo cliente
         </Botao>
       </div>
 
-      {/* barra: busca e filtro, sem borda (o fundo soft diferencia) */}
-      <div className="mb-[18px] flex flex-wrap items-center gap-3">
-        <label className="flex min-w-[200px] flex-1 items-center gap-[9px] rounded-xl bg-soft px-3 transition-colors focus-within:bg-[#EEF0F3]">
-          <Search size={16} className="shrink-0 text-ink-soft" />
-          <input
-            type="search"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar casal"
-            aria-label="Buscar casal"
-            className="w-full bg-transparent py-2.5 text-sm text-ink outline-none placeholder:text-ink-soft/70"
-          />
-          {busca ? <BotaoLimparBusca aoLimpar={() => setBusca("")} /> : null}
-        </label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          aria-label="Filtrar por status"
-          className="h-10 cursor-pointer appearance-none rounded-xl bg-soft py-2.5 pl-[13px] pr-9 text-sm text-ink outline-none transition-colors focus:bg-[#EEF0F3]"
-          style={{
-            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 12px center",
-          }}
-        >
-          {FILTROS.map((f) => <option key={f.valor} value={f.valor}>{f.rotulo}</option>)}
-        </select>
+      {/* Sem campo de busca aqui: quem procura casal já tem a barra do topo no
+          computador e a lupa da barra de baixo no celular, e as duas levam
+          direto pra ficha. Um segundo campo na mesma tela faria a pessoa
+          escolher entre dois jeitos de fazer a mesma coisa.
+
+          O status virou PILL (o padrão do estúdio original, o mesmo dos
+          atalhos da previsão): num menu fechado o filtro ativo fica escondido
+          atrás de um clique, e aqui ele é a explicação de por que a lista tem
+          o tamanho que tem. */}
+      <div className="mb-[18px] flex flex-wrap gap-2">
+        {FILTROS.map((f) => (
+          <button
+            key={f.valor}
+            type="button"
+            aria-pressed={status === f.valor}
+            onClick={() => setStatus(f.valor)}
+            className={
+              "inline-flex cursor-pointer items-center rounded-full px-3.5 py-[7px] text-[12.5px] font-semibold " +
+              "transition-[background,color] duration-150 [-webkit-tap-highlight-color:transparent] " +
+              (status === f.valor ? "bg-accent text-white" : `bg-soft text-ink-soft hover:bg-line hover:text-ink`)
+            }
+          >
+            {f.rotulo}
+          </button>
+        ))}
       </div>
 
-      {/* desktop: card branco com cabeçalho; celular: cada linha é o próprio cartão */}
+      {/* no computador a lista é uma tabela num cartão só; no celular, cards
+          soltos (as duas formas convivem nas mesmas linhas) */}
       <div className="md:overflow-hidden md:rounded-[20px] md:bg-paper md:shadow-[0_1px_2px_rgba(29,29,27,.04),0_14px_32px_rgba(29,29,27,.08)]">
         <div className={"hidden bg-soft px-[18px] py-3.5 text-[11px] font-semibold uppercase tracking-[.06em] text-ink-soft md:grid " + COLUNAS}>
           <span>Casal</span><span>Data</span><span>Status</span><span className="text-right">Total</span><span aria-label="Ações" />
