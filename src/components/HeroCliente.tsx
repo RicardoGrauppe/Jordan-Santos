@@ -173,7 +173,9 @@ function MenuDoCadastro({
            foram pra branco cheio. Com 10% e texto a 80% ele sumia no degradê
            escuro — o Ricardo perguntou onde tinha ido parar. */
         className={
-          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full " +
+          /* canto mole e não redondo, no mesmo raio que o app usa em todo
+             botão de ícone de 36px (sino e avatar do cabeçalho) */
+          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] " +
           "text-white transition-colors hover:bg-white/30 " +
           (aberto ? "bg-white/30" : "bg-white/[.16]")
         }
