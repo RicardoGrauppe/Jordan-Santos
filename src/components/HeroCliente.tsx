@@ -1,19 +1,35 @@
 /*
-  Cabeçalho da ficha: nomes do casal, data do evento com contagem, local e
-  valor, e as ações de arquivar/excluir. Portado de renderHeroCliente() do
+  Cabeçalho da ficha: quem é o casal, quando é o evento, onde e por quanto, e
+  as ações que mexem no cadastro. Portado de renderHeroCliente() do
   estudio.html.
 
   Hierarquia herdada de lá: a data/contagem é a única pílula branca. Local e
-  valor são meta leve. O status do contrato NÃO repete aqui (vive na coluna da
+  valor são meta leve. O status do CONTRATO não repete aqui (vive na coluna da
   direita), só entra quando é marco forte: assinado.
 
   O original tinha borda translúcida nos botões e no avatar; aqui saiu, e a
   separação fica por conta do fundo translúcido mais sombra (regra da casa).
+
+  Três coisas mudaram em 17/09/2026, depois do Ricardo pedir pra melhorar
+  visual e uso:
+
+  1. O avatar traz as INICIAIS do casal, não um ícone genérico de duas
+     pessoas. É o mesmo que a lista mostra, então a ficha confirma que você
+     abriu quem queria — e um ícone igual pra todo cliente não confirma nada.
+  2. Arquivar e Excluir saíram de dois ícones soltos no canto pra um menu com
+     RÓTULO. Eram dois alvos de 32px a 10px de distância, um some da lista e o
+     outro apaga pra sempre, e no celular nem tooltip existe pra distinguir os
+     dois. Com texto, a ação perigosa é escolhida, não acertada.
+  3. Cliente ARQUIVADO passa a dizer que está arquivado. Antes o único sinal
+     era o botão de arquivar sumir do canto, o que é ausência de coisa — e
+     ausência não avisa ninguém.
 */
 "use client";
 
-import { Archive, Calendar, DollarSign, FileText, MapPin, Trash2, UserPlus, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Archive, Calendar, DollarSign, EllipsisVertical, FileText, MapPin, Trash2, UserPlus } from "lucide-react";
 import { diasAte, type Cliente } from "@/lib/ficha";
+import { iniciais } from "@/lib/painel";
 import { fmtData, moeda } from "@/lib/util";
 
 
@@ -69,6 +85,7 @@ export function HeroCliente({
     }
   }
 
+  const arquivado = cliente.status === "arquivado";
   const local = cliente.local_evento ? String(cliente.local_evento) : "";
   const temTotal = cliente.total != null && cliente.total !== "";
 
@@ -76,42 +93,30 @@ export function HeroCliente({
     <div className={fundo}>
       <Esferas />
 
-      {/* ações flutuam no canto: em fluxo criavam uma faixa vazia no topo */}
-      <div className="absolute right-6 top-[22px] z-[5] flex items-center gap-2.5">
-        {cliente.status !== "arquivado" ? (
-          <button
-            type="button"
-            onClick={onArquivar}
-            title="Arquivar (some da lista de ativos)"
-            aria-label="Arquivar"
-            className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors hover:bg-white/25 hover:text-white`}
-          >
-            <Archive size={15} />
-          </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={onExcluir}
-          title="Excluir de vez (apaga permanentemente)"
-          aria-label="Excluir de vez"
-          className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors hover:bg-erro hover:text-white`}
-        >
-          <Trash2 size={15} />
-        </button>
+      {/* o menu flutua no canto: em fluxo criava uma faixa vazia no topo */}
+      <div className="absolute right-4 top-4 z-[5] md:right-6 md:top-[22px]">
+        <MenuDoCadastro
+          podeArquivar={cliente.status !== "arquivado"}
+          onArquivar={onArquivar}
+          onExcluir={onExcluir}
+        />
       </div>
 
-      <div className="relative z-[1] flex items-center gap-4 pr-20 md:gap-[22px]">
-        <Avatar><Users size={30} strokeWidth={1.6} /></Avatar>
+      <div className="relative z-[1] flex items-center gap-4 pr-12 md:gap-[22px]">
+        <Avatar>{iniciais(noivo, noiva)}</Avatar>
         <div className="min-w-0">
           <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">{nomes}</h1>
 
-          {textoData || contratoAssinado ? (
+          {textoData || contratoAssinado || arquivado ? (
             <div className="mt-3.5 flex flex-wrap gap-2">
+              {/* arquivado vem primeiro: é a condição da ficha inteira, e o
+                  resto só faz sentido lido depois dela */}
+              {arquivado ? <Chip><Archive size={14} />Arquivado</Chip> : null}
               {textoData ? (
-                <Chip destaque={dataFutura}><Calendar size={14} />{textoData}</Chip>
+                <Chip destaque={dataFutura && !arquivado}><Calendar size={14} />{textoData}</Chip>
               ) : null}
               {contratoAssinado ? (
-                <Chip destaque><FileText size={14} />Contrato assinado</Chip>
+                <Chip destaque={!arquivado}><FileText size={14} />Contrato assinado</Chip>
               ) : null}
             </div>
           ) : null}
@@ -128,6 +133,80 @@ export function HeroCliente({
   );
 }
 
+/* Ações que mexem no CADASTRO (não no contrato). Num menu com rótulo, e não
+   em ícones soltos: arquivar tira da lista e excluir apaga pra sempre, e dois
+   ícones vizinhos do mesmo tamanho não distinguem uma da outra — muito menos
+   no celular, onde `title` não aparece.
+   A confirmação de cada uma continua sendo do ModalConfirmar; isto aqui é a
+   camada antes dela, pra o dedo não chegar lá por engano. */
+function MenuDoCadastro({
+  podeArquivar, onArquivar, onExcluir,
+}: { podeArquivar: boolean; onArquivar: () => void; onExcluir: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+    function fora(ev: PointerEvent) {
+      if (!caixa.current?.contains(ev.target as Node)) setAberto(false);
+    }
+    document.addEventListener("pointerdown", fora);
+    return () => document.removeEventListener("pointerdown", fora);
+  }, [aberto]);
+
+  const item =
+    "flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-[11px] py-[9px] text-left text-[13.5px]";
+
+  return (
+    <div ref={caixa} className="relative">
+      <button
+        type="button"
+        aria-label="Ações do cadastro"
+        aria-haspopup="true"
+        aria-expanded={aberto}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => setAberto((v) => !v)}
+        className={
+          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full " +
+          "text-white/80 shadow-[0_2px_8px_rgba(0,0,0,.18)] transition-colors hover:bg-white/25 hover:text-white " +
+          (aberto ? "bg-white/25 text-white" : "bg-white/10")
+        }
+      >
+        <EllipsisVertical size={16} />
+      </button>
+
+      {aberto ? (
+        <div
+          role="menu"
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute right-0 top-11 z-[6] min-w-[208px] rounded-xl bg-paper p-1.5 shadow-alta"
+        >
+          {podeArquivar ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setAberto(false); onArquivar(); }}
+              className={item + " text-ink hover:bg-soft"}
+            >
+              <Archive size={15} className="opacity-85" />
+              Arquivar
+            </button>
+          ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setAberto(false); onExcluir(); }}
+            className={item + " text-erro hover:bg-erro-tint"}
+          >
+            <Trash2 size={15} className="opacity-85" />
+            Excluir de vez
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /* duas esferas de luz sobrepostas dão profundidade sem virar ruído */
 function Esferas() {
   return (
@@ -140,7 +219,7 @@ function Esferas() {
 
 function Avatar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[60px] w-[60px] shrink-0 md:h-[74px] md:w-[74px] items-center justify-center rounded-full bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white shadow-[0_8px_22px_rgba(0,0,0,.20),inset_0_1px_0_rgba(255,255,255,.25)] ">
+    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-full bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-[21px] font-semibold tracking-[.02em] text-white shadow-[0_8px_22px_rgba(0,0,0,.20),inset_0_1px_0_rgba(255,255,255,.25)] md:h-[74px] md:w-[74px] md:text-[26px]">
       {children}
     </div>
   );
