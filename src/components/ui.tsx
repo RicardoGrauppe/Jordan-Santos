@@ -23,11 +23,23 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTML
 
 type Variante = "primario" | "secundario" | "fantasma" | "perigo";
 
+/* Sombras conferidas contra o brandbook (seção 3, Botões): em repouso uma
+   sombra curta que só assenta o botão, e no hover ela abre junto com o passo
+   de 1px pra cima. Quem tem fundo próprio (primário, perigo) volta pra sombra
+   de repouso no clique; quem não tem, perde a sombra. */
 const VARIANTE: Record<Variante, string> = {
-  primario: `bg-accent text-white shadow-[0_1px_2px_rgba(0,54,70,.22)] hover:bg-accent-hover`,
-  secundario: `bg-soft text-ink hover:bg-line`,
-  fantasma: `bg-transparent text-ink-soft hover:bg-soft hover:text-ink`,
-  perigo: `bg-erro text-white hover:brightness-90`,
+  primario:
+    "bg-accent text-white shadow-[0_1px_2px_rgba(0,54,70,.22)] hover:bg-accent-hover " +
+    "enabled:hover:shadow-[0_6px_16px_rgba(0,54,70,.22)] active:shadow-[0_1px_2px_rgba(0,54,70,.22)]",
+  secundario:
+    "bg-soft text-accent hover:bg-line " +
+    "enabled:hover:shadow-[0_6px_14px_rgba(29,29,27,.08)] active:shadow-none",
+  fantasma:
+    "bg-transparent text-ink-soft hover:bg-soft hover:text-ink " +
+    "enabled:hover:shadow-[0_6px_14px_rgba(29,29,27,.08)] active:shadow-none",
+  perigo:
+    "bg-erro text-white shadow-[0_1px_2px_rgba(163,59,59,.25)] hover:brightness-90 " +
+    "enabled:hover:shadow-[0_6px_16px_rgba(163,59,59,.25)] active:shadow-[0_1px_2px_rgba(163,59,59,.25)]",
 };
 
 export function Botao({
@@ -37,9 +49,14 @@ export function Botao({
     <button
       type="button"
       className={
-        "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] px-5 " +
-        "text-sm font-semibold transition-[background,transform,box-shadow] duration-150 " +
-        "active:scale-[.98] disabled:cursor-default disabled:opacity-45 " +
+        /* 12px de raio, o passo de 1px no hover e o scale de .96 no clique vêm
+           do brandbook (seção 3) e do `.botao-primario` do estúdio original —
+           o port tinha ficado com 10px, sem o passo e com .98.
+           `enabled:` no movimento pra botão desligado não levantar. */
+        "inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 " +
+        "text-sm font-semibold transition-[background,color,transform,box-shadow] duration-150 " +
+        "enabled:hover:-translate-y-px enabled:active:translate-y-0 enabled:active:scale-[.96] " +
+        "disabled:cursor-default disabled:opacity-45 " +
         VARIANTE[variante] + " " + className
       }
       {...props}
