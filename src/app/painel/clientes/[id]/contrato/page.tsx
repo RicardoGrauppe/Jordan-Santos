@@ -26,17 +26,18 @@
 */
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Dancing_Script } from "next/font/google";
 import SignaturePad from "signature_pad";
 import {
-  ArrowLeft, Check, ChevronDown, CircleX, Clock, Copy, Download, EllipsisVertical, Eye, FileCheck,
-  History, Info, Pencil, Send, ShieldCheck, TriangleAlert, User, Users, X,
+  ArrowLeft, Check, CircleX, Copy, Download, EllipsisVertical, Eye, FileCheck,
+  Info, Pencil, Send, ShieldCheck, TriangleAlert, Users, X,
 } from "lucide-react";
 import { useVoltar } from "@/lib/voltar";
 import { Aviso, Botao, Campo, Cartao, Estado, Selo } from "@/components/ui";
+import { LateralAssinantes, type AssinanteLateral, type ItemAuditoria } from "@/components/LateralAssinantes";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { fmtData, moeda } from "@/lib/util";
 import { htmlContratoTemplate } from "@/lib/contrato-template";
@@ -479,11 +480,9 @@ export default function PaginaRevisarContrato() {
   const [contrato, setContrato] = useState<Contrato | null>(null);
   const [nomeFotografo, setNomeFotografo] = useState(NOME_FOTOGRAFO_PADRAO);
 
-  const [aba, setAba] = useState<"assinantes" | "historico">("assinantes");
   const [sidebarAberta, setSidebarAberta] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
-  const [expandido, setExpandido] = useState({ fotografo: false, casal: false });
 
   const [modo, setModo] = useState<TipoAssinatura>("cursiva");
   const [nomeCursiva, setNomeCursiva] = useState(NOME_FOTOGRAFO_PADRAO);
@@ -987,6 +986,63 @@ export default function PaginaRevisarContrato() {
   const textoCasal = assinadoPeloCasal ? "Assinado"
     : (status === "enviado" || status === "visualizado") ? "Aguardando" : "Pendente";
 
+  /* O que a coluna lateral mostra. Fica aqui, e não dentro dela, porque é
+     leitura do contrato: a tela do casal monta a mesma lista com as palavras
+     dele ("entregue a você" em vez de "ao contratante"). */
+  const assinantes: AssinanteLateral[] = [
+    {
+      nome: nomeFotografo,
+      assinado: fotografoOk,
+      situacao: fotografoOk ? "Assinado" : "Pendente",
+      detalhes: [
+        { rotulo: "Papel", valor: "Contratado (fotógrafo)" },
+        ...(fotografoOk
+          ? [
+            { rotulo: "Forma", valor: contrato?.jordan_assinatura_tipo === "manual" ? "Traço manual" : "Nome em cursiva" },
+            { rotulo: "Confirmado em", valor: fmtDataHora(contrato?.jordan_confirmado_em) },
+          ]
+          : [{ rotulo: "Status", valor: "Toque em \u201CAssinar agora\u201D, no canto da tela" }]),
+      ],
+    },
+    {
+      nome: casal || "Casal",
+      assinado: assinadoPeloCasal,
+      situacao: textoCasal,
+      detalhes: [
+        { rotulo: "Papel", valor: "Contratante" },
+        ...(contrato?.snapshot?.email ? [{ rotulo: "E-mail", valor: contrato.snapshot.email }] : []),
+        ...(assinadoPeloCasal
+          ? [
+            { rotulo: "Assinante", valor: contrato?.signatario_nome || "não informado" },
+            ...(contrato?.signatario_cpf ? [{ rotulo: "CPF", valor: formatarCpf(contrato.signatario_cpf) }] : []),
+            { rotulo: "Assinado em", valor: fmtDataHora(contrato?.assinado_em) },
+          ]
+          : contrato?.visualizado_em
+            ? [{ rotulo: "Abriu o link em", valor: fmtDataHora(contrato.visualizado_em) }]
+            : contrato?.enviado_em
+              ? [{ rotulo: "Link enviado em", valor: fmtDataHora(contrato.enviado_em) }]
+              : [{ rotulo: "Status", valor: "Ainda não recebeu o link" }]),
+      ],
+    },
+  ];
+
+  const auditoria: ItemAuditoria[] | null = assinadoPeloCasal && contrato
+    ? [
+      { rotulo: "Signatário", valor: contrato.signatario_nome || "não informado" },
+      ...(contrato.signatario_cpf ? [{ rotulo: "CPF", valor: formatarCpf(contrato.signatario_cpf) }] : []),
+      ...(contrato.signatario_email ? [{ rotulo: "E-mail", valor: contrato.signatario_email }] : []),
+      {
+        rotulo: "Verificação",
+        valor: contrato.verificacao_metodo === "link-tokenizado"
+          ? "Link exclusivo entregue ao contratante"
+          : (contrato.verificacao_metodo || "não informado"),
+      },
+      { rotulo: "Endereço IP", valor: contrato.assinante_ip || "não registrado" },
+      { rotulo: "Dispositivo", valor: contrato.assinante_ua || "não registrado", tecnico: true },
+      { rotulo: "Hash SHA-256 do PDF", valor: contrato.doc_sha256 || "não informado", tecnico: true },
+    ]
+    : null;
+
   /* ---------- telas de estado ---------- */
 
   /* sem id na rota não tem o que carregar: erro derivado, sem passar por estado */
@@ -1017,138 +1073,26 @@ export default function PaginaRevisarContrato() {
       <style>{CSS_DOCUMENTO}</style>
 
       <div className="xl:grid xl:grid-cols-[336px_minmax(0,1fr)] xl:items-start xl:gap-6">
-        {/* ---------- sidebar: assinantes / histórico (drawer no celular) ---------- */}
-        <div
-          className={"fixed inset-0 z-40 bg-[rgba(29,29,27,.35)] transition-opacity duration-200 xl:hidden " +
-            (sidebarAberta ? "opacity-100" : "pointer-events-none opacity-0")}
-          onClick={() => setSidebarAberta(false)}
-        />
-        <aside
-          className={
-            "fixed inset-y-0 right-0 z-50 w-[min(340px,88vw)] overflow-y-auto bg-paper pt-[var(--sat)] shadow-alta transition-transform duration-200 " +
-            (sidebarAberta ? "translate-x-0" : "translate-x-full") +
-            " xl:sticky xl:inset-auto xl:top-6 xl:z-auto xl:max-h-[calc(100dvh-3rem)] xl:w-auto xl:translate-x-0 xl:rounded-2xl xl:pt-0 xl:shadow-card"
+        {/* Coluna de assinantes/histórico: a MESMA peça da tela do casal
+            (components/LateralAssinantes). O que muda de lá pra cá é só o
+            conteúdo e o topo do cartão. */}
+        <LateralAssinantes
+          aberta={sidebarAberta}
+          aoFechar={() => setSidebarAberta(false)}
+          topo={
+            <Link
+              href={hrefCliente}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent"
+              aria-label="Voltar pra ficha do cliente"
+            >
+              <ArrowLeft size={14} />
+              Voltar
+            </Link>
           }
-          aria-label="Assinantes e histórico"
-        >
-          <div className="sticky top-0 z-[5] bg-paper">
-            <div className="flex items-center gap-3.5 px-4 pb-3.5 pt-4">
-              <Link
-                href={hrefCliente}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent`}
-                aria-label="Voltar pra ficha do cliente"
-              >
-                <ArrowLeft size={14} />
-                Voltar
-              </Link>
-            </div>
-            {/* Abas SUBLINHADAS, como no original: trilho de um fio sob a faixa
-                inteira (inset shadow, não borda) e traço de 2px em accent sob a
-                ativa. A pílula preenchida que estava aqui competia com o card
-                branco em volta e parecia botão, não aba: aba é uma faixa onde
-                uma está marcada, não dois botões soltos. */}
-            <div role="tablist" className="flex shadow-[inset_0_-1px_0_var(--color-line)]">
-              {([["assinantes", "Assinantes", Users], ["historico", "Histórico", History]] as const).map(([chave, rotulo, Icone]) => (
-                <button
-                  key={chave}
-                  type="button"
-                  role="tab"
-                  aria-selected={aba === chave}
-                  onClick={() => setAba(chave)}
-                  className={
-                    "relative inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-2 py-3.5 text-[13px] tracking-[.03em] transition-colors " +
-                    (aba === chave
-                      ? "font-medium text-accent after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-sm after:bg-accent"
-                      : `text-ink-soft hover:bg-line hover:text-accent`)
-                  }
-                >
-                  <Icone size={15} />
-                  {rotulo}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {aba === "assinantes" ? (
-            <div className="p-4">
-              <CartaoAssinante
-                nome={nomeFotografo}
-                ok={fotografoOk}
-                badge={fotografoOk ? "Assinado" : "Pendente"}
-                aberto={expandido.fotografo}
-                onToggle={() => setExpandido((v) => ({ ...v, fotografo: !v.fotografo }))}
-              >
-                <LinhaDl rotulo="Papel" valor="Contratado (fotógrafo)" />
-                {fotografoOk ? (
-                  <>
-                    <LinhaDl rotulo="Forma" valor={contrato?.jordan_assinatura_tipo === "manual" ? "Traço manual" : "Nome em cursiva"} />
-                    <LinhaDl rotulo="Confirmado em" valor={fmtDataHora(contrato?.jordan_confirmado_em)} />
-                  </>
-                ) : (
-                  <LinhaDl rotulo="Status" valor={"Toque em “Assinar agora”, no canto da tela"} />
-                )}
-              </CartaoAssinante>
-
-              <CartaoAssinante
-                nome={casal || "Casal"}
-                ok={assinadoPeloCasal}
-                badge={textoCasal}
-                aberto={expandido.casal}
-                onToggle={() => setExpandido((v) => ({ ...v, casal: !v.casal }))}
-              >
-                <LinhaDl rotulo="Papel" valor="Contratante" />
-                {contrato?.snapshot?.email ? <LinhaDl rotulo="E-mail" valor={contrato.snapshot.email} /> : null}
-                {assinadoPeloCasal ? (
-                  <>
-                    <LinhaDl rotulo="Assinante" valor={contrato?.signatario_nome || "não informado"} />
-                    {contrato?.signatario_cpf ? <LinhaDl rotulo="CPF" valor={formatarCpf(contrato.signatario_cpf)} /> : null}
-                    <LinhaDl rotulo="Assinado em" valor={fmtDataHora(contrato?.assinado_em)} />
-                  </>
-                ) : contrato?.visualizado_em ? (
-                  <LinhaDl rotulo="Abriu o link em" valor={fmtDataHora(contrato.visualizado_em)} />
-                ) : contrato?.enviado_em ? (
-                  <LinhaDl rotulo="Link enviado em" valor={fmtDataHora(contrato.enviado_em)} />
-                ) : (
-                  <LinhaDl rotulo="Status" valor="Ainda não recebeu o link" />
-                )}
-              </CartaoAssinante>
-            </div>
-          ) : (
-            <div className="p-4">
-              <ol className="relative m-0 list-none p-0 pl-5">
-                {eventos.length ? eventos.map((e) => (
-                  <li
-                    key={e.titulo}
-                    className="relative pb-5 text-[12.5px] before:absolute before:-left-5 before:top-[3px] before:h-[9px] before:w-[9px] before:rounded-full before:bg-accent before:shadow-[0_0_0_2px_var(--color-paper)] before:content-[''] after:absolute after:-bottom-2 after:-left-4 after:top-3 after:w-px after:bg-line after:content-[''] last:after:hidden"
-                  >
-                    <div className="font-medium text-ink">{e.titulo}</div>
-                    <div className="mt-0.5 text-ink-soft">{fmtDataHora(e.data)}</div>
-                  </li>
-                )) : (
-                  <li className="pl-0.5 text-[12.5px] text-ink-soft">Sem eventos ainda.</li>
-                )}
-              </ol>
-
-              {assinadoPeloCasal && contrato ? (
-                <div className="mt-3.5 rounded-xl bg-soft p-3.5 text-[12px]">
-                  <div className="mb-3 text-[11px] uppercase tracking-[.06em] text-ink-soft">Trilha de auditoria da assinatura</div>
-                  <dl className="m-0 flex flex-col">
-                    <Auditoria rotulo="Signatário" valor={contrato.signatario_nome || "não informado"} />
-                    {contrato.signatario_cpf ? <Auditoria rotulo="CPF" valor={formatarCpf(contrato.signatario_cpf)} /> : null}
-                    {contrato.signatario_email ? <Auditoria rotulo="E-mail" valor={contrato.signatario_email} /> : null}
-                    <Auditoria
-                      rotulo="Verificação"
-                      valor={contrato.verificacao_metodo === "link-tokenizado" ? "Link exclusivo entregue ao contratante" : (contrato.verificacao_metodo || "não informado")}
-                    />
-                    <Auditoria rotulo="Endereço IP" valor={contrato.assinante_ip || "não registrado"} />
-                    <Auditoria rotulo="Dispositivo" valor={contrato.assinante_ua || "não registrado"} tecnico />
-                    <Auditoria rotulo="Hash SHA-256 do PDF" valor={contrato.doc_sha256 || "não informado"} tecnico />
-                  </dl>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </aside>
+          assinantes={assinantes}
+          eventos={eventos.map((e) => ({ titulo: e.titulo, quando: fmtDataHora(e.data) }))}
+          auditoria={auditoria}
+        />
 
         {/* ---------- coluna principal ---------- */}
         <div className="min-w-0">
@@ -1448,64 +1392,6 @@ export default function PaginaRevisarContrato() {
           </div>
         )}
       </div>
-    </>
-  );
-}
-
-/* ---------- peças da sidebar ---------- */
-
-function CartaoAssinante({ nome, ok, badge, aberto, onToggle, children }: {
-  nome: string; ok: boolean; badge: string; aberto: boolean; onToggle: () => void; children: ReactNode;
-}) {
-  return (
-    <div className="mb-2.5 overflow-hidden rounded-xl bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)]">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={aberto}
-        className="flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-[13px] text-left"
-      >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-tint text-accent">
-          <User size={16} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-px">
-          <span className="text-[10px] uppercase tracking-[.06em] text-ink-soft">Assinante</span>
-          <span className="truncate text-[13.5px] font-medium text-ink">{nome}</span>
-        </span>
-        <span className={"inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-[3px] text-[10px] uppercase tracking-[.03em] " +
-          (ok ? "bg-ok-tint text-ok" : "bg-[#FBF6E8] text-[#9A7B1E]")}>
-          {ok ? <Check size={11} strokeWidth={2.5} /> : <Clock size={11} strokeWidth={2} />}
-          <span>{badge}</span>
-        </span>
-        <ChevronDown size={14} className={"shrink-0 text-ink-soft transition-transform duration-200 " + (aberto ? "rotate-180" : "")} />
-      </button>
-      {aberto ? (
-        <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-[5px] bg-soft px-3.5 pb-3.5 pt-3 text-[12.5px]">{children}</dl>
-      ) : null}
-    </div>
-  );
-}
-
-function LinhaDl({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <>
-      <dt className="text-ink-soft">{rotulo}</dt>
-      <dd className="m-0 break-words text-ink">{valor}</dd>
-    </>
-  );
-}
-
-/* rótulo em cima, valor embaixo: dispositivo e hash são longos demais pra
-   coluna estreita. dt é metadado (pequeno, cinza), dd é o dado de verdade. */
-function Auditoria({ rotulo, valor, tecnico }: { rotulo: string; valor: string; tecnico?: boolean }) {
-  return (
-    <>
-      <dt className="mt-4 text-[10px] font-medium uppercase tracking-[.06em] text-ink-soft first:mt-0">{rotulo}</dt>
-      <dd className={"m-0 mt-[5px] " + (tecnico
-        ? "break-all rounded-lg bg-paper px-2.5 py-[9px] font-mono text-[10.5px] leading-[1.6] text-ink"
-        : "break-words text-[13.5px] font-medium leading-[1.5] text-ink")}>
-        {valor}
-      </dd>
     </>
   );
 }

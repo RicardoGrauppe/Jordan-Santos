@@ -11,6 +11,11 @@
  * 2. Nenhum anel de foco colorido. Foco muda o fundo, sutil.
  * 3. Hover só onde existe mouse: sempre dentro de `@media (hover:hover)`,
  *    senão no celular o estado fica preso depois do toque.
+ * 4. CSS que uma página escreve num <style> próprio vai dentro de
+ *    `@layer components`. Fora de camada, ele vence QUALQUER utilitário do
+ *    Tailwind (que mora em `@layer utilities`), por mais específico que o
+ *    utilitário seja: foi assim que o reset da /assinar comeu o padding de um
+ *    componente compartilhado e o cartão nasceu com 39px de altura.
  */
 
 @theme {

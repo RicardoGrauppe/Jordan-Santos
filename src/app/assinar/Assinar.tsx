@@ -28,11 +28,12 @@
 */
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent } from "react";
 import SignaturePad from "signature_pad";
-import { Check, ChevronDown, Clock, Download, Eye, History, Pencil, Send, ShieldCheck, User, Users, X } from "lucide-react";
+import { Check, Download, Eye, Pencil, Send, ShieldCheck, Users, X } from "lucide-react";
 import { fonteCursiva, fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import { htmlContratoTemplate } from "@/lib/contrato-template";
+import { LateralAssinantes, type AssinanteLateral, type ItemAuditoria } from "@/components/LateralAssinantes";
 import {
   baixarPdfBase64, cursivaParaDataUrl, esperarImagens, fmtDataHora, formatarCpf,
   paginarDocumento, preencherContrato, type SnapshotContrato,
@@ -157,7 +158,15 @@ function marcarAssinaturaDoCasal(doc: HTMLElement, meta: Meta) {
    de foco. O interior do #documento é preservado como está (Times New
    Roman, tabela com grade, linha de assinatura): é conteúdo do documento,
    não UI, e por isso escapa da regra "sem borda". */
+/* Tudo daqui vai numa CAMADA (@layer components), e isto não é detalhe.
+   CSS sem camada vence QUALQUER utilitário do Tailwind, que mora em
+   @layer utilities, por mais específico que o utilitário seja. Com a coluna
+   de assinantes vinda do painel (feita de utilitários), o reset `.ass *` daqui
+   comia o padding dela inteiro: o cartão do assinante nascia com 39px de
+   altura. Dentro da camada, a ordem volta ao normal (components perde pra
+   utilities) e cada peça manda na sua própria casa. */
 const CSS = `
+@layer components {
 .ass{
   --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
   --paper:#FFFFFF;--ink:#1D1D1B;--ink-soft:#706F6F;--accent:#003646;--accent-deep:#4F6278;--noir:#1D1D1B;
@@ -172,6 +181,14 @@ const CSS = `
      jurídico, de propósito diferente da identidade da marca. O contrato em
      si deve parecer contrato, não peça de marketing. */
   --contrato:"Times New Roman",Times,Georgia,serif;
+  /* A coluna de assinantes é um componente do painel e pinta com os tokens
+     do brandbook (--color-alguma-coisa). Redefinidos aqui, ele veste a pele da marca
+     sem saber que existe marca: papel quente, linha quente, o mesmo verde e
+     o mesmo petróleo. É isto que deixa a peça ser uma só. */
+  --color-paper:#FFFFFF;--color-ink:#1D1D1B;--color-ink-soft:#706F6F;
+  --color-accent:#003646;--color-accent-tint:#EAF1F3;
+  --color-line:#E8E1DC;--color-soft:#F6F3F0;
+  --color-ok:#2E6B4F;--color-ok-tint:#EEF7F1;
   min-height:100dvh;background:var(--soft);color:var(--ink);font-family:var(--sans);
   font-weight:400;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;
 }
@@ -201,8 +218,15 @@ const CSS = `
 .ass .aviso.ok{color:var(--ok)}
 
 /* shell: row, a sidebar é irmã da coluna principal e vai até o topo */
-.ass .shell{height:100vh;height:100dvh;display:flex;overflow:hidden}
-.ass .coluna-principal{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+/* Rolagem é da PÁGINA, como no painel: só assim a coluna lateral pode ser
+   um cartão sticky com a altura do próprio conteúdo. Antes o shell tinha
+   altura de tela e a área do documento rolava por dentro, o que obrigava a
+   lateral a ser uma coluna de altura cheia. */
+.ass .shell{padding:0 0 calc(40px + var(--sab))}
+@media (min-width:1280px){
+  .ass .shell{display:grid;grid-template-columns:336px minmax(0,1fr);align-items:start;gap:24px;padding:24px 24px calc(40px + var(--sab))}
+}
+.ass .coluna-principal{min-width:0}
 .ass .topbar{padding:calc(18px + var(--sat)) 24px 16px}
 .ass .topbar-inner{max-width:794px;margin:0 auto;width:100%;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .ass .topbar-titulo h1{font-family:var(--serif);font-weight:500;font-size:18px;color:var(--ink);letter-spacing:.01em;line-height:1.3}
@@ -217,71 +241,14 @@ const CSS = `
 @media (hover:hover){.ass .btn-icone:hover{background:var(--line);color:var(--accent)}}
 .ass .btn-icone:focus-visible{background:var(--line);color:var(--accent)}
 .ass .btn-icone svg{width:18px;height:18px}
-@media (min-width:960px){.ass .btn-sidebar-mobile{display:none}}
+@media (min-width:1280px){.ass .btn-sidebar-mobile{display:none}}
 
-/* sidebar (assinantes / histórico) */
-.ass .sidebar{width:336px;flex-shrink:0;background:var(--paper);overflow-y:auto;scrollbar-gutter:stable;box-shadow:var(--sombra-card);position:relative;z-index:1}
-.ass .sidebar-cabecalho{position:sticky;top:0;background:var(--paper);z-index:5}
-.ass .sidebar-topo{display:flex;align-items:center;gap:10px;padding:16px 16px 14px}
-.ass .sidebar-topo img{height:26px;width:auto;display:block}
-.ass .sidebar-abas{display:flex;gap:6px;padding:0 10px 10px}
-.ass .sidebar-aba{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 8px;border-radius:10px;font-size:13px;letter-spacing:.03em;color:var(--ink-soft);transition:background .15s,color .15s}
-.ass .sidebar-aba svg{width:15px;height:15px;flex-shrink:0}
-@media (hover:hover){.ass .sidebar-aba:hover{background:var(--soft)}}
-.ass .sidebar-aba.ativa{color:var(--accent);background:var(--soft);font-weight:500}
-.ass .sidebar-painel{padding:16px}
-.ass .signer-card{border-radius:12px;margin-bottom:10px;overflow:hidden;background:#FAF8F6;box-shadow:0 1px 2px rgba(29,29,27,.04)}
-.ass .signer-cabecalho{width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;text-align:left}
-.ass .signer-avatar{width:32px;height:32px;border-radius:50%;background:#EAF1F3;color:var(--accent);flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.ass .signer-avatar svg{width:16px;height:16px}
-.ass .signer-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.ass .signer-titulo{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
-.ass .signer-nome{font-size:13.5px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ass .signer-badge{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;padding:3px 9px;border-radius:8px;font-size:10px;letter-spacing:.03em;text-transform:uppercase;background:var(--soft);color:var(--ink-soft)}
-.ass .signer-badge svg{width:11px;height:11px}
-.ass .signer-badge.ok{color:var(--ok);background:#EEF7F1}
-.ass .signer-badge.pendente{color:var(--alerta);background:#FBF6E8}
-.ass .signer-cabecalho .chevron{width:14px;height:14px;color:var(--ink-soft);flex-shrink:0;transition:transform .18s}
-.ass .signer-cabecalho[aria-expanded="true"] .chevron{transform:rotate(180deg)}
-.ass .signer-detalhe{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;padding:12px 14px 14px;background:var(--soft);font-size:12.5px}
-.ass .signer-detalhe dt{color:var(--ink-soft)}
-.ass .signer-detalhe dd{color:var(--ink);word-break:break-word}
-
-.ass .timeline{list-style:none;position:relative;padding-left:20px}
-.ass .timeline li{position:relative;padding-bottom:20px;font-size:12.5px}
-.ass .timeline li::before{content:"";position:absolute;left:-20px;top:3px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--paper)}
-.ass .timeline li::after{content:"";position:absolute;left:-16px;top:12px;bottom:-8px;width:1px;background:var(--line)}
-.ass .timeline li:last-child::after{display:none}
-.ass .timeline .t-titulo{font-weight:500;color:var(--ink)}
-.ass .timeline .t-data{color:var(--ink-soft);margin-top:2px}
-.ass .timeline .t-vazio{color:var(--ink-soft);font-size:12.5px;padding-left:2px}
-.ass .timeline .t-vazio::before,.ass .timeline .t-vazio::after{display:none}
-
-/* trilha de auditoria: rótulo em cima, valor embaixo (dispositivo e hash
-   são longos demais pra coluna estreita); dispositivo e hash em caixinha
-   monoespaçada, peso normal de propósito, código não é destaque */
-.ass .auditoria-bloco{margin-top:14px;padding:14px;border-radius:12px;background:var(--soft);font-size:12px}
-.ass .auditoria-titulo{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:12px}
-.ass .auditoria-bloco dl{display:flex;flex-direction:column}
-.ass .auditoria-bloco dt{color:var(--ink-soft);font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-top:16px}
-.ass .auditoria-bloco dt:first-child{margin-top:0}
-.ass .auditoria-bloco dd{color:var(--ink);font-weight:500;word-break:break-word;margin-top:5px;font-size:13.5px;line-height:1.5}
-.ass .auditoria-bloco dd.tecnico{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;font-size:10.5px;line-height:1.6;background:var(--paper);border-radius:8px;padding:9px 10px;word-break:break-all}
-
-.ass .sidebar-backdrop{position:fixed;inset:0;background:rgba(29,29,27,.35);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
-.ass .sidebar-backdrop.ativo{opacity:1;pointer-events:auto}
 
 /* área do documento */
-.ass .documento-area{flex:1;min-width:0;padding:30px 24px 60px;overflow-y:auto;scrollbar-gutter:stable}
-/* barra de rolagem fina, só aparece ao passar o mouse */
-.ass .sidebar,.ass .documento-area{scrollbar-width:thin;scrollbar-color:transparent transparent}
-@media (hover:hover){.ass .sidebar:hover,.ass .documento-area:hover{scrollbar-color:var(--line) transparent}}
-.ass .sidebar::-webkit-scrollbar,.ass .documento-area::-webkit-scrollbar{width:10px}
-.ass .sidebar::-webkit-scrollbar-track,.ass .documento-area::-webkit-scrollbar-track{background:transparent}
-.ass .sidebar::-webkit-scrollbar-thumb,.ass .documento-area::-webkit-scrollbar-thumb{background-color:transparent;border-radius:8px;border:3px solid transparent;background-clip:padding-box;transition:background-color .2s}
-@media (hover:hover){.ass .sidebar:hover::-webkit-scrollbar-thumb{background-color:var(--line);border-color:var(--paper)}}
-@media (hover:hover){.ass .documento-area:hover::-webkit-scrollbar-thumb{background-color:var(--line);border-color:var(--soft)}}
-@media (hover:hover){.ass .sidebar::-webkit-scrollbar-thumb:hover,.ass .documento-area::-webkit-scrollbar-thumb:hover{background-color:var(--ink-soft) !important}}
+.ass .documento-area{min-width:0;padding:30px 24px 60px}
+/* barra de rolagem fina no documento, só aparece ao passar o mouse */
+.ass .documento-area{scrollbar-width:thin;scrollbar-color:transparent transparent}
+@media (hover:hover){.ass .documento-area:hover{scrollbar-color:var(--line) transparent}}
 
 /* ---------- #documento: folha do contrato (preservado do original) ---------- */
 .ass #documento{font-family:var(--contrato)}
@@ -357,9 +324,7 @@ const CSS = `
 .ass .selo-seg{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:16px;line-height:1.6}
 
 /* ============================= MOBILE ============================= */
-@media (max-width:959px){
-  .ass .sidebar{position:fixed;inset:0 0 0 auto;width:min(340px,88vw);z-index:50;transform:translateX(100%);transition:transform .22s ease;overflow-y:auto;padding-top:var(--sat);box-shadow:-14px 0 30px rgba(0,0,0,.18)}
-  .ass .sidebar.aberta{transform:translateX(0)}
+@media (max-width:1279px){
   .ass .documento-area{padding:20px 14px 50px}
   .ass .folha{padding:30px 22px 40px}
 }
@@ -374,6 +339,7 @@ const CSS = `
 }
 /* iOS dá zoom ao focar campo com fonte menor que 16px e não desfaz sozinho */
 @media (max-width:820px){.ass input,.ass select,.ass textarea{font-size:16px !important}}
+}
 `;
 
 /* ============================================================ */
@@ -382,10 +348,8 @@ export function Assinar({ token }: { token: string }) {
   const [tela, setTela] = useState<Tela>({ tipo: "carregando" });
   const [carga, setCarga] = useState<Carga | null>(null);
 
-  const [aba, setAba] = useState<"assinantes" | "historico">("assinantes");
   const [sidebarAberta, setSidebarAberta] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
-  const [expandido, setExpandido] = useState({ fotografo: false, casal: false });
 
   const [modo, setModo] = useState<ModoAssinatura>("cursiva");
   const [nome, setNome] = useState("");
@@ -609,6 +573,54 @@ export function Assinar({ token }: { token: string }) {
       .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
     : [];
 
+  /* O que a coluna lateral mostra. Mesma peça do painel, texto na voz do
+     casal: aqui ele é "você", lá é "o contratante". */
+  const assinantes: AssinanteLateral[] = [
+    {
+      nome: NOME_FOTOGRAFO,
+      assinado: jordanOk,
+      situacao: jordanOk ? "Assinado" : "Pendente",
+      detalhes: [
+        { rotulo: "Papel", valor: "Contratado (fotógrafo)" },
+        { rotulo: "Forma", valor: meta?.jordan_assinatura_tipo === "manual" ? "Traço manual" : "Nome em cursiva" },
+        ...(meta?.jordan_confirmado_em ? [{ rotulo: "Confirmado em", valor: fmtDataHora(meta.jordan_confirmado_em) }] : []),
+      ],
+    },
+    {
+      nome: casal || "Você",
+      assinado: jaAssinado,
+      situacao: jaAssinado ? "Assinado" : "Pendente",
+      detalhes: [
+        { rotulo: "Papel", valor: "Contratante" },
+        ...(dados.email ? [{ rotulo: "E-mail", valor: dados.email }] : []),
+        ...(jaAssinado
+          ? [
+            { rotulo: "Assinante", valor: meta?.signatario_nome || "não informado" },
+            ...(meta?.signatario_cpf ? [{ rotulo: "CPF", valor: formatarCpf(meta.signatario_cpf) }] : []),
+            { rotulo: "Assinado em", valor: fmtDataHora(meta?.assinado_em) },
+          ]
+          : [{ rotulo: "Status", valor: "Toque em \u201CAssinar agora\u201D, no canto da tela" }]),
+      ],
+    },
+  ];
+
+  const auditoria: ItemAuditoria[] | null = jaAssinado && meta
+    ? [
+      { rotulo: "Signatário", valor: meta.signatario_nome || "não informado" },
+      ...(meta.signatario_cpf ? [{ rotulo: "CPF", valor: formatarCpf(meta.signatario_cpf) }] : []),
+      ...(meta.signatario_email ? [{ rotulo: "E-mail", valor: meta.signatario_email }] : []),
+      {
+        rotulo: "Verificação",
+        valor: meta.verificacao_metodo === "link-tokenizado"
+          ? "Link exclusivo entregue a você"
+          : (meta.verificacao_metodo || "não informado"),
+      },
+      { rotulo: "Endereço IP", valor: meta.assinante_ip || "não registrado" },
+      { rotulo: "Dispositivo", valor: meta.assinante_ua || "não registrado", tecnico: true },
+      { rotulo: "Hash SHA-256 do PDF", valor: meta.doc_sha256 || "não informado", tecnico: true },
+    ]
+    : null;
+
   /* ---------- telas de estado (sem chrome) ---------- */
 
   /* sem token na URL não tem o que carregar: erro derivado, sem passar por estado */
@@ -659,94 +671,19 @@ export function Assinar({ token }: { token: string }) {
     <div className={raiz}>
       <style>{CSS}</style>
       <div className="shell">
-        {/* sidebar-backdrop e sidebar são irmãs da coluna principal: a
-            sidebar vai até o topo de verdade e o header começa depois dela */}
-        <div className={"sidebar-backdrop" + (sidebarAberta ? " ativo" : "")} onClick={() => setSidebarAberta(false)} />
-        <aside className={"sidebar" + (sidebarAberta ? " aberta" : "")} aria-label="Assinantes e histórico">
-          <div className="sidebar-cabecalho">
-            <div className="sidebar-topo">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/img/logo-principal-petroleo.png" alt="Jordan Santos Fotografia" />
-            </div>
-            <div className="sidebar-abas">
-              <button type="button" className={"sidebar-aba" + (aba === "assinantes" ? " ativa" : "")} onClick={() => setAba("assinantes")}>
-                <Users />
-                Assinantes
-              </button>
-              <button type="button" className={"sidebar-aba" + (aba === "historico" ? " ativa" : "")} onClick={() => setAba("historico")}>
-                <History />
-                Histórico
-              </button>
-            </div>
-          </div>
-
-          {aba === "assinantes" ? (
-            <div className="sidebar-painel">
-              <CartaoAssinante
-                nome={NOME_FOTOGRAFO}
-                ok={jordanOk}
-                badge={jordanOk ? "Assinado" : "Pendente"}
-                aberto={expandido.fotografo}
-                onToggle={() => setExpandido((v) => ({ ...v, fotografo: !v.fotografo }))}
-              >
-                <LinhaDl rotulo="Papel" valor="Contratado (fotógrafo)" />
-                <LinhaDl rotulo="Forma" valor={meta?.jordan_assinatura_tipo === "manual" ? "Traço manual" : "Nome em cursiva"} />
-                {meta?.jordan_confirmado_em ? <LinhaDl rotulo="Confirmado em" valor={fmtDataHora(meta.jordan_confirmado_em)} /> : null}
-              </CartaoAssinante>
-
-              <CartaoAssinante
-                nome={casal || "Você"}
-                ok={jaAssinado}
-                badge={jaAssinado ? "Assinado" : "Pendente"}
-                aberto={expandido.casal}
-                onToggle={() => setExpandido((v) => ({ ...v, casal: !v.casal }))}
-              >
-                <LinhaDl rotulo="Papel" valor="Contratante" />
-                {dados.email ? <LinhaDl rotulo="E-mail" valor={dados.email} /> : null}
-                {jaAssinado ? (
-                  <>
-                    <LinhaDl rotulo="Assinante" valor={meta?.signatario_nome || "não informado"} />
-                    {meta?.signatario_cpf ? <LinhaDl rotulo="CPF" valor={formatarCpf(meta.signatario_cpf)} /> : null}
-                    <LinhaDl rotulo="Assinado em" valor={fmtDataHora(meta?.assinado_em)} />
-                  </>
-                ) : (
-                  <LinhaDl rotulo="Status" valor={"Toque em “Assinar agora”, no canto da tela"} />
-                )}
-              </CartaoAssinante>
-            </div>
-          ) : (
-            <div className="sidebar-painel">
-              <ol className="timeline">
-                {eventos.length ? eventos.map((e) => (
-                  <li key={e.titulo}>
-                    <div className="t-titulo">{e.titulo}</div>
-                    <div className="t-data">{fmtDataHora(e.data)}</div>
-                  </li>
-                )) : (
-                  <li className="t-vazio">Sem eventos ainda.</li>
-                )}
-              </ol>
-
-              {jaAssinado && meta ? (
-                <div className="auditoria-bloco">
-                  <div className="auditoria-titulo">Trilha de auditoria da assinatura</div>
-                  <dl>
-                    <Auditoria rotulo="Signatário" valor={meta.signatario_nome || "não informado"} />
-                    {meta.signatario_cpf ? <Auditoria rotulo="CPF" valor={formatarCpf(meta.signatario_cpf)} /> : null}
-                    {meta.signatario_email ? <Auditoria rotulo="E-mail" valor={meta.signatario_email} /> : null}
-                    <Auditoria
-                      rotulo="Verificação"
-                      valor={meta.verificacao_metodo === "link-tokenizado" ? "Link exclusivo entregue a você" : (meta.verificacao_metodo || "não informado")}
-                    />
-                    <Auditoria rotulo="Endereço IP" valor={meta.assinante_ip || "não registrado"} />
-                    <Auditoria rotulo="Dispositivo" valor={meta.assinante_ua || "não registrado"} tecnico />
-                    <Auditoria rotulo="Hash SHA-256 do PDF" valor={meta.doc_sha256 || "não informado"} tecnico />
-                  </dl>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </aside>
+        {/* A MESMA coluna do painel (components/LateralAssinantes), vestida
+            com a pele da marca pelos tokens redefinidos no `.ass`. */}
+        <LateralAssinantes
+          aberta={sidebarAberta}
+          aoFechar={() => setSidebarAberta(false)}
+          topo={
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src="/img/logo-principal-petroleo.png" alt="Jordan Santos Fotografia" className="block h-[26px] w-auto" />
+          }
+          assinantes={assinantes}
+          eventos={eventos.map((e) => ({ titulo: e.titulo, quando: fmtDataHora(e.data) }))}
+          auditoria={auditoria}
+        />
 
         <div className="coluna-principal">
           <header className="topbar">
@@ -879,42 +816,3 @@ function IconeStatus({ status }: { status: string }) {
   return null;
 }
 
-function CartaoAssinante({ nome, ok, badge, aberto, onToggle, children }: {
-  nome: string; ok: boolean; badge: string; aberto: boolean; onToggle: () => void; children: ReactNode;
-}) {
-  return (
-    <div className="signer-card">
-      <button type="button" className="signer-cabecalho" aria-expanded={aberto} onClick={onToggle}>
-        <span className="signer-avatar"><User /></span>
-        <span className="signer-info">
-          <span className="signer-titulo">Assinante</span>
-          <span className="signer-nome">{nome}</span>
-        </span>
-        <span className={"signer-badge" + (ok ? " ok" : " pendente")}>
-          {ok ? <Check strokeWidth={2.5} /> : <Clock strokeWidth={2} />}
-          <span>{badge}</span>
-        </span>
-        <ChevronDown className="chevron" />
-      </button>
-      {aberto ? <dl className="signer-detalhe">{children}</dl> : null}
-    </div>
-  );
-}
-
-function LinhaDl({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <>
-      <dt>{rotulo}</dt>
-      <dd>{valor}</dd>
-    </>
-  );
-}
-
-function Auditoria({ rotulo, valor, tecnico }: { rotulo: string; valor: string; tecnico?: boolean }) {
-  return (
-    <>
-      <dt>{rotulo}</dt>
-      <dd className={tecnico ? "tecnico" : undefined}>{valor}</dd>
-    </>
-  );
-}
