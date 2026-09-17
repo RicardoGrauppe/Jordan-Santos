@@ -35,6 +35,22 @@ import { diasAte, type Cliente } from "@/lib/ficha";
 import { fmtData, moeda } from "@/lib/util";
 
 
+/* Quanto falta, em poucas palavras. Era "faltam 240 dias"; virou "em 8 meses",
+   porque 240 dias ninguém consegue imaginar e o número comprido ainda empurrava
+   a linha no celular.
+   A troca pra meses só acontece passando de dois: até lá o dia ainda é a
+   unidade com que se planeja ("em 45 dias" diz mais que "em 1 mês"). */
+function distancia(dias: number): string {
+  if (dias === 0) return "hoje";
+  if (dias === 1) return "amanhã";
+  if (dias === -1) return "ontem";
+
+  const passado = dias < 0;
+  const n = Math.abs(dias);
+  const texto = n > 60 ? Math.round(n / 30.44) + " meses" : n + " dias";
+  return passado ? "há " + texto : "em " + texto;
+}
+
 export function HeroCliente({
   cliente, contratoAssinado, onArquivar, onExcluir,
 }: {
@@ -57,7 +73,7 @@ export function HeroCliente({
         <div className="relative z-[1] flex items-stretch gap-4 md:gap-[22px]">
           <Avatar><UserPlus strokeWidth={1.5} className="h-[30px] w-[30px] md:h-[40px] md:w-[40px]" /></Avatar>
           <div className="flex min-w-0 flex-col justify-center">
-            <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">Novo cliente</h1>
+            <h1 className="m-0 text-[19px] font-bold leading-[1.15] md:text-[32px] md:font-semibold md:leading-[1.08]">Novo cliente</h1>
             <div className="mt-3.5 flex flex-wrap gap-2">
               <Chip>Preencha os dados e salve para criar</Chip>
             </div>
@@ -78,11 +94,7 @@ export function HeroCliente({
     const d = diasAte(dataEvento);
     textoData = fmtData(dataEvento);
     if (d != null) {
-      if (d > 1) textoData += " · faltam " + d + " dias";
-      else if (d === 1) textoData += " · é amanhã";
-      else if (d === 0) textoData += " · é hoje!";
-      else if (d === -1) textoData += " · foi ontem";
-      else textoData += " · há " + Math.abs(d) + " dias";
+      textoData += " · " + distancia(d);
       dataFutura = d >= 0;
     }
   }
@@ -107,7 +119,7 @@ export function HeroCliente({
       <div className="relative z-[1] flex items-stretch gap-4 pr-12 md:gap-[22px]">
         <Avatar><Users strokeWidth={1.5} className="h-[30px] w-[30px] md:h-[40px] md:w-[40px]" /></Avatar>
         <div className="flex min-w-0 flex-col justify-center">
-          <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">{nomes}</h1>
+          <h1 className="m-0 text-[19px] font-bold leading-[1.15] md:text-[32px] md:font-semibold md:leading-[1.08]">{nomes}</h1>
 
           {/* ESTADO fica em pílula; DADO fica em linha. Arquivado e contrato
               assinado são estado — dizem em que ponto a ficha está. A data, o
