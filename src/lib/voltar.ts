@@ -1,10 +1,12 @@
 "use client";
 /*
-  Para onde o botão de voltar leva.
+  Para onde a SETA de voltar leva. Só a seta: o botão com rótulo (`BotaoVoltar`
+  no kit) vai sempre pro lugar que o rótulo nomeia, porque rótulo é promessa.
 
-  A resposta certa é "a página anterior", e não um destino fixo: quem chegou na
-  ficha pela lista espera cair na lista, e quem chegou por um card da Home
-  espera cair na Home. Destino fixo acerta um dos dois e erra o outro.
+  Aqui, sem rótulo, a resposta certa é "a página anterior": quem chegou na ficha
+  pela lista espera cair na lista, e quem chegou por um card da Home espera cair
+  na Home. Destino fixo acerta um dos dois e erra o outro — e, como não há texto
+  prometendo lugar nenhum, voltar um passo não contradiz nada.
 
   Mas `history.back()` sozinho não serve: quem abre um link direto (o caso do
   Jordan no celular, que salva a tela na home do iPhone) tem como página

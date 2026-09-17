@@ -14,7 +14,6 @@
 "use client";
 
 import Link from "next/link";
-import { useVoltar } from "@/lib/voltar";
 import { ArrowLeft, CircleAlert, CircleCheck, Info, TriangleAlert, X } from "lucide-react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
@@ -146,29 +145,25 @@ export function BotaoLimparBusca({ aoLimpar, rotulo = "Limpar busca" }: { aoLimp
   toda a home e na ficha): com o ícone em pill ao lado, viravam dois enfeites
   disputando a mesma linha.
 */
-/* Voltar pra tela anterior, acima do título da página. O rótulo é o NOME do
-   destino de queda, não a palavra "Voltar": quem olha já sabe que a seta
-   volta, e o que ele não sabe é pra onde.
+/* Botão de voltar com RÓTULO, acima do título da página.
 
-   O `href` continua sendo o destino real do elemento — é ele que aparece na
-   barra do navegador, que abre em nova aba e que vale quando não há histórico
-   nosso. O clique normal é interceptado pra dar um passo atrás em vez de
-   empilhar mais uma entrada (ver lib/voltar.ts); clique com ctrl/cmd/shift e
-   botão do meio passam direto, senão quebraríamos "abrir em nova aba".
+   Ele vai SEMPRE pro destino que o rótulo nomeia. Um botão que diz "Início" e
+   leva pra lista de clientes mente — e é justamente isso que acontecia quando
+   ele dava um passo atrás no histórico: o rótulo prometia um lugar e o clique
+   entregava outro, dependendo de por onde a pessoa tinha chegado.
+
+   A regra do app ficou assim:
+   - botão COM rótulo (este) → vai pro lugar que o rótulo diz, sempre;
+   - seta SEM rótulo (a do cabeçalho do celular, a da revisão do contrato) →
+     dá um passo atrás, porque não prometeu destino nenhum (ver lib/voltar.ts).
 
    Hover com `--line` e não `--soft`: a página do painel JÁ é soft, então um
-   hover soft não pinta nada. É a regra de ação secundária do DESIGN do
-   estúdio original. */
+   hover soft não pinta nada. É a regra de ação secundária do DESIGN do estúdio
+   original. */
 export function BotaoVoltar({ rotulo, href }: { rotulo: string; href: string }) {
-  const voltar = useVoltar(href);
   return (
     <Link
       href={href}
-      onClick={(ev) => {
-        if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
-        ev.preventDefault();
-        void voltar();
-      }}
       className={
         "mb-3 -ml-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 " +
         "text-[13px] text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent"
