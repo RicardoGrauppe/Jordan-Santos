@@ -54,9 +54,9 @@ export function HeroCliente({
     return (
       <div className={fundo}>
         <Esferas />
-        <div className="relative z-[1] flex items-center gap-4 md:gap-[22px]">
+        <div className="relative z-[1] flex items-stretch gap-4 md:gap-[22px]">
           <Avatar><UserPlus size={30} strokeWidth={1.6} /></Avatar>
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-col justify-center">
             <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">Novo cliente</h1>
             <div className="mt-3.5 flex flex-wrap gap-2">
               <Chip>Preencha os dados e salve para criar</Chip>
@@ -104,9 +104,9 @@ export function HeroCliente({
         />
       </div>
 
-      <div className="relative z-[1] flex items-center gap-4 pr-12 md:gap-[22px]">
+      <div className="relative z-[1] flex items-stretch gap-4 pr-12 md:gap-[22px]">
         <Avatar><Users size={30} strokeWidth={1.6} /></Avatar>
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col justify-center">
           <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">{nomes}</h1>
 
           {textoData || contratoAssinado || arquivado ? (
@@ -219,13 +219,25 @@ function Esferas() {
   );
 }
 
-/* Quadrado de canto mole, no raio dos cards da página (22px pro tamanho
-   grande, 18px pro do celular), e não redondo: aqui não é foto de pessoa, é o
-   ícone da seção. Sem sombra — dentro do herói nada projeta sombra, quem
-   separa do fundo é a própria luz translúcida. */
+/* Bloco de canto mole, no raio dos cards da página (22px no grande, 18px no
+   celular), e não redondo: aqui não é foto de pessoa, é o ícone da seção.
+
+   No COMPUTADOR a altura não é fixa: ele estica junto com a linha
+   (`items-stretch` no pai), acompanha o conteúdo ao lado, e o respiro que
+   sobra em cima e embaixo é o próprio padding do herói. Fixar uma altura faria
+   essa margem mudar sozinha conforme a ficha tivesse mais ou menos linhas.
+   `min-h` igual à largura pra ele nunca ficar mais achatado que quadrado.
+
+   No CELULAR ele volta a ser quadrado e centrado. Ali o nome do casal quebra
+   em duas linhas e a pílula da data também, então esticar transformava o bloco
+   numa tira de 60x151 — medido. Coluna estreita e alta não lê como selo, lê
+   como espaço vazio.
+
+   Sem sombra — dentro do herói nada projeta sombra, quem separa do fundo é a
+   própria luz translúcida. */
 function Avatar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white md:h-[74px] md:w-[74px] md:rounded-[22px]">
+    <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center self-center rounded-[18px] bg-[linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.08))] text-white md:h-auto md:min-h-[74px] md:w-[74px] md:self-stretch md:rounded-[22px]">
       {children}
     </div>
   );
