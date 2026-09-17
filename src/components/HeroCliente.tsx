@@ -168,13 +168,17 @@ function MenuDoCadastro({
         aria-expanded={aberto}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => setAberto((v) => !v)}
+        /* Sem sombra (nada dentro do herói tem), então quem o faz existir é o
+           CONTRASTE: a pastilha subiu de 10% pra 16% de branco e os pontos
+           foram pra branco cheio. Com 10% e texto a 80% ele sumia no degradê
+           escuro — o Ricardo perguntou onde tinha ido parar. */
         className={
           "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full " +
-          "text-white/80 transition-colors hover:bg-white/25 hover:text-white " +
-          (aberto ? "bg-white/25 text-white" : "bg-white/10")
+          "text-white transition-colors hover:bg-white/30 " +
+          (aberto ? "bg-white/30" : "bg-white/[.16]")
         }
       >
-        <EllipsisVertical size={16} />
+        <EllipsisVertical size={18} />
       </button>
 
       {aberto ? (
