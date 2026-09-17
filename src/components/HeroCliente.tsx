@@ -3,9 +3,9 @@
   as ações que mexem no cadastro. Portado de renderHeroCliente() do
   estudio.html.
 
-  Hierarquia herdada de lá: a data/contagem é a única pílula branca. Local e
-  valor são meta leve. O status do CONTRATO não repete aqui (vive na coluna da
-  direita), só entra quando é marco forte: assinado.
+  Hierarquia: ESTADO em pílula (arquivado, contrato assinado), DADO em linha
+  (data com a contagem, local, valor). O status do CONTRATO não repete aqui
+  (vive na coluna da direita), só entra quando é marco forte: assinado.
 
   O original tinha borda translúcida nos botões e no avatar; aqui saiu. E
   NADA dentro do herói projeta sombra (decisão do Ricardo em 17/09/2026): num
@@ -109,22 +109,29 @@ export function HeroCliente({
         <div className="flex min-w-0 flex-col justify-center">
           <h1 className="m-0 text-[25px] font-semibold leading-[1.08] md:text-[32px]">{nomes}</h1>
 
-          {textoData || contratoAssinado || arquivado ? (
+          {/* ESTADO fica em pílula; DADO fica em linha. Arquivado e contrato
+              assinado são estado — dizem em que ponto a ficha está. A data, o
+              local e o valor são dados do evento, e por isso dividem a mesma
+              linha embaixo, no mesmo peso.
+              (A data já foi pílula branca, herdada do original. Saiu a pedido
+              do Ricardo: pílula dava a ela um destaque de estado que ela não
+              tem, e separava de um valor que se lê junto.) */}
+          {arquivado || contratoAssinado ? (
             <div className="mt-3.5 flex flex-wrap gap-2">
               {/* arquivado vem primeiro: é a condição da ficha inteira, e o
                   resto só faz sentido lido depois dela */}
               {arquivado ? <Chip><Archive size={14} />Arquivado</Chip> : null}
-              {textoData ? (
-                <Chip destaque={dataFutura && !arquivado}><Calendar size={14} />{textoData}</Chip>
-              ) : null}
-              {contratoAssinado ? (
-                <Chip destaque={!arquivado}><FileText size={14} />Contrato assinado</Chip>
-              ) : null}
+              {contratoAssinado ? <Chip destaque={!arquivado}><FileText size={14} />Contrato assinado</Chip> : null}
             </div>
           ) : null}
 
-          {local || temTotal ? (
+          {textoData || local || temTotal ? (
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {/* a data guarda um pouco mais de peso que o resto da linha: é a
+                  única informação do herói que muda sozinha todo dia */}
+              {textoData ? (
+                <Meta forte={dataFutura && !arquivado}><Calendar size={14} className="opacity-70" />{textoData}</Meta>
+              ) : null}
               {local ? <Meta><MapPin size={14} className="opacity-70" />{local}</Meta> : null}
               {temTotal ? <Meta><DollarSign size={14} className="opacity-70" />{moeda(Number(cliente.total))}</Meta> : null}
             </div>
@@ -269,6 +276,15 @@ function Chip({ destaque = false, children }: { destaque?: boolean; children: Re
   );
 }
 
-function Meta({ children }: { children: React.ReactNode }) {
-  return <span className="inline-flex items-center gap-[7px] whitespace-nowrap text-[13px] text-white/70">{children}</span>;
+function Meta({ forte = false, children }: { forte?: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={
+        "inline-flex items-center gap-[7px] whitespace-nowrap text-[13px] " +
+        (forte ? "font-medium text-white" : "text-white/70")
+      }
+    >
+      {children}
+    </span>
+  );
 }
