@@ -12,8 +12,10 @@
     16/09/2026.
   - O menu lateral tem fundo próprio (não o da página) pra se distinguir sem
     precisar de borda.
-  - A preferência de recolhido persiste, senão ele reabre a cada navegação e
-    quem recolheu tem que recolher de novo toda vez.
+  - O menu lateral abre SOZINHO no hover e fecha quando o mouse sai (pedido do
+    Ricardo em 05/10/2026). Antes era um botão com preferência guardada no
+    localStorage; agora não há estado pra lembrar, porque o repouso é sempre o
+    recolhido e o aberto dura o tempo do mouse.
   - No celular a barra de baixo é a navegação inteira: os cinco destinos são os
     mesmos que o computador tem espalhados pelo header e pela lateral. Avisos,
     busca e conta viram tela cheia, porque dropdown no polegar não funciona.
@@ -23,31 +25,21 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, PanelLeft, Search, Settings, Users } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
 import { acionarAcaoMobile, useCabecalhoMobile } from "@/components/cabecalho-mobile";
 import { registrarNavegacao, useVoltar } from "@/lib/voltar";
 
-const CHAVE_RECOLHIDO = "menu-recolhido";
 /* Foto do fotógrafo no avatar. Hoje é arquivo fixo, como o resto da marca dele
    (ver "Nome e marca" nas dívidas do CLAUDE.md); quando houver mais de um
    estúdio, sai daqui pro perfil. */
 const FOTO_PERFIL = "/img/jordan-perfil.webp";
-/* Raio da pastilha da marca, num lugar só: ele vale pro ícone quadrado que
-   aparece com a lateral recolhida E pro fundo que acende no hover da faixa. Os
-   dois PRECISAM casar, então não podem ser dois literais. */
+/* Raio do ícone quadrado da marca, que é o que aparece com a lateral
+   fechada. */
 const RAIO_MARCA = "rounded-md";
-
-/* Cor de fundo do ÍCONE da marca, amostrada do pixel do próprio arquivo
-   (public/img/icone-192.png). Não é o token `accent` (#003646): o ícone é
-   #003344, dois pontos abaixo. A diferença é invisível isolada, mas com a
-   lateral recolhida a pastilha fica DENTRO do fundo do hover, e aí os dois
-   pontos viram um contorno visível em volta dela. Como isto é cor de ARTE, não
-   de interface, ela mora aqui junto do arquivo de onde saiu, e não no tema. */
-const FUNDO_MARCA = "#003344";
 
 /* Pacote contratado, escrito no cartão do menu da conta. Fixo enquanto a
    plataforma é só do Jordan (ver "Nome e marca" nas dívidas do CLAUDE.md);
@@ -88,22 +80,6 @@ const POSICAO_FUNDO = 9;
 
 function posicaoDaRota(caminho: string): number {
   return POSICAO_NAV[caminho] ?? POSICAO_FUNDO;
-}
-
-/* A preferência de recolhido vive no localStorage e entra pelo
-   useSyncExternalStore: no servidor (e na hidratação) vale "aberto", e o
-   cliente troca pro valor guardado sem setState em efeito. */
-const ouvintesRecolhido = new Set<() => void>();
-function assinarRecolhido(cb: () => void) {
-  ouvintesRecolhido.add(cb);
-  return () => { ouvintesRecolhido.delete(cb); };
-}
-function lerRecolhido() {
-  try { return localStorage.getItem(CHAVE_RECOLHIDO) === "1"; } catch { return false; }
-}
-function gravarRecolhido(v: boolean) {
-  try { localStorage.setItem(CHAVE_RECOLHIDO, v ? "1" : "0"); } catch { /* storage bloqueado */ }
-  ouvintesRecolhido.forEach((cb) => cb());
 }
 
 /*
@@ -171,7 +147,12 @@ function Contador({ quantos, className = "" }: { quantos: number; className?: st
 export function AppShell({ children, nome }: { children: ReactNode; nome?: string }) {
   const caminho = usePathname();
   const router = useRouter();
-  const recolhido = useSyncExternalStore(assinarRecolhido, lerRecolhido, () => false);
+  const fecharLateralRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /* Lateral: fechada em repouso, aberta enquanto o mouse (ou o foco do
+     teclado) estiver nela. Estado local e não guardado: não existe preferência
+     pra lembrar quando o próprio mouse é o interruptor.
+     `menuAberto`, mais abaixo, é outra coisa: o menu da CONTA. */
+  const [lateralAberta, setLateralAberta] = useState(false);
   /* no celular o cabeçalho deixa de ser a logo e vira seta + nome da tela */
   const cabecalhoCelular = useCabecalhoMobile(caminho);
   const voltarNoCabecalho = useVoltar(cabecalhoCelular?.voltar ?? "/painel");
@@ -186,6 +167,12 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      segunda passada contava uma navegação que nunca houve — medido: abrir um
      link direto e clicar em voltar dava back() em vez do destino de queda.
      Comparando a rota, rodar duas vezes com o mesmo valor não muda nada. */
+  /* timer pendente não pode sobreviver à desmontagem: ele chamaria setState
+     num componente que já saiu. */
+  useEffect(() => () => {
+    if (fecharLateralRef.current) clearTimeout(fecharLateralRef.current);
+  }, []);
+
   const rotaAnterior = useRef(caminho);
   useEffect(() => {
     if (rotaAnterior.current === caminho) return;
@@ -248,7 +235,18 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
     router.push("/entrar");
   }
 
-  function alternar() { gravarRecolhido(!recolhido); }
+  /* Abrir é imediato; fechar espera um instante. Sem essa folga, atravessar a
+     quina do menu (ou passar por cima de um item e sair pela lateral do
+     rótulo, que só existe depois de abrir) faz a coluna piscar entre 62 e 190
+     e a página inteira treme junto. */
+  function abrirLateral() {
+    if (fecharLateralRef.current) { clearTimeout(fecharLateralRef.current); fecharLateralRef.current = null; }
+    setLateralAberta(true);
+  }
+  function fecharLateral() {
+    if (fecharLateralRef.current) clearTimeout(fecharLateralRef.current);
+    fecharLateralRef.current = setTimeout(() => { fecharLateralRef.current = null; setLateralAberta(false); }, 160);
+  }
 
   /* Tocar no ícone da tela que já está aberta FECHA. É o que substitui o botão
      X, que nenhuma dessas telas tem de propósito: a barra fica por cima delas,
@@ -303,7 +301,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
   /* Largura do menu, num lugar só: o cabeçalho usa pra alinhar a logo com a
      lateral, e a grade usa pra abrir a coluna. Antes eram dois literais
      soltos, e alinhar um sem o outro era questão de tempo. */
-  const larguraMenu = recolhido ? 62 : 190;
+  const larguraMenu = lateralAberta ? 190 : 62;
 
   /* De onde a próxima tela entra. A direção é decidida NO CLIQUE, como no
      original (lá o `mostrar()` recebia a direção de quem chamou), e fica
@@ -373,7 +371,17 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             Os itens ficam CENTRADOS na vertical (justify-center num flex-1):
             com duas entradas só, empilhadas no topo, sobrava um vazio enorme
             embaixo. */}
-        <aside className="sticky top-0 hidden h-dvh flex-col gap-3.5 bg-noir px-3 pb-6 text-white md:flex">
+        {/* onFocus/onBlur junto do mouse porque no React eles BORBULHAM (são
+            focusin/focusout por baixo): quem navega de teclado abre o menu ao
+            chegar no primeiro link, em vez de tabular por uma fila de ícones
+            sem nome. */}
+        <aside
+          onMouseEnter={abrirLateral}
+          onMouseLeave={fecharLateral}
+          onFocus={abrirLateral}
+          onBlur={fecharLateral}
+          className="sticky top-0 hidden h-dvh flex-col gap-3.5 bg-noir px-3 pb-6 text-white md:flex"
+        >
           {/* A MARCA VIVE AQUI, não no cabeçalho (decisão de 16/09/2026, e é uma
               divergência consciente do estúdio original, onde o cabeçalho
               atravessava a tela e a lateral começava abaixo dele). Com a marca
@@ -381,76 +389,54 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
               e o bloco escuro vira uma coluna contínua em vez de ser cortado
               por uma faixa branca em cima.
               A faixa tem a mesma altura do cabeçalho (h-14) pra a marca e a
-              busca nascerem na mesma linha. */}
-          {/* A FAIXA DA MARCA É O BOTÃO DE RECOLHER: passar o mouse nela revela
-              o controle, clicar recolhe. Sem botão solto no rodapé.
+              busca nascerem na mesma linha.
 
-              ABERTA, a marca NÃO some. A primeira versão trocava a marca pelo
-              ícone no mesmo ponto, e isso lia como defeito: a assinatura tem
-              79px de largura e o ícone 17, então o olho via uma coisa larga
-              virar uma pequena no lugar de ver uma transição. Medi e não havia
-              pulo de layout nenhum, o "pulo" era essa troca de silhueta. Agora
-              a marca fica onde está, centrada, e o ícone aparece numa pastilha
-              PRÓPRIA na ponta direita da faixa. Nada se move, nada se
-              substitui.
+              A faixa JÁ FOI o botão de recolher. Não é mais: quem abre e fecha
+              o menu é o mouse, então um botão aqui prometeria um controle que
+              não existe mais.
 
-              RECOLHIDA não cabe os dois lado a lado, então ali a troca volta,
-              e ali ela funciona: a pastilha da marca e a do ícone têm o mesmo
-              tamanho e o mesmo lugar, então uma vira a outra sem mudar de
-              silhueta.
-
-              O fundo colorido é da PASTILHA, não da faixa inteira: acender 166
-              por 56px atrás de uma marca pequena era o que fazia parecer mal
-              acabado. */}
-          <button
-            type="button"
-            onClick={alternar}
-            aria-label={recolhido ? "Expandir menu" : "Recolher menu"}
-            title={recolhido ? "Expandir menu" : "Recolher menu"}
-            style={{ ["--fundo-marca" as string]: FUNDO_MARCA }}
-            className="group relative flex h-14 shrink-0 cursor-pointer items-center justify-center"
-          >
+              As duas marcas ficam EMPILHADAS no mesmo ponto, uma por cima da
+              outra, e a troca é de opacidade. Trocar o `src` faria a assinatura
+              de 79px virar um ícone de 17 no mesmo instante, e o olho lê isso
+              como defeito, não como transição (medido em 16/09: não havia pulo
+              de layout nenhum, o "pulo" era a troca de silhueta). */}
+          <div className="relative flex h-14 shrink-0 items-center justify-center">
             <img
-              src={recolhido ? "/img/icone-192.png" : "/img/logo-principal-offwhite.png"}
-              alt={nome ?? "Estúdio"}
+              src="/img/icone-192.png"
+              alt=""
+              aria-hidden={lateralAberta}
               className={
-                "block object-contain transition-opacity duration-150 " +
-                (recolhido ? "h-8 w-8 " + RAIO_MARCA + " group-hover:opacity-0" : "h-7 w-auto max-w-full")
+                "absolute h-8 w-8 object-contain transition-opacity duration-200 " + RAIO_MARCA + " " +
+                (lateralAberta ? "opacity-0" : "opacity-100")
               }
             />
-
-            {/* recolhida: ocupa o lugar da pastilha da marca, mesmo tamanho e
-                mesmo raio, então a troca é limpa.
-                aberta: pastilha própria, encostada na ponta direita. */}
-            <span
-              aria-hidden
+            <img
+              src="/img/logo-principal-offwhite.png"
+              alt={nome ?? "Estúdio"}
               className={
-                "pointer-events-none absolute flex items-center justify-center text-white/90 " +
-                "opacity-0 transition-opacity duration-150 group-hover:opacity-100 " +
-                RAIO_MARCA + " bg-[var(--fundo-marca)] " +
-                (recolhido ? "inset-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2" : "right-0 h-8 w-8")
+                "h-7 w-auto max-w-full object-contain transition-opacity duration-200 " +
+                (lateralAberta ? "opacity-100" : "opacity-0")
               }
-            >
-              <PanelLeft size={16} className={recolhido ? "rotate-180" : ""} />
-            </span>
-          </button>
+            />
+          </div>
+
 
           <nav className="flex flex-1 flex-col justify-center gap-[3px]">
             {ITENS.map(({ href, rotulo, Icone }) => (
               <Link
                 key={href}
                 href={href}
-                title={recolhido ? rotulo : undefined}
+                title={lateralAberta ? undefined : rotulo}
                 className={
                   "flex items-center gap-[11px] overflow-hidden whitespace-nowrap rounded-[10px] py-[9px] text-[13px] font-medium tracking-[.01em] no-underline transition-colors " +
-                  (recolhido ? "justify-center px-0 " : "px-3 ") +
+                  (lateralAberta ? "px-3 " : "justify-center px-0 ") +
                   (ativo(href)
                     ? "bg-white/12 text-white"
                     : `text-white/60 hover:bg-white/8 hover:text-white`)
                 }
               >
                 <Icone size={15} className="shrink-0" />
-                {!recolhido ? <span>{rotulo}</span> : null}
+                {lateralAberta ? <span>{rotulo}</span> : null}
               </Link>
             ))}
           </nav>
