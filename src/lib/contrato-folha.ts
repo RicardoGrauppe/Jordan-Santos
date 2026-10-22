@@ -43,6 +43,9 @@ export type DadosFolha = {
   cidade?: string | null;
   itens?: ItemFolha[];
   total?: number | null;
+  /** total digitado na tabela: é o MESMO total do cliente (o da lateral), então
+   *  quem guarda é a página, que recalcula a entrada junto */
+  aoMudarTotal?: (valor: number | null) => void;
 } | null;
 
 let dadosAtuais: DadosFolha = null;
@@ -152,7 +155,22 @@ export const TabelaItensFolha = TabelaItens.extend({
         });
 
         const total = el("tr", "total");
-        total.append(el("td"), el("td", undefined, "VALOR TOTAL"), el("td", undefined, dadosAtuais ? moeda(dadosAtuais.total) : "R$ 0,00"));
+        const tdTotal = el("td", undefined, dadosAtuais ? moeda(dadosAtuais.total) : "R$ 0,00");
+        const mudarTotal = dadosAtuais?.aoMudarTotal;
+        if (editavel && mudarTotal) {
+          const inp = el("input", "celula-folha");
+          inp.value = dadosAtuais?.total != null
+            ? Number(dadosAtuais.total).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : "";
+          inp.placeholder = "R$";
+          inp.setAttribute("aria-label", "Valor total do contrato");
+          inp.addEventListener("change", () => {
+            const n = parseFloat(inp.value.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", "."));
+            mudarTotal(inp.value.trim() && isFinite(n) ? n : null);
+          });
+          tdTotal.replaceChildren(inp);
+        }
+        total.append(el("td"), el("td", undefined, "VALOR TOTAL"), tdTotal);
         tbody.append(total);
         tabela.append(thead, tbody);
         raiz.append(tabela);

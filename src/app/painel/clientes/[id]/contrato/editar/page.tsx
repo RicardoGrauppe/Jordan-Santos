@@ -516,8 +516,15 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
 
   /* o que a folha desenha na tabela de itens e nas assinaturas: a ficha +
      o pacote e o total que a lateral está mexendo agora */
+  /* total digitado na tabela da folha = o total da lateral (entrada 30%) */
+  const mudarTotalPelaFolha = useRef<(t: number | null) => void>(() => {});
+  useEffect(() => {
+    mudarTotalPelaFolha.current = (t) =>
+      mudarValores({ itens, total: t, entrada: t != null ? Math.round(t * 30) / 100 : entrada });
+  });
   const dadosFolha = useMemo(() => (carga ? {
     noivo: carga.cliente.noivo, noiva: carga.cliente.noiva, cidade: carga.cliente.cidade, itens, total,
+    aoMudarTotal: (t: number | null) => mudarTotalPelaFolha.current(t),
   } : null), [carga, itens, total]);
 
   /* ---------- telas de estado ---------- */
