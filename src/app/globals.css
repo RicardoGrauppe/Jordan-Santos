@@ -231,7 +231,11 @@ input[type="search"]::-webkit-search-decoration {
    Os blocos são itens de flex em coluna só pra margem NÃO colapsar: o pdfmake
    soma a margem de baixo de um bloco com a de cima do seguinte, e o CSS comum
    ficaria com a maior das duas. */
-.folha-a4 { background: var(--color-soft); padding: 28px 16px 56px; overflow-x: auto; }
+/* overflow-x CLIP, não auto: a faixa cinza das quebras de página passa
+   2000px pra cada lado de propósito (cobre a mesa inteira), e com `auto` isso
+   virava rolagem lateral no editor. A folha nunca precisa rolar de lado: em
+   tela estreita ela é reduzida pra caber (.folha-reduzida, abaixo). */
+.folha-a4 { background: var(--color-soft); padding: 28px 16px 56px; overflow-x: clip; }
 .folha-a4 .ProseMirror {
   width: 793.71px; min-height: 1122.52px; margin: 0 auto; padding: 74.67px; box-sizing: border-box;
   background: #fff; box-shadow: var(--shadow-card);
