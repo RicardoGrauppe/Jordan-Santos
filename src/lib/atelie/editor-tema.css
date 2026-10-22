@@ -191,3 +191,13 @@
     background: rgba(0, 54, 70, 0.05);
   }
 }
+
+/* PROVA da tela padrão do Puck (?tela=padrao): o nome do modelo já está no
+   nosso pedaço do cabeçalho, então o título do Puck sai, e o fundo do
+   cabeçalho dele some pra ficar um só com o nosso. */
+.atelie-padrao [class*="_PuckHeader-title_"] {
+  display: none;
+}
+.atelie-padrao [class*="_PuckHeader_"] {
+  background: transparent;
+}

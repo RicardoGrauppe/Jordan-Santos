@@ -26,6 +26,7 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, EllipsisVertical, Eye, Globe, History, RotateCcw } from "lucide-react";
 import { EditorAtelie } from "@/components/EditorAtelie";
+import { EditorAtelieV2 } from "@/components/EditorAtelieV2";
 import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
@@ -49,8 +50,14 @@ type Modelo = {
 
 type Estado = { texto: string; tom?: "ok" | "erro" };
 
-export default function EditorDoModelo({ params }: { params: Promise<{ id: string }> }) {
+export default function EditorDoModelo({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tela?: string }>;
+}) {
   const { id } = use(params);
+  /* PROVA (22/10/2026): ?tela=padrao abre a tela padrão do Puck pra comparar
+     com a moldura própria; o resto da página é o mesmo nas duas */
+  const Editor = use(searchParams).tela === "padrao" ? EditorAtelieV2 : EditorAtelie;
   const router = useRouter();
   const confirmar = useConfirmar();
   const { mostrar, elemento: toast } = useToast();
@@ -281,7 +288,7 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
 
   return (
     <>
-      <EditorAtelie
+      <Editor
         key={chaveEditor}
         dados={modelo.rascunho}
         contato={contatoDaPagina(raiz)}

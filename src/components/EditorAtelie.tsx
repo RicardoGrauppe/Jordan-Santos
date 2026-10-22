@@ -36,7 +36,7 @@ import { TIPOS_DE_BLOCO, type TipoDeBloco } from "@/lib/atelie/tipos";
 const usePuck = createUsePuck<typeof configAtelie>();
 
 /* zona raiz do Puck: onde moram os blocos da página */
-const ZONA_RAIZ = "root:default-zone";
+export const ZONA_RAIZ = "root:default-zone";
 
 /* Largura da página no modo celular: um iPhone comum. */
 const LARGURA_CELULAR = 390;
@@ -58,17 +58,17 @@ function assinarCelular(aviso: () => void) {
 }
 
 /** true no celular. No servidor, computador (a tela inteira é de cliente mesmo). */
-function useCelular(): boolean {
+export function useCelular(): boolean {
   return useSyncExternalStore(assinarCelular, () => window.matchMedia(CONSULTA_CELULAR).matches, () => false);
 }
 
 /* O Puck MESCLA as permissões novas com as que já tinha, então os dois
    conjuntos dizem tudo, e são constantes pra não trocar de objeto a cada
    render. Editar campo continua valendo no celular. */
-const PERMISSOES_COMPUTADOR: Permissions = { drag: true, insert: true, duplicate: true, delete: true, edit: true };
-const PERMISSOES_CELULAR: Permissions = { drag: false, insert: false, duplicate: false, delete: false, edit: true };
+export const PERMISSOES_COMPUTADOR: Permissions = { drag: true, insert: true, duplicate: true, delete: true, edit: true };
+export const PERMISSOES_CELULAR: Permissions = { drag: false, insert: false, duplicate: false, delete: false, edit: true };
 
-const DICIONARIO: Dictionary = {
+export const DICIONARIO: Dictionary = {
   "header-publish": "Publicar",
   "header-undo": "Desfazer",
   "header-redo": "Refazer",
@@ -108,7 +108,7 @@ const DICIONARIO: Dictionary = {
 };
 
 /* Como cada bloco se apresenta na lista: ícone e uma linha do que ele é. */
-const APRESENTACAO: Record<TipoDeBloco, { Icone: ComponentType<{ size?: number }>; linha: string }> = {
+export const APRESENTACAO: Record<TipoDeBloco, { Icone: ComponentType<{ size?: number }>; linha: string }> = {
   Capa: { Icone: PanelTop, linha: "Logo sobre fundo escuro, abre a página" },
   FotoInteira: { Icone: IconeImagem, linha: "Uma foto de ponta a ponta" },
   Pacotes: { Icone: Package, linha: "Cartões com itens e preço" },
@@ -136,7 +136,7 @@ const GRUPOS_FIXOS: { titulo: string; tipos: TipoDeBloco[] }[] = [
   { titulo: "Espaçamento", tipos: ["Espaco"] },
 ];
 const SEM_GRUPO = TIPOS_DE_BLOCO.filter((t) => !GRUPOS_FIXOS.some((g) => g.tipos.includes(t)));
-const GRUPOS = SEM_GRUPO.length ? [...GRUPOS_FIXOS, { titulo: "Outros", tipos: SEM_GRUPO }] : GRUPOS_FIXOS;
+export const GRUPOS = SEM_GRUPO.length ? [...GRUPOS_FIXOS, { titulo: "Outros", tipos: SEM_GRUPO }] : GRUPOS_FIXOS;
 
 /** Leva a página do editor (que mora num iframe) até o bloco quando o topo
     dele está fora da tela, assim que ele aparecer lá dentro. Bloco à vista
@@ -161,7 +161,7 @@ function rolarAte(id: string, tentativas = 20) {
   }
 }
 
-const rotuloDe = (tipo: string) => configAtelie.components[tipo as TipoDeBloco]?.label ?? tipo;
+export const rotuloDe = (tipo: string) => configAtelie.components[tipo as TipoDeBloco]?.label ?? tipo;
 
 /* ---------- peças da moldura ---------- */
 
