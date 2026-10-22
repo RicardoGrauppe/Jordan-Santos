@@ -28,14 +28,13 @@
 import { use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
+  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Info, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
   PenTool, Plus, Search, Send, Table, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
 import { EditorContrato } from "@/components/EditorContrato";
 import { useConfirmar } from "@/components/ModalConfirmar";
-import { CartaoAviso } from "@/components/ui";
 import { ModalNovoModelo, type BaseModelo } from "@/components/ModalNovoModelo";
 import { SeletorItens } from "@/components/SeletorItens";
 import { alternarItem, type ItemEscolhido, type Produto } from "@/lib/produtos";
@@ -143,11 +142,16 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
 
   return (
     <div className="grid gap-3">
-      {/* o que é esta coluna, numa frase (mesmo CartaoAviso do kit, sem
-          sombra e no raio dos cartões vizinhos) */}
-      <CartaoAviso tom="info" className="!rounded-[20px] !px-4 !shadow-none">
-        Monte o contrato por aqui: escolha o modelo, marque o pacote e coloque campos e blocos no texto. Tudo salva sozinho.
-      </CartaoAviso>
+      {/* o que é esta coluna, numa frase. Branco como os cartões vizinhos: o
+          accent-tint do CartaoAviso some sobre o cinza da lateral (#ECEEF1) */}
+      <div className="flex items-start gap-2.5 rounded-[20px] bg-paper p-4">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent text-white">
+          <Info size={17} />
+        </span>
+        <p className="m-0 min-w-0 flex-1 text-[12.5px] leading-[1.5] text-ink">
+          Monte o contrato por aqui: escolha o modelo, marque o pacote e coloque campos e blocos no texto. Tudo salva sozinho.
+        </p>
+      </div>
 
       <CartaoLateral chave="modelo" icone={FileText} titulo="Modelo do contrato" texto="Qual texto este contrato usa">
         {/* dropdown que abre DENTRO do cartão: o gatilho mostra o modelo atual
