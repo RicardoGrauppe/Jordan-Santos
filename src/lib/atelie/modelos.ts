@@ -12,7 +12,7 @@ import { rest } from "@/lib/supabase";
 import type { DadosSite, RaizProps } from "./blocos";
 import { MODELO_INICIAL, NOME_MODELO_INICIAL } from "./modelo-inicial";
 import { modeloGuiado, temExemplo } from "./modelo-guiado";
-import { TIPOS_DE_BLOCO } from "./tipos";
+import { TIPOS_DE_BLOCO, TIPOS_DE_SECAO } from "./tipos";
 
 export const CHAVE_SITE_ATIVO = "site_ativo";
 
@@ -278,8 +278,10 @@ const RASCUNHO_MAX = 1_000_000;
 
 /**
  * Confere a forma do que o editor manda antes de gravar: raiz com props,
- * lista de blocos de tipos conhecidos, cada um com id. Não confere campo por
- * campo: quem desenha é o bloco, e campo faltando cai no valor padrão dele.
+ * lista de blocos de tipos conhecidos, cada um com id. Seção pronta é bloco
+ * também, e os de dentro dela (o slot `blocos`) passam pela mesma conferência,
+ * só que lá dentro não vale outra seção. Não confere campo por campo: quem
+ * desenha é o bloco, e campo faltando cai no valor padrão dele.
  */
 export function rascunhoValido(dados: unknown): DadosSite | null {
   if (!dados || typeof dados !== "object") return null;
@@ -288,12 +290,17 @@ export function rascunhoValido(dados: unknown): DadosSite | null {
   const raiz = d.root as { props?: unknown } | undefined;
   if (!raiz || typeof raiz !== "object" || (raiz.props !== undefined && typeof raiz.props !== "object")) return null;
   if (!Array.isArray(d.content)) return null;
-  const tipos: readonly string[] = TIPOS_DE_BLOCO;
-  for (const bloco of d.content) {
-    const b = bloco as { type?: unknown; props?: { id?: unknown } } | null;
-    if (!b || typeof b.type !== "string" || !tipos.includes(b.type)) return null;
-    if (!b.props || typeof b.props !== "object" || typeof b.props.id !== "string") return null;
-  }
+  const blocos: readonly string[] = TIPOS_DE_BLOCO;
+  const secoes: readonly string[] = TIPOS_DE_SECAO;
+  const listaValida = (lista: unknown[], aceitaSecao: boolean): boolean => lista.every((bloco) => {
+    const b = bloco as { type?: unknown; props?: { id?: unknown; blocos?: unknown } } | null;
+    if (!b || typeof b.type !== "string") return false;
+    if (!b.props || typeof b.props !== "object" || typeof b.props.id !== "string") return false;
+    if (blocos.includes(b.type)) return true;
+    if (!aceitaSecao || !secoes.includes(b.type)) return false;
+    return Array.isArray(b.props.blocos) && listaValida(b.props.blocos, false);
+  });
+  if (!listaValida(d.content, true)) return null;
   return { root: raiz as DadosSite["root"], content: d.content as DadosSite["content"], zones: {} };
 }
 

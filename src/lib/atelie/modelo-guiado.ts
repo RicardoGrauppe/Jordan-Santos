@@ -63,6 +63,7 @@ export const EXEMPLO = {
   citacao: "“Escreva aqui uma frase que resuma o seu jeito de fotografar.”",
   chamada: "Conte aqui como o casal pode falar com você. O botão abre o WhatsApp do estúdio.",
   rodape: "Escreva aqui uma frase de despedida.\nEla fecha a página, acima dos contatos.",
+  portfolio: "Conte aqui o que aparece nesta galeria: um casamento inteiro ou momentos de vários.",
 };
 
 /* Versões antigas dos textos acima, de modelos criados antes da troca: seguem

@@ -21,14 +21,14 @@
   `.editando`, que mostra tudo sem animação.
 */
 /* eslint-disable @next/next/no-img-element */
-import type { Config, Data } from "@puckeditor/core";
+import type { Config, Data, Slot } from "@puckeditor/core";
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import { RevealAoRolar } from "@/app/proposta/RevealAoRolar";
 import { CampoFoco, CampoFoto, CampoFotoOpcional } from "@/components/CamposAtelie";
 import { CSS_PROPOSTA } from "./proposta-css";
 import { EXEMPLO, FOTO_DE_EXEMPLO } from "./modelo-guiado";
-import type { TipoDeBloco } from "./tipos";
+import { TIPOS_DE_BLOCO, TIPOS_DE_SECAO, type TipoDeBloco, type TipoDeSecao } from "./tipos";
 
 /* ---------- tipos ---------- */
 
@@ -119,7 +119,11 @@ type MesmasChaves = [TipoDeBloco] extends [keyof Blocos] ? ([keyof Blocos] exten
 const blocosBatemComTipos: MesmasChaves = true;
 void blocosBatemComTipos;
 
-export type DadosSite = Data<Blocos, RaizProps>;
+/* Seção pronta: um slot com blocos dentro (ver `secao`, no fim do arquivo). */
+type SecaoProps = { blocos: Slot };
+export type Secoes = Record<TipoDeSecao, SecaoProps>;
+
+export type DadosSite = Data<Blocos & Secoes, RaizProps>;
 
 /* ---------- contato ---------- */
 
@@ -229,7 +233,7 @@ const campoFotoOpcional = (label: string) => ({ type: "custom" as const, label, 
 
 /* ---------- config ---------- */
 
-export const configAtelie: Config<Blocos, RaizProps> = {
+const configBase: Config<Blocos, RaizProps> = {
   root: {
     fields: {
       titulo: { type: "text", label: "Título da página (aba do navegador)" },
@@ -241,7 +245,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       instagram: { type: "text", label: "Instagram (usuário)" },
     },
     render: ({ children, puck }) => (
-      <div className={`prop ${fonteSerif.variable} ${fonteSans.variable}${puck.isEditing ? " editando" : ""}${puck.isEditing && puck.metadata?.celular ? " so-ajustes" : ""}`}>
+      <div className={`prop ${fonteSerif.variable} ${fonteSans.variable}${puck.isEditing ? " editando" : ""}`}>
         <style>{CSS_PROPOSTA + CSS_EDICAO}</style>
         {!puck.isEditing && <RevealAoRolar />}
         {children}
@@ -721,3 +725,51 @@ export const configAtelie: Config<Blocos, RaizProps> = {
     },
   },
 };
+
+/* ---------- seções prontas ---------- */
+
+/* Uma seção pronta é um bloco que carrega outros: o slot `blocos` já entra
+   preenchido, e cada bloco lá dentro se edita, move ou apaga como qualquer
+   outro (é o desenho do bloco "Template" da demo oficial do Puck). Os blocos
+   entram com o conteúdo de exemplo de cada um (`defaultProps`), só trocando
+   o que muda o sentido dentro da seção. Sem id: o Puck dá um a cada bloco
+   na hora de inserir. Dentro de seção só entra bloco, nunca outra seção. */
+type ItemDaSecao = { [T in TipoDeBloco]: { type: T; props: Partial<Blocos[T]> } }[TipoDeBloco];
+
+function item<T extends TipoDeBloco>(type: T, mudancas: Partial<Blocos[T]> = {}): ItemDaSecao {
+  return { type, props: { ...configBase.components[type].defaultProps, ...mudancas } } as ItemDaSecao;
+}
+
+function secao(label: string, blocos: ItemDaSecao[]) {
+  return {
+    label,
+    fields: { blocos: { type: "slot" as const, allow: [...TIPOS_DE_BLOCO] } },
+    defaultProps: { blocos: blocos as unknown as Slot },
+    render: ({ blocos: Conteudo }: { blocos: () => ReactNode }) => <Conteudo />,
+  };
+}
+
+const fotosDeExemplo = (n: number) => Array.from({ length: n }, () => ({ src: FOTO_DE_EXEMPLO.vertical, alt: "", foco: "" }));
+
+const SECOES: Record<TipoDeSecao, ReturnType<typeof secao>> = {
+  SecaoAbertura: secao("Abertura", [item("Capa"), item("TituloTexto")]),
+  SecaoSobre: secao("Sobre você", [item("FotoComTexto", { fundo: "claro" }), item("Citacao")]),
+  SecaoPortfolio: secao("Portfólio", [
+    item("TituloTexto", { selo: "Portfólio", titulo: "Alguns momentos", texto: EXEMPLO.portfolio }),
+    item("Galeria", { fotos: fotosDeExemplo(6) }),
+  ]),
+  SecaoPacotes: secao("Pacotes e adicionais", [item("Pacotes"), item("ListaSobreFoto")]),
+  SecaoEntrega: secao("Entrega e álbum", [item("TextoComFotos"), item("Cartoes")]),
+  SecaoContato: secao("Contato e rodapé", [item("Chamada"), item("Rodape")]),
+};
+
+/* Na lista do editor, as seções vêm antes: quem começa do zero monta a
+   página mais rápido com elas, e os blocos soltos ficam pra ajustar. */
+export const configAtelie = {
+  root: configBase.root,
+  categories: {
+    secoes: { title: "Seções prontas", components: [...TIPOS_DE_SECAO], defaultExpanded: true },
+    blocos: { title: "Blocos", components: [...TIPOS_DE_BLOCO], defaultExpanded: true },
+  },
+  components: { ...configBase.components, ...SECOES },
+} as Config<Blocos & Secoes, RaizProps>;

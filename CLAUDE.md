@@ -156,7 +156,14 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   # ou caminho do site. A página é pública, e um `javascript:` colado num
   campo viraria script rodando no celular do casal.
 - Bloco novo entra em dois lugares: `tipos.ts` (a API valida contra ela) e
-  `configAtelie`. Se os dois divergirem, o build quebra. Todo bloco entra pronto:
+  `configAtelie`. Se os dois divergirem, o build quebra.
+- **Seções prontas** (`SECOES`, no fim de `blocos.tsx`; nomes em
+  `TIPOS_DE_SECAO`): blocos que carregam outros num slot (`blocos`), que já
+  entra preenchido, no desenho do bloco "Template" da demo do Puck. Os
+  blocos de dentro usam o `defaultProps` de cada um e vão sem id (o Puck dá
+  na hora de inserir). Dentro de seção não entra outra seção, e a API
+  confere os dois níveis. Na lista do editor elas vêm antes dos blocos
+  (`categories`). Texto de exemplo novo de seção entra em `EXEMPLO`. Todo bloco entra pronto:
   o `defaultProps` usa o conteúdo de exemplo de `EXEMPLO` (modelo-guiado.ts),
   nunca entra vazio nem com conteúdo de um estúdio de verdade.
 - **Foto nunca é endereço digitado.** Campo de foto abre a biblioteca

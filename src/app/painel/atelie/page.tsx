@@ -54,7 +54,11 @@ const rotaEditor = (id: string) => "/painel/atelie/" + id;
 
 /* A página de verdade, num iframe do tamanho de uma tela de computador,
    encolhida até a largura do cartão. Sem clique nem foco lá dentro: quem
-   recebe o toque é o cartão. */
+   recebe o toque é o cartão.
+   Quinas: iframe encolhido com transform escapa do recorte arredondado do
+   pai (sobra um fio do fundo na curva, mais ainda com o cartão subindo no
+   hover). Por isso a caixa tem o próprio raio, `isolate` (camada própria,
+   que o recorte respeita) e fundo claro: o que ainda vazar some no branco. */
 function Miniatura({ id, versao }: { id: string; versao: string }) {
   const caixa = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0);
@@ -70,7 +74,7 @@ function Miniatura({ id, versao }: { id: string; versao: string }) {
   }, []);
 
   return (
-    <div ref={caixa} className="relative aspect-[16/10] overflow-hidden bg-noir">
+    <div ref={caixa} className="relative isolate aspect-[16/10] overflow-hidden rounded-t-[18px] bg-soft">
       {escala > 0 ? (
         <iframe
           key={versao}
@@ -113,7 +117,7 @@ function CartaoModelo({ modelo, noAr, aoAbrir, menu }: {
   }, [aberto]);
 
   return (
-    <div ref={raiz} className="relative rounded-[18px] bg-paper shadow-card transition-[transform,box-shadow] duration-150 hover:-translate-y-px hover:shadow-card-hover">
+    <div ref={raiz} className="relative rounded-[18px] bg-paper shadow-card transition-[transform,box-shadow] duration-150 [@media(hover:hover)]:hover:-translate-y-px [@media(hover:hover)]:hover:shadow-card-hover">
       <button type="button" onClick={aoAbrir} className="block w-full cursor-pointer overflow-hidden rounded-[18px] bg-transparent p-0 text-left">
         <Miniatura id={modelo.id} versao={modelo.atualizado_em} />
         <span className="block px-4 pb-4 pt-3.5">
