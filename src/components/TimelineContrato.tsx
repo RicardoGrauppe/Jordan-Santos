@@ -20,18 +20,20 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Check, ChevronDown, CircleDashed, Copy, ExternalLink, FileCheck, FileText, Lock, Pencil } from "lucide-react";
+import { Check, ChevronDown, CircleDashed, Copy, ExternalLink, FileCheck, FileText, Lock, Pencil, Mail } from "lucide-react";
 import { Botao } from "./ui";
 import { copiarTexto, fmtDataHora, mascarar, type Contrato } from "@/lib/ficha";
 
 
 export function TimelineContrato({
-  contrato, onAbrirContrato, onEditarContrato, onCopiarLink, avisar,
+  contrato, onAbrirContrato, onEditarContrato, onTrocarEmail, onCopiarLink, avisar,
 }: {
   contrato: Contrato;
   onAbrirContrato: () => void;
   /** abre o editor do contrato (texto + campos), pra mexer depois de enviado */
   onEditarContrato?: () => void;
+  /** e-mail do casal errado num contrato já enviado (ver ModalTrocarEmail) */
+  onTrocarEmail?: () => void;
   onCopiarLink: () => void;
   avisar: (texto: string, opts?: { ok?: boolean }) => void;
 }) {
@@ -107,7 +109,7 @@ export function TimelineContrato({
                 : "Abra o rascunho, ajuste o texto e clique em “Assinar e enviar”."}
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-2.5 [&>*]:min-h-[42px] [&>*]:flex-[1_1_100%] min-[520px]:[&>*]:flex-[1_1_150px]">
+          <div className="flex flex-wrap gap-2.5 [&>*]:min-h-[42px] [&>*]:flex-[1_1_100%] [&>*]:whitespace-nowrap min-[520px]:[&>*]:flex-[1_1_150px]">
             {/* Rótulos curtos: a coluna é estreita e "Abrir contrato assinado"
                 quebrava em duas linhas dentro do botão. O que o rótulo deixou
                 de dizer está dito em volta — a timeline logo acima mostra se
@@ -130,6 +132,12 @@ export function TimelineContrato({
               <Botao variante="secundario" onClick={onEditarContrato}>
                 <Pencil size={16} />
                 {contrato.alterado_desde_envio ? "Atualizar contrato" : "Editar contrato"}
+              </Botao>
+            ) : null}
+            {contrato.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado") && onTrocarEmail ? (
+              <Botao variante="secundario" onClick={onTrocarEmail}>
+                <Mail size={16} />
+                Trocar e-mail e reenviar
               </Botao>
             ) : null}
           </div>

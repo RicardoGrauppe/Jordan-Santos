@@ -19,6 +19,7 @@ import { rest } from "@/lib/supabase";
 import { montarPdfDoContrato, type LinhaParaPdf } from "@/lib/contrato-pdf/montar";
 import {
   apagarDocumento, assinarComoDono, baixarAssinado, buscarDocumento, conta, criarDocumento, ehSandbox,
+  trocarSignatario,
   type DocumentoAutentique,
 } from "@/lib/autentique";
 
@@ -138,6 +139,33 @@ export async function substituirNaAutentique(
     catch (e) { console.error("autentique: não deu pra apagar o documento antigo:", (e as Error).message); }
   }
   return enviarParaAssinatura({ ...c, autentique_id: null, autentique_link: null }, casal);
+}
+
+/**
+ * O e-mail do casal estava errado: troca o signatário NO MESMO documento
+ * (ver trocarSignatario). Sem documento novo, então sem gastar cota e sem
+ * mexer na assinatura do fotógrafo. Devolve o link novo do casal.
+ */
+export async function trocarEmailDoCasal(
+  c: LinhaContratoAutentique,
+  casal: ContatoCasal,
+): Promise<{ link: string | null }> {
+  if (!c.autentique_id) throw new Error("este contrato ainda não foi pra Autentique");
+  const dono = await conta();
+  if (casal.email.toLowerCase() === dono.email.toLowerCase()) {
+    throw new Error("esse é o e-mail da sua conta na Autentique; use o e-mail do casal");
+  }
+  const doc = await buscarDocumento(c.autentique_id);
+  const antiga = assinaturaDoCasal(doc, dono.email);
+  if (!antiga) throw new Error("não achei a assinatura do casal no documento da Autentique");
+  if (antiga.signed?.created_at) throw new Error("o casal já assinou, não dá mais pra trocar o e-mail");
+  const nova = await trocarSignatario(doc.id, antiga.public_id, { nome: casal.nome || "Contratante", email: casal.email });
+  let link = nova.link?.short_link ?? null;
+  if (!link) {
+    const atual = await buscarDocumento(doc.id).catch(() => null);
+    link = (atual && assinaturaDoCasal(atual, dono.email)?.link?.short_link) ?? null;
+  }
+  return { link };
 }
 
 /**

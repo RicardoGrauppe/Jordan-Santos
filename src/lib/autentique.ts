@@ -72,10 +72,20 @@ export function ehSandbox(): boolean {
 
 async function lerGraphql<T>(res: Response): Promise<T> {
   const corpo = (await res.json().catch(() => null)) as
-    | { data?: T; errors?: { message: string }[] }
+    | { data?: T; errors?: { message: string; extensions?: { validation?: Record<string, string[]> } }[] }
     | null;
   if (!res.ok || !corpo || corpo.errors?.length || !corpo.data) {
-    const msg = corpo?.errors?.map((e) => e.message).join("; ") || "HTTP " + res.status;
+    /* "validation" sozinho não diz nada: o detalhe vem em extensions, campo
+       por campo (medido em 22/10/2026: e-mail com "+" volta como
+       signer.email: format_is_invalid) */
+    const validacao = corpo?.errors?.flatMap((e) =>
+      Object.entries(e.extensions?.validation ?? {}).map(([campo, motivos]) => campo + ": " + motivos.join(", ")));
+    if (validacao?.some((v) => /email/.test(v) && /format/.test(v))) {
+      throw new Error("a Autentique não aceitou esse e-mail. Confira se está certo (ela não aceita e-mail com \"+\")");
+    }
+    const msg = validacao?.length
+      ? "validação (" + validacao.join("; ") + ")"
+      : corpo?.errors?.map((e) => e.message).join("; ") || "HTTP " + res.status;
     throw new Error("Autentique: " + msg);
   }
   return corpo.data;
@@ -212,6 +222,37 @@ export async function assinarComoDono(id: string): Promise<boolean> {
     { id },
   );
   return Boolean(d.signDocument);
+}
+
+/**
+ * Troca quem assina sem trocar o documento (22/10/2026): tira o signatário
+ * antigo e põe um novo, com o e-mail certo, no mesmo documento. A assinatura
+ * de quem já assinou (o fotógrafo) fica, o PDF é o mesmo e não gasta cota,
+ * que só conta documento criado. O link do signatário novo é outro; o antigo
+ * deixa de valer junto com o signatário.
+ *
+ * Cria primeiro e apaga depois: se a criação falhar, o casal continua com o
+ * link de antes em vez de ficar sem ninguém pra assinar.
+ */
+export async function trocarSignatario(
+  documentoId: string,
+  publicIdAntigo: string,
+  novo: { nome: string; email: string },
+): Promise<AssinaturaAutentique> {
+  const d = await gql<{ createSigner: AssinaturaAutentique }>(
+    `mutation ($doc: UUID!, $signer: SignerInput!) {
+      createSigner(document_id: $doc, signer: $signer) { ${CAMPOS_ASSINATURA} }
+    }`,
+    {
+      doc: documentoId,
+      signer: { name: novo.nome, email: novo.email, action: "SIGN", delivery_method: "DELIVERY_METHOD_LINK" },
+    },
+  );
+  await gql<{ deleteSigner: boolean | null }>(
+    "mutation ($pid: UUID!, $doc: UUID!) { deleteSigner(public_id: $pid, document_id: $doc) }",
+    { pid: publicIdAntigo, doc: documentoId },
+  );
+  return d.createSigner;
 }
 
 /**

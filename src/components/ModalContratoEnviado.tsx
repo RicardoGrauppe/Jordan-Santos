@@ -29,6 +29,9 @@ export type DadosEnviado = {
   urlContrato: string;
   /** o documento foi trocado (edição depois de enviado): o link mudou */
   atualizado: boolean;
+  /** quando o motivo é outro (troca de e-mail), título e texto próprios */
+  titulo?: string;
+  texto?: string;
 };
 
 export function ModalContratoEnviado({ dados, onFechar }: { dados: DadosEnviado; onFechar: () => void }) {
@@ -63,12 +66,12 @@ export function ModalContratoEnviado({ dados, onFechar }: { dados: DadosEnviado;
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-ok-tint text-ok">
             <CircleCheck size={17} />
           </span>
-          {dados.atualizado ? "Contrato atualizado" : "Assinado por você"}
+          {dados.titulo ?? (dados.atualizado ? "Contrato atualizado" : "Assinado por você")}
         </h3>
         <p className="m-0 text-[14.5px] leading-[1.6] text-ink-soft">
-          {dados.atualizado
+          {dados.texto ?? (dados.atualizado
             ? "A versão nova já está na Autentique com a sua assinatura."
-            : "Sua assinatura já está na Autentique. Agora é com o casal: copie a mensagem e mande por onde preferir."}
+            : "Sua assinatura já está na Autentique. Agora é com o casal: copie a mensagem e mande por onde preferir.")}
         </p>
         {/* o recado que não pode passar batido: âmbar translúcido, mesmo tom
             do <Aviso> do kit */}

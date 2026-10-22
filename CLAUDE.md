@@ -115,6 +115,13 @@ webhook em `/api/autentique`, que só entra em serviço quando houver endereço
 público. Recusa cai em `status: cancelado` + `recusado_em`, porque o CHECK da
 tabela não tem "recusado".
 
+**E-mail do casal errado não recria documento.** "Trocar e-mail e reenviar"
+(cartão do contrato na ficha) troca o signatário NO MESMO documento
+(`createSigner` + `deleteSigner`, nessa ordem): a assinatura do fotógrafo
+fica, não gasta cota, só o link do casal muda. Enquanto o contrato espera o
+casal, o campo de e-mail da ficha fica só leitura e aponta pra esse botão. A
+Autentique recusa e-mail com "+" (`format_is_invalid`).
+
 Cancelar no painel **apaga o documento na Autentique**, senão o link curto
 seguiria de pé e um contrato cancelado aqui voltaria assinado de lá.
 

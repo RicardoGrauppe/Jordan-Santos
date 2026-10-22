@@ -40,6 +40,7 @@ import { TituloMobile } from "@/components/cabecalho-mobile";
 import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
 import { ModalContratoEnviado, type DadosEnviado } from "@/components/ModalContratoEnviado";
+import { ModalTrocarEmail } from "@/components/ModalTrocarEmail";
 import { abrirContratoEmNovaGuia, avisoDeCota, rotaDoContrato, urlNoAutentique } from "@/lib/painel";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
@@ -176,10 +177,14 @@ export default function PaginaCliente() {
   const [statusSalvo, setStatusSalvo] = useState<Msg>({ texto: "" });
   const [modalLink, setModalLink] = useState<DadosLink | null>(null);
   const [modalEnviado, setModalEnviado] = useState<DadosEnviado | null>(null);
+  const [trocaEmail, setTrocaEmail] = useState<{ ocupado: boolean; erro: string } | null>(null);
   const enviadoTratado = useRef(false);
   const [ocupado, setOcupado] = useState(false);
 
   const travado = contrato?.status === "assinado";
+  /* contrato na Autentique esperando o casal: o e-mail é o de quem assina lá,
+     e muda pelo "Trocar e-mail e reenviar" (que troca lá também) */
+  const emailNaAutentique = !!contrato?.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado");
   const contratoGerado = !!(contrato && contrato.status && contrato.status !== "cancelado");
 
   /* espelhos pra o autosave ler o estado mais recente de dentro de timers e
@@ -537,6 +542,35 @@ export default function PaginaCliente() {
     }
   }
 
+  /* E-mail do casal errado num contrato já enviado: troca quem assina no
+     mesmo documento da Autentique e abre o pop-up do link novo. */
+  async function trocarEmail(email: string) {
+    const id = clienteIdRef.current;
+    const autentiqueId = contrato?.autentique_id;
+    if (!id || !autentiqueId) return;
+    setTrocaEmail({ ocupado: true, erro: "" });
+    try {
+      await api("/api/estudio", { acao: "trocar-email-casal", id, email });
+      const r = await api<{ link: string | null; mensagem?: string }>(
+        "/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true },
+      );
+      await carregar(id);
+      setTrocaEmail(null);
+      if (r.link) {
+        setModalEnviado({
+          link: r.link,
+          mensagem: r.mensagem || r.link,
+          urlContrato: urlNoAutentique(autentiqueId),
+          atualizado: true,
+          titulo: "E-mail trocado",
+          texto: "O casal agora assina com " + email + ". É o mesmo contrato, com a sua assinatura, e não gastou documento da Autentique.",
+        });
+      }
+    } catch (e) {
+      falhou(e, (msg) => setTrocaEmail({ ocupado: false, erro: msg || "Não deu pra trocar o e-mail." }));
+    }
+  }
+
   /* ---------- arquivar / excluir ---------- */
 
   async function arquivar() {
@@ -669,7 +703,13 @@ export default function PaginaCliente() {
                     onChange={(e) => mudarCampo("tel_noiva", e.target.value)} onBlur={salvarLogo} />
                   <div className="col-span-full">
                     <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
-                      onChange={(e) => mudarCampo("email", e.target.value)} onBlur={salvarLogo} />
+                      readOnly={emailNaAutentique}
+                      onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
+                    {emailNaAutentique ? (
+                      <p className="m-0 -mt-2 mb-3.5 text-[11.5px] leading-[1.5] text-ink-soft/85">
+                        O contrato já foi pra esse e-mail. Pra corrigir, use &quot;Trocar e-mail e reenviar&quot; no contrato.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </SecaoFicha>
@@ -783,7 +823,7 @@ export default function PaginaCliente() {
 
               {/* só aparece quando existe mesmo um contrato pra este cliente */}
               {contrato ? (
-                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onCopiarLink={() => void copiarLink()} avisar={avisar} />
+                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onTrocarEmail={() => setTrocaEmail({ ocupado: false, erro: "" })} onCopiarLink={() => void copiarLink()} avisar={avisar} />
               ) : null}
             </div>
           </div>
@@ -799,6 +839,10 @@ export default function PaginaCliente() {
 
       {modalLink ? <ModalLink dados={modalLink} onFechar={() => setModalLink(null)} /> : null}
       {modalEnviado ? <ModalContratoEnviado dados={modalEnviado} onFechar={() => setModalEnviado(null)} /> : null}
+      {trocaEmail ? (
+        <ModalTrocarEmail emailAtual={ficha.email || ""} ocupado={trocaEmail.ocupado} erro={trocaEmail.erro}
+          aoFechar={() => setTrocaEmail(null)} aoTrocar={(email) => void trocarEmail(email)} />
+      ) : null}
       {toast}
     </div>
   );
