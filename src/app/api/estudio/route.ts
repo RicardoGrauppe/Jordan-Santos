@@ -641,16 +641,28 @@ export async function POST(req: Request) {
 
       /* o link vai pelo WhatsApp, na mão do fotógrafo, como sempre foi (a
          Autentique também avisa por e-mail, mas o casal responde é no zap) */
-      const primeiroNome = String(cliente.noivo || cliente.noiva || "").trim().split(/\s+/)[0] || "";
+      /* Mensagem reescrita em 22/10/2026 (pedido do Ricardo): fala com os DOIS
+         pelo primeiro nome, diz o que fazer em três passos curtos, avisa que
+         basta um assinar (o signatário é um só, o e-mail do casal) e que o
+         mesmo link chega por e-mail, pra ninguém estranhar o e-mail da
+         Autentique. Sem travessão (TOM-DE-VOZ.md). */
+      const primeiro = (n: unknown) => String(n || "").trim().split(/\s+/)[0] || "";
+      const nomes = [primeiro(cliente.noivo), primeiro(cliente.noiva)].filter(Boolean);
       const jaAssinado = contrato.status === "assinado";
-      const saudacao = "Oi" + (primeiroNome ? ", " + primeiroNome : "") + "! Aqui é o Jordan. ";
+      const saudacao = "Oi" + (nomes.length ? ", " + nomes.join(" e ") : "") + "! Tudo bem? Aqui é o Jordan.\n\n";
+      const voces = nomes.length > 1 ? "vocês" : "você";
       const mensagem = jaAssinado
-        ? saudacao + "Segue o link da via assinada do contrato. É só abrir e " +
-          "baixar o PDF, fica sempre disponível aí:\n" +
-          link + "\nQualquer coisa, me chama por aqui."
-        : saudacao + "Segue o contrato pra você revisar e assinar direto pelo " +
-          "link (dá pra fazer pelo celular, leva 1 minutinho):\n" +
-          link + "\nQualquer dúvida, é só me chamar por aqui.";
+        ? saudacao +
+          "Contrato assinado, tudo certo por aqui! Segue a via assinada pra " + voces + " guardar" + (nomes.length > 1 ? "em" : "") + ":\n" +
+          link + "\n\n" +
+          "É só abrir e baixar o PDF. Ele fica sempre disponível nesse link."
+        : saudacao +
+          "Segue o contrato do casamento pra " + voces + " revisar" + (nomes.length > 1 ? "em" : "") + " e assinar online:\n" +
+          link + "\n\n" +
+          "Leva uns 2 minutinhos e dá pra fazer pelo celular: abre o link, confere os dados e assina." +
+          (nomes.length > 1 ? " Basta um de vocês assinar." : "") +
+          " O mesmo link também chega por e-mail.\n\n" +
+          "Qualquer dúvida sobre o contrato, é só me chamar aqui.";
 
       const substituiu = alterado && corpo.atualizar === true && !apenasLink;
       return NextResponse.json({
