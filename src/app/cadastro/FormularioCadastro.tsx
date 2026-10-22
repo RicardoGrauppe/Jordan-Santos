@@ -477,7 +477,7 @@ type Etapa = "inicio" | SecaoFormulario | "revisar";
    casal: voz do estúdio, primeira pessoa do plural (TOM-DE-VOZ.md). */
 const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> = {
   assinar: {
-    explica: "Os dados de quem vai assinar o contrato. Se só um de vocês vai assinar, preencha só os dados dele. É pelo WhatsApp que mandamos o contrato, e o e-mail confirma quem está assinando.",
+    explica: "Dados de quem assina (se for só um de vocês, só os dele). O contrato vai pelo WhatsApp e o e-mail confirma quem assina.",
     resumo: "Quem assina o contrato e como falamos com vocês",
   },
   endereco: {
@@ -944,7 +944,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
 
   /* o CPF só é citado na explicação se o fotógrafo deixou ele aparecer */
   const explicaAssinar = SOBRE_ETAPA.assinar.explica +
-    (aparece("cpfNoivo") || aparece("cpfNoiva") ? " O CPF é opcional: se não tiver, pode deixar em branco." : "");
+    (aparece("cpfNoivo") || aparece("cpfNoiva") ? " CPF é opcional." : "");
 
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
