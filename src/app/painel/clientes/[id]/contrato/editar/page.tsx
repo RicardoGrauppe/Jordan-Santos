@@ -89,7 +89,8 @@ function CartaoLateral({ chave, icone: Icone, titulo, texto, children }: {
     });
   }
   return (
-    <section className="rounded-[20px] bg-paper p-4 shadow-card">
+    /* sem sombra: o fundo da lateral (#ECEEF1) já separa o cartão branco */
+    <section className="rounded-[20px] bg-paper p-4">
       <button type="button" onClick={alternar} aria-expanded={aberto}
         className="flex w-full cursor-pointer items-center gap-2.5 text-left">
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
