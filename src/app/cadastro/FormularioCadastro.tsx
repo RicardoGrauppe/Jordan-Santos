@@ -121,7 +121,7 @@ const CSS = `
 /* no celular o botão das etapas fica na barra fixa (abaixo): a página ganha
    respiro do tamanho dela pra última linha não ficar escondida */
 .cad .pagina.com-barra{padding-bottom:calc(120px + var(--sab))}
-@media (min-width:768px){.cad .pagina.com-barra{padding-bottom:calc(48px + var(--sab))}}
+@media (min-width:768px){.cad .pagina.larga.com-barra{padding-bottom:calc(48px + var(--sab))}}
 .cad .dica{display:inline-block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);background:var(--soft);border-radius:999px;padding:6px 14px}
 .cad h1{font-family:var(--serif);font-weight:500;font-size:30px;line-height:1.25;color:var(--accent);margin:14px 0 0}
 .cad .sub{color:var(--ink-soft);font-size:14.5px;line-height:1.55;margin-top:12px}
@@ -304,20 +304,24 @@ const CSS = `
 .cad .passos li:nth-child(6) .icone{animation-delay:1120ms}
 .cad .passos li:nth-child(6)::before{animation-delay:1200ms}
 .cad .carta .cta{margin-top:34px}
-/* ---------- botão fixo embaixo, só no celular ----------
+/* ---------- botão fixo embaixo, em qualquer largura ----------
    Fora das etapas de propósito: elas entram com transform, e um fixed dentro
    de pai com transform passa a se posicionar pelo pai (pularia junto na
-   animação). Por isso no celular o botão de dentro da etapa some e quem
-   aparece é esta barra; a partir de 768px é o contrário. */
+   animação). Por isso o botão de dentro da etapa some e quem aparece é esta
+   barra. Única exceção: a abertura a partir de 768px, onde o botão mora na
+   coluna da carta (ao lado da foto no computador); ali a barra some. */
 .cad .etapa .cta{display:none}
 .cad .barra-cta{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:28px 22px calc(16px + var(--sab));
   background:linear-gradient(to top,var(--paper) 62%,rgba(255,255,255,0));pointer-events:none}
 .cad .barra-cta > *{pointer-events:auto;max-width:476px;margin-left:auto;margin-right:auto}
 .cad .barra-cta .cta{margin-top:0}
 .cad .barra-cta .erro{min-height:0;margin:0 0 10px}
+/* o erro do envio aparece na barra, perto do botão; o de dentro da etapa
+   fica só pro leitor de tela (é ele que tem o role="alert") */
+.cad .etapa .erro{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0}
 @media (min-width:768px){
-  .cad .etapa .cta{display:block}
-  .cad .barra-cta{display:none}
+  .cad .carta .cta{display:block}
+  .cad .barra-cta.na-abertura{display:none}
 }
 
 /* seta e brilho do botão (brandbook 18): o brilho vai em todo botão do
@@ -1237,9 +1241,9 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
               </div>
             </section>
 
-            {/* botão fixo do celular (ver .barra-cta no CSS); o erro do envio
-                repete aqui porque no celular é aqui que o olho está */}
-            <div className="barra-cta">
+            {/* botão fixo embaixo (ver .barra-cta no CSS); o erro do envio
+                aparece aqui, perto do botão, que é onde o olho está */}
+            <div className={"barra-cta" + (etapa === "inicio" ? " na-abertura" : "")}>
               {etapa === "revisar" && erroGeral ? <p className="erro" aria-hidden>{erroGeral}</p> : null}
               <button className="cta brilho" type="submit"
                 disabled={etapa === "revisar" && enviando}>{conteudoDoBotao}</button>
