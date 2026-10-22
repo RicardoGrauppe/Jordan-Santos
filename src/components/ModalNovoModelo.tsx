@@ -19,7 +19,7 @@ import { Botao, Campo } from "./ui";
 export type BaseModelo = "contrato" | "branco";
 
 const OPCOES: { valor: BaseModelo; icone: typeof Copy; titulo: string; texto: string }[] = [
-  { valor: "contrato", icone: Copy, titulo: "Texto deste contrato", texto: "Vira o modelo deste contrato." },
+  { valor: "contrato", icone: Copy, titulo: "Duplicar este contrato", texto: "O modelo nasce com uma cópia deste texto." },
   { valor: "branco", icone: File, titulo: "Em branco", texto: "Abre no editor de modelos. Este contrato não muda." },
 ];
 
