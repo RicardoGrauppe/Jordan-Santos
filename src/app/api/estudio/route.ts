@@ -59,6 +59,7 @@ type LinhaClienteResumo = {
   criado_em: string | null;
   /* preenchidos aqui, a partir do contrato mais recente */
   contrato_status?: string | null;
+  contrato_autentique_id?: string | null;
   /* quando o contrato ENTROU no estado atual: é o relógio que põe o aviso
      do sino no lugar certo da ordem de chegada */
   contrato_em?: string | null;
@@ -67,6 +68,7 @@ type LinhaClienteResumo = {
 type LinhaContratoStatus = {
   cliente_id: string; status: string | null; criado_em: string | null;
   enviado_em: string | null; visualizado_em: string | null; assinado_em: string | null;
+  autentique_id: string | null;
 };
 
 type LinhaContrato = {
@@ -248,7 +250,7 @@ export async function GET(req: Request) {
     let porCliente: Record<string, LinhaContratoStatus> = {};
     try {
       const cs = await rest<LinhaContratoStatus[]>(
-        "contratos?select=cliente_id,status,criado_em,enviado_em,visualizado_em,assinado_em&order=criado_em.desc",
+        "contratos?select=cliente_id,status,criado_em,enviado_em,visualizado_em,assinado_em,autentique_id&order=criado_em.desc",
       );
       (cs || []).forEach((c) => {
         if (!porCliente[c.cliente_id]) porCliente[c.cliente_id] = c; /* o mais recente */
@@ -261,6 +263,9 @@ export async function GET(req: Request) {
          momento em que o contrato virou o que é hoje. Cai no `criado_em` do
          contrato porque linha antiga (e semente) tem status sem carimbo. */
       c.contrato_em = ct ? (ct.assinado_em || ct.visualizado_em || ct.enviado_em || ct.criado_em) : null;
+      /* leva o documento da Autentique pra lista: é ele que decide pra onde o
+         botão "abrir contrato" vai, em vez da nossa tela de revisão */
+      c.contrato_autentique_id = ct ? ct.autentique_id : null;
     });
     return NextResponse.json({ clientes: lista || [] });
   } catch (e) {

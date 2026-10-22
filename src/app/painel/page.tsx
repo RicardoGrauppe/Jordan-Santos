@@ -179,11 +179,12 @@ function Conteudo({
     else mostrar(msg);
   }
 
-  /* "Abrir": com contrato na mão vai direto pra revisão; sem contrato, confirma
-     e gera o rascunho antes (mesmo fluxo de abrirContratoDoEvento no original) */
+  /* "Abrir": com contrato na mão vai direto pro documento (na Autentique, se
+     ele já foi enviado; na nossa revisão enquanto é rascunho); sem contrato,
+     confirma e gera o rascunho antes */
   async function abrirContratoDoEvento(c: ClienteLista) {
     /* já existe contrato: abre a guia agora mesmo, no gesto do clique */
-    if (temContrato(c.contrato_status)) { abrirContratoEmNovaGuia(c.id); return; }
+    if (temContrato(c.contrato_status)) { abrirContratoEmNovaGuia(c.id, c.contrato_autentique_id); return; }
 
     const ok = await confirmar({
       titulo: "Abrir contrato pra revisar?",

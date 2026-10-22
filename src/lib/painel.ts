@@ -44,6 +44,8 @@ export type ClienteLista = {
   contrato_status?: string | null;
   /** quando o contrato entrou no status acima (ISO); null sem contrato */
   contrato_em?: string | null;
+  /** documento na Autentique; é pra lá que "abrir contrato" leva */
+  contrato_autentique_id?: string | null;
 };
 
 export type RespostaLista = { clientes?: ClienteLista[] };
@@ -68,7 +70,22 @@ export function rotaDoContrato(clienteId: string): string {
 }
 
 /**
- * Abre a revisão do contrato numa GUIA NOVA, de onde quer que se clique.
+ * Pra ONDE "abrir o contrato" leva, de qualquer lugar do painel.
+ *
+ * Decisão do Ricardo em 22/10/2026: contrato que já foi pra Autentique abre
+ * SEMPRE na página dela, antes e depois de assinado. É a mesma página que o
+ * casal vê, e é onde moram assinar, conferir, o histórico e o "Baixar
+ * arquivo". Enquanto é rascunho (ainda não existe documento lá) abre a nossa
+ * revisão, que é onde o contrato é montado e editado.
+ */
+export function rotaParaAbrirContrato(
+  c: { id: string; contrato_autentique_id?: string | null },
+): string {
+  return c.contrato_autentique_id ? urlNoAutentique(c.contrato_autentique_id) : rotaDoContrato(c.id);
+}
+
+/**
+ * Abre o contrato numa GUIA NOVA, de onde quer que se clique.
  *
  * É documento: quem abre quase sempre quer conferir sem perder a ficha que
  * estava preenchendo, e o botão da timeline já mostrava o ícone de link
@@ -76,11 +93,13 @@ export function rotaDoContrato(clienteId: string): string {
  *
  * Sem `noopener` de propósito: ele faz o `window.open` devolver `null`, e aqui
  * a guia precisa ser devolvida pra quem gera o contrato ANTES de ter o
- * endereço (ver `reservarGuia`). É página nossa, mesma origem, então não há o
- * risco que o `noopener` existe pra cobrir.
+ * endereço (ver `reservarGuia`).
  */
-export function abrirContratoEmNovaGuia(clienteId: string): void {
-  window.open(rotaDoContrato(clienteId), "_blank");
+export function abrirContratoEmNovaGuia(
+  clienteId: string,
+  autentiqueId?: string | null,
+): void {
+  window.open(rotaParaAbrirContrato({ id: clienteId, contrato_autentique_id: autentiqueId }), "_blank");
 }
 
 /**

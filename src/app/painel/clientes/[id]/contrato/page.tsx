@@ -961,6 +961,13 @@ export default function PaginaRevisarContrato() {
 
   async function baixarPeloMenu() {
     setMenuAberto(false);
+    /* contrato que passou pela Autentique baixa LÁ, no "Baixar arquivo" da
+       página dela: é a via oficial, com o selo e a trilha deles. O download
+       do nosso banco fica pros contratos velhos, assinados na tela antiga. */
+    if (contrato?.autentique_id) {
+      window.open(urlNoAutentique(contrato.autentique_id), "_blank", "noreferrer");
+      return;
+    }
     if (!contrato?.token) return;
     const ok = await confirmar({ titulo: "Baixar o contrato assinado?", texto: "O PDF com as duas assinaturas vai pro seu aparelho.", rotuloOk: "Baixar" });
     if (!ok) return;
@@ -1227,7 +1234,7 @@ export default function PaginaRevisarContrato() {
                       onClick={() => void baixarPeloMenu()}
                     >
                       <FileCheck size={15} className="opacity-85" />
-                      <span>Baixar contrato assinado</span>
+                      <span>{contrato?.autentique_id ? "Baixar na Autentique" : "Baixar contrato assinado"}</span>
                     </ItemMenu>
                     {contrato?.autentique_id ? (
                       /* link de verdade (e não botão): é saída pra fora do
@@ -1358,8 +1365,18 @@ export default function PaginaRevisarContrato() {
 
             {assinadoPeloCasal && contrato?.token ? (
               <>
-                <Botao className="mt-3.5 w-full" disabled={baixando} onClick={() => void baixarViaAssinada(contrato.token, setAvisoBaixar)}>
-                  Baixar contrato assinado
+                <Botao
+                  className="mt-3.5 w-full"
+                  disabled={baixando}
+                  onClick={() => {
+                    if (contrato.autentique_id) {
+                      window.open(urlNoAutentique(contrato.autentique_id), "_blank", "noreferrer");
+                      return;
+                    }
+                    void baixarViaAssinada(contrato.token, setAvisoBaixar);
+                  }}
+                >
+                  {contrato.autentique_id ? "Ver contrato na Autentique" : "Baixar contrato assinado"}
                 </Botao>
                 <div className="mt-3"><Estado texto={avisoBaixar.texto} tom={avisoBaixar.tom} /></div>
               </>

@@ -440,7 +440,9 @@ export default function PaginaCliente() {
      sem perder a ficha que estava preenchendo */
   function abrirContrato() {
     if (!clienteIdRef.current) return;
-    abrirContratoEmNovaGuia(clienteIdRef.current);
+    /* já foi pra Autentique? abre lá, que é onde o casal assina e todo mundo
+       baixa. Ainda é rascunho? abre a nossa revisão, que é onde se edita. */
+    abrirContratoEmNovaGuia(clienteIdRef.current, contrato?.autentique_id);
   }
 
   async function acaoDoContrato() {
