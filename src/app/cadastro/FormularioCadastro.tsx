@@ -28,6 +28,15 @@
   mesma config: o que esta tela exige é conveniência, quem manda é o servidor.
   Campo escondido vira par de uma coluna só: a linha de dois (CEP + número,
   bairro + cidade...) só existe quando os dois aparecem.
+
+  Fluxo em ETAPAS (22/10/2026, brandbook seção 18): boas-vindas, uma etapa por
+  seção (a "Conta pra gente" só se houver pergunta, "Onde vocês moram" só se
+  sobrar campo), e revisão antes de enviar. Todas as etapas ficam MONTADAS e
+  só a atual aparece: o intl-tel-input se prende ao input do WhatsApp na
+  montagem e o perderia se a etapa desmontasse, e é assim também que o valor
+  digitado sobrevive a ir e voltar. Trocar `hidden` reinicia a animação de
+  CSS sozinho (elemento que volta a ser desenhado começa a animação do zero),
+  então não precisa de `key` nem de remontar nada.
 */
 "use client";
 
@@ -39,7 +48,7 @@ import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import {
-  campoExigido, erroDaResposta, perguntasVisiveis, TITULO_SECAO,
+  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, DEFINICAO, SECOES, TITULO_SECAO,
   type CampoFixoId, type Formulario, type Pergunta, type SecaoFormulario,
 } from "@/lib/formulario";
 
@@ -178,6 +187,74 @@ const CSS = `
 .cad .sucesso h1{font-size:32px}
 .cad .sucesso .cta{margin-top:34px}
 
+/* ---------- fluxo em etapas ---------- */
+.cad{overflow-x:clip}
+.cad .topo-etapa{display:flex;align-items:center;gap:12px;margin-bottom:26px;min-height:40px}
+.cad .voltar-etapa{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;color:var(--ink);flex-shrink:0;transition:background .15s ease}
+@media (hover:hover){.cad .voltar-etapa:hover{background:var(--soft)}}
+.cad .voltar-etapa:focus-visible{outline:none;background:var(--soft-foco)}
+.cad .progresso-info{flex:1;min-width:0}
+.cad .progresso-rotulo{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+.cad .progresso{height:3px;border-radius:999px;background:var(--line);margin-top:8px;overflow:hidden}
+.cad .progresso span{display:block;height:100%;border-radius:999px;background:var(--accent);transition:width .6s cubic-bezier(.22,1,.36,1)}
+.cad .etapa{animation:cad-entra-frente .5s cubic-bezier(.22,1,.36,1) both}
+.cad .etapa[data-dir="tras"]{animation-name:cad-entra-tras}
+@keyframes cad-entra-frente{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:none}}
+@keyframes cad-entra-tras{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:none}}
+.cad .etapa .sub{margin-bottom:28px}
+.cad .etapa-corpo > *{animation:cad-sobe .55s cubic-bezier(.22,1,.36,1) both}
+@keyframes cad-sobe{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.cad .etapa-corpo > :nth-child(1){animation-delay:90ms}
+.cad .etapa-corpo > :nth-child(2){animation-delay:145ms}
+.cad .etapa-corpo > :nth-child(3){animation-delay:200ms}
+.cad .etapa-corpo > :nth-child(4){animation-delay:255ms}
+.cad .etapa-corpo > :nth-child(5){animation-delay:310ms}
+.cad .etapa-corpo > :nth-child(6){animation-delay:365ms}
+.cad .etapa-corpo > :nth-child(7){animation-delay:420ms}
+.cad .etapa-corpo > :nth-child(8){animation-delay:475ms}
+.cad .etapa-corpo > :nth-child(9){animation-delay:530ms}
+.cad .etapa-corpo > :nth-child(10){animation-delay:585ms}
+.cad .etapa-corpo > :nth-child(11){animation-delay:640ms}
+.cad .etapa-corpo > :nth-child(12){animation-delay:695ms}
+.cad .etapa-corpo > :nth-child(13){animation-delay:750ms}
+.cad .etapa-corpo > :nth-child(14){animation-delay:805ms}
+.cad .etapa-corpo > :nth-child(15){animation-delay:860ms}
+.cad .etapa .cta{margin-top:30px}
+
+/* boas-vindas: as etapas que vêm pela frente, numeradas */
+.cad .passos{list-style:none;margin:6px 0 0;display:grid;gap:10px}
+.cad .passos li{display:flex;gap:14px;align-items:flex-start;background:var(--soft);border-radius:14px;padding:14px 16px}
+.cad .passos .n{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--paper);color:var(--accent);font-family:var(--serif);font-size:15px;display:flex;align-items:center;justify-content:center}
+.cad .passos strong{display:block;font-weight:500;font-size:15px;color:var(--ink);line-height:1.4}
+.cad .passos small{display:block;font-size:13px;color:var(--ink-soft);line-height:1.45;margin-top:2px}
+.cad .tempo{font-size:12.5px;color:var(--ink-soft);margin-top:18px;text-align:center}
+
+/* revisão: um bloco por etapa, no fundo soft, com o Editar no canto */
+.cad .revisao{display:grid;gap:12px}
+.cad .revisao-bloco{background:var(--soft);border-radius:14px;padding:16px 18px}
+.cad .revisao-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.cad .revisao-titulo{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.cad .editar{font-size:13px;color:var(--accent);padding:6px 10px;margin:-6px -10px -6px 0;border-radius:999px;transition:background .15s ease}
+@media (hover:hover){.cad .editar:hover{background:var(--soft-foco)}}
+.cad .editar:focus-visible{outline:none;background:var(--soft-foco)}
+.cad .revisao dl{display:grid;gap:8px;margin:0}
+.cad .revisao dt{font-size:12px;color:var(--ink-soft);line-height:1.4}
+.cad .revisao dd{margin:0;font-size:15px;color:var(--ink);font-weight:400;line-height:1.45;word-break:break-word;white-space:pre-line}
+
+/* recebido: o check se desenha e o texto sobe */
+.cad .sucesso{animation:cad-sobe .6s cubic-bezier(.22,1,.36,1) both}
+.cad .check{width:64px;height:64px;margin:0 auto 18px;display:block}
+.cad .check circle{fill:var(--soft)}
+.cad .check path{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:30;stroke-dashoffset:30;animation:cad-traco .6s .25s cubic-bezier(.65,0,.35,1) forwards}
+@keyframes cad-traco{to{stroke-dashoffset:0}}
+
+/* quem pediu menos movimento no sistema recebe a troca seca */
+@media (prefers-reduced-motion:reduce){
+  .cad .etapa,.cad .etapa-corpo > *,.cad .sucesso{animation:none}
+  .cad .check path{animation:none;stroke-dashoffset:0}
+  .cad .progresso span{transition:none}
+}
+
 /* iOS dá zoom ao focar campo com fonte menor que 16px e não desfaz sozinho.
    !important de propósito: é contorno de comportamento, tem que ganhar. */
 @media (max-width:820px){.cad input,.cad select,.cad textarea{font-size:16px !important}}
@@ -259,6 +336,41 @@ function CampoPergunta({
   );
 }
 
+/* ---------- etapas ---------- */
+
+type Etapa = "inicio" | SecaoFormulario | "revisar";
+
+/* O que cada etapa explica e o resumo dela na tela de boas-vindas. Texto do
+   casal: voz do estúdio, primeira pessoa do plural (TOM-DE-VOZ.md). */
+const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> = {
+  assinar: {
+    explica: "Os dados de quem vai assinar o contrato. Se só um de vocês vai assinar, preencha só os dados dele. É pelo WhatsApp que mandamos o contrato, e o e-mail confirma quem está assinando.",
+    resumo: "Quem assina o contrato e como falamos com vocês",
+  },
+  endereco: {
+    explica: "Esse endereço entra no contrato. Digite o CEP que a gente completa o resto pra vocês.",
+    resumo: "O endereço que vai no contrato",
+  },
+  evento: {
+    explica: "Com a data, o horário e o local a gente reserva a agenda e começa a planejar a cobertura.",
+    resumo: "Data, horário e local do casamento",
+  },
+  extra: {
+    explica: "Algumas perguntas pra gente conhecer vocês um pouco melhor antes do grande dia.",
+    resumo: "Algumas perguntas pra conhecer vocês melhor",
+  },
+};
+
+const CAMPOS_DA_SECAO: Record<SecaoFormulario, CampoId[]> = {
+  assinar: ["noivo", "noiva", "cpfNoivo", "cpfNoiva", "contato", "email"],
+  endereco: ["cep", "numero", "endereco", "complemento", "bairro", "cidade", "estado"],
+  evento: ["data", "horario", "local"],
+  extra: [],
+};
+
+/* tempo de a etapa nova entrar antes de pôr o foco nela */
+const ESPERA_FOCO = 360;
+
 /* ============================================================ */
 
 export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
@@ -269,23 +381,46 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [cepStatus, setCepStatus] = useState("");
+  const [etapa, setEtapa] = useState<Etapa>("inicio");
+  const [direcao, setDirecao] = useState<"frente" | "tras">("frente");
+  /* o WhatsApp mora no plugin (fora do estado), então a revisão mostra uma
+     cópia tirada na hora de entrar nela: ler o plugin durante o render não
+     acompanharia as mudanças */
+  const [contatoRevisao, setContatoRevisao] = useState("");
+  /* veio do "Editar" da revisão: o botão da etapa leva de volta pra revisão
+     em vez de andar por todas as etapas seguintes de novo */
+  const [daRevisao, setDaRevisao] = useState(false);
 
   const camposRef = useRef<Partial<Record<string, ElementoCampo | null>>>({});
+  const etapasRef = useRef<Partial<Record<Etapa, HTMLElement | null>>>({});
   const itiRef = useRef<Iti | null>(null);
   const ultimoCepRef = useRef("");
 
   const registrar = useCallback((id: string) => (el: ElementoCampo | null) => {
     camposRef.current[id] = el;
   }, []);
+  const registrarEtapa = useCallback((qual: Etapa) => (el: HTMLElement | null) => {
+    etapasRef.current[qual] = el;
+  }, []);
 
   const cfg = formulario.campos;
   const aparece = (id: CampoId) => cfg[id].visivel;
   /* "(opcional)" só em campo que o fotógrafo deixou opcional. Nomes e CPF
-     seguem a regra do par, explicada no texto da seção. */
+     seguem a regra do par, explicada no texto da etapa. */
   const opcional = (id: CampoId) => cfg[id].visivel && !cfg[id].obrigatorio && id !== "noivo" && id !== "noiva" &&
     id !== "cpfNoivo" && id !== "cpfNoiva";
   const perguntas = perguntasVisiveis(formulario);
   const perguntasDa = (secao: SecaoFormulario) => perguntas.filter((p) => p.secao === secao);
+
+  /* etapas que existem pra ESTA config, na ordem */
+  const secoes = SECOES.map((x) => x.id).filter((id) =>
+    id === "extra" ? perguntasDa("extra").length > 0
+    : id === "endereco" ? CAMPOS_DA_SECAO.endereco.some(aparece) || perguntasDa("endereco").length > 0
+    : true);
+  const etapas: Etapa[] = ["inicio", ...secoes, "revisar"];
+  const indice = etapas.indexOf(etapa);
+  /* a contagem que o casal vê não inclui as boas-vindas */
+  const totalPassos = etapas.length - 1;
 
   /* ---------- WhatsApp com DDI ----------
      Import dinâmico: o plugin mexe em document ao carregar, e este componente
@@ -327,6 +462,15 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
     return (input?.value ?? "").trim();
   }
 
+  /* WhatsApp como a pessoa vê no campo (o plugin formata enquanto digita),
+     com o DDI na frente. É pra revisão: o envio usa o valorContato(). */
+  function contatoLegivel(): string {
+    const nac = (camposRef.current.contato?.value ?? "").trim();
+    if (!nac) return "";
+    const pais = itiRef.current?.getSelectedCountry();
+    return pais && pais.dialCode ? "+" + pais.dialCode + " " + nac : nac;
+  }
+
   /* ---------- endereço via ViaCEP (gratuito, sem chave) ---------- */
   function buscarCep(v: string) {
     const cep = soDigitos(v);
@@ -366,13 +510,57 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
     if (erro && erro.campo === id) setErro(null);
   }
 
+  /* ---------- navegação entre etapas ---------- */
+
+  /* Entrou numa etapa: volta pro topo (a etapa nova começa lá) e, onde há
+     mouse, põe o foco no primeiro campo. No toque, não: abrir o teclado
+     sozinho cobre a explicação que a pessoa ainda nem leu. */
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (etapa === "inicio" || etapa === "revisar") return;
+    if (!window.matchMedia("(hover: hover)").matches) return;
+    const t = setTimeout(() => {
+      etapasRef.current[etapa]?.querySelector<HTMLElement>("input, select, textarea")?.focus({ preventScroll: true });
+    }, ESPERA_FOCO);
+    return () => clearTimeout(t);
+  }, [etapa]);
+
+  function irPara(destino: Etapa) {
+    if (destino === "revisar") setContatoRevisao(contatoLegivel());
+    setDirecao(etapas.indexOf(destino) < indice ? "tras" : "frente");
+    setErroGeral("");
+    setEtapa(destino);
+  }
+
+  function voltar() {
+    if (indice <= 0) return;
+    setDaRevisao(false);
+    irPara(etapas[indice - 1]);
+  }
+
+  function editar(secao: SecaoFormulario) {
+    setDaRevisao(true);
+    irPara(secao);
+  }
+
   /* ---------- validação ---------- */
+
+  /* Marca o campo e leva o casal até ele. O erro pode estar numa etapa que
+     não é a atual (a revisão confere tudo de novo antes de enviar), e aí a
+     etapa troca primeiro e o foco espera ela entrar. */
   function marcarErro(campo: string, msg: string) {
     setErro({ campo, msg });
-    const el = camposRef.current[campo];
-    if (!el) return;
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
-    setTimeout(() => el.focus(), 280);
+    const secao = campo in DEFINICAO
+      ? DEFINICAO[campo as CampoId].secao
+      : perguntas.find((p) => p.id === campo)?.secao;
+    const trocou = !!secao && secao !== etapa;
+    if (trocou) irPara(secao);
+    setTimeout(() => {
+      const el = camposRef.current[campo];
+      if (!el) return;
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      setTimeout(() => el.focus({ preventScroll: true }), 280);
+    }, trocou ? ESPERA_FOCO : 0);
   }
 
   /* Contratantes: basta UM, mas quem entrar tem que vir com nome; o CPF é
@@ -402,9 +590,10 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
     return true;
   }
 
-  function validarFormulario(): boolean {
+  /** Confere UMA etapa. A revisão chama pra todas, na ordem. */
+  function validarSecao(secao: SecaoFormulario): boolean {
     setErro(null);
-    if (!validarContratantes()) return false;
+    if (secao === "assinar" && !validarContratantes()) return false;
     const v = (id: CampoControlado) => valores[id].trim();
     /* `ok` é a regra do campo PREENCHIDO; vazio só é erro quando o fotógrafo
        deixou o campo obrigatório (e aparecendo) */
@@ -422,25 +611,34 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
       { campo: "local", valor: v("local"), ok: true, vazio: "Preencha o local do evento." },
     ];
     for (const r of regras) {
-      if (!aparece(r.campo)) continue;
+      if (DEFINICAO[r.campo].secao !== secao || !aparece(r.campo)) continue;
       if (!r.valor) {
         if (campoExigido(formulario, r.campo)) { marcarErro(r.campo, r.vazio); return false; }
         continue;
       }
       if (!r.ok) { marcarErro(r.campo, r.invalido ?? r.vazio); return false; }
     }
-    for (const p of perguntas) {
+    for (const p of perguntasDa(secao)) {
       const msg = erroDaResposta(p, (respostas[p.id] ?? "").trim());
       if (msg) { marcarErro(p.id, msg); return false; }
     }
     return true;
   }
 
-  /* ---------- envio ---------- */
-  async function enviar(ev: FormEvent<HTMLFormElement>) {
+  /* ---------- avançar / enviar ----------
+     Um <form> só pras etapas todas: Enter num campo avança, como o botão. */
+  function aoEnviar(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
+    if (etapa === "inicio") { irPara(etapas[1]); return; }
+    if (etapa === "revisar") { void enviar(); return; }
+    if (!validarSecao(etapa)) return;
+    if (daRevisao) { setDaRevisao(false); irPara("revisar"); return; }
+    irPara(etapas[indice + 1]);
+  }
+
+  async function enviar() {
     setErroGeral("");
-    if (!validarFormulario()) return;
+    for (const secao of secoes) if (!validarSecao(secao)) return;
     setEnviando(true);
     const v = (id: CampoControlado) => valores[id].trim();
     try {
@@ -499,10 +697,113 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
     ));
   }
 
-  const ajudaContratantes = "Se só um de vocês vai assinar, preencha só os dados dele." +
+  /* ---------- revisão: o que foi preenchido, por etapa ---------- */
+  function linhasDaRevisao(secao: SecaoFormulario): { rotulo: string; valor: string }[] {
+    const linhas: { rotulo: string; valor: string }[] = [];
+    const v = (id: CampoControlado) => (aparece(id) ? valores[id].trim() : "");
+    /* endereço e "quando" se leem como uma frase, não como sete linhas */
+    if (secao === "endereco") {
+      const rua = [v("endereco"), v("numero")].filter(Boolean).join(", ") + (v("complemento") ? " (" + v("complemento") + ")" : "");
+      const cidade = [v("cidade"), v("estado")].filter(Boolean).join("/");
+      const tudo = [rua, v("bairro"), cidade, v("cep") ? "CEP " + v("cep") : ""].filter(Boolean).join("\n");
+      if (tudo) linhas.push({ rotulo: "Endereço", valor: tudo });
+    }
+    if (secao === "evento" && (v("data") || v("horario"))) {
+      const quando = [v("data") ? exibirResposta({ tipo: "data", valor: v("data") }) : "", v("horario")].filter(Boolean).join(" às ");
+      linhas.push({ rotulo: "Quando", valor: quando });
+    }
+    const juntos: CampoId[] = ["endereco", "numero", "complemento", "bairro", "cidade", "estado", "cep", "data", "horario"];
+    for (const id of CAMPOS_DA_SECAO[secao]) {
+      if (juntos.includes(id)) continue;
+      if (!aparece(id)) continue;
+      const valor = id === "contato" ? contatoRevisao : valores[id as CampoControlado].trim();
+      if (valor) linhas.push({ rotulo: cfg[id].rotulo, valor });
+    }
+    for (const p of perguntasDa(secao)) {
+      const valor = (respostas[p.id] ?? "").trim();
+      if (valor) linhas.push({ rotulo: p.rotulo, valor: exibirResposta({ tipo: p.tipo, valor }) });
+    }
+    return linhas;
+  }
+
+  const textoDoBotao =
+    etapa === "inicio" ? "Começar"
+    : etapa === "revisar" ? (enviando ? "Confirmando..." : "Confirmar nossa data")
+    : daRevisao ? "Salvar e revisar"
+    : "Continuar";
+
+  const atributosEtapa = (qual: Etapa) => ({
+    hidden: etapa !== qual,
+    "data-dir": direcao,
+    ref: registrarEtapa(qual),
+  });
+
+  function corpoDaSecao(secao: SecaoFormulario): ReactNode {
+    if (secao === "assinar") {
+      return (
+        <>
+          {fixo("noivo", { autoComplete: "given-name" })}
+          {fixo("noiva", { autoComplete: "given-name" })}
+          <Par a={fixo("cpfNoivo", { inputMode: "numeric" })} b={fixo("cpfNoiva", { inputMode: "numeric" })} />
+          {/* o input do WhatsApp fica num <div> próprio: o intl-tel-input
+              embrulha o input num .iti, e o React nunca precisa mexer nos
+              filhos desse div */}
+          <label className={"campo" + (contatoInvalido ? " campo-invalido" : "")}>
+            {cfg.contato.rotulo}
+            <div>
+              <input
+                ref={registrar("contato")}
+                id="o-contato"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                defaultValue=""
+                onInput={() => { if (contatoInvalido) setErro(null); }}
+              />
+            </div>
+            {contatoInvalido ? <span className="campo-erro-msg">{erro.msg}</span> : null}
+          </label>
+          {fixo("email", { type: "email", autoComplete: "email" })}
+          {extras("assinar")}
+        </>
+      );
+    }
+    if (secao === "endereco") {
+      return (
+        <>
+          <Par
+            a={fixo("cep", {
+              classe: "campo-cep", inputMode: "numeric", autoComplete: "postal-code",
+              extra: <span className="cep-status">{cepStatus}</span>,
+            })}
+            b={fixo("numero", { inputMode: "numeric", autoComplete: "address-line2" })}
+          />
+          {fixo("endereco", { autoComplete: "address-line1" })}
+          {fixo("complemento")}
+          <Par a={fixo("bairro", { autoComplete: "address-level3" })} b={fixo("cidade", { autoComplete: "address-level2" })} />
+          {fixo("estado", { inputMode: "text", maxLength: 2, autoComplete: "address-level1" })}
+          {extras("endereco")}
+        </>
+      );
+    }
+    if (secao === "evento") {
+      return (
+        <>
+          <Par
+            a={fixo("data", { type: "date", onClick: abrirPicker })}
+            b={fixo("horario", { type: "time", onClick: abrirPicker })}
+          />
+          {fixo("local")}
+          {extras("evento")}
+        </>
+      );
+    }
+    return <>{extras("extra")}</>;
+  }
+
+  /* o CPF só é citado na explicação se o fotógrafo deixou ele aparecer */
+  const explicaAssinar = SOBRE_ETAPA.assinar.explica +
     (aparece("cpfNoivo") || aparece("cpfNoiva") ? " O CPF é opcional: se não tiver, pode deixar em branco." : "");
-  const temEndereco = (["cep", "numero", "endereco", "complemento", "bairro", "cidade", "estado"] as const).some(aparece) ||
-    perguntasDa("endereco").length > 0;
 
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
@@ -510,76 +811,99 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
       <div className="pagina">
         {enviado ? (
           <div className="sucesso">
+            <svg className="check" viewBox="0 0 64 64" aria-hidden>
+              <circle cx="32" cy="32" r="32" />
+              <path d="M21 33l7.5 7.5L44 25" />
+            </svg>
             <h1>Recebido!</h1>
             <p className="sub">Vamos revisar seus dados e já mandamos o contrato pra você assinar. Será uma honra eternizar esse momento.</p>
             <a className="cta" href="/proposta">Voltar pro início</a>
           </div>
         ) : (
-          <div>
-            <span className="dica">Cadastro</span>
-            <h1>Vamos confirmar nossa data</h1>
-            <p className="sub">Preencha os dados de quem vai assinar o contrato. Assim que confirmarmos, já mandamos o contrato pra você assinar.</p>
-
-            <form onSubmit={(ev) => void enviar(ev)} noValidate>
-              <div className="form-secao">{TITULO_SECAO.assinar}</div>
-              <p className="ajuda-secao">{ajudaContratantes}</p>
-              {fixo("noivo", { autoComplete: "given-name" })}
-              {fixo("noiva", { autoComplete: "given-name" })}
-              <Par a={fixo("cpfNoivo", { inputMode: "numeric" })} b={fixo("cpfNoiva", { inputMode: "numeric" })} />
-
-              {/* o input do WhatsApp fica num <div> próprio: o intl-tel-input
-                  embrulha o input num .iti, e o React nunca precisa mexer nos
-                  filhos desse div */}
-              <label className={"campo" + (contatoInvalido ? " campo-invalido" : "")}>
-                {cfg.contato.rotulo}
-                <div>
-                  <input
-                    ref={registrar("contato")}
-                    id="o-contato"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    defaultValue=""
-                    onInput={() => { if (contatoInvalido) setErro(null); }}
-                  />
+          <form onSubmit={aoEnviar} noValidate>
+            {etapa !== "inicio" ? (
+              <div className="topo-etapa">
+                <button type="button" className="voltar-etapa" onClick={voltar} aria-label="Voltar pra etapa anterior">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
+                  </svg>
+                </button>
+                <div className="progresso-info">
+                  <div className="progresso-rotulo">
+                    {etapa === "revisar" ? "Última etapa" : "Etapa " + indice + " de " + totalPassos}
+                  </div>
+                  <div className="progresso" role="progressbar" aria-valuemin={0} aria-valuemax={totalPassos} aria-valuenow={indice}
+                    aria-label="Progresso do cadastro">
+                    <span style={{ width: (indice / totalPassos) * 100 + "%" }} />
+                  </div>
                 </div>
-                {contatoInvalido ? <span className="campo-erro-msg">{erro.msg}</span> : null}
-              </label>
+              </div>
+            ) : null}
 
-              {fixo("email", { type: "email", autoComplete: "email" })}
-              {extras("assinar")}
+            {/* ---------- boas-vindas ---------- */}
+            <section className="etapa" {...atributosEtapa("inicio")}>
+              <div className="etapa-corpo">
+                <span className="dica">Cadastro</span>
+                <h1>Vamos confirmar nossa data</h1>
+                <p className="sub">
+                  Que alegria ter vocês com a gente! Em poucos passos reunimos o que precisamos pro contrato.
+                  Dá pra voltar em qualquer etapa, e no fim vocês conferem tudo antes de enviar.
+                </p>
+                <ol className="passos">
+                  {secoes.map((id, i) => (
+                    <li key={id}>
+                      <span className="n">{i + 1}</span>
+                      <span><strong>{TITULO_SECAO[id]}</strong><small>{SOBRE_ETAPA[id].resumo}</small></span>
+                    </li>
+                  ))}
+                </ol>
+                <button className="cta" type="submit">{textoDoBotao}</button>
+                <p className="tempo">Leva uns 3 minutos</p>
+              </div>
+            </section>
 
-              {temEndereco ? <div className="form-secao">{TITULO_SECAO.endereco}</div> : null}
-              <Par
-                a={fixo("cep", {
-                  classe: "campo-cep", inputMode: "numeric", autoComplete: "postal-code",
-                  extra: <span className="cep-status">{cepStatus}</span>,
-                })}
-                b={fixo("numero", { inputMode: "numeric", autoComplete: "address-line2" })}
-              />
-              {fixo("endereco", { autoComplete: "address-line1" })}
-              {fixo("complemento")}
-              <Par a={fixo("bairro", { autoComplete: "address-level3" })} b={fixo("cidade", { autoComplete: "address-level2" })} />
-              {fixo("estado", { inputMode: "text", maxLength: 2, autoComplete: "address-level1" })}
-              {extras("endereco")}
+            {/* ---------- uma etapa por seção ---------- */}
+            {secoes.map((secao) => (
+              <section key={secao} className="etapa" {...atributosEtapa(secao)}>
+                <div className="etapa-corpo">
+                  <h1>{TITULO_SECAO[secao]}</h1>
+                  <p className="sub">{secao === "assinar" ? explicaAssinar : SOBRE_ETAPA[secao].explica}</p>
+                  {corpoDaSecao(secao)}
+                  <button className="cta" type="submit">{textoDoBotao}</button>
+                </div>
+              </section>
+            ))}
 
-              <div className="form-secao">{TITULO_SECAO.evento}</div>
-              <Par
-                a={fixo("data", { type: "date", onClick: abrirPicker })}
-                b={fixo("horario", { type: "time", onClick: abrirPicker })}
-              />
-              {fixo("local")}
-              {extras("evento")}
-
-              {perguntasDa("extra").length ? <div className="form-secao">{TITULO_SECAO.extra}</div> : null}
-              {extras("extra")}
-
-              <button className="cta" type="submit" disabled={enviando}>
-                {enviando ? "Confirmando..." : "Confirmar nossa data"}
-              </button>
-              <p className="erro" role="alert">{erroGeral}</p>
-            </form>
-          </div>
+            {/* ---------- revisão ---------- */}
+            <section className="etapa" {...atributosEtapa("revisar")}>
+              <div className="etapa-corpo">
+                <h1>Confere se está tudo certo</h1>
+                <p className="sub">Se algo estiver errado, toque em Editar. Depois é só confirmar que a gente cuida do resto.</p>
+                {etapa === "revisar" ? (
+                  <div className="revisao">
+                    {secoes.map((secao) => {
+                      const linhas = linhasDaRevisao(secao);
+                      return (
+                        <div key={secao} className="revisao-bloco">
+                          <div className="revisao-topo">
+                            <span className="revisao-titulo">{TITULO_SECAO[secao]}</span>
+                            <button type="button" className="editar" onClick={() => editar(secao)}>Editar</button>
+                          </div>
+                          <dl>
+                            {linhas.length ? linhas.map((l) => (
+                              <div key={l.rotulo}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>
+                            )) : <dd>Nada preenchido</dd>}
+                          </dl>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                <button className="cta" type="submit" disabled={enviando}>{textoDoBotao}</button>
+                <p className="erro" role="alert">{erroGeral}</p>
+              </div>
+            </section>
+          </form>
         )}
       </div>
     </main>

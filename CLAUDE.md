@@ -125,6 +125,10 @@ do casal não é confiável. Pergunta nova não ganha coluna: a resposta vai pra
 `clientes.respostas_formulario` com o texto da pergunta, e a ficha mostra só
 leitura.
 
+O `/cadastro` é um fluxo em etapas (boas-vindas, uma etapa por seção, revisão),
+com todas as etapas montadas e só a atual visível: o intl-tel-input do WhatsApp
+se prende ao input na montagem e se perderia se a etapa desmontasse.
+
 ## Dívidas conhecidas
 
 - **Multi-tenant fica pra DEPOIS, por decisão do Ricardo (2026-09-16).** A
