@@ -92,7 +92,7 @@ function Miniatura({ id, versao }: { id: string; versao: string }) {
           aria-hidden="true"
           tabIndex={-1}
           loading="lazy"
-          onLoad={() => { const v = versao; setTimeout(() => setPronta(v), ESPERA_SKELETON); }}
+          onLoad={() => setPronta(versao)}
           className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
           style={{ width: LARGURA_SITE, height: LARGURA_SITE / 1.6, transform: `scale(${escala})` }}
         />
@@ -447,7 +447,9 @@ export default function Atelie() {
           O formulário em uso é o que o casal preenche no link de cadastro pra confirmar a data. Os outros ficam guardados até você escolher usar.
         </CartaoAviso>
       </div>
-      <FormulariosAtelie mostrar={mostrar} />
+      {/* as duas seções aparecem JUNTAS, de cima pra baixo: os formulários
+          carregam mais rápido e, sozinhos, surgiam antes dos sites */}
+      <FormulariosAtelie mostrar={mostrar} liberado={!!dados} />
 
       {versoesDe ? (
         <VersoesAtelie idModelo={versoesDe.modelo.id} noAr={versoesDe.noAr}

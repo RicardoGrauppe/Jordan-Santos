@@ -18,10 +18,7 @@ import { CircleCheck, ClipboardList, Copy, EllipsisVertical, ExternalLink, Penci
 import { Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { Sk, SkCartaoModelo, SkCartaoNovo } from "@/components/Skeleton";
-import { api, esperaMin, ERRO_SESSAO } from "@/lib/painel";
-
-/* mesmo tempo mínimo de skeleton da página do Ateliê */
-const ESPERA_SKELETON = 900;
+import { api, ERRO_SESSAO } from "@/lib/painel";
 import { fmtData } from "@/lib/util";
 import { urlFoto } from "@/lib/formulario";
 
@@ -98,7 +95,11 @@ function Cartao({ modelo, emUso, aoAbrir, menu }: { modelo: Resumo; emUso: boole
   );
 }
 
-export function FormulariosAtelie({ mostrar }: { mostrar: (texto: string, opts?: { ok?: boolean }) => void }) {
+export function FormulariosAtelie({ mostrar, liberado = true }: {
+  mostrar: (texto: string, opts?: { ok?: boolean }) => void;
+  /** a página segura esta seção no skeleton até a de cima (Sites) chegar */
+  liberado?: boolean;
+}) {
   const router = useRouter();
   const confirmar = useConfirmar();
   const [dados, setDados] = useState<Resposta | null>(null);
@@ -117,8 +118,8 @@ export function FormulariosAtelie({ mostrar }: { mostrar: (texto: string, opts?:
 
   useEffect(() => {
     let vivo = true;
-    Promise.all([api<Resposta>(URL_API), esperaMin(ESPERA_SKELETON)])
-      .then(([r]) => { if (vivo) setDados(r); })
+    api<Resposta>(URL_API)
+      .then((r) => { if (vivo) setDados(r); })
       .catch((e) => { if (vivo) falhou(e, "Não consegui carregar os formulários, tente de novo."); });
     return () => { vivo = false; };
   }, [falhou]);
@@ -188,7 +189,7 @@ export function FormulariosAtelie({ mostrar }: { mostrar: (texto: string, opts?:
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
-      {dados ? (
+      {dados && liberado ? (
         <>
           {lista.map((m) => (
             <Cartao key={m.id} modelo={m} emUso={m.id === dados.ativo} aoAbrir={() => router.push(rotaEditor(m.id))} menu={menuDe(m, m.id === dados.ativo)} />
