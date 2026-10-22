@@ -26,7 +26,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, ChevronRight, ClipboardList, Crown, FileText, House, LogOut, Menu, Package, Palette, Search, Settings, Users } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Package, Palette, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
@@ -59,10 +59,8 @@ const ITENS: { href: string; rotulo: string; Icone: typeof House; soLateral?: bo
   { href: "/painel", rotulo: "Home", Icone: House },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: Users },
   { href: "/painel/atelie", rotulo: "Ateliê", Icone: Palette },
-  /* o /cadastro que o casal preenche (22/10/2026). `soLateral`: a barra de
-     baixo do celular lê esta mesma lista e já tem os seis lugares ocupados,
-     então lá ele mora no Menu da conta */
-  { href: "/painel/formulario", rotulo: "Formulário", Icone: ClipboardList, soLateral: true },
+  /* O Formulário saiu daqui em 22/10/2026: virou um tipo de modelo dentro
+     do Ateliê (seção Formulários), pra não ter duas páginas de modelo. */
 ];
 
 /** telas cheias que só existem no celular */
@@ -815,11 +813,6 @@ function TelaContaMobile({
       <CorpoTelaMobile>
         <CartaoPlano nome={nome} />
 
-        <Link href="/painel/formulario" tabIndex={aba} onClick={aoFechar} className={item}>
-          <ClipboardList size={19} className="shrink-0 text-ink-soft" />
-          Formulário
-          <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
-        </Link>
         <Link href="/painel/configuracoes/contrato" tabIndex={aba} onClick={aoFechar} className={item}>
           <FileText size={19} className="shrink-0 text-ink-soft" />
           Modelos de contrato

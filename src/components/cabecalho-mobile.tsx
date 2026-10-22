@@ -60,7 +60,9 @@ const TELAS: { rota: RegExp; titulo: string; voltar: string | null; selo?: strin
   { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Modelos de contrato", voltar: "/painel/configuracoes" },
   { rota: /^\/painel\/configuracoes\/?$/, titulo: "Configurações", voltar: "/painel" },
   { rota: /^\/painel\/produtos\/?$/, titulo: "Produtos e serviços", voltar: "/painel" },
-  { rota: /^\/painel\/formulario\/?$/, titulo: "Formulário", voltar: "/painel", selo: "Beta" },
+  /* formulário virou modelo do Ateliê (22/10/2026); o título real (nome do
+     modelo) vem do TituloMobile da própria tela */
+  { rota: /^\/painel\/atelie\/formulario\/[^/]+\/?$/, titulo: "Formulário", voltar: "/painel/atelie" },
   { rota: /^\/painel\/pendencias\/?$/, titulo: "Precisa de atenção", voltar: "/painel" },
   { rota: /^\/painel\/tempo\/?$/, titulo: "Previsão do tempo", voltar: "/painel" },
 ];

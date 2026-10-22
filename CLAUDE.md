@@ -246,8 +246,14 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
 
 ## Formulário de cadastro editável
 
-O `/cadastro` lê a config que o fotógrafo edita em `/painel/formulario`
-(tabela `config`, chave `formulario_cadastro`; sem chave = formulário padrão).
+O formulário é um tipo de modelo do Ateliê: a lista fica em `/painel/atelie`
+(seção Formulários) e cada um abre em `/painel/atelie/formulario/<id>`. O
+`/cadastro` mostra o modelo EM USO. Tudo em `config`, sem tabela própria:
+`formulario_modelos` (lista com nome e formulário) e `formulario_ativo` (id);
+a chave antiga `formulario_cadastro` vira o "Formulário padrão" na primeira
+listagem e é a reserva do `/cadastro` enquanto isso (sem nada = padrão do
+código). `/painel/formulario` só redireciona pro Ateliê. Foto enviada só é
+apagada quando nenhum modelo usa mais (duplicar copia as referências).
 `lib/formulario.ts` é a fonte das regras: todo campo (fixo ou pergunta nova)
 tem três escolhas livres, aparece, obrigatório e cadeado; o cadeado só trava
 as outras duas contra mudança sem querer, não é regra do sistema. Nomes,

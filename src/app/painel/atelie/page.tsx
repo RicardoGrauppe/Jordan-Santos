@@ -1,5 +1,6 @@
 /*
-  Ateliê: a galeria dos modelos de site do fotógrafo (brandbook, seção 19).
+  Ateliê: a galeria dos modelos do fotógrafo (brandbook, seção 19): sites e,
+  desde 22/10/2026, formulários de cadastro (ver FormulariosAtelie).
 
   Um modelo fica no ar, e é ele que abre pra quem recebe o link do estúdio (a
   raiz do site). Os outros ficam guardados pra trocar quando quiser: "Pôr no
@@ -18,13 +19,14 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, EllipsisVertical, ExternalLink, Eye, Globe, History, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ClipboardList, Copy, EllipsisVertical, ExternalLink, Eye, Globe, History, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Botao, CartaoAviso, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
 import { Sk, SkLinha } from "@/components/Skeleton";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { VersoesAtelie } from "@/components/VersoesAtelie";
+import { FormulariosAtelie } from "@/components/FormulariosAtelie";
 import { api, esperaMin, ERRO_SESSAO } from "@/lib/painel";
 import { fmtData } from "@/lib/util";
 import { AVISO_DE_EXEMPLO } from "@/lib/atelie/modelo-guiado";
@@ -364,7 +366,13 @@ export default function Atelie() {
           O Ateliê está em fase de testes (beta) e ainda não funciona 100%. Antes de pôr um modelo no ar, confira em &quot;Ver como fica&quot; se ficou do jeito que você quer.
         </CartaoAviso>
       </div>
-      <div className="mb-5">
+      {/* Duas prateleiras de modelos (22/10/2026): sites e formulários. Cada
+          uma diz o que o modelo "ativo" dela faz, porque não é a mesma coisa:
+          o site no ar é a vitrine, o formulário em uso é o cadastro do casal. */}
+      <h2 className="m-0 mb-2.5 mt-6 flex items-center gap-2 text-[17px] font-semibold text-ink">
+        <Globe size={17} className="text-accent" /> Sites
+      </h2>
+      <div className="mb-4">
         <CartaoAviso tom="info">
           O modelo no ar é o seu site: é o que abre pra quem recebe o link do estúdio. Mexer num modelo não muda o site até você pôr ele no ar.
         </CartaoAviso>
@@ -388,6 +396,16 @@ export default function Atelie() {
           </>
         )}
       </div>
+
+      <h2 id="formularios" className="m-0 mb-2.5 mt-10 flex scroll-mt-24 items-center gap-2 text-[17px] font-semibold text-ink">
+        <ClipboardList size={17} className="text-accent" /> Formulários
+      </h2>
+      <div className="mb-4">
+        <CartaoAviso tom="info">
+          O formulário em uso é o que o casal preenche no link de cadastro pra confirmar a data. Os outros ficam guardados até você escolher usar.
+        </CartaoAviso>
+      </div>
+      <FormulariosAtelie mostrar={mostrar} />
 
       {versoesDe ? (
         <VersoesAtelie idModelo={versoesDe.modelo.id} noAr={versoesDe.noAr}
