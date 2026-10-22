@@ -27,7 +27,7 @@ import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import { RevealAoRolar } from "@/app/proposta/RevealAoRolar";
 import { CampoFoco, CampoFoto, CampoFotoOpcional } from "@/components/CamposAtelie";
 import { CSS_PROPOSTA } from "./proposta-css";
-import { FOTO_DE_EXEMPLO } from "./modelo-guiado";
+import { EXEMPLO, FOTO_DE_EXEMPLO } from "./modelo-guiado";
 import type { TipoDeBloco } from "./tipos";
 
 /* ---------- tipos ---------- */
@@ -299,7 +299,13 @@ export const configAtelie: Config<Blocos, RaizProps> = {
           },
         },
       },
-      defaultProps: { ancora: "", selo: "Conheça os pacotes", titulo: "Pacotes", pacotes: [] },
+      defaultProps: {
+        ancora: "", selo: "Conheça os pacotes", titulo: "Pacotes",
+        pacotes: [
+          { nome: "Essencial", itens: EXEMPLO.itensEssencial, preco: EXEMPLO.preco, parcela: EXEMPLO.parcela },
+          { nome: "Completo", itens: EXEMPLO.itensCompleto, preco: EXEMPLO.preco, parcela: EXEMPLO.parcela },
+        ],
+      },
       render: ({ ancora, selo, titulo, pacotes }) => (
         <section className="pagina" id={ancora || undefined}>
           <div className="miolo-largo">
@@ -349,7 +355,13 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         foco: campoFocoEscondido,
       },
       defaultProps: {
-        ancora: "", selo: "", titulo: "Adicionais", linhas: [], foto: FOTO_DE_EXEMPLO.vertical,
+        ancora: "", selo: "Pra completar", titulo: "Adicionais",
+        linhas: [
+          { nome: "Hora extra de cobertura", detalhe: "", valor: EXEMPLO.valor },
+          { nome: "Segundo fotógrafo", detalhe: "", valor: EXEMPLO.valor },
+          { nome: "Entrega expressa", detalhe: "", valor: EXEMPLO.valor },
+        ],
+        foto: FOTO_DE_EXEMPLO.vertical,
         foco: "", legenda: "", corCeu: "#F3F0EC", subida: 40,
       },
       render: ({ ancora, selo, titulo, linhas, foto, foco, legenda, corCeu, subida }) => {
@@ -407,7 +419,13 @@ export const configAtelie: Config<Blocos, RaizProps> = {
           },
         },
       },
-      defaultProps: { ancora: "", faixa: "", faixaAlt: "", faixaFoco: "", selo: "", titulo: "Álbum", cartoes: [] },
+      defaultProps: {
+        ancora: "", faixa: FOTO_DE_EXEMPLO.paisagem, faixaAlt: "", faixaFoco: "", selo: "Opções", titulo: "Álbum",
+        cartoes: [
+          { descricao: EXEMPLO.cartao, preco: EXEMPLO.preco },
+          { descricao: EXEMPLO.cartao, preco: EXEMPLO.preco },
+        ],
+      },
       render: ({ ancora, faixa, faixaAlt, faixaFoco, selo, titulo, cartoes }) => (
         <section className="pagina" id={ancora || undefined} style={faixa ? { paddingTop: 0 } : undefined}>
           {faixa && (
@@ -456,7 +474,15 @@ export const configAtelie: Config<Blocos, RaizProps> = {
           },
         },
       },
-      defaultProps: { ancora: "", selo: "", titulo: "Entrega", paragrafos: [], fotos: [] },
+      defaultProps: {
+        ancora: "", selo: "", titulo: "Entrega",
+        paragrafos: [{ texto: EXEMPLO.entrega1 }, { texto: EXEMPLO.entrega2 }],
+        fotos: [
+          { src: FOTO_DE_EXEMPLO.vertical, alt: "", foco: "" },
+          { src: FOTO_DE_EXEMPLO.vertical, alt: "", foco: "" },
+          { src: FOTO_DE_EXEMPLO.vertical, alt: "", foco: "" },
+        ],
+      },
       render: ({ ancora, selo, titulo, paragrafos, fotos }) => (
         <section className="pagina" id={ancora || undefined}>
           <div className="miolo">
@@ -487,7 +513,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         alt: { type: "text", label: "Descrição da foto" },
         foco: campoFocoEscondido,
       },
-      defaultProps: { texto: "", src: FOTO_DE_EXEMPLO.escura, alt: "", foco: "" },
+      defaultProps: { texto: EXEMPLO.citacao, src: FOTO_DE_EXEMPLO.escura, alt: "", foco: "" },
       render: ({ texto, src, alt, foco }) => (
         <figure className="quote-full">
           <img src={src} alt={alt} style={estiloFoco(foco)} />
@@ -505,7 +531,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         texto: { type: "textarea", label: "Texto", contentEditable: true },
         botao: { type: "text", label: "Texto do botão" },
       },
-      defaultProps: { ancora: "", selo: "Vamos conversar", titulo: "Vamos começar?", texto: "", botao: "Chamar no WhatsApp" },
+      defaultProps: { ancora: "", selo: "Vamos conversar", titulo: "Vamos começar?", texto: EXEMPLO.chamada, botao: "Chamar no WhatsApp" },
       render: ({ ancora, selo, titulo, texto, botao, puck }) => {
         const contato = contatoDe(puck.metadata);
         return (
@@ -533,7 +559,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         assinaturaAlt: { type: "text", label: "Descrição da assinatura" },
         frase: { type: "textarea", label: "Frase" },
       },
-      defaultProps: { assinatura: "", assinaturaAlt: "", frase: "" },
+      defaultProps: { assinatura: "", assinaturaAlt: "", frase: EXEMPLO.rodape },
       render: ({ assinatura, assinaturaAlt, frase, puck }) => {
         const contato = contatoDe(puck.metadata);
         return (
@@ -569,7 +595,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       },
       defaultProps: {
         ancora: "", fundo: "branco", alinhamento: "centro", selo: "", titulo: "Nossa história",
-        texto: "Conte aqui quem vocês são e como trabalham.\n\nUm segundo parágrafo, se precisar.",
+        texto: EXEMPLO.historia,
       },
       render: ({ ancora, fundo, alinhamento, selo, titulo, texto }) => (
         <section className={"pagina" + CLASSE_FUNDO[fundo]} id={ancora || undefined}>
@@ -653,7 +679,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       defaultProps: {
         ancora: "", fundo: "branco", lado: "esquerda",
         foto: FOTO_DE_EXEMPLO.retrato, fotoAlt: "", foco: "",
-        selo: "", titulo: "Sobre nós", texto: "Conte aqui um pouco do seu olhar e do que o casal pode esperar.",
+        selo: "", titulo: "Sobre nós", texto: EXEMPLO.sobre,
         botao: "", link: "",
       },
       render: ({ ancora, fundo, lado, foto, fotoAlt, foco, selo, titulo, texto, botao, link }) => {

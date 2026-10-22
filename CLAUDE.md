@@ -151,9 +151,12 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
 - **Link que vem de campo passa por `linkSeguro`**: só http(s), mailto, tel,
   # ou caminho do site. A página é pública, e um `javascript:` colado num
   campo viraria script rodando no celular do casal.
-- Bloco novo entra em três lugares: `tipos.ts` (a API valida contra ela),
-  `configAtelie` e a lista do editor (ícone e uma linha). Se `tipos.ts` e o
-  config divergirem, o build quebra.
+- Bloco novo entra em quatro lugares: `tipos.ts` (a API valida contra ela),
+  `configAtelie`, a lista do editor (ícone e uma linha) e um grupo da lista
+  (`GRUPOS_FIXOS`, pelo que o bloco faz; sem grupo ele cai em "Outros"). Se
+  `tipos.ts` e o config divergirem, o build quebra. Todo bloco entra pronto:
+  o `defaultProps` usa o conteúdo de exemplo de `EXEMPLO` (modelo-guiado.ts),
+  nunca entra vazio nem com conteúdo de um estúdio de verdade.
 - **Foto nunca é endereço digitado.** Campo de foto abre a biblioteca
   (`CamposAtelie.tsx`); a foto é reduzida no navegador (2560px) antes de
   subir e vai pro bloco como `/midia/<uuid>.jpg`. Nunca a URL do Storage:

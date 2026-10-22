@@ -112,7 +112,7 @@ const APRESENTACAO: Record<TipoDeBloco, { Icone: ComponentType<{ size?: number }
   Capa: { Icone: PanelTop, linha: "Logo sobre fundo escuro, abre a página" },
   FotoInteira: { Icone: IconeImagem, linha: "Uma foto de ponta a ponta" },
   Pacotes: { Icone: Package, linha: "Cartões com itens e preço" },
-  ListaSobreFoto: { Icone: GalleryHorizontal, linha: "Lista de preços em cima de uma foto" },
+  ListaSobreFoto: { Icone: GalleryHorizontal, linha: "Lista de itens e valores em cima de uma foto" },
   Cartoes: { Icone: LayoutGrid, linha: "Cartões centrais com descrição e preço" },
   TextoComFotos: { Icone: Images, linha: "Título, parágrafos e fotos lado a lado" },
   Citacao: { Icone: Quote, linha: "Uma frase grande sobre a foto" },
@@ -124,13 +124,19 @@ const APRESENTACAO: Record<TipoDeBloco, { Icone: ComponentType<{ size?: number }
   Espaco: { Icone: MoveVertical, linha: "Respiro entre dois blocos" },
 };
 
-/* A lista abre pelos blocos de montar do zero; os da proposta vêm depois.
-   O segundo grupo é "todo o resto", pra bloco novo nunca sumir da lista. */
-const DO_ZERO: TipoDeBloco[] = ["TituloTexto", "FotoComTexto", "Galeria", "Espaco"];
-const GRUPOS: { titulo: string; tipos: TipoDeBloco[] }[] = [
-  { titulo: "Pra montar do zero", tipos: DO_ZERO },
-  { titulo: "Da proposta", tipos: TIPOS_DE_BLOCO.filter((t) => !DO_ZERO.includes(t)) },
+/* A lista é agrupada pelo que o bloco FAZ, que é como o fotógrafo procura
+   ("quero pôr preço"), e não pela origem do bloco: todo bloco é igual, e
+   qualquer um entra numa página que começa do zero. Bloco que ninguém pôs
+   num grupo cai em "Outros", pra nunca sumir da lista. */
+const GRUPOS_FIXOS: { titulo: string; tipos: TipoDeBloco[] }[] = [
+  { titulo: "Abertura e fotos", tipos: ["Capa", "FotoInteira", "Galeria", "Citacao"] },
+  { titulo: "Texto", tipos: ["TituloTexto", "FotoComTexto", "TextoComFotos"] },
+  { titulo: "Preços", tipos: ["Pacotes", "ListaSobreFoto", "Cartoes"] },
+  { titulo: "Contato", tipos: ["Chamada", "Rodape"] },
+  { titulo: "Espaçamento", tipos: ["Espaco"] },
 ];
+const SEM_GRUPO = TIPOS_DE_BLOCO.filter((t) => !GRUPOS_FIXOS.some((g) => g.tipos.includes(t)));
+const GRUPOS = SEM_GRUPO.length ? [...GRUPOS_FIXOS, { titulo: "Outros", tipos: SEM_GRUPO }] : GRUPOS_FIXOS;
 
 /** Leva a página do editor (que mora num iframe) até o bloco quando o topo
     dele está fora da tela, assim que ele aparecer lá dentro. Bloco à vista

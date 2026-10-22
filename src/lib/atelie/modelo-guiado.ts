@@ -44,6 +44,27 @@ const T = {
   chamadaTexto: "Este botão abre o WhatsApp do estúdio, com o número e a mensagem que estão nos campos da página.",
 };
 
+/* Conteúdo de exemplo com que cada bloco entra quando é colocado pela lista
+   (os `defaultProps` de blocos.tsx): todo bloco nasce pronto, nada entra
+   vazio. Ficam aqui, e não lá, pra entrar na mesma lista do aviso de
+   publicar. Nome de pacote e título comum ("Pacotes", "Entrega") não estão
+   na lista de propósito: podem ser o texto de verdade do fotógrafo. */
+export const EXEMPLO = {
+  historia: "Conte aqui quem vocês são e como trabalham.\n\nUm segundo parágrafo, se precisar.",
+  sobre: "Conte aqui um pouco do seu olhar e do que o casal pode esperar.",
+  preco: "R$ 0.000,00",
+  parcela: "ou 10x de R$ 000,00",
+  valor: "R$ 000,00",
+  itensEssencial: "Cobertura da cerimônia e da festa\nGaleria de fotos on-line\nTratamento de cor e luz\n6 horas de cobertura",
+  itensCompleto: "Tudo do Essencial\nEnsaio antes do casamento\nÁlbum impresso\n10 horas de cobertura",
+  cartao: "Descreva aqui o que está incluído nesta opção.",
+  entrega1: "Conte aqui como você entrega o trabalho: prazo, formato e o que o casal recebe.",
+  entrega2: "Um segundo parágrafo, se precisar.",
+  citacao: "“Escreva aqui uma frase que resuma o seu jeito de fotografar.”",
+  chamada: "Conte aqui como o casal pode falar com você. O botão abre o WhatsApp do estúdio.",
+  rodape: "Escreva aqui uma frase de despedida.\nEla fecha a página, acima dos contatos.",
+};
+
 /* Versões antigas dos textos acima, de modelos criados antes da troca: seguem
    contando como exemplo pro aviso de publicar. */
 const ANTIGOS = [
@@ -52,7 +73,7 @@ const ANTIGOS = [
 ];
 
 /** Os textos de exemplo, pra saber se algum ainda está na página. */
-export const TEXTOS_DE_EXEMPLO: readonly string[] = [...Object.values(T), ...ANTIGOS];
+export const TEXTOS_DE_EXEMPLO: readonly string[] = [...Object.values(T), ...Object.values(EXEMPLO), ...ANTIGOS];
 
 /** O aviso da confirmação de publicar quando sobrou texto ou foto de exemplo:
     publicar com eles ainda lá é quase sempre esquecimento. */
