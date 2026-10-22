@@ -277,14 +277,15 @@ export default function ListaClientes() {
                elas se penduram no container da página e vão parar fora da
                tabela, uma em cada ponta da tela (foi o que aconteceu). */
             "sticky top-14 z-20 md:relative md:top-auto md:z-auto " +
-            /* Em repouso, cinza `line`: diferente da página (soft) e das
-               linhas (paper). O accent-tint que ficou aqui por um commit foi
+            /* Em repouso, um cinza um passo mais claro que o `line` (#ECEEF1,
+               pedido do Ricardo em 22/10/2026): ainda diferente da página
+               (soft) e das linhas (paper). O accent-tint que ficou aqui por um commit foi
                recusado pelo Ricardo; ele segue só no hover da linha, onde
                é passageiro. Com seleção, petróleo CHEIO: a faixa muda de
                função e a cor diz isso antes de qualquer texto. */
             (marcados.length
               ? "visible mb-2.5 h-[52px] bg-accent opacity-100"
-              : "invisible mb-0 h-0 bg-accent opacity-0 md:bg-line")
+              : "invisible mb-0 h-0 bg-accent opacity-0 md:bg-[#ECEEF1]")
           }
         >
           {/* marca a lista inteira (o que está VISÍVEL, então respeita o
