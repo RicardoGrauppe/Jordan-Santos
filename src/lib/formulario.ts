@@ -29,12 +29,17 @@
 
 export type SecaoFormulario = "assinar" | "endereco" | "evento" | "extra";
 
+/* Os títulos são o que o CASAL lê no /cadastro (e o editor repete, pra o
+   fotógrafo ver a mesma coisa): fala de gente, não de cadastro. Os ids ficam
+   como estão, porque são o que está gravado nas perguntas novas. */
 export const SECOES: readonly { id: SecaoFormulario; titulo: string }[] = [
-  { id: "assinar", titulo: "Quem vai assinar" },
-  { id: "endereco", titulo: "Endereço" },
-  { id: "evento", titulo: "O evento" },
-  { id: "extra", titulo: "Mais sobre vocês" },
+  { id: "assinar", titulo: "Sobre vocês" },
+  { id: "endereco", titulo: "Onde vocês moram" },
+  { id: "evento", titulo: "Sobre o grande dia" },
+  { id: "extra", titulo: "Conta pra gente" },
 ];
+
+export const TITULO_SECAO = Object.fromEntries(SECOES.map((x) => [x.id, x.titulo])) as Record<SecaoFormulario, string>;
 
 export type CampoFixoId =
   | "noivo" | "noiva" | "cpfNoivo" | "cpfNoiva" | "contato" | "email"

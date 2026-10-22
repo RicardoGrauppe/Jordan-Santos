@@ -39,7 +39,7 @@ import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import {
-  campoExigido, erroDaResposta, perguntasVisiveis,
+  campoExigido, erroDaResposta, perguntasVisiveis, TITULO_SECAO,
   type CampoFixoId, type Formulario, type Pergunta, type SecaoFormulario,
 } from "@/lib/formulario";
 
@@ -521,7 +521,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
             <p className="sub">Preencha os dados de quem vai assinar o contrato. Assim que confirmarmos, já mandamos o contrato pra você assinar.</p>
 
             <form onSubmit={(ev) => void enviar(ev)} noValidate>
-              <div className="form-secao">Quem vai assinar</div>
+              <div className="form-secao">{TITULO_SECAO.assinar}</div>
               <p className="ajuda-secao">{ajudaContratantes}</p>
               {fixo("noivo", { autoComplete: "given-name" })}
               {fixo("noiva", { autoComplete: "given-name" })}
@@ -549,7 +549,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
               {fixo("email", { type: "email", autoComplete: "email" })}
               {extras("assinar")}
 
-              {temEndereco ? <div className="form-secao">Endereço</div> : null}
+              {temEndereco ? <div className="form-secao">{TITULO_SECAO.endereco}</div> : null}
               <Par
                 a={fixo("cep", {
                   classe: "campo-cep", inputMode: "numeric", autoComplete: "postal-code",
@@ -563,7 +563,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
               {fixo("estado", { inputMode: "text", maxLength: 2, autoComplete: "address-level1" })}
               {extras("endereco")}
 
-              <div className="form-secao">O evento</div>
+              <div className="form-secao">{TITULO_SECAO.evento}</div>
               <Par
                 a={fixo("data", { type: "date", onClick: abrirPicker })}
                 b={fixo("horario", { type: "time", onClick: abrirPicker })}
@@ -571,7 +571,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
               {fixo("local")}
               {extras("evento")}
 
-              {perguntasDa("extra").length ? <div className="form-secao">Mais sobre vocês</div> : null}
+              {perguntasDa("extra").length ? <div className="form-secao">{TITULO_SECAO.extra}</div> : null}
               {extras("extra")}
 
               <button className="cta" type="submit" disabled={enviando}>
