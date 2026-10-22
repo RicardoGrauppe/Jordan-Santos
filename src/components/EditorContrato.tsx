@@ -167,7 +167,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
     return () => { ro.disconnect(); clearTimeout(vai); clearTimeout(volta); };
   }, [editor, rodapeMobile, medirBarra]);
 
-  /* celular: a lateral vira um sheet de baixo pra cima (80% da tela), aberto
+  /* celular: a lateral vira um sheet de baixo pra cima (60% da tela), aberto
      pelo botão Painel; arrastar a alça pra baixo fecha */
   const [gavetaAberta, setGavetaAberta] = useState(false);
   const [arrasto, setArrasto] = useState<number | null>(null);
@@ -317,7 +317,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
               className={"absolute inset-0 bg-ink/30 transition-opacity duration-300 " + (gavetaAberta ? "opacity-100" : "opacity-0")} />
             <aside aria-label="Painel do contrato"
               style={arrasto ? { translate: `0 ${arrasto}px` } : undefined}
-              className={"absolute inset-x-0 bottom-0 flex h-[80dvh] flex-col rounded-t-[20px] bg-[#ECEEF1] shadow-alta " +
+              className={"absolute inset-x-0 bottom-0 flex h-[60dvh] flex-col rounded-t-[20px] bg-[#ECEEF1] shadow-alta " +
                 (arrasto === null ? "transition-[translate] duration-300 ease-[var(--ease-desliza)] " : "") +
                 (gavetaAberta ? "translate-y-0" : "translate-y-full")}>
               <div className="relative flex shrink-0 touch-none items-center justify-center px-2 pb-1 pt-2.5"
