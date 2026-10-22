@@ -96,6 +96,11 @@ async function lerGraphql<T>(res: Response): Promise<T> {
     if (validacao?.some((v) => /email/.test(v) && /format/.test(v))) {
       throw new Error("a Autentique não aceitou esse e-mail. Confira se está certo (ela não aceita e-mail com \"+\")");
     }
+    /* limite da Autentique pra reenvio seguido ao mesmo signatário (medido
+       em 22/10/2026, minutos depois de um envio) */
+    if (corpo?.errors?.some((e) => e.message === "too_many_resent_emails")) {
+      throw new Error("a Autentique não deixa reenviar de novo tão rápido pro mesmo e-mail. Espere um pouco e tente de novo; enquanto isso, mande o link pelo WhatsApp");
+    }
     const msg = validacao?.length
       ? "validação (" + validacao.join("; ") + ")"
       : corpo?.errors?.map((e) => e.message).join("; ") || "HTTP " + res.status;

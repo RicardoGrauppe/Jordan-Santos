@@ -544,32 +544,59 @@ export default function PaginaCliente() {
 
   /* E-mail do casal errado num contrato já enviado: troca quem assina no
      mesmo documento da Autentique e abre o pop-up do link novo. */
-  async function trocarEmail(email: string) {
+  /* troca (ou reenvia, com o mesmo e-mail) e abre o pop-up do link; lança
+     o erro pra quem chamou decidir onde mostrar */
+  async function executarTrocaEmail(email: string) {
     const id = clienteIdRef.current;
     const autentiqueId = contrato?.autentique_id;
     if (!id || !autentiqueId) return;
     const mesmoEmail = email.trim().toLowerCase() === (fichaRef.current.email || "").trim().toLowerCase();
+    await api("/api/estudio", { acao: "trocar-email-casal", id, email });
+    const r = await api<{ link: string | null; mensagem?: string }>(
+      "/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true },
+    );
+    await carregar(id);
+    if (r.link) {
+      setModalEnviado({
+        link: r.link,
+        mensagem: r.mensagem || r.link,
+        urlContrato: urlNoAutentique(autentiqueId),
+        /* reenvio pro mesmo e-mail não troca o link: sem o aviso âmbar */
+        atualizado: !mesmoEmail,
+        titulo: mesmoEmail ? "E-mail reenviado" : "E-mail trocado",
+        texto: (mesmoEmail ? "A Autentique mandou de novo o pedido de assinatura pra " : "O casal agora assina com ") + email +
+          ". É o mesmo contrato, com a sua assinatura, e não gastou documento da Autentique.",
+      });
+    }
+  }
+
+  async function trocarEmail(email: string) {
     setTrocaEmail({ ocupado: true, erro: "" });
     try {
-      await api("/api/estudio", { acao: "trocar-email-casal", id, email });
-      const r = await api<{ link: string | null; mensagem?: string }>(
-        "/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true },
-      );
-      await carregar(id);
+      await executarTrocaEmail(email);
       setTrocaEmail(null);
-      if (r.link) {
-        setModalEnviado({
-          link: r.link,
-          mensagem: r.mensagem || r.link,
-          urlContrato: urlNoAutentique(autentiqueId),
-          atualizado: true,
-          titulo: mesmoEmail ? "E-mail reenviado" : "E-mail trocado",
-          texto: (mesmoEmail ? "A Autentique mandou de novo o pedido de assinatura pra " : "O casal agora assina com ") + email +
-            ". É o mesmo contrato, com a sua assinatura, e não gastou documento da Autentique.",
-        });
-      }
     } catch (e) {
       falhou(e, (msg) => setTrocaEmail({ ocupado: false, erro: msg || "Não deu pra trocar o e-mail." }));
+    }
+  }
+
+  /* menu do cartão do contrato: mesmo e-mail, sem formulário */
+  async function reenviarEmail() {
+    const email = (fichaRef.current.email || "").trim();
+    if (!email) { setTrocaEmail({ ocupado: false, erro: "" }); return; }
+    const ok = await confirmar({
+      titulo: "Reenviar pro casal?",
+      texto: "A Autentique manda de novo o pedido de assinatura pra " + email + ". É o mesmo contrato e não gasta documento.",
+      rotuloOk: "Reenviar",
+    });
+    if (!ok) return;
+    setOcupado(true);
+    try {
+      await executarTrocaEmail(email);
+    } catch (e) {
+      falhou(e, (msg) => avisar(msg || "Não deu pra reenviar."));
+    } finally {
+      setOcupado(false);
     }
   }
 
@@ -831,7 +858,7 @@ export default function PaginaCliente() {
 
               {/* só aparece quando existe mesmo um contrato pra este cliente */}
               {contrato ? (
-                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onTrocarEmail={() => setTrocaEmail({ ocupado: false, erro: "" })} onCopiarLink={() => void copiarLink()} avisar={avisar} />
+                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onTrocarEmail={() => setTrocaEmail({ ocupado: false, erro: "" })} onReenviarEmail={() => void reenviarEmail()} onCopiarLink={() => void copiarLink()} avisar={avisar} />
               ) : null}
             </div>
           </div>

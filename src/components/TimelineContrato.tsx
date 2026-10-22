@@ -19,14 +19,14 @@
 */
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { Check, ChevronDown, CircleDashed, Copy, ExternalLink, FileCheck, FileText, Lock, Pencil, Mail } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, ChevronDown, CircleDashed, Copy, ExternalLink, FileCheck, FileText, Lock, Mail, Pencil, RotateCw, EllipsisVertical } from "lucide-react";
 import { Botao } from "./ui";
 import { copiarTexto, fmtDataHora, mascarar, type Contrato } from "@/lib/ficha";
 
 
 export function TimelineContrato({
-  contrato, onAbrirContrato, onEditarContrato, onTrocarEmail, onCopiarLink, avisar,
+  contrato, onAbrirContrato, onEditarContrato, onTrocarEmail, onReenviarEmail, onCopiarLink, avisar,
 }: {
   contrato: Contrato;
   onAbrirContrato: () => void;
@@ -34,6 +34,8 @@ export function TimelineContrato({
   onEditarContrato?: () => void;
   /** e-mail do casal errado num contrato já enviado (ver ModalTrocarEmail) */
   onTrocarEmail?: () => void;
+  /** manda de novo pro mesmo e-mail (casal não recebeu, caixa cheia...) */
+  onReenviarEmail?: () => void;
   onCopiarLink: () => void;
   avisar: (texto: string, opts?: { ok?: boolean }) => void;
 }) {
@@ -45,6 +47,7 @@ export function TimelineContrato({
   const precisaReconfirmar = jaLiberado && !assinadoFotografo && !jaAssinado;
 
   const email = statusDoEmail(contrato.autentique_email);
+  const aguardandoCasal = !!contrato.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado");
 
   const passos: { titulo: string; data: string | null | undefined; ok?: boolean }[] = [
     { titulo: "Contrato criado", data: contrato.criado_em },
@@ -68,6 +71,15 @@ export function TimelineContrato({
             Versão {versao}
           </span>
         ) : null}
+        <MenuDoContrato itens={[
+          /* já foi pra Autentique e o casal ainda não assinou: dá pra voltar
+             no texto (o editor troca o documento ao atualizar) */
+          contrato.autentique_id && contrato.editavel && onEditarContrato
+            ? { rotulo: contrato.alterado_desde_envio ? "Atualizar contrato" : "Editar contrato", Icone: Pencil, acao: onEditarContrato }
+            : null,
+          aguardandoCasal && onReenviarEmail ? { rotulo: "Reenviar pro mesmo e-mail", Icone: RotateCw, acao: onReenviarEmail } : null,
+          aguardandoCasal && onTrocarEmail ? { rotulo: "Trocar e-mail e reenviar", Icone: Mail, acao: onTrocarEmail } : null,
+        ]} />
       </div>
 
       <ol className="m-0 list-none p-0 text-[13.5px]">
@@ -133,21 +145,6 @@ export function TimelineContrato({
               {contrato.autentique_id || jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
               <ExternalLink size={14} className="opacity-60" />
             </Botao>
-            {/* Já foi pra Autentique e o casal ainda não assinou: dá pra voltar
-                no texto. Editar aqui e clicar em "Atualizar na Autentique" lá
-                dentro troca o documento (link novo pro casal). */}
-            {contrato.autentique_id && contrato.editavel && onEditarContrato ? (
-              <Botao variante="secundario" onClick={onEditarContrato}>
-                <Pencil size={16} />
-                {contrato.alterado_desde_envio ? "Atualizar contrato" : "Editar contrato"}
-              </Botao>
-            ) : null}
-            {contrato.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado") && onTrocarEmail ? (
-              <Botao variante="secundario" onClick={onTrocarEmail}>
-                <Mail size={16} />
-                Trocar e-mail e reenviar
-              </Botao>
-            ) : null}
           </div>
         </div>
       ) : null}
@@ -275,4 +272,49 @@ function statusDoEmail(ev: EventosEmail | null | undefined): { texto: string; er
   if (ev.delivered) return { texto: "E-mail entregue em " + fmtDataHora(dataDaAutentique(ev.delivered)) };
   if (ev.sent) return { texto: "E-mail enviado, esperando a entrega" };
   return null;
+}
+
+/* ---------- menu do cartão ----------
+   As ações de exceção (editar depois de enviado, reenviar, trocar e-mail)
+   moram aqui, no mesmo ⋮ do topo da ficha, pra a linha de botões ficar só
+   com o caminho de todo dia: copiar o link e abrir o contrato. */
+
+type ItemMenu = { rotulo: string; Icone: typeof Mail; acao: () => void };
+
+function MenuDoContrato({ itens }: { itens: (ItemMenu | null | false)[] }) {
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+  const lista = itens.filter((i): i is ItemMenu => !!i);
+
+  useEffect(() => {
+    if (!aberto) return;
+    function fora(ev: PointerEvent) {
+      if (!caixa.current?.contains(ev.target as Node)) setAberto(false);
+    }
+    document.addEventListener("pointerdown", fora);
+    return () => document.removeEventListener("pointerdown", fora);
+  }, [aberto]);
+
+  if (!lista.length) return null;
+  return (
+    <div ref={caixa} className="relative">
+      <button type="button" aria-label="Mais ações do contrato" aria-haspopup="true" aria-expanded={aberto}
+        onClick={() => setAberto((v) => !v)}
+        className={"inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] text-ink-soft transition-colors hover:bg-line hover:text-ink " +
+          (aberto ? "bg-line text-ink" : "bg-soft")}>
+        <EllipsisVertical size={16} />
+      </button>
+      {aberto ? (
+        <div role="menu" className="absolute right-0 top-10 z-[6] min-w-[236px] rounded-xl bg-paper p-1.5 shadow-alta">
+          {lista.map(({ rotulo, Icone, acao }) => (
+            <button key={rotulo} type="button" role="menuitem" onClick={() => { setAberto(false); acao(); }}
+              className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-[11px] py-[9px] text-left text-[13.5px] text-ink hover:bg-soft">
+              <Icone size={15} className="opacity-85" />
+              {rotulo}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
