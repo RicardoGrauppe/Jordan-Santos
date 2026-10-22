@@ -186,6 +186,12 @@ const CSS = `
 @media (hover:hover){.cad .iti__selected-country-primary:hover{background:var(--soft-foco)}}
 .iti__country-selector{font-family:var(--fonte-sans),"Helvetica Neue",sans-serif;font-size:14px;border:0;border-radius:12px;box-shadow:0 10px 34px rgba(29,29,27,.14);background:#FFFFFF;z-index:200}
 .iti__search-input{border:0;background:#F6F3F0;border-radius:8px;font:inherit;outline:none}
+/* sem linha nenhuma no dropdown (regra da casa): o plugin põe 1px cinza em
+   volta dele e outro embaixo da busca, com seletores mais fortes que o de
+   cima. Quem separa é o fundo (busca bege, lista branca) e a sombra. */
+.iti .iti__country-selector,.iti--inline-country-selector .iti__country-selector{
+  border:0;border-radius:12px;overflow:hidden;box-shadow:0 10px 34px rgba(29,29,27,.14)}
+.iti .iti__search-input-wrapper{border-bottom:0}
 .iti__country.iti__highlight{background:#F6F3F0}
 
 .cad .cta{
