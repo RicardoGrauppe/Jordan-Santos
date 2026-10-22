@@ -24,7 +24,7 @@ import { rest } from "@/lib/supabase";
 import { sessaoAtual } from "@/lib/sessao";
 import { filtrarCampos, normalizarCpf, textoCurto } from "@/lib/util";
 import { apagarDocumento as apagarDocumentoAutentique, configurada as autentiqueConfigurada, cotaDocumentos, ehSandbox } from "@/lib/autentique";
-import { enviarParaAssinatura, hashDoConteudo, sincronizarContrato, substituirNaAutentique, trocarEmailDoCasal } from "@/lib/contrato-autentique";
+import { ErroEnvioAutentique, enviarParaAssinatura, hashDoConteudo, sincronizarContrato, substituirNaAutentique, trocarEmailDoCasal } from "@/lib/contrato-autentique";
 
 /* campos que a UI pode gravar (whitelist contra colunas inesperadas) */
 const CAMPOS = [
@@ -624,6 +624,7 @@ export async function POST(req: Request) {
           link = atual?.link || link;
         }
       } catch (e) {
+        if (e instanceof ErroEnvioAutentique) return NextResponse.json({ erro: e.message }, { status: 409 });
         console.error("autentique falhou:", (e as Error).message);
         return NextResponse.json(
           { erro: "não deu pra falar com a Autentique agora, tente de novo em instantes" },

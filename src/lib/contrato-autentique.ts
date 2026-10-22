@@ -63,6 +63,23 @@ function assinaturaDoCasal(doc: DocumentoAutentique, emailDaConta: string) {
   return alvo[alvo.length - 1] || null;
 }
 
+/** Erro de dado (não de rede): a rota responde 409 com a mensagem como está. */
+export class ErroEnvioAutentique extends Error {}
+
+/* O casal com o MESMO e-mail da conta do fotógrafo na Autentique (comum em
+   teste, ou e-mail copiado errado) vira um signatário só: a Autentique junta
+   os dois, o documento nasce só com o fotógrafo, já assinado, gasta um
+   documento da cota e o casal fica sem link. Medido em 22/10/2026. Barra
+   ANTES de criar o documento. */
+async function exigirEmailDoCasal(casal: ContatoCasal): Promise<void> {
+  const dono = await conta();
+  if (casal.email.trim().toLowerCase() === dono.email.trim().toLowerCase()) {
+    throw new ErroEnvioAutentique(
+      "o e-mail do casal é o mesmo da sua conta na Autentique (" + dono.email + "); troque pelo e-mail do casal na ficha",
+    );
+  }
+}
+
 /**
  * Sobe o contrato pra Autentique e já assina pelo fotógrafo, deixando o casal
  * como o próximo da fila. Devolve o link curto dele, que é o que o painel
@@ -72,6 +89,7 @@ export async function enviarParaAssinatura(
   c: LinhaContratoAutentique,
   casal: ContatoCasal,
 ): Promise<{ link: string | null; documento: DocumentoAutentique }> {
+  await exigirEmailDoCasal(casal);
   const dono = await conta();
 
   /* PDF sem a nossa folha de comprovante: quem comprova agora é a Autentique.
@@ -140,6 +158,8 @@ export async function substituirNaAutentique(
   c: LinhaContratoAutentique,
   casal: ContatoCasal,
 ): Promise<{ link: string | null; documento: DocumentoAutentique }> {
+  /* antes de apagar o de lá: barrado aqui, o documento atual continua de pé */
+  await exigirEmailDoCasal(casal);
   if (c.autentique_id) {
     try { await apagarDocumento(c.autentique_id); }
     catch (e) { console.error("autentique: não deu pra apagar o documento antigo:", (e as Error).message); }
