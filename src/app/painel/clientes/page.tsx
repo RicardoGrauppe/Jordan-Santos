@@ -288,13 +288,17 @@ export default function ListaClientes() {
           <div
             aria-hidden={marcados.length ? true : undefined}
             className={
-              "hidden pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-accent-deep " +
+              /* gap-x-3 igual ao das linhas: sem ele cada coluna do
+                 cabeçalho começava 12px por coluna à direita do conteúdo,
+                 porque nas linhas os gaps saem do espaço da 1ª coluna (1fr) e
+                 empurram as outras pra esquerda */
+              "hidden gap-x-3 pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-accent-deep " +
               "transition-[opacity,translate] duration-200 ease-[var(--ease-desliza)] md:grid " +
               (marcados.length ? "pointer-events-none -translate-y-1 opacity-0 " : "") + COLUNAS
             }
           >
             <span>Casal</span><span>Data</span><span>Status</span>
-            <span className="text-right">Total</span><span aria-label="Ações" />
+            <span>Total</span><span aria-label="Ações" />
           </div>
 
           {/* camada 2: o que fazer com os marcados */}
@@ -363,7 +367,12 @@ export default function ListaClientes() {
                     <span className="row-span-2 justify-self-end md:row-span-1 md:justify-self-start">
                       <Selo tom={TOM_STATUS[st] ?? "neutro"}>{ROTULO_STATUS[st] ?? st}</Selo>
                     </span>
-                    <span className="text-left text-[14.5px] font-semibold tabular-nums text-ink md:text-right">
+                    {/* alinhado à ESQUERDA, como o título em cima (pedido do
+                        Ricardo: começo com começo em todas as colunas).
+                        tabular-nums segura a leitura dos valores: os dígitos
+                        têm a mesma largura e a vírgula dos centavos cai no
+                        mesmo ponto quando o número de casas é igual. */}
+                    <span className="text-left text-[14.5px] font-semibold tabular-nums text-ink">
                       {c.total != null && c.total !== "" ? moeda(Number(c.total)) : ""}
                     </span>
                     <span className="hidden md:block" />
