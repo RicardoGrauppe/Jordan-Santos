@@ -135,7 +135,7 @@ Vieram do estúdio original e cada uma custou tempo pra descobrir:
 3. **Hover só onde existe mouse.** Sempre `[@media(hover:hover)]:hover:…`. Sem
    isso, no celular o estado fica preso depois do toque e não volta.
 4. **Ícone em pill sempre inline** com o título, nunca acima.
-5. Raio generoso: botão e campo 10px, card 16 a 18px, selo 999px.
+5. Raio generoso: botão e campo 10px, card 16 a 18px. Selo de status 6px (sutilmente quadrado, ver brandbook "Selos de status"); pill de filtro 999px.
 
 ## Regras de texto (tom de voz)
 

@@ -235,9 +235,12 @@ const TOM: Record<Tom, string> = {
   accent: "bg-accent-tint text-accent",
 };
 
+/* Raio de 6px (brandbook, "Selos de status", 22/10/2026): sutilmente
+   quadrado, pra ler como etiqueta e não como os pills de filtro, que são os
+   redondos da casa. */
 export function Selo({ tom = "neutro", children }: { tom?: Tom; children: ReactNode }) {
   return (
-    <span className={"inline-block whitespace-nowrap rounded-full px-2.5 py-[3px] text-[10.5px] font-semibold tracking-[.03em] " + TOM[tom]}>
+    <span className={"inline-block whitespace-nowrap rounded-[6px] px-2.5 py-[3px] text-[10.5px] font-semibold tracking-[.03em] " + TOM[tom]}>
       {children}
     </span>
   );

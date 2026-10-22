@@ -45,8 +45,11 @@ const FILTROS: { valor: string; rotulo: string }[] = [
   { valor: "arquivado", rotulo: "Arquivado" },
 ];
 
-const TOM_STATUS: Record<string, "neutro" | "ok" | "accent"> = {
-  novo: "neutro", confirmado: "accent", realizado: "ok", arquivado: "neutro",
+/* Cor condicional (brandbook, "Selos de status"). Novo é âmbar porque é o
+   estado que pede ação: é o grupo "Cliente novo pra responder" da tela
+   Precisa de atenção. Antes era cinza, e cinza sobre a linha branca sumia. */
+const TOM_STATUS: Record<string, "neutro" | "ok" | "accent" | "atencao"> = {
+  novo: "atencao", confirmado: "accent", realizado: "ok", arquivado: "neutro",
 };
 
 /* mesma grade pra cabeçalho e linhas, senão as colunas não alinham */
@@ -293,7 +296,9 @@ export default function ListaClientes() {
                  cabeçalho começava 12px por coluna à direita do conteúdo,
                  porque nas linhas os gaps saem do espaço da 1ª coluna (1fr) e
                  empurram as outras pra esquerda */
-              "hidden gap-x-3 pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-ink-soft " +
+              /* texto em ink: o ink-soft sobre o cinza `line` dava 3,9:1
+                 de contraste e lia apagado. A cor do fundo fica como está. */
+              "hidden gap-x-3 pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-ink " +
               "transition-[opacity,translate] duration-200 ease-[var(--ease-desliza)] md:grid " +
               (marcados.length ? "pointer-events-none -translate-y-1 opacity-0 " : "") + COLUNAS
             }
