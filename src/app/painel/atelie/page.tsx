@@ -321,10 +321,17 @@ export default function Atelie() {
       <TituloMobile titulo="Ateliê" acao={{ rotulo: "Abrir o site", Icone: ExternalLink, aoAcionar: abrirSite }} />
       {/* no celular o título vive no cabeçalho (ver cabecalho-mobile.tsx) */}
       <div className="mb-2 hidden items-center justify-between gap-4 md:flex">
-        <h1 className="m-0 text-[26px] font-bold text-ink">Ateliê</h1>
+        <h1 className="m-0 flex items-center gap-2.5 text-[26px] font-bold text-ink">Ateliê <Selo tom="atencao">Beta</Selo></h1>
         <Botao variante="secundario" onClick={abrirSite}>
           <ExternalLink size={16} /> Abrir o site
         </Botao>
+      </div>
+      {/* Beta (brandbook, seção 19): sai junto com o selo do título quando o
+          Ateliê sair do teste */}
+      <div className="mb-3">
+        <CartaoAviso tom="atencao">
+          O Ateliê está em fase de testes (beta) e ainda não funciona 100%. Antes de pôr um modelo no ar, confira em &quot;Ver como fica&quot; se ficou do jeito que você quer.
+        </CartaoAviso>
       </div>
       <div className="mb-5">
         <CartaoAviso tom="info">

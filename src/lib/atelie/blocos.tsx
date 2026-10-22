@@ -238,7 +238,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       instagram: { type: "text", label: "Instagram (usuário)" },
     },
     render: ({ children, puck }) => (
-      <div className={`prop ${fonteSerif.variable} ${fonteSans.variable}${puck.isEditing ? " editando" : ""}`}>
+      <div className={`prop ${fonteSerif.variable} ${fonteSans.variable}${puck.isEditing ? " editando" : ""}${puck.isEditing && puck.metadata?.celular ? " so-ajustes" : ""}`}>
         <style>{CSS_PROPOSTA + CSS_EDICAO}</style>
         {!puck.isEditing && <RevealAoRolar />}
         {children}

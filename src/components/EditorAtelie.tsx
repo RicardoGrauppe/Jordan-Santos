@@ -11,14 +11,18 @@
   da página) e preenche o canto esquerdo do cabeçalho (`topo`, com voltar,
   nome e estado) e o direito (`acoes`, com publicar).
 
-  No celular as três colunas viram uma barra flutuante (Blocos, Estrutura,
-  Campos) que abre cada painel como folha de baixo pra cima, e tocar num bloco
-  da página abre os campos dele.
+  No celular o editor é só de AJUSTES (brandbook, seção 20): mexer no que já
+  existe (texto, preço, foto, publicar), sem adicionar, arrastar, duplicar ou
+  apagar bloco. Montar a página é coisa do computador: numa tela de 375px a
+  noção do conjunto se perde, e arrastar com o dedo é onde um bloco entra sem
+  querer. As colunas viram uma barra flutuante (Estrutura, Campos) que abre
+  cada painel como folha de baixo pra cima, e tocar num bloco da página abre
+  os campos dele.
 */
 "use client";
 
-import { useEffect, useState, type ComponentType, type ReactNode } from "react";
-import { createUsePuck, Drawer, Puck, type Dictionary } from "@puckeditor/core";
+import { useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { createUsePuck, Drawer, Puck, type Dictionary, type Permissions } from "@puckeditor/core";
 import "@puckeditor/core/no-external.css";
 import "@/lib/atelie/editor-tema.css";
 import {
@@ -36,6 +40,27 @@ const ZONA_RAIZ = "root:default-zone";
 
 /* Largura da página no modo celular: um iPhone comum. */
 const LARGURA_CELULAR = 390;
+
+/* Abaixo do md do Tailwind: é a mesma fronteira em que a moldura troca as
+   colunas pela barra de baixo. */
+const CONSULTA_CELULAR = "(max-width: 767.98px)";
+
+function assinarCelular(aviso: () => void) {
+  const m = window.matchMedia(CONSULTA_CELULAR);
+  m.addEventListener("change", aviso);
+  return () => m.removeEventListener("change", aviso);
+}
+
+/** true no celular. No servidor, computador (a tela inteira é de cliente mesmo). */
+function useCelular(): boolean {
+  return useSyncExternalStore(assinarCelular, () => window.matchMedia(CONSULTA_CELULAR).matches, () => false);
+}
+
+/* O Puck MESCLA as permissões novas com as que já tinha, então os dois
+   conjuntos dizem tudo, e são constantes pra não trocar de objeto a cada
+   render. Editar campo continua valendo no celular. */
+const PERMISSOES_COMPUTADOR: Permissions = { drag: true, insert: true, duplicate: true, delete: true, edit: true };
+const PERMISSOES_CELULAR: Permissions = { drag: false, insert: false, duplicate: false, delete: false, edit: true };
 
 const DICIONARIO: Dictionary = {
   "header-publish": "Publicar",
@@ -240,7 +265,7 @@ function PainelCampos() {
 
 /* ---------- moldura ---------- */
 
-type Painel = "blocos" | "estrutura" | "campos";
+type Painel = "estrutura" | "campos";
 
 function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
   const history = usePuck((s) => s.history);
@@ -317,7 +342,6 @@ function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
       {/* celular: barra flutuante e folha */}
       <nav className="fixed inset-x-4 bottom-[calc(0.75rem+var(--sab))] z-20 mx-auto flex h-[60px] max-w-[420px] items-center justify-around rounded-full bg-[linear-gradient(180deg,#ffffff,#f9fafb)] px-2 shadow-flutuante md:hidden">
         {([
-          { id: "blocos", rotulo: "Blocos", Icone: Blocks },
           { id: "estrutura", rotulo: "Estrutura", Icone: ListTree },
           { id: "campos", rotulo: "Campos", Icone: SlidersHorizontal },
         ] as const).map(({ id, rotulo, Icone }) => (
@@ -333,12 +357,19 @@ function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
         <div className="fixed inset-x-0 bottom-0 z-30 flex max-h-[72dvh] flex-col rounded-t-[22px] bg-paper pb-[var(--sab)] shadow-flutuante md:hidden">
           <div className="flex shrink-0 items-center justify-between px-4 pb-1 pt-3">
             <span className="text-[14px] font-semibold text-ink">
-              {folha === "blocos" ? "Blocos" : folha === "estrutura" ? "Estrutura" : "Campos"}
+              {folha === "estrutura" ? "Estrutura" : "Campos"}
             </span>
             <BotaoIcone rotulo="Fechar" aoClicar={() => setFolha(null)}><X size={18} /></BotaoIcone>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-            {folha === "blocos" ? <ListaDeBlocos aoInserir={() => setFolha(null)} /> : folha === "estrutura" ? <Puck.Outline /> : <PainelCampos />}
+            {folha === "estrutura" ? (
+              <>
+                <p className="m-0 mb-2 rounded-[10px] bg-soft px-3 py-2.5 text-[12.5px] leading-[1.5] text-ink-soft">
+                  Toque num bloco pra editar. Pra montar ou reorganizar a página, abra o Ateliê no computador.
+                </p>
+                <Puck.Outline />
+              </>
+            ) : <PainelCampos />}
           </div>
         </div>
       ) : null}
@@ -356,11 +387,14 @@ export function EditorAtelie({ dados, contato, aoMudar, topo, acoes }: {
   topo: ReactNode;
   acoes: ReactNode;
 }) {
+  const celular = useCelular();
   return (
     <Puck
       config={configAtelie}
       data={dados}
-      metadata={{ contato }}
+      permissions={celular ? PERMISSOES_CELULAR : PERMISSOES_COMPUTADOR}
+      /* `celular` vai junto pro convite da página vazia (ver blocos.tsx) */
+      metadata={{ contato, celular }}
       dictionary={DICIONARIO}
       onChange={aoMudar}
       iframe={{ enabled: true }}

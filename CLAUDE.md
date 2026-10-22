@@ -163,6 +163,13 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   "Cartões"). Nos blocos de foto em altura natural o `foco` segue no dado e
   no style, mas o campo fica escondido (`visible: false`): lá ele não muda
   nada.
+- **Beta:** a galeria mostra selo "Beta" e um aviso âmbar enquanto o Ateliê
+  está em teste (decisão do Ricardo, 22/10/2026). Saem juntos.
+- **No celular o editor só ajusta** (decisão do Ricardo, 22/10/2026): edita
+  campo, troca foto, publica, versões; não insere, arrasta, duplica nem
+  apaga bloco. É pelas `permissions` do Puck (que ele MESCLA, então passe o
+  conjunto inteiro) e a barra de baixo não tem Blocos. Montar a página é no
+  computador.
 - **Toda publicação vira uma versão** (`site_versoes`, as 30 últimas por
   modelo). Restaurar leva a versão pro RASCUNHO e nunca publica sozinho;
   descartar faz o rascunho voltar ao publicado. Os dois recarregam o editor
