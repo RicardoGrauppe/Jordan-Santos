@@ -8,7 +8,7 @@
 */
 "use client";
 
-import { useRef, useState, type InputHTMLAttributes } from "react";
+import { useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
 import { copiarTexto, soDigitos } from "@/lib/ficha";
 
@@ -26,7 +26,7 @@ function IconeWhatsApp() {
 }
 
 export function CampoCopiavel({
-  rotulo, id, value, copiavel = true, whatsapp = false, avisar, className = "", ...props
+  rotulo, id, value, copiavel = true, whatsapp = false, avisar, acao, className = "", ...props
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "value"> & {
   rotulo: string;
   id: string;
@@ -35,6 +35,8 @@ export function CampoCopiavel({
   whatsapp?: boolean;
   /** toast: "CPF copiado", "E-mail está vazio" */
   avisar: (texto: string, opts?: { ok?: boolean }) => void;
+  /** botão extra colado à direita do campo, no lugar do WhatsApp dos telefones */
+  acao?: ReactNode;
 }) {
   const [copiou, setCopiou] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -103,6 +105,7 @@ export function CampoCopiavel({
             <IconeWhatsApp />
           </button>
         ) : null}
+        {acao}
       </div>
     </div>
   );

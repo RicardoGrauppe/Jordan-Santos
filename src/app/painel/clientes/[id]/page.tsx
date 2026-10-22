@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen, Pencil } from "lucide-react";
+import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen, Mail, Pencil } from "lucide-react";
 import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
@@ -704,10 +704,16 @@ export default function PaginaCliente() {
                   <div className="col-span-full">
                     <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
                       readOnly={emailNaAutentique}
+                      acao={emailNaAutentique ? (
+                        <button type="button" onClick={() => setTrocaEmail({ ocupado: false, erro: "" })}
+                          className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-soft px-3.5 text-[13px] font-semibold text-accent transition-colors hover:bg-line">
+                          <Mail size={15} /> Trocar e reenviar
+                        </button>
+                      ) : undefined}
                       onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
                     {emailNaAutentique ? (
                       <p className="m-0 -mt-2 mb-3.5 text-[11.5px] leading-[1.5] text-ink-soft/85">
-                        O contrato já foi pra esse e-mail. Pra corrigir, use &quot;Trocar e-mail e reenviar&quot; no contrato.
+                        O contrato já foi pra esse e-mail. Se estiver errado, troque e reenvie pro casal.
                       </p>
                     ) : null}
                   </div>
