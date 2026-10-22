@@ -34,7 +34,7 @@ src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirma
 src/lib/                     supabase.ts, storage.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
-                             atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelos.ts, midias.ts, PaginaDoSite.tsx, editor-tema.css)
+                             atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelo-guiado.ts, modelos.ts, midias.ts, PaginaDoSite.tsx, editor-tema.css)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos) + atelie_midias (site_midias) + atelie_versoes (site_versoes)
 ```
 
@@ -170,6 +170,14 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   apaga bloco. É pelas `permissions` do Puck (que ele MESCLA, então passe o
   conjunto inteiro) e a barra de baixo não tem Blocos. Montar a página é no
   computador.
+- **Modelo novo nasce guiado** (`modelo-guiado.ts`): blocos que explicam, no
+  próprio texto, como o Ateliê funciona. Texto de exemplo novo entra no
+  objeto `T` de lá, que é a lista que a confirmação de publicar confere
+  (`temTextoDeExemplo`) pra avisar que ele iria pro ar.
+- **A página do editor é desenhada com 1280px e encolhida** no modo
+  Computador (`transform: scale`, como o layout padrão do Puck). Na largura
+  da coluna do meio (uns 750px) o site cairia nas regras de celular e
+  tablet, e a prévia do computador mostraria outro layout.
 - **Toda publicação vira uma versão** (`site_versoes`, as 30 últimas por
   modelo). Restaurar leva a versão pro RASCUNHO e nunca publica sozinho;
   descartar faz o rascunho voltar ao publicado. Os dois recarregam o editor

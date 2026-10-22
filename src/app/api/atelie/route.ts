@@ -9,7 +9,7 @@
 
   POST {acao:"salvar", id, rascunho} → { ok }  o salvamento automático do editor
 
-  POST {acao:"criar", nome}        → { id }  modelo em branco, com o contato do site no ar
+  POST {acao:"criar", nome}        → { id }  modelo guiado, com o contato do site no ar
   POST {acao:"duplicar", id}       → { id }  cópia do rascunho, fora do ar
   POST {acao:"renomear", id, nome} → { ok }
   POST {acao:"por-no-ar", id}      → { ok }  publica o rascunho e vira o site
@@ -20,7 +20,7 @@
 import { NextResponse } from "next/server";
 import { sessaoAtual } from "@/lib/sessao";
 import {
-  apagarModelo, criarModeloEmBranco, descartarMudancas, duplicarModelo, garantirModeloInicial, idDoSiteAtivo,
+  apagarModelo, criarModeloNovo, descartarMudancas, duplicarModelo, garantirModeloInicial, idDoSiteAtivo,
   listarModelos, listarVersoes, modeloParaEditar, nomeValido, porNoAr, rascunhoValido, renomearModelo,
   restaurarVersao, salvarRascunho,
 } from "@/lib/atelie/modelos";
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     if (acao === "criar") {
       const nome = nomeValido(corpo.nome);
       if (!nome) return erro("Dê um nome pro modelo.", 400);
-      return NextResponse.json({ id: await criarModeloEmBranco(nome) });
+      return NextResponse.json({ id: await criarModeloNovo(nome) });
     }
 
     if (!id) return erro("modelo inválido", 400);

@@ -31,6 +31,7 @@ import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
 import { contatoDaPagina, type DadosSite } from "@/lib/atelie/blocos";
+import { AVISO_TEXTO_DE_EXEMPLO, temTextoDeExemplo } from "@/lib/atelie/modelo-guiado";
 import { api, ERRO_SESSAO } from "@/lib/painel";
 import { useVoltar } from "@/lib/voltar";
 
@@ -71,6 +72,8 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   const menu = useRef<HTMLDivElement>(null);
 
   const pendente = useRef<DadosSite | null>(null);
+  /* o conteúdo de agora, pra conferir texto de exemplo na hora de publicar */
+  const dadosAtuais = useRef<DadosSite | null>(null);
   const ultimoSalvo = useRef("");
   const nomeRef = useRef("");
   const nomeSalvo = useRef("");
@@ -85,6 +88,7 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
     setNoAr(m.noAr); setForaDoAr(m.pendente); setTemBlocos(m.rascunho.content.length > 0);
     setPublicadoEm(m.publicado_em);
     ultimoSalvo.current = JSON.stringify(m.rascunho);
+    dadosAtuais.current = m.rascunho;
   }, []);
 
   useEffect(() => {
@@ -155,6 +159,7 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   const aoMudar = useCallback((dados: DadosSite) => {
     setRaiz(dados.root.props);
     setTemBlocos(dados.content.length > 0);
+    dadosAtuais.current = dados;
     if (JSON.stringify(dados) === ultimoSalvo.current) return;
     pendente.current = dados;
     setForaDoAr(true);
@@ -231,17 +236,18 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   }
 
   async function publicar() {
+    const exemplo = temTextoDeExemplo(dadosAtuais.current);
     const ok = await confirmar(noAr
       ? {
         titulo: "Publicar as mudanças?",
         texto: `O site passa a mostrar "${nomeRef.current.trim() || nomeSalvo.current}" do jeito que está agora, com as mudanças que você fez.`,
-        aviso: "Quem abrir o site depois disso já vê a versão nova.",
+        aviso: exemplo ? AVISO_TEXTO_DE_EXEMPLO : "Quem abrir o site depois disso já vê a versão nova.",
         rotuloOk: "Publicar",
       }
       : {
         titulo: "Pôr este modelo no ar?",
         texto: `O site passa a mostrar "${nomeRef.current.trim() || nomeSalvo.current}" do jeito que está agora, pra todo mundo que abrir o link do estúdio. O modelo que está no ar hoje sai do ar, mas continua guardado no Ateliê.`,
-        aviso: "Isto não é um teste. Quem abrir o site depois disso já vê este modelo.",
+        aviso: exemplo ? AVISO_TEXTO_DE_EXEMPLO : "Isto não é um teste. Quem abrir o site depois disso já vê este modelo.",
         rotuloOk: "Pôr no ar",
       });
     if (!ok) return;

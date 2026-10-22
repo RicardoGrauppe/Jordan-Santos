@@ -22,6 +22,7 @@ import { Sk, SkLinha } from "@/components/Skeleton";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { api, esperaMin, ERRO_SESSAO } from "@/lib/painel";
 import { fmtData } from "@/lib/util";
+import { AVISO_TEXTO_DE_EXEMPLO } from "@/lib/atelie/modelo-guiado";
 
 type Modelo = {
   id: string;
@@ -30,6 +31,7 @@ type Modelo = {
   publicado_em: string | null;
   blocos: number;
   pendente: boolean;
+  exemplo: boolean;
 };
 type Resposta = { modelos: Modelo[]; ativo: string | null };
 
@@ -221,13 +223,13 @@ export default function Atelie() {
       ? {
         titulo: "Publicar as mudanças?",
         texto: `O site passa a mostrar "${m.nome}" do jeito que ele está agora, com as mudanças que você fez desde a última vez.`,
-        aviso: "Quem abrir o site depois disso já vê a versão nova.",
+        aviso: m.exemplo ? AVISO_TEXTO_DE_EXEMPLO : "Quem abrir o site depois disso já vê a versão nova.",
         rotuloOk: "Publicar",
       }
       : {
         titulo: "Pôr este modelo no ar?",
         texto: `O site passa a mostrar "${m.nome}" do jeito que ele está agora, pra todo mundo que abrir o link do estúdio. O modelo que está no ar hoje sai do ar, mas continua guardado aqui.`,
-        aviso: "Isto não é um teste. Quem abrir o site depois disso já vê este modelo.",
+        aviso: m.exemplo ? AVISO_TEXTO_DE_EXEMPLO : "Isto não é um teste. Quem abrir o site depois disso já vê este modelo.",
         rotuloOk: "Pôr no ar",
       });
     if (!ok) return;

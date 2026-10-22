@@ -21,7 +21,7 @@
 */
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ComponentType, type ReactNode } from "react";
 import { createUsePuck, Drawer, Puck, type Dictionary, type Permissions } from "@puckeditor/core";
 import "@puckeditor/core/no-external.css";
 import "@/lib/atelie/editor-tema.css";
@@ -40,6 +40,12 @@ const ZONA_RAIZ = "root:default-zone";
 
 /* Largura da página no modo celular: um iPhone comum. */
 const LARGURA_CELULAR = 390;
+
+/* No modo Computador a página é desenhada com pelo menos esta largura e
+   encolhida pra caber na coluna do meio, como o layout padrão do Puck faz.
+   Desenhar na largura da coluna (uns 750px) acionava as regras de celular e
+   tablet do site, e a "prévia do computador" mostrava outro layout. */
+const LARGURA_COMPUTADOR = 1280;
 
 /* Abaixo do md do Tailwind: é a mesma fronteira em que a moldura troca as
    colunas pela barra de baixo. */
@@ -233,8 +239,12 @@ function ListaDeBlocos({ aoInserir }: { aoInserir?: () => void }) {
 
 /* ---------- campos ---------- */
 
+/* Com um bloco selecionado, "Campos da página" volta pro título e o contato
+   do estúdio. Sem o atalho, o único caminho era clicar fora de qualquer
+   bloco, e numa página cheia não sobra "fora". */
 function CabecalhoCampos() {
   const selecionado = usePuck((s) => s.selectedItem);
+  const dispatch = usePuck((s) => s.dispatch);
   const tipo = selecionado?.type as TipoDeBloco | undefined;
   const Icone = tipo ? APRESENTACAO[tipo]?.Icone ?? Blocks : FileText;
   return (
@@ -242,12 +252,18 @@ function CabecalhoCampos() {
       <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
         <Icone size={17} />
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="truncate text-[14px] font-semibold text-ink">{tipo ? rotuloDe(tipo) : "Página"}</div>
         <div className="text-[12px] text-ink-soft">
           {tipo ? "Campos deste bloco" : "Título e contato valem pro site inteiro"}
         </div>
       </div>
+      {tipo ? (
+        <button type="button" onClick={() => dispatch({ type: "setUi", ui: { itemSelector: null } })}
+          className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-semibold text-accent transition-colors hover:bg-soft">
+          <FileText size={14} /> Campos da página
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -273,6 +289,18 @@ function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
   const [tela, setTela] = useState<"computador" | "celular">("computador");
   const [lateral, setLateral] = useState<"blocos" | "estrutura">("blocos");
   const [folha, setFolha] = useState<Painel | null>(null);
+  const aparelhoCelular = useCelular();
+  const palco = useRef<HTMLDivElement>(null);
+  const [tamanho, setTamanho] = useState({ largura: 0, altura: 0 });
+
+  /* mede a coluna do meio; o estado é escrito no callback do observador */
+  useEffect(() => {
+    const el = palco.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setTamanho({ largura: el.clientWidth, altura: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   /* bloco escolhido pela Estrutura ou recém-inserido: a página vai até ele */
   useEffect(() => {
@@ -289,7 +317,16 @@ function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
     return () => clearTimeout(t);
   }, [selecionadoId]);
 
-  const larguraPagina = tela === "celular" ? LARGURA_CELULAR : undefined;
+  /* Num celular de verdade a página usa a largura do aparelho. No computador:
+     modo Celular, 390px sem escala; modo Computador, desenhada larga e
+     encolhida (transform), pra valerem as regras de computador do site. */
+  const larguraVisivel = aparelhoCelular ? undefined : tela === "celular" ? LARGURA_CELULAR : undefined;
+  let quadro: CSSProperties = { width: "100%", height: "100%" };
+  if (!aparelhoCelular && tela === "computador" && tamanho.largura > 0) {
+    const largura = Math.max(tamanho.largura, LARGURA_COMPUTADOR);
+    const escala = tamanho.largura / largura;
+    quadro = { width: largura, height: tamanho.altura / escala, transform: `scale(${escala})`, transformOrigin: "top left" };
+  }
 
   return (
     <div className="atelie-editor fixed inset-0 z-50 flex flex-col bg-soft">
@@ -324,10 +361,13 @@ function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
         {/* a página */}
         <main className="flex min-h-0 min-w-0 flex-1 justify-center overflow-hidden">
           <div
+            ref={palco}
             className="h-full w-full overflow-hidden bg-paper md:rounded-2xl md:shadow-alta"
-            style={larguraPagina ? { maxWidth: larguraPagina } : undefined}
+            style={larguraVisivel ? { maxWidth: larguraVisivel } : undefined}
           >
-            <Puck.Preview />
+            <div style={quadro}>
+              <Puck.Preview />
+            </div>
           </div>
         </main>
 

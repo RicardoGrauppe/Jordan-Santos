@@ -11,6 +11,7 @@ import { cache } from "react";
 import { rest } from "@/lib/supabase";
 import type { DadosSite, RaizProps } from "./blocos";
 import { MODELO_INICIAL, NOME_MODELO_INICIAL } from "./modelo-inicial";
+import { modeloGuiado, temTextoDeExemplo } from "./modelo-guiado";
 import { TIPOS_DE_BLOCO } from "./tipos";
 
 export const CHAVE_SITE_ATIVO = "site_ativo";
@@ -24,6 +25,8 @@ export type ResumoModelo = {
   blocos: number;
   /** o rascunho tem mudança que ainda não foi publicada */
   pendente: boolean;
+  /** ainda sobrou texto de exemplo do modelo guiado no rascunho */
+  exemplo: boolean;
 };
 
 type LinhaModelo = {
@@ -83,6 +86,7 @@ export async function listarModelos(): Promise<ResumoModelo[]> {
     publicado_em: l.publicado_em,
     blocos: l.rascunho?.content?.length ?? 0,
     pendente: !l.publicado || JSON.stringify(l.rascunho) !== JSON.stringify(l.publicado),
+    exemplo: temTextoDeExemplo(l.rascunho),
   }));
 }
 
@@ -112,12 +116,13 @@ async function gravarSiteAtivo(id: string): Promise<void> {
   });
 }
 
-/** Modelo em branco: sem blocos, mas com o contato do site que está no ar,
-    pra ninguém ter de redigitar telefone e e-mail a cada modelo novo. */
-export async function criarModeloEmBranco(nome: string): Promise<string> {
+/** Modelo novo: nasce do modelo guiado (blocos que explicam como funcionam,
+    ver modelo-guiado.ts) com o contato do site que está no ar, pra ninguém
+    ter de redigitar telefone e e-mail a cada modelo novo. */
+export async function criarModeloNovo(nome: string): Promise<string> {
   const noAr = await siteNoAr();
   const contato = { ...MODELO_INICIAL.root.props, ...noAr.root.props } as RaizProps;
-  return inserir(nome, { root: { props: contato }, content: [], zones: {} });
+  return inserir(nome, modeloGuiado(contato));
 }
 
 /** Cópia do rascunho de um modelo, fora do ar e nunca publicada. */
