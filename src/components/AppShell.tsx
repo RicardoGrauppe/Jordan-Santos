@@ -146,6 +146,21 @@ function Contador({ quantos, className = "" }: { quantos: number; className?: st
 
 export function AppShell({ children, nome }: { children: ReactNode; nome?: string }) {
   const caminho = usePathname();
+  /* Chave do envelope que desliza. É o caminho, EXCETO quando um "/novo"
+     vira o id do que acabou de ser criado (a ficha nova faz replaceState pra
+     /painel/clientes/<id> no meio da digitação): isso não é navegação, e
+     trocar a chave remontava a página vazia, como cliente novo de novo, e o
+     próximo campo criava OUTRO cliente. Estado ajustado durante o render, o
+     padrão do React pra "lembrar o valor anterior" sem efeito. */
+  const [chavePagina, setChavePagina] = useState(caminho);
+  const [caminhoAnterior, setCaminhoAnterior] = useState(caminho);
+  if (caminho !== caminhoAnterior) {
+    setCaminhoAnterior(caminho);
+    const nasceuDoNovo = /\/novo\/?$/.test(caminhoAnterior) &&
+      caminho.startsWith(caminhoAnterior.replace(/novo\/?$/, "")) &&
+      !caminho.slice(caminhoAnterior.replace(/novo\/?$/, "").length).includes("/");
+    if (!nasceuDoNovo) setChavePagina(caminho);
+  }
   const router = useRouter();
   const fecharLateralRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /* Lateral: fechada em repouso, aberta enquanto o mouse (ou o foco do
@@ -609,7 +624,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             {/* a página nova entra pelo lado que a barra pede; no computador
                 não desliza, porque lá a troca não vem de um gesto. `key` no
                 caminho é o que faz a animação tocar de novo a cada rota. */}
-            <PaginaQueDesliza key={caminho} lado={ladoDaRota}>{children}</PaginaQueDesliza>
+            <PaginaQueDesliza key={chavePagina} lado={ladoDaRota}>{children}</PaginaQueDesliza>
           </main>
         </div>
       </div>
