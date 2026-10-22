@@ -44,7 +44,6 @@ import {
   useCallback, useEffect, useRef, useState,
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
-import Image from "next/image";
 import { ArrowRight, CalendarHeart, Heart, Info, Pencil, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
@@ -210,14 +209,18 @@ const CSS = `
 
 /* ---------- fluxo em etapas ---------- */
 .cad{overflow-x:clip}
-/* topo das etapas fixo ao rolar (brandbook 18). Sticky e não fixed: ele
-   fica fora das etapas (que entram com transform), então gruda sem pular, e
-   continua ocupando o lugar dele no fluxo. Fundo branco que se desfaz num
-   degradê embaixo, espelho da barra do botão no rodapé. overflow-x:clip do
-   .cad não atrapalha: clip não cria contêiner de rolagem, hidden criaria. */
+/* topo das etapas FIXO no alto da tela desde o começo (brandbook 18): só o
+   corpo rola, por baixo dele. Era sticky e só grudava depois de rolar, com
+   a página empurrando ele 38px pra baixo. Fixed funciona porque ele mora
+   fora das etapas (que entram com transform e prenderiam um fixed). Ocupa a
+   largura toda pra o fundo cobrir o que passa por baixo, e o recuo lateral
+   centraliza o conteúdo na mesma coluna de 476px da página. A página ganha
+   o respiro do tamanho dele (.pagina.com-topo). */
 .cad .topo-etapa{display:flex;align-items:center;gap:12px;min-height:40px;
-  position:sticky;top:0;z-index:40;margin:calc(-12px - var(--sat)) 0 6px;padding:calc(12px + var(--sat)) 0 20px;
-  background:linear-gradient(to bottom,var(--paper) 70%,rgba(255,255,255,0))}
+  position:fixed;top:0;left:0;right:0;z-index:40;
+  padding:calc(14px + var(--sat)) max(22px, calc((100% - 476px) / 2)) 20px;
+  background:linear-gradient(to bottom,var(--paper) 72%,rgba(255,255,255,0))}
+.cad .pagina.com-topo{padding-top:calc(88px + var(--sat))}
 .cad .voltar-etapa{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;color:var(--ink);flex-shrink:0;transition:background .15s ease}
 @media (hover:hover){.cad .voltar-etapa:hover{background:var(--soft)}}
 .cad .voltar-etapa:focus-visible{outline:none;background:var(--soft-foco)}
@@ -258,7 +261,7 @@ const CSS = `
 .cad .foto-abertura{animation:cad-sobe .9s cubic-bezier(.22,1,.36,1) both}
 .cad .slide{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
 .cad .slide.ativa{opacity:1}
-.cad .slide img{object-fit:cover;transform:scale(1.08);transition:transform 7s linear}
+.cad .slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.08);transition:transform 7s linear}
 .cad .slide.ativa img{transform:scale(1)}
 .cad .pontos{position:absolute;right:20px;bottom:24px;z-index:2;display:flex;gap:6px;align-items:center}
 .cad .pontos span{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.5);transition:width .4s ease,background .4s ease}
@@ -483,16 +486,20 @@ function CampoPergunta({
    Portfólio do Jordan, fixo como o resto da marca dele (dívida "Nome e
    marca" no CLAUDE.md). `foco` é o object-position de cada uma: as fotos são
    retrato 2:3 e o quadro do celular é 4:3, então sem isso metade dos casais
-   sairia sem cabeça. */
+   sairia sem cabeça.
+   Os arquivos são webp prontos em public/img/abertura/ (750 e 1200px),
+   gerados por tools/fotos-abertura/gerar.mjs. Não passam pelo next/image: no
+   iPhone do Jordan o otimizador do dev não entregava as fotos, e arquivo
+   estático chega igual em qualquer aparelho. */
 const FOTOS_ABERTURA = [
-  { src: "/img/prewedding.jpg", foco: "50% 62%", alt: "Casal no alto de uma caminhonete antiga, no campo, ao pôr do sol" },
-  { src: "/img/casal-jardim.jpg", foco: "50% 40%", alt: "Noivos caminhando de mãos dadas em um jardim" },
-  { src: "/img/entrega-1.jpg", foco: "50% 45%", alt: "Noivo beijando o rosto da noiva, em preto e branco" },
-  { src: "/img/casal-palacio.jpg", foco: "50% 35%", alt: "Noivos em um palácio, em preto e branco" },
-  { src: "/img/casal-campo.jpg", foco: "50% 65%", alt: "Noivos caminhando ao lado de um milharal, em preto e branco" },
-  { src: "/img/noiva-retrato.jpg", foco: "50% 30%", alt: "Retrato da noiva com véu, sentada, em preto e branco" },
-  { src: "/img/entrega-3.jpg", foco: "50% 35%", alt: "Retrato próximo dos noivos" },
-  { src: "/img/entrega-2.jpg", foco: "50% 70%", alt: "Noiva em um salão histórico, em preto e branco" },
+  { nome: "prewedding", foco: "50% 62%", alt: "Casal no alto de uma caminhonete antiga, no campo, ao pôr do sol" },
+  { nome: "casal-jardim", foco: "50% 40%", alt: "Noivos caminhando de mãos dadas em um jardim" },
+  { nome: "entrega-1", foco: "50% 45%", alt: "Noivo beijando o rosto da noiva, em preto e branco" },
+  { nome: "casal-palacio", foco: "50% 35%", alt: "Noivos em um palácio, em preto e branco" },
+  { nome: "casal-campo", foco: "50% 65%", alt: "Noivos caminhando ao lado de um milharal, em preto e branco" },
+  { nome: "noiva-retrato", foco: "50% 30%", alt: "Retrato da noiva com véu, sentada, em preto e branco" },
+  { nome: "entrega-3", foco: "50% 35%", alt: "Retrato próximo dos noivos" },
+  { nome: "entrega-2", foco: "50% 70%", alt: "Noiva em um salão histórico, em preto e branco" },
 ];
 const TEMPO_FOTO = 5500;
 
@@ -515,16 +522,19 @@ function FotosAbertura({ rodando }: { rodando: boolean }) {
   return (
     <div className="foto-abertura">
       {FOTOS_ABERTURA.slice(0, baixadas).map((f, i) => (
-        <div key={f.src} className={"slide" + (i === atual ? " ativa" : "")} aria-hidden={i !== atual}>
-          <Image src={f.src} alt={f.alt} fill sizes="(min-width: 960px) 476px, calc(100vw - 44px)"
-            loading="eager" fetchPriority={i === 0 ? "high" : "auto"}
+        <div key={f.nome} className={"slide" + (i === atual ? " ativa" : "")} aria-hidden={i !== atual}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={"/img/abertura/" + f.nome + "-750.webp"}
+            srcSet={"/img/abertura/" + f.nome + "-750.webp 750w, /img/abertura/" + f.nome + "-1200.webp 1200w"}
+            sizes="(min-width: 960px) 476px, calc(100vw - 44px)"
+            alt={f.alt} fetchPriority={i === 0 ? "high" : "auto"} decoding="async"
             style={{ objectPosition: f.foco }} />
         </div>
       ))}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="marca" src="/img/logo-principal-offwhite.png" alt="Jordan Santos" />
       <div className="pontos" aria-hidden>
-        {FOTOS_ABERTURA.map((f, i) => <span key={f.src} className={i === atual ? "ativo" : ""} />)}
+        {FOTOS_ABERTURA.map((f, i) => <span key={f.nome} className={i === atual ? "ativo" : ""} />)}
       </div>
     </div>
   );
@@ -1066,7 +1076,8 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
       <style>{CSS}</style>
-      <div className={"pagina" + (etapa === "inicio" && !enviado ? " larga" : "") + (enviado ? "" : " com-barra")}>
+      <div className={"pagina" + (etapa === "inicio" && !enviado ? " larga" : "") + (enviado ? "" : " com-barra") +
+        (etapa !== "inicio" && !enviado ? " com-topo" : "")}>
         {enviado ? (
           <div className="sucesso">
             <svg className="check" viewBox="0 0 64 64" aria-hidden>
