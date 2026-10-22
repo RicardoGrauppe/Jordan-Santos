@@ -27,15 +27,60 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, ExternalLink, MessageCircle, Send } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, MessageCircle, PenTool, Send, Table } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
+import type { Editor } from "@tiptap/react";
 import { EditorContrato } from "@/components/EditorContrato";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useVoltar } from "@/lib/voltar";
 import { copiarTexto, type Contrato } from "@/lib/ficha";
 import { ERRO_SESSAO, api, rotaDaRevisaoAntiga, urlNoAutentique } from "@/lib/painel";
+import { ROTULOS_CAMPO } from "@/lib/contrato-editor";
 
 const ESPERA_MS = 700;
+
+/* Campos da lateral, agrupados como a ficha agrupa. Toda chave aqui existe em
+   ROTULOS_CAMPO (é a mesma lista que o gerador de PDF sabe preencher). */
+const GRUPOS_CAMPO: { titulo: string; campos: string[] }[] = [
+  { titulo: "Casal", campos: ["noivo", "cpf-noivo", "noiva", "cpf-noiva", "tel-noivo", "tel-noiva"] },
+  { titulo: "Endereço", campos: ["endereco", "numero", "bairro", "cidade", "complemento", "estado", "cep"] },
+  { titulo: "Evento", campos: ["data-formatada", "local", "horario"] },
+  { titulo: "Valores", campos: ["valor-total", "valor-entrada"] },
+  { titulo: "Assinatura", campos: ["cidade-assinatura", "data-assinatura"] },
+];
+
+/* Lateral exclusiva do contrato de um cliente (o editor de modelos não tem).
+   Começa com o que já existia escondido no "+": os campos e os blocos, agora
+   à vista e agrupados. As próximas funções entram aqui como seções novas. */
+function LateralContrato({ editor, fechar }: { editor: Editor; fechar: () => void }) {
+  const inserir = (conteudo: JSONContent) => { editor.chain().focus().insertContent(conteudo).run(); fechar(); };
+  const item = "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-[7px] text-left text-[13px] text-ink transition-colors hover:bg-line";
+  return (
+    <div>
+      <h2 className="m-0 text-[15px] font-bold text-ink">Inserir no contrato</h2>
+      <p className="m-0 mt-1 text-[12.5px] leading-snug text-ink-soft">Clique pra pôr no lugar do cursor. O valor vem da ficha do cliente.</p>
+      {GRUPOS_CAMPO.map((g) => (
+        <section key={g.titulo} className="mt-4">
+          <h3 className="m-0 mb-1 px-2.5 text-[12.5px] font-semibold text-ink-soft">{g.titulo}</h3>
+          {g.campos.map((nome) => (
+            <button key={nome} type="button" className={item} onClick={() => inserir({ type: "campo", attrs: { campo: nome } })}>
+              {ROTULOS_CAMPO[nome]}
+            </button>
+          ))}
+        </section>
+      ))}
+      <section className="mt-4">
+        <h3 className="m-0 mb-1 px-2.5 text-[12.5px] font-semibold text-ink-soft">Blocos</h3>
+        <button type="button" className={item} onClick={() => inserir({ type: "tabelaItens" })}>
+          <Table size={15} className="text-ink-soft" /> Tabela de itens
+        </button>
+        <button type="button" className={item} onClick={() => inserir({ type: "blocoAssinaturas" })}>
+          <PenTool size={15} className="text-ink-soft" /> Bloco de assinaturas
+        </button>
+      </section>
+    </div>
+  );
+}
 
 type Cliente = { id: string; noivo?: string | null; noiva?: string | null; email?: string | null };
 type Resposta = { cliente: Cliente; contrato: Contrato | null };
@@ -231,7 +276,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
               ? "Assinado pelos dois. A via oficial está na Autentique."
               : contrato.autentique_id
                 ? (alterado ? "Você editou depois de enviar. Atualize pra o casal ver a versão nova." : "Enviado. Esperando a assinatura do casal.")
-                : "Rascunho. Edite o texto e insira os campos pelo +. Os dados vêm da ficha do cliente.")}
+                : "Rascunho. Edite o texto e insira os campos pela lateral. Os dados vêm da ficha do cliente.")}
           </p>
         </div>
         {botao}
@@ -273,6 +318,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       conteudoInicial={(contrato.template_json_snapshot as JSONContent) ?? null}
       aoMudar={aoMudar}
       topo={topo}
+      lateral={(editor, fechar) => <LateralContrato editor={editor} fechar={fechar} />}
     />
   );
 }

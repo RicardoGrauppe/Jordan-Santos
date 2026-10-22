@@ -17,11 +17,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import type { ReactNode } from "react";
 import {
-  AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Italic, List, ListOrdered, PenTool, Plus, Table,
+  AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Italic, List, ListOrdered, PanelLeft, PenTool, Plus, Table, X,
 } from "lucide-react";
 import { EXTENSOES, ROTULOS_CAMPO, jsonParaHtml } from "@/lib/contrato-editor";
 
@@ -38,9 +38,14 @@ export type EditorContratoProps = {
    *  se a página desenhasse a sua faixa por fora, seriam dois cabeçalhos
    *  empilhados de novo. */
   topo?: ReactNode;
+  /** Painel lateral à esquerda do documento, só de quem pede (hoje, o editor
+   *  do contrato DE UM CLIENTE; o editor de modelos não tem). Recebe o editor
+   *  pra poder inserir no cursor, e `fechar` pra gaveta do celular sumir
+   *  depois de uma ação. */
+  lateral?: (editor: Editor, fechar: () => void) => ReactNode;
 };
 
-export function EditorContrato({ conteudoInicial, aoMudar, topo }: EditorContratoProps) {
+export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: EditorContratoProps) {
   const editor = useEditor({
     extensions: EXTENSOES,
     content: conteudoInicial ?? "<p></p>",
@@ -69,6 +74,31 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo }: EditorContrat
     document.addEventListener("pointerdown", fechar);
     return () => document.removeEventListener("pointerdown", fechar);
   }, [menuAberto]);
+
+  /* a lateral gruda logo abaixo do cabeçalho, que muda de altura (faixa do
+     link do casal, barra em duas linhas no celular): mede em vez de chutar */
+  const cabecalhoRef = useRef<HTMLDivElement>(null);
+  const temLateral = !!lateral;
+  const [alturaCabecalho, setAlturaCabecalho] = useState(0);
+  useEffect(() => {
+    const el = cabecalhoRef.current;
+    if (!el || !temLateral) return;
+    const medir = () => setAlturaCabecalho(el.offsetHeight);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [temLateral, editor]);
+
+  /* celular: a lateral vira gaveta, aberta pelo botão da barra */
+  const [gavetaAberta, setGavetaAberta] = useState(false);
+  useEffect(() => {
+    if (!gavetaAberta) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setGavetaAberta(false); };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [gavetaAberta]);
+  const fecharGaveta = () => setGavetaAberta(false);
 
   if (!editor) return null;
 
@@ -99,7 +129,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo }: EditorContrat
           {border-bottom:0}`), porque um fio no meio partia o cabeçalho ao
           meio. A única separação é embaixo, entre o cabeçalho inteiro e o
           documento. Grudado no topo: só o documento rola. */}
-      <div className="sticky top-0 z-10 shrink-0 bg-paper px-5 pt-[var(--sat)] shadow-card md:px-7">
+      <div ref={cabecalhoRef} className="sticky top-0 z-10 shrink-0 bg-paper px-5 pt-[var(--sat)] shadow-card md:px-7">
         {topo}
         {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
             ao desktop, onde tudo cabe numa só */}
@@ -159,13 +189,48 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo }: EditorContrat
             </div>
           ) : null}
         </div>
+
+        {lateral ? (
+          <button type="button" aria-label="Abrir painel" title="Abrir painel" onClick={() => setGavetaAberta(true)}
+            className={"order-first md:hidden " + icone(gavetaAberta)}>
+            <PanelLeft size={17} />
+          </button>
+        ) : null}
       </div>
 
       </div>
 
       {/* a folha ocupa a largura toda, sem moldura de "caixinha" (o original
           chamava de .editor-folha) */}
-      <EditorContent editor={editor} className="documento-editor flex-1 px-5 pb-24 md:px-7" />
+      {lateral ? (
+        <div className="flex flex-1">
+          {/* computador: coluna fixa à esquerda, grudada abaixo do cabeçalho, rolando sozinha */}
+          <aside className="hidden w-[300px] shrink-0 bg-soft md:block" aria-label="Painel do contrato">
+            <div className="sticky overflow-y-auto px-4 pb-8 pt-5"
+              style={{ top: alturaCabecalho, maxHeight: `calc(100dvh - ${alturaCabecalho}px)` }}>
+              {lateral(editor, fecharGaveta)}
+            </div>
+          </aside>
+          <EditorContent editor={editor} className="documento-editor min-w-0 flex-1 px-5 pb-24 md:px-7" />
+          {/* celular: gaveta pela esquerda, por cima do documento */}
+          <div className={"fixed inset-0 z-30 md:hidden " + (gavetaAberta ? "" : "pointer-events-none")} aria-hidden={!gavetaAberta}>
+            <div onClick={fecharGaveta}
+              className={"absolute inset-0 bg-ink/30 transition-opacity duration-300 " + (gavetaAberta ? "opacity-100" : "opacity-0")} />
+            <aside aria-label="Painel do contrato"
+              className={"absolute inset-y-0 left-0 flex w-[min(320px,86vw)] flex-col bg-soft shadow-alta transition-[translate] duration-300 ease-[var(--ease-desliza)] " +
+                (gavetaAberta ? "translate-x-0" : "-translate-x-full")}>
+              <div className="flex shrink-0 items-center justify-end px-2 pt-[calc(var(--sat)+8px)]">
+                <button type="button" aria-label="Fechar painel" onClick={fecharGaveta} className={icone(false)}><X size={18} /></button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8">
+                {gavetaAberta ? lateral(editor, fecharGaveta) : null}
+              </div>
+            </aside>
+          </div>
+        </div>
+      ) : (
+        <EditorContent editor={editor} className="documento-editor flex-1 px-5 pb-24 md:px-7" />
+      )}
     </div>
   );
 }
