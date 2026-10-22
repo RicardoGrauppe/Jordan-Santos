@@ -43,6 +43,9 @@ type Modelo = {
 type Resposta = { modelos: Modelo[]; ativo: string | null };
 
 const URL_API = "/api/atelie";
+/* quanto o skeleton fica no mínimo: com 350ms ele piscava e sumia antes de
+   ser visto (Ricardo, 22/10/2026). Vale pras duas seções e pra miniatura. */
+const ESPERA_SKELETON = 900;
 const NOME_NOVO = "Modelo sem título";
 
 /* Largura em que a miniatura desenha o site antes de encolher: a de um
@@ -90,12 +93,12 @@ function Miniatura({ id, versao }: { id: string; versao: string }) {
           aria-hidden="true"
           tabIndex={-1}
           loading="lazy"
-          onLoad={() => setPronta(versao)}
+          onLoad={() => { const v = versao; setTimeout(() => setPronta(v), ESPERA_SKELETON); }}
           className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
           style={{ width: LARGURA_SITE, height: LARGURA_SITE / 1.6, transform: `scale(${escala})` }}
         />
       ) : null}
-      <div aria-hidden className={"pointer-events-none absolute inset-0 flex flex-col bg-paper transition-opacity duration-300 " + (pronta === versao ? "opacity-0" : "opacity-100")}>
+      <div aria-hidden className={"pointer-events-none absolute inset-0 flex flex-col bg-paper transition-opacity duration-500 " + (pronta === versao ? "opacity-0" : "opacity-100")}>
         <Sk className="h-[58%] w-full rounded-none" />
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6">
           <SkLinha style={{ width: "46%" }} />
@@ -223,7 +226,7 @@ export default function Atelie() {
      segura o skeleton um instante pra troca não piscar */
   useEffect(() => {
     let vivo = true;
-    Promise.all([api<Resposta>(URL_API), esperaMin(350)])
+    Promise.all([api<Resposta>(URL_API), esperaMin(ESPERA_SKELETON)])
       .then(([r]) => { if (vivo) setDados(r); })
       .catch((e) => { if (vivo) falhou(e, "Não consegui carregar seus modelos, tente de novo."); });
     return () => { vivo = false; };

@@ -18,7 +18,10 @@ import { CircleCheck, ClipboardList, Copy, EllipsisVertical, ExternalLink, Penci
 import { Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { Sk, SkCartaoModelo, SkCartaoNovo } from "@/components/Skeleton";
-import { api, ERRO_SESSAO } from "@/lib/painel";
+import { api, esperaMin, ERRO_SESSAO } from "@/lib/painel";
+
+/* mesmo tempo mínimo de skeleton da página do Ateliê */
+const ESPERA_SKELETON = 900;
 import { fmtData } from "@/lib/util";
 import { urlFoto } from "@/lib/formulario";
 
@@ -52,7 +55,7 @@ function Cartao({ modelo, emUso, aoAbrir, menu }: { modelo: Resumo; emUso: boole
           {modelo.capa ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={urlFoto(modelo.capa, 750)} alt="" onLoad={() => setCapaPronta(true)} onError={() => setCapaPronta(true)}
-              className={"h-full w-full object-cover transition-opacity duration-300 " + (capaPronta ? "opacity-100" : "opacity-0")} />
+              className={"h-full w-full object-cover transition-opacity duration-500 " + (capaPronta ? "opacity-100" : "opacity-0")} />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-accent"><ClipboardList size={30} strokeWidth={1.5} /></span>
           )}
@@ -114,8 +117,8 @@ export function FormulariosAtelie({ mostrar }: { mostrar: (texto: string, opts?:
 
   useEffect(() => {
     let vivo = true;
-    api<Resposta>(URL_API)
-      .then((r) => { if (vivo) setDados(r); })
+    Promise.all([api<Resposta>(URL_API), esperaMin(ESPERA_SKELETON)])
+      .then(([r]) => { if (vivo) setDados(r); })
       .catch((e) => { if (vivo) falhou(e, "Não consegui carregar os formulários, tente de novo."); });
     return () => { vivo = false; };
   }, [falhou]);
