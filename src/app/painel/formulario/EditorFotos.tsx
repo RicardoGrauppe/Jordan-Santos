@@ -8,14 +8,18 @@
   só então entra na lista. Tirar não apaga nada daqui: quem apaga o arquivo é
   o /api/formulario, depois de gravar a lista sem ela.
 
+  O card abre como PRÉVIA, a abertura do jeito que o casal vê (fotos
+  trocando, logo, pontinhos), e o botão "Editar" no canto troca pela grade
+  de edição; lá ele vira "Concluir" e volta pra prévia.
+
   `aoMudar` recebe uma FUNÇÃO da lista atual, e não a lista: várias fotos
   sobem uma depois da outra, e cada uma precisa entrar na lista que já tem a
   anterior, não na que existia quando o envio começou.
 */
 "use client";
 
-import { useRef, useState, type ChangeEvent } from "react";
-import { ArrowLeft, ArrowRight, Crop, ImagePlus, Images, LoaderCircle, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { ArrowLeft, ArrowRight, Check, Crop, ImagePlus, Images, LoaderCircle, Pencil, Trash2 } from "lucide-react";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { MAX_FOTOS, urlFoto, type FotoAbertura } from "@/lib/formulario";
 
@@ -28,12 +32,71 @@ const BOTAO_ICONE =
   "inline-flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-[9px] " +
   "bg-transparent text-ink-soft transition-colors hover:bg-line hover:text-accent disabled:cursor-default disabled:opacity-35";
 
+/* mesmo ritmo da abertura do /cadastro (TEMPO_FOTO em FormularioCadastro) */
+const TEMPO_FOTO = 5500;
+
+/* A abertura como o casal vê, no tamanho do celular. Mesmas regras da de lá:
+   só a atual e a próxima são baixadas, parada com uma foto só e pra quem
+   pede menos movimento. */
+function PreviaAbertura({ fotos }: { fotos: FotoAbertura[] }) {
+  const [atual, setAtual] = useState(0);
+  const [baixadas, setBaixadas] = useState(2);
+  const total = fotos.length;
+  const mostrada = atual % Math.max(1, total);
+
+  useEffect(() => {
+    if (total < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => {
+      setAtual((a) => (a + 1) % total);
+      setBaixadas((b) => Math.min(total, b + 1));
+    }, TEMPO_FOTO);
+    return () => clearInterval(t);
+  }, [total]);
+
+  return (
+    <div className="mx-auto w-full max-w-[476px]">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-[22px] bg-soft">
+        {fotos.slice(0, Math.max(baixadas, mostrada + 1)).map((f, i) => (
+          <div key={f.id} aria-hidden={i !== mostrada}
+            className={"absolute inset-0 transition-opacity duration-[1400ms] ease-in-out motion-reduce:transition-none " +
+              (i === mostrada ? "opacity-100" : "opacity-0")}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={urlFoto(f, 750)} srcSet={urlFoto(f, 750) + " 750w, " + urlFoto(f, 1200) + " 1200w"}
+              sizes="(min-width: 768px) 476px, calc(100vw - 72px)" alt={f.alt} decoding="async"
+              className={"absolute inset-0 h-full w-full object-cover transition-[scale] duration-[7000ms] ease-linear motion-reduce:transition-none " +
+                (i === mostrada ? "scale-100" : "scale-[1.08]")}
+              style={{ objectPosition: "50% " + f.foco + "%" }} />
+          </div>
+        ))}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-[rgba(29,29,27,.55)] to-transparent" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/img/logo-principal-offwhite.png" alt="" aria-hidden
+          className="absolute bottom-[18px] left-5 h-[30px] w-auto opacity-95" />
+        {total > 1 ? (
+          <div className="absolute bottom-6 right-5 flex items-center gap-1.5" aria-hidden>
+            {fotos.map((f, i) => (
+              <span key={f.id}
+                className={"h-1.5 rounded-full transition-[width,background-color] duration-[400ms] " +
+                  (i === mostrada ? "w-[18px] bg-white" : "w-1.5 bg-white/50")} />
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <p className="m-0 mt-2.5 text-center text-[12px] text-ink-soft">
+        Assim o casal vê a abertura. {total > 1 ? "As fotos trocam a cada 5 segundos." : ""}
+      </p>
+    </div>
+  );
+}
+
 export function EditorFotos({ fotos, aoMudar }: Props) {
   const confirmar = useConfirmar();
   const entrada = useRef<HTMLInputElement>(null);
   const [enviando, setEnviando] = useState(0);
   const [erro, setErro] = useState("");
   const [enquadrando, setEnquadrando] = useState<string | null>(null);
+  /* prévia por padrão; a grade só abre no "Editar" */
+  const [editando, setEditando] = useState(false);
 
   const cabe = MAX_FOTOS - fotos.length - enviando;
 
@@ -100,8 +163,21 @@ export function EditorFotos({ fotos, aoMudar }: Props) {
           <Images size={16} />
         </span>
         <span className="flex-1">Fotos da abertura</span>
-        <span className="text-[12px] font-normal tracking-normal text-ink-soft">{fotos.length} de {MAX_FOTOS}</span>
+        {editando ? (
+          <span className="hidden text-[12px] font-normal tracking-normal text-ink-soft sm:inline">{fotos.length} de {MAX_FOTOS}</span>
+        ) : null}
+        <button type="button" aria-expanded={editando}
+          onClick={() => { setEditando((v) => !v); setEnquadrando(null); }}
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-soft px-3 py-1.5 text-[12.5px] font-medium tracking-normal text-accent transition-colors hover:bg-line">
+          {editando ? <Check size={14} /> : <Pencil size={13} />}
+          {editando ? "Concluir" : "Editar"}
+        </button>
       </h2>
+
+      {!editando ? (
+        <div className="mt-4"><PreviaAbertura fotos={fotos} /></div>
+      ) : (
+      <>
       <p className="m-0 mt-2 text-[12.5px] text-ink-soft">
         Passam na abertura do formulário, uma de cada vez, nesta ordem. O quadro mostra o recorte que o casal vê.
       </p>
@@ -175,6 +251,11 @@ export function EditorFotos({ fotos, aoMudar }: Props) {
         ) : null}
       </ul>
 
+      </>
+      )}
+
+      {/* fora da grade: um envio que ainda está rodando quando a pessoa clica
+          em Concluir continua e entra na lista */}
       <input ref={entrada} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden"
         onChange={(e) => void enviar(e)} />
       {erro ? <p className="m-0 mt-3 text-[12.5px] text-erro" role="alert">{erro}</p> : null}
