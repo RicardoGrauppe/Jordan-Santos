@@ -22,7 +22,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Minus, Plus, Trash2 } from "lucide-react";
+import { Check, Minus, Plus, Trash2, User } from "lucide-react";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
@@ -30,7 +30,7 @@ import { PuxarPraAtualizar } from "@/components/PuxarPraAtualizar";
 import { SkLinha } from "@/components/Skeleton";
 import { moeda } from "@/lib/util";
 import {
-  api, dataCurta, esperaMin, iniciais, nomeCasal, ERRO_SESSAO, ROTULO_STATUS,
+  api, dataCurta, esperaMin, nomeCasal, ERRO_SESSAO, ROTULO_STATUS,
   type ClienteLista, type RespostaLista,
 } from "@/lib/painel";
 
@@ -207,7 +207,9 @@ export default function ListaClientes() {
             className={
               "inline-flex cursor-pointer items-center rounded-full px-3.5 py-[7px] text-[12.5px] font-semibold " +
               "transition-[background,color] duration-150 [-webkit-tap-highlight-color:transparent] " +
-              (status === f.valor ? "bg-accent text-white" : `bg-soft text-ink-soft hover:bg-line hover:text-ink`)
+              /* inativa em papel: em soft ela tinha a MESMA cor da página e
+                 virava texto solto, sem cara de botão */
+              (status === f.valor ? "bg-accent text-white" : `bg-paper text-ink-soft hover:bg-line hover:text-ink`)
             }
           >
             {f.rotulo}
@@ -218,7 +220,10 @@ export default function ListaClientes() {
 
       {/* no computador a lista é uma tabela num cartão só; no celular, cards
           soltos (as duas formas convivem nas mesmas linhas) */}
-      <div className="md:overflow-hidden md:rounded-[20px] md:bg-paper md:shadow-[0_1px_2px_rgba(29,29,27,.04),0_14px_32px_rgba(29,29,27,.08)]">
+      {/* Sem sombra, a pedido do Ricardo (22/10/2026): o cartão branco
+          sobre a página soft já se separa pela cor, e o cabeçalho tingido
+          marca onde a tabela começa. */}
+      <div className="md:overflow-hidden md:rounded-[22px] md:bg-paper">
         {/* CABEÇALHO QUE VIRA BARRA DE AÇÃO.
             Com alguém marcado, a mesma faixa deixa de listar colunas e passa a
             dizer o que dá pra fazer com a seleção (pedido do Ricardo em
@@ -250,9 +255,13 @@ export default function ListaClientes() {
                elas se penduram no container da página e vão parar fora da
                tabela, uma em cada ponta da tela (foi o que aconteceu). */
             "sticky top-14 z-20 md:relative md:top-auto md:z-auto " +
+            /* Em repouso, accent-tint: diferente da página (soft) e das
+               linhas (paper), que era o que faltava, já que antes o cabeçalho
+               tinha a cor exata do fundo. Com seleção, petróleo CHEIO: a faixa
+               muda de função e a cor diz isso antes de qualquer texto. */
             (marcados.length
-              ? "block rounded-t-2xl bg-accent-tint md:rounded-none"
-              : "hidden bg-soft")
+              ? "block rounded-t-2xl bg-accent md:rounded-none"
+              : "hidden bg-accent-tint")
           }
         >
           {/* marca a lista inteira (o que está VISÍVEL, então respeita o
@@ -267,7 +276,7 @@ export default function ListaClientes() {
             className={
               "absolute left-[21px] top-1/2 z-[1] flex h-[18px] w-[18px] -translate-y-1/2 cursor-pointer items-center " +
               "justify-center rounded-[6px] transition-colors md:left-[25px] " +
-              (marcados.length ? "bg-accent text-white" : `bg-line text-transparent hover:bg-ink-soft/40`)
+              (marcados.length ? "bg-paper text-accent" : `bg-paper text-transparent hover:text-accent-deep`)
             }
           >
             {todosMarcados
@@ -279,7 +288,7 @@ export default function ListaClientes() {
           <div
             aria-hidden={marcados.length ? true : undefined}
             className={
-              "hidden pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-ink-soft " +
+              "hidden pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-accent-deep " +
               "transition-[opacity,translate] duration-200 ease-[var(--ease-desliza)] md:grid " +
               (marcados.length ? "pointer-events-none -translate-y-1 opacity-0 " : "") + COLUNAS
             }
@@ -297,21 +306,23 @@ export default function ListaClientes() {
               (marcados.length ? "" : "pointer-events-none translate-y-1 opacity-0")
             }
           >
-            <span className="text-[13px] font-semibold text-accent">
+            <span className="text-[13px] font-semibold text-white">
               {marcados.length === 1 ? "1 selecionado" : marcados.length + " selecionados"}
             </span>
             <button
               type="button"
               onClick={() => setMarcados(todosMarcados ? [] : visiveis.map((x) => x.id))}
-              className={"ml-auto cursor-pointer rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-accent transition-colors hover:bg-paper"}
+              className={"ml-auto cursor-pointer rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"}
             >
               {todosMarcados ? "Limpar" : "Todos"}
             </button>
             <button
               type="button"
               onClick={() => void excluirMarcados()}
-              className={"inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-erro px-3.5 text-[12.5px] font-semibold text-white " +
-                `transition-[filter] duration-150 hover:brightness-90 active:scale-[.96]`}
+              /* branco com texto vermelho: vermelho cheio sobre o petróleo
+                 escuro somaria dois tons escuros e o botão perderia a borda */
+              className={"inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-paper px-3.5 text-[12.5px] font-semibold text-erro " +
+                `transition-[background,transform] duration-150 hover:bg-erro-tint active:scale-[.96]`}
             >
               <Trash2 size={14} />
               Excluir
@@ -337,16 +348,18 @@ export default function ListaClientes() {
                   <Link
                     href={"/painel/clientes/" + c.id}
                     className={
-                      "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-[58px] pr-[46px] no-underline shadow-card " +
-                      "md:items-center md:rounded-none md:py-[17px] md:pl-[62px] md:pr-[18px] md:shadow-none " +
+                      "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-[58px] pr-[46px] no-underline " +
+                      "md:items-center md:rounded-none md:py-[17px] md:pl-[62px] md:pr-[18px] " +
                       `transition-colors hover:bg-soft ` +
                       (marcados.includes(c.id) ? "!bg-accent-tint " : "") + COLUNAS
                     }
                   >
                     <span className="col-span-2 flex items-center md:col-span-1">
-                      <span className="truncate text-base font-medium text-ink md:text-[14.5px]">{nome}</span>
+                      <span className={"truncate text-base font-medium md:text-[14.5px] " + (c.noivo || c.noiva ? "text-ink" : "text-ink-soft")}>{nome}</span>
                     </span>
-                    <span className="text-[13.5px] text-ink-soft md:text-[14.5px] md:text-ink">{dataCurta(c.data_evento)}</span>
+                    {/* "a definir" é ausência de dado, então sai no tom
+                        apagado mesmo na tabela, onde a data real é escura */}
+                    <span className={"text-[13.5px] text-ink-soft md:text-[14.5px] " + (c.data_evento ? "md:text-ink" : "")}>{dataCurta(c.data_evento)}</span>
                     <span className="row-span-2 justify-self-end md:row-span-1 md:justify-self-start">
                       <Selo tom={TOM_STATUS[st] ?? "neutro"}>{ROTULO_STATUS[st] ?? st}</Selo>
                     </span>
@@ -359,9 +372,9 @@ export default function ListaClientes() {
                       link porque botão dentro de link não é HTML válido e o
                       clique teria que ser desfeito na mão; aqui ele é um botão
                       de verdade, com foco e teclado próprios.
-                      Marcado vira pastilha cheia com o visto; parado mostra as
-                      iniciais e, no hover, o visto fantasma avisando que dá
-                      pra clicar. */}
+                      Marcado vira pastilha cheia com o visto; parado mostra o
+                      ícone de pessoa (pedido do Ricardo: nada de iniciais) e,
+                      no hover, o visto, avisando que dá pra clicar. */}
                   <button
                     type="button"
                     role="checkbox"
@@ -380,7 +393,7 @@ export default function ListaClientes() {
                       ? <Check size={16} strokeWidth={2.5} />
                       : (
                         <>
-                          <span className="group-hover:hidden">{iniciais(c.noivo, c.noiva)}</span>
+                          <span className="group-hover:hidden"><User size={16} strokeWidth={2} /></span>
                           <span className="hidden group-hover:inline"><Check size={16} strokeWidth={2.5} /></span>
                         </>
                       )}
@@ -397,7 +410,10 @@ export default function ListaClientes() {
                     onClick={() => excluir(c)}
                     className={
                       "absolute right-1.5 top-1.5 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ink-soft opacity-30 transition-[opacity,color,background] " +
-                      "md:right-3 md:top-1/2 md:h-7 md:w-7 md:-translate-y-1/2 " +
+                      /* no computador some até passar o mouse: nove lixeiras
+                         cinzas paradas numa coluna era o ruído mais forte da
+                         tabela. No celular fica, porque lá não existe hover. */
+                      "md:right-3 md:top-1/2 md:h-7 md:w-7 md:-translate-y-1/2 md:opacity-0 " +
                       `group-hover:opacity-65 hover:!opacity-100 hover:bg-[rgba(163,59,59,.08)] hover:text-erro`
                     }
                   >
@@ -419,7 +435,7 @@ function ListaSkeleton() {
   return (
     <ul className="m-0 flex list-none flex-col gap-2.5 p-0 md:block" aria-busy="true" aria-label="Carregando">
       {[0, 1, 2, 3, 4].map((i) => (
-        <li key={i} className="rounded-[18px] bg-paper px-3.5 py-[18px] shadow-card md:rounded-none md:px-6 md:shadow-none">
+        <li key={i} className="rounded-[18px] bg-paper px-3.5 py-[18px] md:rounded-none md:px-6">
           <SkLinha className="h-4 w-full" />
         </li>
       ))}
