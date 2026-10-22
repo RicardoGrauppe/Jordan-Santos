@@ -38,7 +38,7 @@ import { useConfirmar } from "@/components/ModalConfirmar";
 import { ModalNovoModelo, type BaseModelo } from "@/components/ModalNovoModelo";
 import { useVoltar } from "@/lib/voltar";
 import type { Contrato } from "@/lib/ficha";
-import { ERRO_SESSAO, api, rotaDaRevisaoAntiga, urlNoAutentique } from "@/lib/painel";
+import { ERRO_SESSAO, api, avisoDeCota, rotaDaRevisaoAntiga, urlNoAutentique } from "@/lib/painel";
 import { ROTULOS_CAMPO, jsonParaHtml } from "@/lib/contrato-editor";
 
 const ESPERA_MS = 700;
@@ -353,12 +353,13 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   async function enviar(atualizar: boolean) {
     if (!carga?.cliente.email?.trim()) { await pedirEmail(); return; }
     if (atualizar) {
+      const aviso = await avisoDeCota(id);
       const ok = await confirmar({
         titulo: "Atualizar na Autentique?",
         texto:
           "A Autentique não deixa trocar o arquivo de um contrato já enviado, então o atual é apagado e um novo " +
-          "é criado no lugar. O link do casal muda: mande o novo pra eles. Cada atualização usa 1 dos 10 " +
-          "documentos do mês do plano gratuito.",
+          "é criado no lugar. O link do casal muda: mande o novo pra eles.",
+        aviso,
         rotuloOk: "Atualizar",
       });
       if (!ok) return;

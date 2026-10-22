@@ -82,7 +82,7 @@ Enquanto a Autentique responde, o editor mostra uma tela de carregamento; deu ce
 **Editar depois de enviado = documento novo.** A Autentique não troca o
 arquivo de um documento (`updateDocument` só mexe em nome/mensagem), então
 "Atualizar na Autentique" apaga o documento de lá e cria outro: o link do casal
-muda e gasta 1 da cota de 10/mês. Por isso a tela pede confirmação. Quem diz se
+muda e gasta 1 da cota do mês (o plano gratuito do Jordan dá **20**/mês; `cotaDocumentos()` em `lib/autentique.ts` conta quanto sobra e os pop-ups mostram). Por isso a tela pede confirmação, e a ficha também pede antes de abrir o editor de um contrato já enviado. Quem diz se
 houve mudança é `autentique_hash` (sha256 do texto + dados do casal no envio),
 calculado só no servidor. Contrato de texto fixo antigo (sem
 `template_json_snapshot`) não é editável e cai na revisão antiga

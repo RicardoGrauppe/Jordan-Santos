@@ -42,7 +42,7 @@ import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
 import { ModalContratoEnviado, type DadosEnviado } from "@/components/ModalContratoEnviado";
 import { CATALOGO, PACOTES } from "@/lib/catalogo";
-import { abrirContratoEmNovaGuia, rotaDoContrato, urlNoAutentique } from "@/lib/painel";
+import { abrirContratoEmNovaGuia, avisoDeCota, rotaDoContrato, urlNoAutentique } from "@/lib/painel";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
   formatarMoeda, parseMoeda, soDigitos, copiarTexto,
@@ -489,9 +489,29 @@ export default function PaginaCliente() {
 
   /* o editor do contrato, mesmo com ele já na Autentique (é por lá que se
      edita e se manda a versão nova) */
-  function editarContrato() {
-    if (!clienteIdRef.current) return;
-    window.open(rotaDoContrato(clienteIdRef.current), "_blank");
+  /* Contrato que já foi pra Autentique já tem a assinatura do fotógrafo.
+     Editar pode, mas o casal só vê a versão nova depois de reenviar, e
+     reenviar é documento novo (gasta cota): o pop-up diz isso e quanto
+     sobra, antes de abrir o editor. O editor abre o texto DESTE contrato,
+     com o modelo que ele usou, nunca o padrão. */
+  async function editarContrato() {
+    const id = clienteIdRef.current;
+    if (!id) return;
+    if (contrato?.autentique_id && contrato.status !== "assinado") {
+      const aviso = await avisoDeCota(id);
+      const ok = await confirmar({
+        titulo: "Já assinado por você",
+        texto:
+          "Este contrato já está na Autentique com a sua assinatura" +
+          (contrato.visualizado_em ? ", e o casal já abriu" : "") + ". " +
+          "Dá pra editar, mas o casal só vê a versão nova depois que você reenviar: a Autentique cria um " +
+          "documento novo e o link muda.",
+        aviso,
+        rotuloOk: "Editar mesmo assim",
+      });
+      if (!ok) return;
+    }
+    window.open(rotaDoContrato(id), "_blank");
   }
 
   async function acaoDoContrato() {
@@ -787,7 +807,7 @@ export default function PaginaCliente() {
 
               {/* só aparece quando existe mesmo um contrato pra este cliente */}
               {contrato ? (
-                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={editarContrato} onCopiarLink={() => void copiarLink()} avisar={avisar} />
+                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onCopiarLink={() => void copiarLink()} avisar={avisar} />
               ) : null}
             </div>
           </div>

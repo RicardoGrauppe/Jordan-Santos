@@ -23,7 +23,7 @@ import { NextResponse } from "next/server";
 import { rest } from "@/lib/supabase";
 import { sessaoAtual } from "@/lib/sessao";
 import { filtrarCampos, normalizarCpf, textoCurto } from "@/lib/util";
-import { apagarDocumento as apagarDocumentoAutentique, configurada as autentiqueConfigurada } from "@/lib/autentique";
+import { apagarDocumento as apagarDocumentoAutentique, configurada as autentiqueConfigurada, cotaDocumentos, ehSandbox } from "@/lib/autentique";
 import { enviarParaAssinatura, hashDoConteudo, sincronizarContrato, substituirNaAutentique } from "@/lib/contrato-autentique";
 
 /* campos que a UI pode gravar (whitelist contra colunas inesperadas) */
@@ -724,6 +724,19 @@ export async function POST(req: Request) {
       const alterado = !!hashEnvio &&
         (await hashDoConteudo({ template_json_snapshot: modelo.conteudo_json, snapshot: c.snapshot })) !== hashEnvio;
       return NextResponse.json({ ok: true, json: modelo.conteudo_json, alterado });
+    }
+
+    if (acao === "cota-autentique") {
+      /* Quantos documentos ainda cabem no mês, pros pop-ups que avisam que
+         reenviar gasta um. Falha da Autentique não é erro de tela: o pop-up
+         segue sem o número. */
+      if (!autentiqueConfigurada()) return NextResponse.json({ ok: true, cota: null, sandbox: false });
+      try {
+        return NextResponse.json({ ok: true, cota: await cotaDocumentos(), sandbox: ehSandbox() });
+      } catch (e) {
+        console.error("cota autentique falhou:", (e as Error).message);
+        return NextResponse.json({ ok: true, cota: null, sandbox: ehSandbox() });
+      }
     }
 
     if (acao === "sincronizar-contrato") {

@@ -24,8 +24,10 @@ import "server-only";
   entrega o contrato aqui é o fotógrafo, pelo WhatsApp. No modo e-mail (padrão)
   o `link` volta nulo e não sobra nada pra copiar.
 
-  Plano gratuito: 10 documentos por mês. `AUTENTIQUE_SANDBOX=true` cria
-  documento de teste, que não gasta cota e some em alguns dias.
+  Cota: o plano gratuito dá 20 documentos por mês (lido da própria conta em
+  22/10/2026: `me.subscription.documents`), renovando no dia do `ends_at`.
+  `AUTENTIQUE_SANDBOX=true` cria documento de teste, que não gasta cota e some
+  em alguns dias. Ver `cotaDocumentos()`.
 */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
@@ -262,4 +264,69 @@ export function idDoWebhook(payload: unknown): string | null {
   if (typeof doc === "string") return doc;
   if (doc?.id) return doc.id;
   return typeof obj.id === "string" ? obj.id : null;
+}
+
+export type CotaAutentique = {
+  plano: string;
+  /** documentos que o plano dá por ciclo */
+  total: number;
+  /** documentos de verdade (fora do sandbox) criados neste ciclo */
+  usados: number;
+  restantes: number;
+  /** quando o ciclo vira (ISO) */
+  renovaEm: string | null;
+};
+
+let cotaEmCache: { em: number; valor: CotaAutentique } | null = null;
+
+/* "2026-11-09T20:17:18.000000Z" e "2026-07-10 12:00:00": os dois formatos
+   que a API devolve, normalizados pro Date entender */
+function data(v: string): Date {
+  return new Date(v.replace(" ", "T").replace(/\.\d+Z$/, "Z"));
+}
+
+/**
+ * Quanto ainda dá pra criar neste ciclo. A API não entrega "restantes": a
+ * assinatura diz o TOTAL do plano (`documents`) e quando o ciclo acaba
+ * (`ends_at`), e os usados são contados na lista de documentos da conta,
+ * do início do ciclo (um mês antes do `ends_at`) até agora. Documento
+ * apagado some da lista, então a conta pode sair otimista nesse caso.
+ * Cache de 1 minuto: abrir pop-up não pode gastar o rate limit (60/min).
+ */
+export async function cotaDocumentos(): Promise<CotaAutentique> {
+  if (cotaEmCache && Date.now() - cotaEmCache.em < 60_000) return cotaEmCache.valor;
+  const d = await gql<{ me: { subscription: { name: string | null; documents: number | null; ends_at: string | null } | null } }>(
+    "query { me { subscription { name documents ends_at } } }",
+  );
+  const sub = d.me?.subscription;
+  const total = Number(sub?.documents) || 0;
+  const fim = sub?.ends_at ? data(sub.ends_at) : null;
+  const inicio = fim ? new Date(fim) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  if (fim) inicio.setMonth(inicio.getMonth() - 1);
+
+  let usados = 0;
+  for (let pagina = 1; pagina <= 5; pagina++) {
+    const r = await gql<{ documents: { data: { created_at: string; sandbox: boolean | null }[] } }>(
+      "query ($p: Int!) { documents(limit: 60, page: $p) { data { created_at sandbox } } }",
+      { p: pagina },
+    );
+    const lista = r.documents?.data || [];
+    let passou = false;
+    for (const doc of lista) {
+      const quando = data(doc.created_at);
+      if (quando < inicio) { passou = true; continue; }
+      if (!doc.sandbox) usados++;
+    }
+    if (passou || lista.length < 60) break;
+  }
+
+  const valor: CotaAutentique = {
+    plano: sub?.name || "",
+    total,
+    usados,
+    restantes: Math.max(0, total - usados),
+    renovaEm: fim ? fim.toISOString() : null,
+  };
+  cotaEmCache = { em: Date.now(), valor };
+  return valor;
 }
