@@ -45,7 +45,7 @@ import {
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
 import Image from "next/image";
-import { Lightbulb } from "lucide-react";
+import { CalendarHeart, Heart, House, Lightbulb, MessageCircleHeart, UsersRound } from "lucide-react";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
@@ -247,11 +247,37 @@ const CSS = `
 .cad .carta .texto{font-size:16px;line-height:1.7;color:var(--ink);margin-top:16px}
 .cad .carta .texto + .texto{margin-top:12px}
 .cad .caminho-rotulo{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);margin-top:34px}
-.cad .passos{list-style:none;margin:16px 0 0;display:grid;gap:18px}
-.cad .passos li{display:flex;gap:16px;align-items:baseline}
-.cad .passos .n{flex-shrink:0;width:22px;font-family:var(--serif);font-size:22px;line-height:1;color:var(--accent)}
-.cad .passos strong{display:block;font-weight:500;font-size:15.5px;color:var(--ink);line-height:1.35}
+/* caminho até a data: timeline na linguagem da "Timeline do contrato"
+   (brandbook 8 e 18). A linha conectora é desenho, não borda: um ::before
+   de 2px no petróleo claro, do círculo de um passo ao do próximo. */
+.cad .passos{list-style:none;margin:18px 0 0}
+.cad .passos li{position:relative;display:flex;gap:16px;align-items:flex-start;padding-bottom:22px}
+.cad .passos li:last-child{padding-bottom:0}
+.cad .passos li:not(:last-child)::before{content:"";position:absolute;left:19px;top:46px;bottom:6px;width:2px;border-radius:2px;
+  background:#D3E2E7;transform-origin:top;animation:cad-linha .5s cubic-bezier(.22,1,.36,1) both}
+@keyframes cad-linha{from{transform:scaleY(0)}to{transform:none}}
+.cad .passos .icone{flex-shrink:0;width:40px;height:40px;border-radius:50%;background:#EAF1F3;color:var(--accent);
+  display:flex;align-items:center;justify-content:center;animation:cad-pop .45s cubic-bezier(.34,1.4,.5,1) both}
+@keyframes cad-pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.cad .passos .texto-passo{padding-top:1px;min-width:0}
+.cad .passos .rotulo-passo{display:block;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);line-height:1.4}
+.cad .passos strong{display:block;font-weight:500;font-size:15.5px;color:var(--ink);line-height:1.35;margin-top:1px}
 .cad .passos small{display:block;font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin-top:2px}
+/* a chegada: círculo cheio e título serifado, é pra lá que o casal vai */
+.cad .passos li.chegada .icone{background:var(--accent);color:#fff}
+.cad .passos li.chegada strong{font-family:var(--serif);font-size:21px;color:var(--accent);margin-top:0;line-height:1.25}
+.cad .passos li:nth-child(1) .icone{animation-delay:420ms}
+.cad .passos li:nth-child(1)::before{animation-delay:500ms}
+.cad .passos li:nth-child(2) .icone{animation-delay:560ms}
+.cad .passos li:nth-child(2)::before{animation-delay:640ms}
+.cad .passos li:nth-child(3) .icone{animation-delay:700ms}
+.cad .passos li:nth-child(3)::before{animation-delay:780ms}
+.cad .passos li:nth-child(4) .icone{animation-delay:840ms}
+.cad .passos li:nth-child(4)::before{animation-delay:920ms}
+.cad .passos li:nth-child(5) .icone{animation-delay:980ms}
+.cad .passos li:nth-child(5)::before{animation-delay:1060ms}
+.cad .passos li:nth-child(6) .icone{animation-delay:1120ms}
+.cad .passos li:nth-child(6)::before{animation-delay:1200ms}
 .cad .carta .cta{margin-top:34px}
 /* ---------- botão fixo embaixo, só no celular ----------
    Fora das etapas de propósito: elas entram com transform, e um fixed dentro
@@ -303,6 +329,7 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){
   .cad .etapa,.cad .etapa-corpo > *,.cad .sucesso,.cad .foto-abertura{animation:none}
   .cad .slide,.cad .slide img{transition:none}
+  .cad .passos .icone,.cad .passos li::before{animation:none}
   .cad .check path{animation:none;stroke-dashoffset:0}
   .cad .progresso span{transition:none}
 }
@@ -462,6 +489,14 @@ const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> 
     explica: "Algumas perguntas pra gente conhecer vocês um pouco melhor antes do grande dia.",
     resumo: "Algumas perguntas pra conhecer vocês melhor",
   },
+};
+
+/* ícone de cada etapa no caminho da abertura (brandbook 18) */
+const ICONE_ETAPA: Record<SecaoFormulario, typeof Heart> = {
+  assinar: UsersRound,
+  endereco: House,
+  evento: CalendarHeart,
+  extra: MessageCircleHeart,
 };
 
 const CAMPOS_DA_SECAO: Record<SecaoFormulario, CampoId[]> = {
@@ -963,12 +998,26 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                   </div>
                   <div className="caminho-rotulo">O nosso caminho até a data</div>
                   <ol className="passos">
-                    {secoes.map((id, i) => (
-                      <li key={id}>
-                        <span className="n">{i + 1}</span>
-                        <span><strong>{TITULO_SECAO[id]}</strong><small>{SOBRE_ETAPA[id].resumo}</small></span>
-                      </li>
-                    ))}
+                    {secoes.map((id, i) => {
+                      const Icone = ICONE_ETAPA[id];
+                      return (
+                        <li key={id}>
+                          <span className="icone"><Icone size={18} strokeWidth={1.8} aria-hidden /></span>
+                          <span className="texto-passo">
+                            <span className="rotulo-passo">Etapa {i + 1}</span>
+                            <strong>{TITULO_SECAO[id]}</strong>
+                            <small>{SOBRE_ETAPA[id].resumo}</small>
+                          </span>
+                        </li>
+                      );
+                    })}
+                    <li className="chegada">
+                      <span className="icone"><Heart size={18} strokeWidth={1.8} fill="currentColor" aria-hidden /></span>
+                      <span className="texto-passo">
+                        <strong>A data é de vocês</strong>
+                        <small>Conferimos tudo e mandamos o contrato pelo WhatsApp</small>
+                      </span>
+                    </li>
                   </ol>
                   <button className="cta" type="submit">{textoDoBotao}</button>
                 </div>
