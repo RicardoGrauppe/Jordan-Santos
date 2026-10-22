@@ -22,7 +22,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, CheckSquare, Plus, Trash2, X } from "lucide-react";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
@@ -102,6 +102,51 @@ export default function ListaClientes() {
     });
   }, [clientes, status]);
 
+  /* ---------- seleção múltipla ----------
+     Pedido do Ricardo em 22/10/2026: dá pra marcar um ou vários e apagar de
+     uma vez (o uso real é limpar cliente de teste).
+
+     Modo explícito, e não "clique longo" ou caixinha escondida no hover: o
+     hover não existe no celular, e caixinha em toda linha o tempo todo é
+     ruído numa lista que quase sempre é só pra olhar. Enquanto o modo está
+     ligado, a linha SELECIONA em vez de abrir. */
+  const [selecionando, setSelecionando] = useState(false);
+  const [marcados, setMarcados] = useState<string[]>([]);
+
+  function alternarMarcado(id: string) {
+    setMarcados((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
+  }
+
+  function sairDaSelecao() {
+    setSelecionando(false);
+    setMarcados([]);
+  }
+
+  async function excluirMarcados() {
+    const quantos = marcados.length;
+    if (!quantos) return;
+    const ok = await confirmar({
+      titulo: quantos === 1 ? "Excluir de vez?" : "Excluir " + quantos + " clientes?",
+      texto: (quantos === 1
+        ? "O cliente será apagado permanentemente"
+        : "Os " + quantos + " clientes selecionados serão apagados permanentemente") +
+        ", com contrato e histórico. Não dá pra desfazer.",
+      rotuloOk: "Excluir",
+      perigo: true,
+    });
+    if (!ok) return;
+    try {
+      await api("/api/estudio", { acao: "excluir", ids: marcados });
+      sairDaSelecao();
+      setClientes(null);
+      const l = await carregar();
+      if (l && montado.current) setClientes(l);
+    } catch (e) {
+      if ((e as Error).message === ERRO_SESSAO) router.replace("/entrar");
+      else alert("Não deu pra excluir. Tente de novo.");
+    }
+  }
+
   async function excluir(c: ClienteLista) {
     const nome = nomeCasal(c);
     const ok = await confirmar({
@@ -150,7 +195,7 @@ export default function ListaClientes() {
           atalhos da previsão): num menu fechado o filtro ativo fica escondido
           atrás de um clique, e aqui ele é a explicação de por que a lista tem
           o tamanho que tem. */}
-      <div className="mb-[18px] flex flex-wrap gap-2">
+      <div className="mb-[18px] flex flex-wrap items-center gap-2">
         {FILTROS.map((f) => (
           <button
             key={f.valor}
@@ -166,6 +211,23 @@ export default function ListaClientes() {
             {f.rotulo}
           </button>
         ))}
+
+        {/* entra na seleção. Fica NA PONTA e com ícone pra não virar mais um
+            filtro: os pills do lado são todos do mesmo assunto. */}
+        {visiveis.length ? (
+          <button
+            type="button"
+            onClick={() => (selecionando ? sairDaSelecao() : setSelecionando(true))}
+            className={
+              "ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-[7px] text-[12.5px] font-semibold " +
+              "transition-[background,color] duration-150 [-webkit-tap-highlight-color:transparent] " +
+              (selecionando ? "bg-accent-tint text-accent" : `bg-soft text-ink-soft hover:bg-line hover:text-ink`)
+            }
+          >
+            {selecionando ? <X size={14} /> : <CheckSquare size={14} />}
+            {selecionando ? "Cancelar" : "Selecionar"}
+          </button>
+        ) : null}
       </div>
 
       {/* no computador a lista é uma tabela num cartão só; no celular, cards
@@ -192,15 +254,38 @@ export default function ListaClientes() {
                 <li key={c.id} className="group relative">
                   <Link
                     href={"/painel/clientes/" + c.id}
+                    /* no modo seleção a linha inteira vira alvo de marcar: o
+                       Link continua Link (teclado, abrir em outra aba com
+                       ctrl) e só o clique simples é desviado */
+                    onClick={(ev) => {
+                      if (!selecionando) return;
+                      if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+                      ev.preventDefault();
+                      alternarMarcado(c.id);
+                    }}
+                    aria-pressed={selecionando ? marcados.includes(c.id) : undefined}
                     className={
                       "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-3.5 pr-[46px] no-underline shadow-card " +
                       "md:items-center md:rounded-none md:px-[18px] md:py-[17px] md:shadow-none " +
-                      `transition-colors hover:bg-soft ` + COLUNAS
+                      `transition-colors hover:bg-soft ` +
+                      (marcados.includes(c.id) ? "!bg-accent-tint " : "") + COLUNAS
                     }
                   >
                     <span className="col-span-2 flex items-center gap-3 md:col-span-1">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft text-xs font-semibold tracking-[.02em] text-accent">
-                        {iniciais(c.noivo, c.noiva)}
+                      {/* a mesma pastilha das iniciais vira a caixa de
+                          marcar: nada entra ou sai da linha, então nenhuma
+                          coluna se mexe ao ligar a seleção */}
+                      <span
+                        className={
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tracking-[.02em] transition-colors " +
+                          (selecionando && marcados.includes(c.id)
+                            ? "bg-accent text-white"
+                            : "bg-soft text-accent")
+                        }
+                      >
+                        {selecionando
+                          ? (marcados.includes(c.id) ? <Check size={16} strokeWidth={2.5} /> : null)
+                          : iniciais(c.noivo, c.noiva)}
                       </span>
                       <span className="truncate text-base font-medium text-ink md:text-[14.5px]">{nome}</span>
                     </span>
@@ -213,9 +298,12 @@ export default function ListaClientes() {
                     </span>
                     <span className="hidden md:block" />
                   </Link>
-                  {/* fora do link pra não navegar; sutil até passar o mouse */}
+                  {/* fora do link pra não navegar; sutil até passar o mouse.
+                      Some no modo seleção: ali quem apaga é a barra, e dois
+                      caminhos de apagar na mesma tela é pedir engano. */}
                   <button
                     type="button"
+                    hidden={selecionando}
                     title="Excluir cliente"
                     aria-label={"Excluir " + nome}
                     onClick={() => excluir(c)}
@@ -233,6 +321,39 @@ export default function ListaClientes() {
           </ul>
         )}
       </div>
+
+      {/* Barra do que está marcado. Flutua acima da barra de baixo no celular
+          (que tem 68px + respiro) e no rodapé no computador. Aparece só com
+          alguém marcado: no modo seleção sem marca nenhuma ela seria uma faixa
+          dizendo "0". */}
+      {selecionando && marcados.length ? (
+        <div
+          className={
+            "fixed inset-x-4 bottom-[calc(0.75rem+68px+10px+var(--sab))] z-60 mx-auto flex max-w-[520px] items-center gap-3 " +
+            "rounded-full bg-paper py-2 pl-5 pr-2 shadow-alta md:bottom-6"
+          }
+        >
+          <span className="text-[13.5px] font-medium text-ink">
+            {marcados.length === 1 ? "1 selecionado" : marcados.length + " selecionados"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setMarcados(marcados.length === visiveis.length ? [] : visiveis.map((c) => c.id))}
+            className={`ml-auto cursor-pointer rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-ink-soft transition-colors hover:bg-soft hover:text-ink`}
+          >
+            {marcados.length === visiveis.length ? "Limpar" : "Todos"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void excluirMarcados()}
+            className={"inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-erro px-4 text-[13.5px] font-semibold text-white " +
+              `transition-[filter] duration-150 hover:brightness-90 active:scale-[.96]`}
+          >
+            <Trash2 size={15} />
+            Excluir
+          </button>
+        </div>
+      ) : null}
     </div>
     </PuxarPraAtualizar>
   );

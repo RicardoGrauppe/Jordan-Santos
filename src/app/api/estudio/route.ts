@@ -126,6 +126,10 @@ type LinhaClienteContato = {
   tel_noivo: string | null; tel_noiva: string | null; email: string | null;
 };
 
+/* id do Postgres: só isto entra em caminho de consulta montado à mão (o
+   `in.(…)` do excluir em lote), pra nada além de uuid chegar no PostgREST. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Objeto do corpo, ou {} quando veio outra coisa (o original lia `req.body || {}`). */
 function objeto(valor: unknown): Record<string, unknown> {
   return valor && typeof valor === "object" ? (valor as Record<string, unknown>) : {};
@@ -296,7 +300,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, cliente: linha![0] });
     }
 
-    if (!id) return NextResponse.json({ erro: "id obrigatório" }, { status: 400 });
+    /* o excluir em lote manda `ids` e nenhum `id`; o resto do mundo continua
+       exigindo um cliente */
+    const emLote = acao === "excluir" && Array.isArray(corpo.ids) && corpo.ids.length > 0;
+    if (!id && !emLote) return NextResponse.json({ erro: "id obrigatório" }, { status: 400 });
 
     if (acao === "atualizar") {
       const limpo = limparCliente(objeto(corpo.cliente));
@@ -380,14 +387,35 @@ export async function POST(req: Request) {
     }
 
     if (acao === "excluir") {
+      /* Um cliente ou VÁRIOS (a lista tem seleção múltipla desde 22/10/2026).
+         `ids` ganha de `id`; o teto existe pra uma chamada torta não varrer a
+         base inteira de uma vez. */
+      const ids = (Array.isArray(corpo.ids) ? corpo.ids : [id])
+        .filter((v): v is string => typeof v === "string" && UUID.test(v))
+        .slice(0, 100);
+      if (!ids.length) return NextResponse.json({ erro: "nenhum cliente informado" }, { status: 400 });
+      const lista = "(" + ids.join(",") + ")";
+
+      /* o documento na Autentique vai junto: apagar o cliente aqui e deixar o
+         contrato de pé lá significaria um casal assinando um contrato de
+         alguém que não existe mais. Best-effort, como no cancelar. */
+      const comDocumento = await rest<{ autentique_id: string | null }[]>(
+        "contratos?cliente_id=in." + lista + "&autentique_id=not.is.null&select=autentique_id",
+      );
+      for (const c of comDocumento || []) {
+        if (!c.autentique_id) continue;
+        try { await apagarDocumentoAutentique(c.autentique_id); }
+        catch (e) { console.error("autentique: não deu pra apagar o documento:", (e as Error).message); }
+      }
+
       /* se veio de conversão, o prospecto ainda referencia este cliente (FK):
          desvincula antes, senão o DELETE é bloqueado (23503). O contrato tem
          ON DELETE CASCADE, então some junto. */
-      await rest("prospectos?cliente_id=eq." + id, {
+      await rest("prospectos?cliente_id=in." + lista, {
         method: "PATCH", body: { cliente_id: null },
       });
-      await rest("clientes?id=eq." + id, { method: "DELETE" });
-      return NextResponse.json({ ok: true });
+      await rest("clientes?id=in." + lista, { method: "DELETE" });
+      return NextResponse.json({ ok: true, apagados: ids.length });
     }
 
     if (acao === "gerar-contrato") {
