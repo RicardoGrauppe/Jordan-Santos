@@ -119,6 +119,10 @@ const CSS = `
 .cad [hidden]{display:none !important}
 .cad button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .cad .pagina{max-width:520px;margin:0 auto;padding:calc(38px + var(--sat)) 22px calc(48px + var(--sab))}
+/* no celular o botão das etapas fica na barra fixa (abaixo): a página ganha
+   respiro do tamanho dela pra última linha não ficar escondida */
+.cad .pagina.com-barra{padding-bottom:calc(120px + var(--sab))}
+@media (min-width:768px){.cad .pagina.com-barra{padding-bottom:calc(48px + var(--sab))}}
 .cad .dica{display:inline-block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);background:var(--soft);border-radius:999px;padding:6px 14px}
 .cad h1{font-family:var(--serif);font-weight:500;font-size:30px;line-height:1.25;color:var(--accent);margin:14px 0 0}
 .cad .sub{color:var(--ink-soft);font-size:14.5px;line-height:1.55;margin-top:12px}
@@ -249,6 +253,22 @@ const CSS = `
 .cad .passos strong{display:block;font-weight:500;font-size:15.5px;color:var(--ink);line-height:1.35}
 .cad .passos small{display:block;font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin-top:2px}
 .cad .carta .cta{margin-top:34px}
+/* ---------- botão fixo embaixo, só no celular ----------
+   Fora das etapas de propósito: elas entram com transform, e um fixed dentro
+   de pai com transform passa a se posicionar pelo pai (pularia junto na
+   animação). Por isso no celular o botão de dentro da etapa some e quem
+   aparece é esta barra; a partir de 768px é o contrário. */
+.cad .etapa .cta{display:none}
+.cad .barra-cta{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:28px 22px calc(16px + var(--sab));
+  background:linear-gradient(to top,var(--paper) 62%,rgba(255,255,255,0));pointer-events:none}
+.cad .barra-cta > *{pointer-events:auto;max-width:476px;margin-left:auto;margin-right:auto}
+.cad .barra-cta .cta{margin-top:0}
+.cad .barra-cta .erro{min-height:0;margin:0 0 10px}
+@media (min-width:768px){
+  .cad .etapa .cta{display:block}
+  .cad .barra-cta{display:none}
+}
+
 /* recado prático da abertura: card petróleo claro com lâmpada, sem borda */
 .cad .dica-card{display:flex;gap:12px;align-items:center;background:#EAF1F3;border-radius:16px;padding:14px 16px;margin-top:18px}
 .cad .dica-icone{flex-shrink:0;width:36px;height:36px;border-radius:12px;background:var(--paper);color:var(--accent);display:flex;align-items:center;justify-content:center}
@@ -891,7 +911,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
       <style>{CSS}</style>
-      <div className={"pagina" + (etapa === "inicio" && !enviado ? " larga" : "")}>
+      <div className={"pagina" + (etapa === "inicio" && !enviado ? " larga" : "") + (enviado ? "" : " com-barra")}>
         {enviado ? (
           <div className="sucesso">
             <svg className="check" viewBox="0 0 64 64" aria-hidden>
@@ -996,6 +1016,13 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                 <p className="erro" role="alert">{erroGeral}</p>
               </div>
             </section>
+
+            {/* botão fixo do celular (ver .barra-cta no CSS); o erro do envio
+                repete aqui porque no celular é aqui que o olho está */}
+            <div className="barra-cta">
+              {etapa === "revisar" && erroGeral ? <p className="erro" aria-hidden>{erroGeral}</p> : null}
+              <button className="cta" type="submit" disabled={etapa === "revisar" && enviando}>{textoDoBotao}</button>
+            </div>
           </form>
         )}
       </div>
