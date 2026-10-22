@@ -19,20 +19,35 @@ import "server-only";
   a própria plataforma assina por ele no envio (`signDocument`, que não manda
   e-mail pro dono da chave); o casal é o segundo e só então é chamado.
 
-  Entrega POR LINK (`DELIVERY_METHOD_LINK`): a Autentique não manda e-mail, e
-  devolve o `short_link` do signatário. É o que o painel precisa, porque quem
-  entrega o contrato aqui é o fotógrafo, pelo WhatsApp. No modo e-mail (padrão)
-  o `link` volta nulo e não sobra nada pra copiar.
+  Entrega POR E-MAIL + link (desde 22/10/2026, no fim do dia): a Autentique
+  manda o e-mail de assinatura pro casal E o painel pega o link com
+  `createLinkToSignature`, pra o fotógrafo também mandar no WhatsApp. No modo
+  e-mail a criação devolve `link: null`; foi isso que levou ao modo só-link de
+  manhã, até achar essa mutation. Medido em sandbox: o e-mail sai de verdade
+  (enviado e entregue em 2s), e `email_events` diz enviado/entregue/aberto/
+  recusado com o motivo (o primeiro teste voltou com "caixa cheia").
 
-  Plano gratuito: 10 documentos por mês. `AUTENTIQUE_SANDBOX=true` cria
-  documento de teste, que não gasta cota e some em alguns dias.
+  Cota: o plano gratuito dá 20 documentos por mês (lido da própria conta em
+  22/10/2026: `me.subscription.documents`), renovando no dia do `ends_at`.
+  `AUTENTIQUE_SANDBOX=true` cria documento de teste, que não gasta cota e some
+  em alguns dias. Ver `cotaDocumentos()`.
 */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 const ENDPOINT = "https://api.autentique.com.br/v2/graphql";
 
+export type EventosEmail = {
+  sent: string | null;
+  delivered: string | null;
+  opened: string | null;
+  refused: string | null;
+  reason: string | null;
+};
+
 export type AssinaturaAutentique = {
   public_id: string;
+  email_events?: EventosEmail | null;
+  delivery_method?: string | null;
   name: string | null;
   email: string | null;
   action: { name: string } | null;
@@ -70,10 +85,25 @@ export function ehSandbox(): boolean {
 
 async function lerGraphql<T>(res: Response): Promise<T> {
   const corpo = (await res.json().catch(() => null)) as
-    | { data?: T; errors?: { message: string }[] }
+    | { data?: T; errors?: { message: string; extensions?: { validation?: Record<string, string[]> } }[] }
     | null;
   if (!res.ok || !corpo || corpo.errors?.length || !corpo.data) {
-    const msg = corpo?.errors?.map((e) => e.message).join("; ") || "HTTP " + res.status;
+    /* "validation" sozinho não diz nada: o detalhe vem em extensions, campo
+       por campo (medido em 22/10/2026: e-mail com "+" volta como
+       signer.email: format_is_invalid) */
+    const validacao = corpo?.errors?.flatMap((e) =>
+      Object.entries(e.extensions?.validation ?? {}).map(([campo, motivos]) => campo + ": " + motivos.join(", ")));
+    if (validacao?.some((v) => /email/.test(v) && /format/.test(v))) {
+      throw new Error("a Autentique não aceitou esse e-mail. Confira se está certo (ela não aceita e-mail com \"+\")");
+    }
+    /* limite da Autentique pra reenvio seguido ao mesmo signatário (medido
+       em 22/10/2026, minutos depois de um envio) */
+    if (corpo?.errors?.some((e) => e.message === "too_many_resent_emails")) {
+      throw new Error("a Autentique não deixa reenviar de novo tão rápido pro mesmo e-mail. Espere um pouco e tente de novo; enquanto isso, mande o link pelo WhatsApp");
+    }
+    const msg = validacao?.length
+      ? "validação (" + validacao.join("; ") + ")"
+      : corpo?.errors?.map((e) => e.message).join("; ") || "HTTP " + res.status;
     throw new Error("Autentique: " + msg);
   }
   return corpo.data;
@@ -108,6 +138,8 @@ const CAMPOS_ASSINATURA = `
   viewed { created_at }
   signed { created_at }
   rejected { created_at }
+  delivery_method
+  email_events { sent delivered opened refused reason }
 `;
 
 /**
@@ -151,18 +183,13 @@ export async function criarDocumento(entrada: {
         date_format: "DD_MM_YYYY",
       },
     },
-    /* ENTREGA POR LINK, não por e-mail da Autentique. Medido em 22/10/2026,
-       depois do primeiro envio real: no modo e-mail (o padrão) a resposta vem
-       com `link: null` pros dois signatários, e o painel inteiro aqui é feito
-       em cima de "copiar o link e mandar no WhatsApp", que é como o fotógrafo
-       trabalha. No modo link a Autentique devolve o `short_link` e não manda
-       e-mail; o link continua amarrado ao e-mail do signatário, que precisa
-       confirmar a identidade pra assinar. Por isso `name` é obrigatório aqui. */
+    /* ENTREGA POR E-MAIL: a Autentique avisa o casal. O link pra copiar vem
+       depois, de `linkDoSignatario` (aqui ele volta nulo). */
     signers: entrada.signatarios.map((s) => ({
       name: s.nome,
       email: s.email,
       action: "SIGN",
-      delivery_method: "DELIVERY_METHOD_LINK",
+      delivery_method: "DELIVERY_METHOD_EMAIL",
     })),
     file: null,
   };
@@ -210,6 +237,83 @@ export async function assinarComoDono(id: string): Promise<boolean> {
     { id },
   );
   return Boolean(d.signDocument);
+}
+
+/**
+ * Link de assinatura de um signatário no modo e-mail, onde a criação não
+ * devolve link. A Autentique gera (ou devolve o mesmo) `short_link`.
+ */
+export async function linkDoSignatario(publicId: string): Promise<string | null> {
+  const d = await gql<{ createLinkToSignature: { short_link: string | null } | null }>(
+    "mutation ($p: UUID!) { createLinkToSignature(public_id: $p) { short_link } }",
+    { p: publicId },
+  );
+  return d.createLinkToSignature?.short_link ?? null;
+}
+
+/** Manda de novo o e-mail de assinatura (signatário em modo e-mail). */
+export async function reenviarEmail(publicId: string): Promise<boolean> {
+  const d = await gql<{ resendSignatures: boolean | null }>(
+    "mutation ($ids: [UUID]) { resendSignatures(public_ids: $ids) }",
+    { ids: [publicId] },
+  );
+  return Boolean(d.resendSignatures);
+}
+
+/**
+ * Recria o signatário com o MESMO e-mail (a Autentique recusa dois iguais,
+ * "signer_already_exists"): aqui não dá pra criar antes de apagar. Serve pra
+ * tirar do modo link quem foi criado antes de a entrega voltar a ser por
+ * e-mail. Se a criação falhar, tenta de novo uma vez antes de desistir.
+ */
+export async function recriarSignatario(
+  documentoId: string,
+  publicIdAntigo: string,
+  pessoa: { nome: string; email: string },
+): Promise<AssinaturaAutentique> {
+  await gql<{ deleteSigner: boolean | null }>(
+    "mutation ($pid: UUID!, $doc: UUID!) { deleteSigner(public_id: $pid, document_id: $doc) }",
+    { pid: publicIdAntigo, doc: documentoId },
+  );
+  const criar = () => gql<{ createSigner: AssinaturaAutentique }>(
+    `mutation ($doc: UUID!, $signer: SignerInput!) {
+      createSigner(document_id: $doc, signer: $signer) { ${CAMPOS_ASSINATURA} }
+    }`,
+    { doc: documentoId, signer: { name: pessoa.nome, email: pessoa.email, action: "SIGN", delivery_method: "DELIVERY_METHOD_EMAIL" } },
+  );
+  const d = await criar().catch(() => criar());
+  return d.createSigner;
+}
+
+/**
+ * Troca quem assina sem trocar o documento (22/10/2026): tira o signatário
+ * antigo e põe um novo, com o e-mail certo, no mesmo documento. A assinatura
+ * de quem já assinou (o fotógrafo) fica, o PDF é o mesmo e não gasta cota,
+ * que só conta documento criado. O link do signatário novo é outro; o antigo
+ * deixa de valer junto com o signatário.
+ *
+ * Cria primeiro e apaga depois: se a criação falhar, o casal continua com o
+ * link de antes em vez de ficar sem ninguém pra assinar.
+ */
+export async function trocarSignatario(
+  documentoId: string,
+  publicIdAntigo: string,
+  novo: { nome: string; email: string },
+): Promise<AssinaturaAutentique> {
+  const d = await gql<{ createSigner: AssinaturaAutentique }>(
+    `mutation ($doc: UUID!, $signer: SignerInput!) {
+      createSigner(document_id: $doc, signer: $signer) { ${CAMPOS_ASSINATURA} }
+    }`,
+    {
+      doc: documentoId,
+      signer: { name: novo.nome, email: novo.email, action: "SIGN", delivery_method: "DELIVERY_METHOD_EMAIL" },
+    },
+  );
+  await gql<{ deleteSigner: boolean | null }>(
+    "mutation ($pid: UUID!, $doc: UUID!) { deleteSigner(public_id: $pid, document_id: $doc) }",
+    { pid: publicIdAntigo, doc: documentoId },
+  );
+  return d.createSigner;
 }
 
 /**
@@ -262,4 +366,69 @@ export function idDoWebhook(payload: unknown): string | null {
   if (typeof doc === "string") return doc;
   if (doc?.id) return doc.id;
   return typeof obj.id === "string" ? obj.id : null;
+}
+
+export type CotaAutentique = {
+  plano: string;
+  /** documentos que o plano dá por ciclo */
+  total: number;
+  /** documentos de verdade (fora do sandbox) criados neste ciclo */
+  usados: number;
+  restantes: number;
+  /** quando o ciclo vira (ISO) */
+  renovaEm: string | null;
+};
+
+let cotaEmCache: { em: number; valor: CotaAutentique } | null = null;
+
+/* "2026-11-09T20:17:18.000000Z" e "2026-07-10 12:00:00": os dois formatos
+   que a API devolve, normalizados pro Date entender */
+function data(v: string): Date {
+  return new Date(v.replace(" ", "T").replace(/\.\d+Z$/, "Z"));
+}
+
+/**
+ * Quanto ainda dá pra criar neste ciclo. A API não entrega "restantes": a
+ * assinatura diz o TOTAL do plano (`documents`) e quando o ciclo acaba
+ * (`ends_at`), e os usados são contados na lista de documentos da conta,
+ * do início do ciclo (um mês antes do `ends_at`) até agora. Documento
+ * apagado some da lista, então a conta pode sair otimista nesse caso.
+ * Cache de 1 minuto: abrir pop-up não pode gastar o rate limit (60/min).
+ */
+export async function cotaDocumentos(): Promise<CotaAutentique> {
+  if (cotaEmCache && Date.now() - cotaEmCache.em < 60_000) return cotaEmCache.valor;
+  const d = await gql<{ me: { subscription: { name: string | null; documents: number | null; ends_at: string | null } | null } }>(
+    "query { me { subscription { name documents ends_at } } }",
+  );
+  const sub = d.me?.subscription;
+  const total = Number(sub?.documents) || 0;
+  const fim = sub?.ends_at ? data(sub.ends_at) : null;
+  const inicio = fim ? new Date(fim) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  if (fim) inicio.setMonth(inicio.getMonth() - 1);
+
+  let usados = 0;
+  for (let pagina = 1; pagina <= 5; pagina++) {
+    const r = await gql<{ documents: { data: { created_at: string; sandbox: boolean | null }[] } }>(
+      "query ($p: Int!) { documents(limit: 60, page: $p) { data { created_at sandbox } } }",
+      { p: pagina },
+    );
+    const lista = r.documents?.data || [];
+    let passou = false;
+    for (const doc of lista) {
+      const quando = data(doc.created_at);
+      if (quando < inicio) { passou = true; continue; }
+      if (!doc.sandbox) usados++;
+    }
+    if (passou || lista.length < 60) break;
+  }
+
+  const valor: CotaAutentique = {
+    plano: sub?.name || "",
+    total,
+    usados,
+    restantes: Math.max(0, total - usados),
+    renovaEm: fim ? fim.toISOString() : null,
+  };
+  cotaEmCache = { em: Date.now(), valor };
+  return valor;
 }

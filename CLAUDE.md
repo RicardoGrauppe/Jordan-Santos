@@ -21,8 +21,10 @@ src/app/page.tsx             a raiz é o SITE do fotógrafo (modelo do Ateliê n
 src/app/entrar               login
 src/app/painel/              área logada; layout.tsx checa a sessão: tela nova nasce protegida
   page.tsx                   home (saudação, clima, KPIs, próximos eventos, links)
-  clientes/                  lista, [id] (ficha), [id]/contrato (revisão e confirmação)
+  clientes/                  lista, [id] (ficha), [id]/contrato/editar (editor do contrato do cliente), [id]/contrato (revisão antiga, texto fixo)
+  produtos/                  produtos e serviços (catálogo de pacotes e adicionais, tabela `produtos`)
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
+  formulario/                editor do /cadastro (fotos da abertura, texto, aparece, obrigatório, perguntas novas)
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
   atelie/                    galeria dos modelos de site (pôr no ar, duplicar, renomear, apagar); [id] (editor, tela cheia)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
@@ -30,10 +32,12 @@ src/app/proposta             mesmo site da raiz, mantido pra não quebrar link j
 src/app/atelie/previa/[id]   prévia do RASCUNHO (ou ?versao=) de um modelo, só logado (404 pros outros); ?barra=1 põe a barra da prévia
 src/app/atelie/secao/[tipo]  uma seção pronta sozinha, com conteúdo de exemplo: a prévia dos cartões de seção na lista do editor; só logado
 src/app/midia/[caminho]      entrega as fotos do Ateliê (do Storage) pro site; pública, nome sorteado
-src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), atelie
+src/app/api/                 sessao, config, templates, produtos, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), formulario (+ fotos), atelie
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, PreviaSecao, CamposAtelie (foto, biblioteca, foco), VersoesAtelie, BarraDaPrevia, Skeleton
 src/lib/                     supabase.ts, storage.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
-                             catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
+                             produtos.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
+                             formulario.ts (regras e travas), formulario-servidor.ts (config no banco),
+                             formulario-fotos.ts (fotos da abertura no Storage),
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
                              atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelo-guiado.ts, modelos.ts, midias.ts, PaginaDoSite.tsx, dicionario.ts)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos) + atelie_midias (site_midias) + atelie_versoes (site_versoes)
@@ -68,6 +72,30 @@ não a que você digitou. Deixe só `hidden` + `md:inline-flex`.
 Sempre o Supabase local em Docker (`supabase start`, portas 553xx), nunca o
 banco do Jordan. `supabase/migrations/` é a verdade do schema: coluna nova
 entra como migração, nunca por `alter table` solto no psql.
+O banco local é compartilhado com as worktrees de outras sessões: se o
+`migration up` recusar por versões que só existem noutra branch, aplique o
+SQL da sua migração com `psql` e registre a versão em
+`supabase_migrations.schema_migrations`, sem `repair` (apagaria o histórico
+delas).
+
+O editor de contrato (cliente e modelos) é uma **folha A4 com as medidas do
+PDF** (`lib/contrato-folha.ts` + `.folha-a4` no globals.css, Roboto 10 pt,
+margem 56 pt): a quebra de página é simulada como o pdfmake faz (bloco que não
+cabe desce, parágrafo é partido na linha) e bateu linha a linha com o PDF
+gerado. Mudou medida, fonte ou margem no `gerar-pdfmake.ts`? Mude nos dois
+lugares. O documento NUNCA é responsivo: no celular é a mesma A4 encolhida por
+`transform: scale` (como um leitor de PDF; `zoom` refazia a quebra de linha e
+mudava as páginas), e a paginação mede em px fracionários desfazendo a escala.
+Campo dentro da folha usa a fonte do PDF (a regra global de 16px no celular
+cresce a tabela e muda a quebra). A ação principal e o "Painel" ficam numa
+barra fixa embaixo no celular. A tabela de itens e o bloco de assinaturas são desenhados de verdade;
+no contrato do cliente a tabela é sempre digitável: mexer numa célula fixa as
+linhas em `attrs.linhas` do nó (o PDF respeita); "Voltar pro pacote" desfaz.
+
+Pacote, adicionais, total e entrada se escolhem no cartão "Pacote e valores"
+do editor do contrato, com as opções de `produtos`; a ficha só mostra o
+resumo e não manda esses campos no salvamento. O item guarda o valor do
+momento da escolha (o catálogo pode mudar depois).
 
 O Storage local precisa estar ligado (`[storage] enabled = true` no
 `supabase/config.toml`): as fotos do Ateliê moram lá, no bucket privado
@@ -87,24 +115,27 @@ folha de comprovante**, sobe pra Autentique com dois signatários em ordem
 (`sortable`), assina pelo dono da chave (`signDocument`, que não gera e-mail
 pra ele) e devolve o link curto do casal, que o fotógrafo manda por WhatsApp.
 Não existe mais assinatura do fotógrafo dentro do app: o clique é a assinatura.
-Depois de enviado, o botão principal é sempre "Abrir na Autentique".
+Enquanto a Autentique responde, o editor mostra uma tela de carregamento; deu certo, volta pra ficha com `?enviado=1` (ou `=atualizado`), e a ficha abre o pop-up de compartilhar (`ModalContratoEnviado`: duas caixas com "Copiar", o link sozinho e a mensagem pronta com o link, e "Ver contrato" no painel da Autentique; o link é um por pessoa e serve em qualquer canal). Esse pop-up só lê o link (`apenasLink`). Depois de enviado, o botão principal é sempre "Abrir na Autentique".
 
 **Editar depois de enviado = documento novo.** A Autentique não troca o
 arquivo de um documento (`updateDocument` só mexe em nome/mensagem), então
 "Atualizar na Autentique" apaga o documento de lá e cria outro: o link do casal
-muda e gasta 1 da cota de 10/mês. Por isso a tela pede confirmação. Quem diz se
+muda e gasta 1 da cota do mês (o plano gratuito do Jordan dá **20**/mês; `cotaDocumentos()` em `lib/autentique.ts` conta quanto sobra e os pop-ups mostram). Por isso a tela pede confirmação, e a ficha também pede antes de abrir o editor de um contrato já enviado. Quem diz se
 houve mudança é `autentique_hash` (sha256 do texto + dados do casal no envio),
 calculado só no servidor. Contrato de texto fixo antigo (sem
 `template_json_snapshot`) não é editável e cai na revisão antiga
 (`rotaDaRevisaoAntiga`).
 
-**Entrega é por LINK (`DELIVERY_METHOD_LINK`), e isso não é detalhe.** Medido
-em 22/10/2026, no primeiro envio real: no modo e-mail (o padrão) a Autentique
-não manda link nenhum na resposta (`link: null` pros dois) e o painel fica sem
-nada pra copiar, que foi o erro "a Autentique ainda não devolveu o link". No
-modo link ela devolve o `short_link` e **não manda e-mail**: quem entrega o
-contrato é o fotógrafo. O link segue amarrado ao e-mail do signatário, que
-confirma identidade pra assinar, então mandar por WhatsApp não afrouxa nada.
+**Entrega é por E-MAIL, e o link vem à parte.** No modo e-mail
+(`DELIVERY_METHOD_EMAIL`) a Autentique manda o pedido de assinatura pro casal,
+mas a criação devolve `link: null`; o link pra copiar/WhatsApp sai de
+`createLinkToSignature(public_id)` (`linkDoSignatario`). Medido em 22/10/2026:
+o sandbox manda e-mail de verdade, e `signatures.email_events` diz enviado,
+entregue, aberto e recusado com o motivo (copiado pra `contratos.autentique_email`
+na sincronização e mostrado embaixo de "Enviado ao casal"; o primeiro teste
+voltou com "caixa cheia"). Contratos criados antes, em modo link
+(`DELIVERY_METHOD_LINK`, que não manda e-mail), passam pro modo e-mail no
+"Reenviar" (mesmo e-mail), que recria o signatário.
 
 O estado continua nas colunas de sempre (`status`, `visualizado_em`,
 `assinado_em`, `pdf_base64`): `lib/contrato-autentique.ts` traduz o que vem de
@@ -113,6 +144,15 @@ lá. Dois caminhos trazem a novidade, e os dois terminam na mesma função:
 webhook em `/api/autentique`, que só entra em serviço quando houver endereço
 público. Recusa cai em `status: cancelado` + `recusado_em`, porque o CHECK da
 tabela não tem "recusado".
+
+**E-mail do casal errado não recria documento.** "Trocar e-mail e reenviar"
+(cartão do contrato na ficha) troca o signatário NO MESMO documento
+(`createSigner` + `deleteSigner`, nessa ordem): a assinatura do fotógrafo
+fica, não gasta cota, só o link do casal muda. Com o MESMO e-mail vira
+"Reenviar": `resendSignatures` se o signatário já é de e-mail; senão recria
+(a Autentique recusa dois iguais, `signer_already_exists`). Enquanto o contrato espera o
+casal, o campo de e-mail da ficha fica só leitura e aponta pra esse botão. A
+Autentique recusa e-mail com "+" (`format_is_invalid`).
 
 Cancelar no painel **apaga o documento na Autentique**, senão o link curto
 seguiria de pé e um contrato cancelado aqui voltaria assinado de lá.
@@ -204,6 +244,36 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   vai pro ar e o modelo no ar não se apaga: as duas coisas deixariam o site
   em branco.
 
+## Formulário de cadastro editável
+
+O `/cadastro` lê a config que o fotógrafo edita em `/painel/formulario`
+(tabela `config`, chave `formulario_cadastro`; sem chave = formulário padrão).
+`lib/formulario.ts` é a fonte das regras: todo campo (fixo ou pergunta nova)
+tem três escolhas livres, aparece, obrigatório e cadeado; o cadeado só trava
+as outras duas contra mudança sem querer, não é regra do sistema. Nomes,
+WhatsApp, e-mail e data vêm com cadeado ligado e, destravados e escondidos,
+mostram no editor o que deixa de funcionar. `normalizarFormulario` aplica os
+limites ao ler e ao salvar. `/api/orcamento` confere de novo com a mesma
+config (o navegador do casal não é confiável) e aceita qualquer combinação:
+sem data, ou sem CPF e sem nome, não procura ficha repetida, só cria. Nomes
+seguem a regra do par (`regraDoPar`). Pergunta nova não ganha coluna: a resposta vai pra
+`clientes.respostas_formulario` com o texto da pergunta, e a ficha mostra só
+leitura.
+
+Fotos da abertura: a lista também mora nessa config (`fotos`). Sem lista,
+valem as 8 do portfólio do Jordan, em webp prontos em `public/img/abertura/`
+(regenerar com `node tools/fotos-abertura/gerar.mjs`). As que o fotógrafo
+envia viram dois webp (750 e 1200px) no bucket PRIVADO `formulario-fotos` e
+são entregues pela rota `/api/formulario/fotos/<arquivo>`, nunca pela URL do
+Storage (a do local é 127.0.0.1, que o celular não abre). Nenhuma foto passa
+pelo `next/image`: no iPhone o otimizador do dev não entregava. Quem apaga o
+arquivo de uma foto tirada é o `POST /api/formulario`, depois de gravar a
+lista sem ela.
+
+O `/cadastro` é um fluxo em etapas (boas-vindas, uma etapa por seção, revisão),
+com todas as etapas montadas e só a atual visível: o intl-tel-input do WhatsApp
+se prende ao input na montagem e se perderia se a etapa desmontasse.
+
 ## Dívidas conhecidas
 
 - **Multi-tenant fica pra DEPOIS, por decisão do Ricardo (2026-09-16).** A
@@ -223,7 +293,9 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   textos do modelo inicial do Ateliê (`lib/atelie/modelo-inicial.ts`), `NOME_FOTOGRAFO` em `assinar/Assinar.tsx`,
   `NOME_FOTOGRAFO_PADRAO` e a legenda "CONTRATADA" em `clientes/[id]/contrato`,
   saudação do WhatsApp em `api/estudio`, remetente e `DESTINO_JORDAN` em
-  `lib/email.ts`, e-mails de `api/orcamento`, e as imagens em `public/img/`.
+  `lib/email.ts`, e-mails de `api/orcamento`, as imagens em `public/img/`, e a
+  abertura do `/cadastro` (a logo do Jordan e as 8 fotos padrão; as fotos já
+  são trocáveis pelo editor de Formulário).
   Tudo isso precisa sair de `config` (perfil) quando houver mais de um estúdio.
 - E-mail: com `RESEND_API_KEY` vazia todo envio falha e vai pro `console.error`,
   mas nada trava: cadastro do casal e assinatura gravam e respondem `ok` do

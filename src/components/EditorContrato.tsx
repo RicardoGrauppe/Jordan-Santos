@@ -16,14 +16,27 @@
 */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import type { ReactNode } from "react";
 import {
   AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Italic, List, ListOrdered, PanelLeft, PenTool, Plus, Table, X,
 } from "lucide-react";
-import { EXTENSOES, ROTULOS_CAMPO, jsonParaHtml } from "@/lib/contrato-editor";
+import { Roboto } from "next/font/google";
+import { BlocoAssinaturas, EXTENSOES, ROTULOS_CAMPO, TabelaItens, jsonParaHtml } from "@/lib/contrato-editor";
+import { BlocoAssinaturasFolha, Paginacao, TabelaItensFolha, definirDadosFolha, type DadosFolha } from "@/lib/contrato-folha";
+
+/* A fonte do PDF (pdfmake usa Roboto Regular e Medium). A folha usa a mesma
+   pra as linhas quebrarem no mesmo lugar que no contrato gerado. */
+const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500"], style: ["normal", "italic"], variable: "--font-roboto", display: "swap" });
+
+/* Os nós próprios ganham desenho de verdade (tabela, assinaturas) e a
+   paginação vem por cima. Só aqui: o servidor importa contrato-editor puro. */
+const EXTENSOES_FOLHA = [
+  ...EXTENSOES.map((e) => (e === TabelaItens ? TabelaItensFolha : e === BlocoAssinaturas ? BlocoAssinaturasFolha : e)),
+  Paginacao,
+];
 
 type Estilo = "p" | "h2" | "h3";
 type Alinhamento = "left" | "center" | "right" | "justify";
@@ -43,11 +56,21 @@ export type EditorContratoProps = {
    *  pra poder inserir no cursor, e `fechar` pra gaveta do celular sumir
    *  depois de uma ação. */
   lateral?: (editor: Editor, fechar: () => void) => ReactNode;
+  /** dados do casal pra tabela de itens e assinaturas desenhadas na folha
+   *  (o editor de modelos não tem casal: elas aparecem com texto de exemplo) */
+  dados?: DadosFolha;
+  /** celular: barra fixa embaixo (ação principal + abrir o painel). Com ela,
+   *  a barra de formatação vira uma linha só e o "Inserir" sai (o painel tem) */
+  rodapeMobile?: (abrirPainel: () => void) => ReactNode;
 };
 
-export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: EditorContratoProps) {
+export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados = null, rodapeMobile }: EditorContratoProps) {
+  /* a loja das NodeViews acompanha o que a lateral mexe (pacote, total) */
+  useEffect(() => { definirDadosFolha(dados); }, [dados]);
+  useEffect(() => () => definirDadosFolha(null), []);
+
   const editor = useEditor({
-    extensions: EXTENSOES,
+    extensions: EXTENSOES_FOLHA,
     content: conteudoInicial ?? "<p></p>",
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
@@ -90,8 +113,65 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
     return () => ro.disconnect();
   }, [temLateral, editor]);
 
-  /* celular: a lateral vira gaveta, aberta pelo botão da barra */
+  /* folha A4 reduzida pra caber (celular), como um leitor de PDF: mede a
+     área e grava o fator em --zoom-folha (globals.css). Nunca aumenta. */
+  const areaFolha = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = areaFolha.current;
+    if (!el) return;
+    const medir = () => {
+      const cs = getComputedStyle(el);
+      const livre = el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      const k = Math.min(1, livre / 793.71);
+      const folha = el.querySelector<HTMLElement>(".ProseMirror");
+      el.style.setProperty("--zoom-folha", String(k));
+      el.style.setProperty("--altura-folha", (folha?.offsetHeight ?? 0) + "px");
+      el.classList.toggle("folha-reduzida", k < 0.999);
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    /* a folha cresce com o texto e com as quebras: a altura recolhida acompanha */
+    const folha = el.querySelector(".ProseMirror");
+    if (folha) ro.observe(folha);
+    return () => ro.disconnect();
+  }, [editor]);
+
+  /* barra de formatação que rola de lado no celular: degradê nas pontas
+     enquanto houver mais pra ver, e um "puxa e solta" suave nas três
+     primeiras aberturas, pra ensinar que ela rola */
+  const barraRef = useRef<HTMLDivElement>(null);
+  const [barraRola, setBarraRola] = useState({ esq: false, dir: false });
+  const medirBarra = useCallback(() => {
+    const b = barraRef.current;
+    if (!b) return;
+    const esq = b.scrollLeft > 2;
+    const dir = b.scrollLeft + b.clientWidth < b.scrollWidth - 2;
+    setBarraRola((v) => (v.esq === esq && v.dir === dir ? v : { esq, dir }));
+  }, []);
+  useEffect(() => {
+    const b = barraRef.current;
+    if (!b || !rodapeMobile) return;
+    const ro = new ResizeObserver(medirBarra);
+    ro.observe(b);
+    let volta: ReturnType<typeof setTimeout> | undefined;
+    const vai = setTimeout(() => {
+      if (b.scrollWidth <= b.clientWidth + 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      let vezes = 0;
+      try { vezes = Number(localStorage.getItem("editor:dica-barra")) || 0; } catch { /* sem storage */ }
+      if (vezes >= 3) return;
+      try { localStorage.setItem("editor:dica-barra", String(vezes + 1)); } catch { /* sem storage */ }
+      b.scrollTo({ left: 64, behavior: "smooth" });
+      volta = setTimeout(() => b.scrollTo({ left: 0, behavior: "smooth" }), 700);
+    }, 800);
+    return () => { ro.disconnect(); clearTimeout(vai); clearTimeout(volta); };
+  }, [editor, rodapeMobile, medirBarra]);
+
+  /* celular: a lateral vira um sheet de baixo pra cima (60% da tela), aberto
+     pelo botão Painel; arrastar a alça pra baixo fecha */
   const [gavetaAberta, setGavetaAberta] = useState(false);
+  const [arrasto, setArrasto] = useState<number | null>(null);
+  const inicioArrasto = useRef(0);
   useEffect(() => {
     if (!gavetaAberta) return;
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setGavetaAberta(false); };
@@ -122,7 +202,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
   const divisor = <span className="mx-1.5 h-5 w-px shrink-0 self-center bg-line" aria-hidden />;
 
   return (
-    <div className="editor-contrato flex min-h-dvh flex-col bg-paper">
+    <div className={"editor-contrato flex min-h-dvh flex-col bg-paper " + roboto.variable}>
       {/* UM cabeçalho só: o nome do arquivo e a barra de formatação são faixas
           do mesmo bloco, mesmo fundo e sem linha entre elas — foi o que o
           original fez ao abrir o editor (`.editor-aberto .topo-estudio
@@ -133,7 +213,18 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
         {topo}
         {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
             ao desktop, onde tudo cabe numa só */}
-        <div className="flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap">
+        <div className={rodapeMobile ? "relative -mx-5 md:mx-0" : ""}>
+        {/* celular: a barra rola de lado; o degradê na ponta avisa que tem mais */}
+        {rodapeMobile ? (
+          <>
+            <span aria-hidden className={"pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-paper to-transparent transition-opacity duration-200 md:hidden " + (barraRola.esq ? "opacity-100" : "opacity-0")} />
+            <span aria-hidden className={"pointer-events-none absolute inset-y-0 right-0 z-[1] w-12 bg-gradient-to-l from-paper to-transparent transition-opacity duration-200 md:hidden " + (barraRola.dir ? "opacity-100" : "opacity-0")} />
+          </>
+        ) : null}
+        <div ref={barraRef} onScroll={medirBarra} className={rodapeMobile
+          /* uma linha só, rolando de lado se não couber; sem `order` */
+          ? "flex items-center gap-1.5 overflow-x-auto px-5 py-1.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:justify-center md:overflow-visible md:px-0 [&>*]:shrink-0 [&>*]:basis-auto [&_*]:order-none"
+          : "flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap md:justify-center"}>
         <select
           aria-label="Estilo do texto"
           value={estiloAtual}
@@ -165,7 +256,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
 
         {/* Inserir: FORA do grupo dos ícones e ancorado à direita no celular,
             pra o menu dele não ser cortado e ele ficar sempre à mão */}
-        <div ref={menuRef} className="relative order-2 ml-auto md:order-none md:ml-0">
+        <div ref={menuRef} className={"relative order-2 ml-auto md:order-none md:ml-0 " + (rodapeMobile ? "hidden md:block" : "")}>
           <button
             type="button"
             aria-haspopup="true" aria-expanded={menuAberto} aria-label="Inserir" title="Inserir"
@@ -190,12 +281,13 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
           ) : null}
         </div>
 
-        {lateral ? (
+        {lateral && !rodapeMobile ? (
           <button type="button" aria-label="Abrir painel" title="Abrir painel" onClick={() => setGavetaAberta(true)}
             className={"order-first md:hidden " + icone(gavetaAberta)}>
             <PanelLeft size={17} />
           </button>
         ) : null}
+      </div>
       </div>
 
       </div>
@@ -205,31 +297,46 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
       {lateral ? (
         <div className="flex flex-1">
           {/* computador: coluna fixa à esquerda, grudada abaixo do cabeçalho, rolando sozinha */}
-          <aside className="hidden w-[320px] shrink-0 bg-soft md:block" aria-label="Painel do contrato">
+          {/* fundo um tom abaixo do da folha (#ECEEF1 x --soft), pra lateral e mesa
+              não virarem uma coisa só */}
+          <aside className="hidden w-[320px] shrink-0 bg-[#ECEEF1] md:block" aria-label="Painel do contrato">
             <div className="sticky overflow-y-auto p-4 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               style={{ top: alturaCabecalho, maxHeight: `calc(100dvh - ${alturaCabecalho}px)` }}>
               {lateral(editor, fecharGaveta)}
             </div>
           </aside>
-          <EditorContent editor={editor} className="documento-editor min-w-0 flex-1 px-5 pb-24 md:px-7" />
-          {/* celular: gaveta pela esquerda, por cima do documento */}
+          <EditorContent ref={areaFolha} editor={editor} className={"documento-editor folha-a4 min-w-0 flex-1 " + (rodapeMobile ? "com-rodape" : "")} />
+          {rodapeMobile ? (
+            <div className="fixed inset-x-0 bottom-0 z-20 bg-paper px-4 pb-[calc(10px+var(--sab))] pt-2.5 shadow-[0_-6px_20px_rgba(29,29,27,.08)] md:hidden">
+              {rodapeMobile(() => setGavetaAberta(true))}
+            </div>
+          ) : null}
+          {/* celular: sheet de baixo pra cima, por cima do documento */}
           <div className={"fixed inset-0 z-30 md:hidden " + (gavetaAberta ? "" : "pointer-events-none")} aria-hidden={!gavetaAberta}>
             <div onClick={fecharGaveta}
               className={"absolute inset-0 bg-ink/30 transition-opacity duration-300 " + (gavetaAberta ? "opacity-100" : "opacity-0")} />
             <aside aria-label="Painel do contrato"
-              className={"absolute inset-y-0 left-0 flex w-[min(320px,86vw)] flex-col bg-soft shadow-alta transition-[translate] duration-300 ease-[var(--ease-desliza)] " +
-                (gavetaAberta ? "translate-x-0" : "-translate-x-full")}>
-              <div className="flex shrink-0 items-center justify-end px-2 pt-[calc(var(--sat)+8px)]">
-                <button type="button" aria-label="Fechar painel" onClick={fecharGaveta} className={icone(false)}><X size={18} /></button>
+              style={arrasto ? { translate: `0 ${arrasto}px` } : undefined}
+              className={"absolute inset-x-0 bottom-0 flex h-[60dvh] flex-col rounded-t-[20px] bg-[#ECEEF1] shadow-alta " +
+                (arrasto === null ? "transition-[translate] duration-300 ease-[var(--ease-desliza)] " : "") +
+                (gavetaAberta ? "translate-y-0" : "translate-y-full")}>
+              <div className="relative flex shrink-0 touch-none items-center justify-center px-2 pb-1 pt-2.5"
+                onPointerDown={(e) => { inicioArrasto.current = e.clientY; setArrasto(0); e.currentTarget.setPointerCapture(e.pointerId); }}
+                onPointerMove={(e) => { if (arrasto !== null) setArrasto(Math.max(0, e.clientY - inicioArrasto.current)); }}
+                onPointerUp={() => { if ((arrasto ?? 0) > 90) fecharGaveta(); setArrasto(null); }}
+                onPointerCancel={() => setArrasto(null)}>
+                <span className="h-1.5 w-10 rounded-full bg-ink/15" aria-hidden />
+                <button type="button" aria-label="Fechar painel" onClick={fecharGaveta} onPointerDown={(e) => e.stopPropagation()}
+                  className={"absolute right-2 top-1.5 " + icone(false)}><X size={18} /></button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-[calc(24px+var(--sab))] pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {gavetaAberta ? lateral(editor, fecharGaveta) : null}
               </div>
             </aside>
           </div>
         </div>
       ) : (
-        <EditorContent editor={editor} className="documento-editor flex-1 px-5 pb-24 md:px-7" />
+        <EditorContent ref={areaFolha} editor={editor} className="documento-editor folha-a4 flex-1" />
       )}
     </div>
   );

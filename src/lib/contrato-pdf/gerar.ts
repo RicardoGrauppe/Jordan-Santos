@@ -65,12 +65,13 @@ type Coords = {
    o dev-server local e a lambda da Vercel */
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
-/* Quais itens são PACOTE (o resto é adicional). O catalogo.ts é a fonte única
-   dos produtos, mas ele é browser-only e esta function roda no servidor — daí
-   a lista aqui. Pacote novo no catálogo? Acrescente o id.
-   O fallback pelo nome cobre o esquecimento sem quebrar o contrato. */
+/* Quais itens são PACOTE (o resto é adicional). Desde 22/10/2026 o item
+   escolhido pelo editor do contrato já grava o `tipo` que veio de Produtos e
+   serviços; a lista fixa e o nome cobrem os itens gravados antes disso. */
 export const PACOTES: Set<string> = new Set(["eternal", "heritage"]);
 export function ehPacote(item: ItemContrato): boolean {
+  if (item.tipo === "pacote") return true;
+  if (item.tipo === "adicional") return false;
   return PACOTES.has(String(item.id)) || /^pacote\b/i.test(String(item.nome || ""));
 }
 

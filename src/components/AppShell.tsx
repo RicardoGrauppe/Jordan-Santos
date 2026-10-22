@@ -26,10 +26,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Palette, Search, Settings, Users } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, ClipboardList, Crown, FileText, House, LogOut, Menu, Package, Palette, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
+import { Selo } from "@/components/ui";
 import { acionarAcaoMobile, useCabecalhoMobile } from "@/components/cabecalho-mobile";
 import { registrarNavegacao, useVoltar } from "@/lib/voltar";
 
@@ -54,10 +55,14 @@ const OURO = "#F2D9A0";
 const itemMenuConta =
   "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline hover:bg-soft";
 
-const ITENS = [
+const ITENS: { href: string; rotulo: string; Icone: typeof House; soLateral?: boolean }[] = [
   { href: "/painel", rotulo: "Home", Icone: House },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: Users },
   { href: "/painel/atelie", rotulo: "Ateliê", Icone: Palette },
+  /* o /cadastro que o casal preenche (22/10/2026). `soLateral`: a barra de
+     baixo do celular lê esta mesma lista e já tem os seis lugares ocupados,
+     então lá ele mora no Menu da conta */
+  { href: "/painel/formulario", rotulo: "Formulário", Icone: ClipboardList, soLateral: true },
 ];
 
 /** telas cheias que só existem no celular */
@@ -148,6 +153,21 @@ function Contador({ quantos, className = "" }: { quantos: number; className?: st
 
 export function AppShell({ children, nome }: { children: ReactNode; nome?: string }) {
   const caminho = usePathname();
+  /* Chave do envelope que desliza. É o caminho, EXCETO quando um "/novo"
+     vira o id do que acabou de ser criado (a ficha nova faz replaceState pra
+     /painel/clientes/<id> no meio da digitação): isso não é navegação, e
+     trocar a chave remontava a página vazia, como cliente novo de novo, e o
+     próximo campo criava OUTRO cliente. Estado ajustado durante o render, o
+     padrão do React pra "lembrar o valor anterior" sem efeito. */
+  const [chavePagina, setChavePagina] = useState(caminho);
+  const [caminhoAnterior, setCaminhoAnterior] = useState(caminho);
+  if (caminho !== caminhoAnterior) {
+    setCaminhoAnterior(caminho);
+    const nasceuDoNovo = /\/novo\/?$/.test(caminhoAnterior) &&
+      caminho.startsWith(caminhoAnterior.replace(/novo\/?$/, "")) &&
+      !caminho.slice(caminhoAnterior.replace(/novo\/?$/, "").length).includes("/");
+    if (!nasceuDoNovo) setChavePagina(caminho);
+  }
   const router = useRouter();
   const fecharLateralRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /* Lateral: fechada em repouso, aberta enquanto o mouse (ou o foco do
@@ -491,8 +511,9 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   <ArrowLeft size={18} />
                 </Link>
               ) : null}
-              <h1 className="m-0 flex-1 truncate text-[22px] font-bold tracking-tight text-ink">
-                {cabecalhoCelular.titulo}
+              <h1 className="m-0 flex min-w-0 flex-1 items-center gap-2 text-[22px] font-bold tracking-tight text-ink">
+                <span className="truncate">{cabecalhoCelular.titulo}</span>
+                {cabecalhoCelular.selo ? <Selo tom="accent">{cabecalhoCelular.selo}</Selo> : null}
               </h1>
               {/* Canto de ação da tela, no mesmo formato do "marcar todas como
                   lidas" das Notificações: redondo, só ícone, fundo soft. No
@@ -582,6 +603,11 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                     <FileText size={15} className="opacity-85" /> Contrato e assinatura
                     <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
                   </Link>
+                  <Link href="/painel/produtos" onClick={() => setMenuAberto(false)}
+                    className={itemMenuConta}>
+                    <Package size={15} className="opacity-85" /> Produtos e serviços
+                    <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
+                  </Link>
                   <Link href="/painel/configuracoes" onClick={() => setMenuAberto(false)}
                     className={itemMenuConta}>
                     <Settings size={15} className="opacity-85" /> Configurações
@@ -608,7 +634,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
             {/* a página nova entra pelo lado que a barra pede; no computador
                 não desliza, porque lá a troca não vem de um gesto. `key` no
                 caminho é o que faz a animação tocar de novo a cada rota. */}
-            <PaginaQueDesliza key={caminho} lado={ladoDaRota}>{children}</PaginaQueDesliza>
+            <PaginaQueDesliza key={chavePagina} lado={ladoDaRota}>{children}</PaginaQueDesliza>
           </main>
         </div>
       </div>
@@ -638,7 +664,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
         "bg-[linear-gradient(180deg,#ffffff,#f9fafb)] shadow-flutuante " +
         (semNavegacao ? "hidden" : "flex")
       }>
-        {ITENS.map(({ href, rotulo, Icone }) => (
+        {ITENS.filter((i) => !i.soLateral).map(({ href, rotulo, Icone }) => (
           <Link
             key={href}
             href={href}
@@ -789,9 +815,19 @@ function TelaContaMobile({
       <CorpoTelaMobile>
         <CartaoPlano nome={nome} />
 
+        <Link href="/painel/formulario" tabIndex={aba} onClick={aoFechar} className={item}>
+          <ClipboardList size={19} className="shrink-0 text-ink-soft" />
+          Formulário
+          <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
+        </Link>
         <Link href="/painel/configuracoes/contrato" tabIndex={aba} onClick={aoFechar} className={item}>
           <FileText size={19} className="shrink-0 text-ink-soft" />
           Contrato e assinatura
+          <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
+        </Link>
+        <Link href="/painel/produtos" tabIndex={aba} onClick={aoFechar} className={item}>
+          <Package size={19} className="shrink-0 text-ink-soft" />
+          Produtos e serviços
           <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
         </Link>
         <Link href="/painel/configuracoes" tabIndex={aba} onClick={aoFechar} className={item}>
