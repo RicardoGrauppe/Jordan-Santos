@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { CalendarHeart, ChevronDown, Heart, MapPin, NotebookPen, Mail, Package, Pencil } from "lucide-react";
+import { CalendarHeart, ChevronDown, Heart, MapPin, NotebookPen, Mail, Package } from "lucide-react";
 import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
@@ -758,16 +758,13 @@ export default function PaginaCliente() {
                 ) : (
                   <p className="m-0 mt-3 px-1 text-[13.5px] text-ink-soft">Nenhum pacote escolhido ainda.</p>
                 )}
+                {/* sem botão de editar (pedido do Ricardo): pacote e valores se
+                    mexem no editor do contrato, aberto pelo cartão de cima */}
                 {travado ? (
                   <p className="m-0 mt-3 px-1 text-[12.5px] leading-[1.5] text-ink-soft">
                     O casal já assinou: pacote, adicionais e valores ficam como estão no contrato.
                   </p>
-                ) : (
-                  <Botao type="button" variante="secundario" className="mt-3 w-full" disabled={!clienteId || ocupado}
-                    onClick={() => { if (contratoGerado) void editarContrato(); else void acaoDoContrato(); }}>
-                    <Pencil size={15} /> {itens.length ? "Editar pacote e valores" : "Escolher pacote e valores"}
-                  </Botao>
-                )}
+                ) : null}
               </section>
               ) : null}
             </div>
