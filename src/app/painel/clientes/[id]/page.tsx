@@ -810,7 +810,7 @@ export default function PaginaCliente() {
 function Voltar() {
   return (
     <div className="hidden md:block">
-      <BotaoVoltar href="/painel" rotulo="Início" />
+      <BotaoVoltar href="/painel/clientes" rotulo="Clientes" />
     </div>
   );
 }

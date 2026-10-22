@@ -52,7 +52,7 @@ export type CabecalhoMobile = {
    (/painel/clientes/<id>/contrato), que roda SEM moldura nenhuma — lá não
    existe cabeçalho pra receber título. */
 const TELAS: { rota: RegExp; titulo: string; voltar: string | null }[] = [
-  { rota: /^\/painel\/clientes\/[^/]+\/?$/, titulo: "Cliente", voltar: "/painel" },
+  { rota: /^\/painel\/clientes\/[^/]+\/?$/, titulo: "Cliente", voltar: "/painel/clientes" },
   { rota: /^\/painel\/clientes\/?$/, titulo: "Clientes", voltar: null },
   { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Contrato e assinatura", voltar: "/painel/configuracoes" },
   { rota: /^\/painel\/configuracoes\/?$/, titulo: "Configurações", voltar: "/painel" },
