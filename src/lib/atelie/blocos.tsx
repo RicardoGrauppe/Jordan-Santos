@@ -27,6 +27,7 @@ import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import { RevealAoRolar } from "@/app/proposta/RevealAoRolar";
 import { CampoFoco, CampoFoto, CampoFotoOpcional } from "@/components/CamposAtelie";
 import { CSS_PROPOSTA } from "./proposta-css";
+import { FOTO_DE_EXEMPLO } from "./modelo-guiado";
 import type { TipoDeBloco } from "./tipos";
 
 /* ---------- tipos ---------- */
@@ -255,7 +256,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         logoAlt: { type: "text", label: "Descrição do logo" },
         frase: { type: "text", label: "Frase", contentEditable: true },
       },
-      defaultProps: { logo: "/img/logo-principal-offwhite.png", logoAlt: "", frase: "Role para ver mais" },
+      defaultProps: { logo: FOTO_DE_EXEMPLO.logo, logoAlt: "", frase: "Role para ver mais" },
       render: ({ logo, logoAlt, frase }) => (
         <header className="capa">
           <img src={logo} alt={logoAlt} />
@@ -271,7 +272,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         alt: { type: "text", label: "Descrição da foto" },
         foco: campoFocoEscondido,
       },
-      defaultProps: { src: "/img/casal-jardim.jpg", alt: "", foco: "" },
+      defaultProps: { src: FOTO_DE_EXEMPLO.paisagem, alt: "", foco: "" },
       render: ({ src, alt, foco }) => (
         <figure className="foto-full">
           <img src={src} alt={alt} style={estiloFoco(foco)} />
@@ -348,8 +349,8 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         foco: campoFocoEscondido,
       },
       defaultProps: {
-        ancora: "", selo: "", titulo: "Adicionais", linhas: [], foto: "/img/casal-campo.jpg",
-        foco: "", legenda: "", corCeu: "#FEFEFE", subida: 40,
+        ancora: "", selo: "", titulo: "Adicionais", linhas: [], foto: FOTO_DE_EXEMPLO.vertical,
+        foco: "", legenda: "", corCeu: "#F3F0EC", subida: 40,
       },
       render: ({ ancora, selo, titulo, linhas, foto, foco, legenda, corCeu, subida }) => {
         const desenhaLinha = (l: LinhaPreco, i: number, extra = "") => (
@@ -486,7 +487,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         alt: { type: "text", label: "Descrição da foto" },
         foco: campoFocoEscondido,
       },
-      defaultProps: { texto: "", src: "/img/casal-palacio.jpg", alt: "", foco: "" },
+      defaultProps: { texto: "", src: FOTO_DE_EXEMPLO.escura, alt: "", foco: "" },
       render: ({ texto, src, alt, foco }) => (
         <figure className="quote-full">
           <img src={src} alt={alt} style={estiloFoco(foco)} />
@@ -532,7 +533,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         assinaturaAlt: { type: "text", label: "Descrição da assinatura" },
         frase: { type: "textarea", label: "Frase" },
       },
-      defaultProps: { assinatura: "/img/assinatura-offwhite.png", assinaturaAlt: "", frase: "" },
+      defaultProps: { assinatura: "", assinaturaAlt: "", frase: "" },
       render: ({ assinatura, assinaturaAlt, frase, puck }) => {
         const contato = contatoDe(puck.metadata);
         return (
@@ -607,9 +608,9 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       defaultProps: {
         ancora: "", fundo: "branco", selo: "", titulo: "", colunas: "3", proporcao: "retrato",
         fotos: [
-          { src: "/img/entrega-1.jpg", alt: "Noivos em um corredor clássico", foco: "50% 25%" },
-          { src: "/img/entrega-2.jpg", alt: "Noiva em um salão histórico", foco: "50% 28%" },
-          { src: "/img/entrega-3.jpg", alt: "Retrato próximo dos noivos", foco: "50% 40%" },
+          { src: FOTO_DE_EXEMPLO.vertical, alt: "", foco: "" },
+          { src: FOTO_DE_EXEMPLO.vertical, alt: "", foco: "" },
+          { src: FOTO_DE_EXEMPLO.vertical, alt: "", foco: "" },
         ],
       },
       render: ({ ancora, fundo, selo, titulo, colunas, proporcao, fotos }) => (
@@ -651,7 +652,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       },
       defaultProps: {
         ancora: "", fundo: "branco", lado: "esquerda",
-        foto: "/img/noiva-retrato.jpg", fotoAlt: "", foco: "48% 30%",
+        foto: FOTO_DE_EXEMPLO.retrato, fotoAlt: "", foco: "",
         selo: "", titulo: "Sobre nós", texto: "Conte aqui um pouco do seu olhar e do que o casal pode esperar.",
         botao: "", link: "",
       },

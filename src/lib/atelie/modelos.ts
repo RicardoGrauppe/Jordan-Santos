@@ -11,7 +11,7 @@ import { cache } from "react";
 import { rest } from "@/lib/supabase";
 import type { DadosSite, RaizProps } from "./blocos";
 import { MODELO_INICIAL, NOME_MODELO_INICIAL } from "./modelo-inicial";
-import { modeloGuiado, temTextoDeExemplo } from "./modelo-guiado";
+import { modeloGuiado, temExemplo } from "./modelo-guiado";
 import { TIPOS_DE_BLOCO } from "./tipos";
 
 export const CHAVE_SITE_ATIVO = "site_ativo";
@@ -25,7 +25,7 @@ export type ResumoModelo = {
   blocos: number;
   /** o rascunho tem mudança que ainda não foi publicada */
   pendente: boolean;
-  /** ainda sobrou texto de exemplo do modelo guiado no rascunho */
+  /** ainda sobrou texto ou foto de exemplo no rascunho */
   exemplo: boolean;
 };
 
@@ -86,7 +86,7 @@ export async function listarModelos(): Promise<ResumoModelo[]> {
     publicado_em: l.publicado_em,
     blocos: l.rascunho?.content?.length ?? 0,
     pendente: !l.publicado || JSON.stringify(l.rascunho) !== JSON.stringify(l.publicado),
-    exemplo: temTextoDeExemplo(l.rascunho),
+    exemplo: temExemplo(l.rascunho),
   }));
 }
 

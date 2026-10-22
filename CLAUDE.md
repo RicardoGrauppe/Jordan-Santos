@@ -173,7 +173,10 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
 - **Modelo novo nasce guiado** (`modelo-guiado.ts`): blocos que explicam, no
   próprio texto, como o Ateliê funciona. Texto de exemplo novo entra no
   objeto `T` de lá, que é a lista que a confirmação de publicar confere
-  (`temTextoDeExemplo`) pra avisar que ele iria pro ar.
+  (`temExemplo`) pra avisar que ele iria pro ar. Bloco novo e modelo guiado
+  usam as fotos de exemplo desenhadas (`public/img/atelie/exemplo-*.svg`,
+  `FOTO_DE_EXEMPLO`), nunca foto de um estúdio de verdade; elas também
+  contam como exemplo no aviso.
 - **A página do editor é desenhada com 1280px e encolhida** no modo
   Computador (`transform: scale`, como o layout padrão do Puck). Na largura
   da coluna do meio (uns 750px) o site cairia nas regras de celular e

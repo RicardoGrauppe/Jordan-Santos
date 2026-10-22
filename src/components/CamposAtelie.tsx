@@ -51,8 +51,10 @@ const FOTOS_DO_SITE: { url: string; nome: string }[] = [
   { url: "/img/assinatura-offwhite.png", nome: "Assinatura clara" },
 ];
 
-/* Logo e assinatura claros somem num ladrilho claro: PNG ganha fundo escuro. */
-const fundoDaMiniatura = (url: string) => (url.endsWith(".png") ? "bg-noir" : "bg-[#EEF0F3]");
+/* Logo e assinatura são claros (PNG do estúdio, ou o logo de exemplo em SVG)
+   e sumiriam num ladrilho claro: ganham fundo escuro e aparecem inteiros. */
+const ehMarca = (url: string) => url.endsWith(".png") || url.includes("/exemplo-logo");
+const fundoDaMiniatura = (url: string) => (ehMarca(url) ? "bg-noir" : "bg-[#EEF0F3]");
 
 /* ---------- redução no navegador ---------- */
 
@@ -96,7 +98,7 @@ function Ladrilho({ url, nome, escolhida, aoEscolher, aoApagar }: {
       <button type="button" onClick={aoEscolher} title={nome} aria-pressed={escolhida}
         className={"relative block aspect-square w-full cursor-pointer overflow-hidden rounded-xl p-0 transition-transform hover:-translate-y-px " + fundoDaMiniatura(url)}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt={nome} loading="lazy" className={"h-full w-full " + (url.endsWith(".png") ? "object-contain p-2" : "object-cover")} />
+        <img src={url} alt={nome} loading="lazy" className={"h-full w-full " + (ehMarca(url) ? "object-contain p-2" : "object-cover")} />
         {escolhida ? (
           <>
             <span className="absolute inset-0 bg-accent/30" />
@@ -244,7 +246,7 @@ function CampoDeFoto({ value, onChange, opcional, rotulo }: {
           <button type="button" onClick={() => setAberta(true)}
             className={"block aspect-[16/10] w-full cursor-pointer overflow-hidden rounded-xl p-0 " + fundoDaMiniatura(value)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt="" className={"h-full w-full " + (value.endsWith(".png") ? "object-contain p-3" : "object-cover")} />
+            <img src={value} alt="" className={"h-full w-full " + (ehMarca(value) ? "object-contain p-3" : "object-cover")} />
           </button>
           <div className="mt-2 flex gap-2">
             <Botao variante="secundario" className="h-9 px-3 text-[13px]" onClick={() => setAberta(true)}>Trocar foto</Botao>

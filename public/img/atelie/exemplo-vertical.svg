@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1365" height="2048" viewBox="0 0 1365 2048">
+  <rect width="1365" height="2048" fill="#F3F0EC"/>
+  <g transform="translate(573.3 838.3599999999999)" fill="none" stroke="#C2BAB0" stroke-width="13.104" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="17.472" y="34.944" width="183.456" height="148.512" rx="21.840000000000003"/>
+    <circle cx="74.256" cy="82.992" r="17.472"/>
+    <path d="M17.472 157.248 L78.624 109.2 L131.04 148.512 L157.248 126.672 L200.92800000000003 161.616"/>
+  </g>
+  <text x="682.5" y="1155.04" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="61" letter-spacing="11.1" fill="#968D82">SUA FOTO AQUI</text>
+</svg>

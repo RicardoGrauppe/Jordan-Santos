@@ -5,14 +5,25 @@
   lado, a lista da esquerda põe mais) e vai trocando o texto de exemplo pelo
   seu. Página vazia não ensinava nada.
 
-  Os textos de exemplo ficam numa lista porque o Ateliê confere se algum
-  deles sobrou antes de publicar (`temTextoDeExemplo`): sem isso, o tutorial
-  podia ir pro ar e aparecer pro casal.
+  Os textos de exemplo ficam numa lista, e as fotos de exemplo numa pasta só,
+  porque o Ateliê confere se algum deles sobrou antes de publicar
+  (`temExemplo`): sem isso, o tutorial podia ir pro ar e aparecer pro casal.
 
   Módulo sem React nem servidor: a API monta o modelo e o editor confere os
   textos com a mesma lista.
 */
 import type { DadosSite, RaizProps } from "./blocos";
+
+/* Fotos de exemplo, desenhadas (brandbook, seção 21): bloco novo e modelo
+   guiado nunca trazem foto de um estúdio de verdade. Uma por formato. */
+const PASTA_EXEMPLO = "/img/atelie/exemplo-";
+export const FOTO_DE_EXEMPLO = {
+  paisagem: PASTA_EXEMPLO + "paisagem.svg",
+  retrato: PASTA_EXEMPLO + "retrato.svg",
+  vertical: PASTA_EXEMPLO + "vertical.svg",
+  escura: PASTA_EXEMPLO + "escura.svg",
+  logo: PASTA_EXEMPLO + "logo.svg",
+} as const;
 
 const T = {
   inicioSelo: "Comece por aqui",
@@ -43,17 +54,22 @@ const ANTIGOS = [
 /** Os textos de exemplo, pra saber se algum ainda está na página. */
 export const TEXTOS_DE_EXEMPLO: readonly string[] = [...Object.values(T), ...ANTIGOS];
 
-/** O aviso da confirmação de publicar quando sobrou texto de exemplo: publicar
-    com ele ainda lá é quase sempre esquecimento. */
-export const AVISO_TEXTO_DE_EXEMPLO =
-  "Ainda tem texto de exemplo nesta página (os que explicam como o Ateliê funciona). Se publicar assim, ele aparece pra quem abrir o site.";
+/** O aviso da confirmação de publicar quando sobrou texto ou foto de exemplo:
+    publicar com eles ainda lá é quase sempre esquecimento. */
+export const AVISO_DE_EXEMPLO =
+  "Ainda tem texto ou foto de exemplo nesta página (os que explicam como o Ateliê funciona). Se publicar assim, eles aparecem pra quem abrir o site.";
 
-/** true quando algum campo de algum bloco ainda tem um texto de exemplo. */
-export function temTextoDeExemplo(dados: DadosSite | null | undefined): boolean {
-  const exemplos = new Set(TEXTOS_DE_EXEMPLO);
-  return (dados?.content ?? []).some((bloco) =>
-    Object.values(bloco.props as Record<string, unknown>).some((v) => typeof v === "string" && exemplos.has(v.trim())),
-  );
+/** true quando algum campo de algum bloco (inclusive dentro de listas, como
+    as fotos da galeria) ainda tem texto de exemplo ou foto de exemplo. */
+export function temExemplo(dados: DadosSite | null | undefined): boolean {
+  const textos = new Set(TEXTOS_DE_EXEMPLO);
+  const procura = (v: unknown): boolean => {
+    if (typeof v === "string") return textos.has(v.trim()) || v.startsWith(PASTA_EXEMPLO);
+    if (Array.isArray(v)) return v.some(procura);
+    if (v && typeof v === "object") return Object.values(v).some(procura);
+    return false;
+  };
+  return (dados?.content ?? []).some((bloco) => procura(bloco.props));
 }
 
 /** O modelo guiado, com o contato que veio do site no ar. */
@@ -73,7 +89,7 @@ export function modeloGuiado(raiz: RaizProps): DadosSite {
         type: "FotoComTexto",
         props: {
           id: id("FotoComTexto"), ancora: "", fundo: "claro", lado: "esquerda",
-          foto: "/img/noiva-retrato.jpg", fotoAlt: "", foco: "48% 30%",
+          foto: FOTO_DE_EXEMPLO.retrato, fotoAlt: "", foco: "",
           selo: T.fotoSelo, titulo: T.fotoTitulo, texto: T.fotoTexto, botao: "", link: "",
         },
       },

@@ -247,20 +247,24 @@ function CabecalhoCampos() {
   const dispatch = usePuck((s) => s.dispatch);
   const tipo = selecionado?.type as TipoDeBloco | undefined;
   const Icone = tipo ? APRESENTACAO[tipo]?.Icone ?? Blocks : FileText;
+  /* o atalho mora numa linha própria, embaixo: ao lado do nome ele apertava
+     o título ("Lista de preç…") e quebrava a linha de baixo em duas */
   return (
-    <div className="flex items-center gap-2.5 px-4 pb-1 pt-4">
-      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
-        <Icone size={17} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[14px] font-semibold text-ink">{tipo ? rotuloDe(tipo) : "Página"}</div>
-        <div className="text-[12px] text-ink-soft">
-          {tipo ? "Campos deste bloco" : "Título e contato valem pro site inteiro"}
+    <div className="px-4 pb-1 pt-4">
+      <div className="flex items-center gap-2.5">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
+          <Icone size={17} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[14px] font-semibold text-ink">{tipo ? rotuloDe(tipo) : "Página"}</div>
+          <div className="text-[12px] text-ink-soft">
+            {tipo ? "Campos deste bloco" : "Título e contato valem pro site inteiro"}
+          </div>
         </div>
       </div>
       {tipo ? (
         <button type="button" onClick={() => dispatch({ type: "setUi", ui: { itemSelector: null } })}
-          className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-semibold text-accent transition-colors hover:bg-soft">
+          className="-ml-2 mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] font-semibold text-accent transition-colors hover:bg-soft">
           <FileText size={14} /> Campos da página
         </button>
       ) : null}
