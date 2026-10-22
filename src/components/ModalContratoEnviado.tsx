@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, CircleCheck, Copy, ExternalLink, Mail, MessageCircle, Share2, X } from "lucide-react";
+import { Check, CircleCheck, Copy, ExternalLink, Mail, MessageCircle, Share2, TriangleAlert, X } from "lucide-react";
 import { copiarTexto } from "@/lib/ficha";
 
 export type DadosEnviado = {
@@ -84,9 +84,17 @@ export function ModalContratoEnviado({ dados, onFechar }: { dados: DadosEnviado;
         </h3>
         <p className="m-0 text-[14.5px] leading-[1.6] text-ink-soft">
           {dados.atualizado
-            ? "A versão nova já está na Autentique com a sua assinatura. O link mudou: mande este pro casal, o anterior não vale mais."
+            ? "A versão nova já está na Autentique com a sua assinatura."
             : "Sua assinatura já está na Autentique. Agora é com o casal: mande o link por onde preferir."}
         </p>
+        {/* o recado que não pode passar batido: âmbar translúcido, mesmo tom
+            do <Aviso> do kit */}
+        {dados.atualizado ? (
+          <p className="m-0 mt-3.5 flex items-start gap-2.5 rounded-[10px] bg-[rgba(234,179,8,.14)] px-3.5 py-3 text-[13px] leading-[1.55] text-[#7A5A11]">
+            <TriangleAlert size={16} className="mt-px shrink-0 text-[#B99524]" aria-hidden />
+            <span>O link mudou: mande este pro casal, o anterior não vale mais.</span>
+          </p>
+        ) : null}
 
         {/* o link, com o copiar do lado */}
         <div className="mt-4 flex items-center gap-2 rounded-[10px] bg-soft py-1 pl-3.5 pr-1">
