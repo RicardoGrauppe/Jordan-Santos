@@ -44,6 +44,7 @@ import {
   useCallback, useEffect, useRef, useState,
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
+import Image from "next/image";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
@@ -225,10 +226,18 @@ const CSS = `
    foto ao lado da carta a partir de 960px, só nesta etapa. */
 .cad .boas-vindas{display:grid;gap:30px}
 .cad .foto-abertura{position:relative;border-radius:22px;overflow:hidden;aspect-ratio:4/3;background:var(--soft)}
-.cad .foto-abertura img{width:100%;height:100%;object-fit:cover;object-position:50% 62%;display:block;animation:cad-respira 1.6s cubic-bezier(.22,1,.36,1) both}
-@keyframes cad-respira{from{transform:scale(1.06);opacity:0}to{transform:none;opacity:1}}
-.cad .foto-abertura::after{content:"";position:absolute;inset:auto 0 0 0;height:45%;background:linear-gradient(to top,rgba(29,29,27,.55),rgba(29,29,27,0))}
-.cad .foto-abertura .marca{position:absolute;left:20px;bottom:18px;z-index:1;height:30px;width:auto;opacity:.95}
+/* rotação das fotos: a atual aparece por cima num esmaecer e afasta devagar
+   enquanto está na tela; a que sai some por baixo */
+.cad .foto-abertura{animation:cad-sobe .9s cubic-bezier(.22,1,.36,1) both}
+.cad .slide{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
+.cad .slide.ativa{opacity:1}
+.cad .slide img{object-fit:cover;transform:scale(1.08);transition:transform 7s linear}
+.cad .slide.ativa img{transform:scale(1)}
+.cad .pontos{position:absolute;right:20px;bottom:24px;z-index:2;display:flex;gap:6px;align-items:center}
+.cad .pontos span{width:6px;height:6px;border-radius:999px;background:rgba(255,255,255,.5);transition:width .4s ease,background .4s ease}
+.cad .pontos span.ativo{width:18px;background:#fff}
+.cad .foto-abertura::after{content:"";position:absolute;inset:auto 0 0 0;height:45%;z-index:1;background:linear-gradient(to top,rgba(29,29,27,.55),rgba(29,29,27,0))}
+.cad .foto-abertura .marca{position:absolute;left:20px;bottom:18px;z-index:2;height:30px;width:auto;opacity:.95}
 .cad .carta h1{font-size:34px;line-height:1.18;margin:0;text-wrap:balance}
 .cad .carta .texto{font-size:16px;line-height:1.7;color:var(--ink);margin-top:16px}
 .cad .carta .texto + .texto{margin-top:12px}
@@ -269,7 +278,8 @@ const CSS = `
 
 /* quem pediu menos movimento no sistema recebe a troca seca */
 @media (prefers-reduced-motion:reduce){
-  .cad .etapa,.cad .etapa-corpo > *,.cad .sucesso,.cad .foto-abertura img{animation:none}
+  .cad .etapa,.cad .etapa-corpo > *,.cad .sucesso,.cad .foto-abertura{animation:none}
+  .cad .slide,.cad .slide img{transition:none}
   .cad .check path{animation:none;stroke-dashoffset:0}
   .cad .progresso span{transition:none}
 }
@@ -352,6 +362,57 @@ function CampoPergunta({
       {controle}
       {invalido ? <span className="campo-erro-msg">{erro.msg}</span> : null}
     </label>
+  );
+}
+
+/* ---------- fotos da abertura ----------
+   Portfólio do Jordan, fixo como o resto da marca dele (dívida "Nome e
+   marca" no CLAUDE.md). `foco` é o object-position de cada uma: as fotos são
+   retrato 2:3 e o quadro do celular é 4:3, então sem isso metade dos casais
+   sairia sem cabeça. */
+const FOTOS_ABERTURA = [
+  { src: "/img/prewedding.jpg", foco: "50% 62%", alt: "Casal no alto de uma caminhonete antiga, no campo, ao pôr do sol" },
+  { src: "/img/casal-jardim.jpg", foco: "50% 40%", alt: "Noivos caminhando de mãos dadas em um jardim" },
+  { src: "/img/entrega-1.jpg", foco: "50% 45%", alt: "Noivo beijando o rosto da noiva, em preto e branco" },
+  { src: "/img/casal-palacio.jpg", foco: "50% 35%", alt: "Noivos em um palácio, em preto e branco" },
+  { src: "/img/casal-campo.jpg", foco: "50% 65%", alt: "Noivos caminhando ao lado de um milharal, em preto e branco" },
+  { src: "/img/noiva-retrato.jpg", foco: "50% 30%", alt: "Retrato da noiva com véu, sentada, em preto e branco" },
+  { src: "/img/entrega-3.jpg", foco: "50% 35%", alt: "Retrato próximo dos noivos" },
+  { src: "/img/entrega-2.jpg", foco: "50% 70%", alt: "Noiva em um salão histórico, em preto e branco" },
+];
+const TEMPO_FOTO = 5500;
+
+/* Só a atual e a próxima são baixadas: as oito juntas passariam de 10MB no
+   4G do casal. Cada troca libera mais uma. Parada quando a etapa não está na
+   tela e pra quem pede menos movimento (aí fica a primeira). */
+function FotosAbertura({ rodando }: { rodando: boolean }) {
+  const [atual, setAtual] = useState(0);
+  const [baixadas, setBaixadas] = useState(2);
+
+  useEffect(() => {
+    if (!rodando || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => {
+      setAtual((a) => (a + 1) % FOTOS_ABERTURA.length);
+      setBaixadas((b) => Math.min(FOTOS_ABERTURA.length, b + 1));
+    }, TEMPO_FOTO);
+    return () => clearInterval(t);
+  }, [rodando]);
+
+  return (
+    <div className="foto-abertura">
+      {FOTOS_ABERTURA.slice(0, baixadas).map((f, i) => (
+        <div key={f.src} className={"slide" + (i === atual ? " ativa" : "")} aria-hidden={i !== atual}>
+          <Image src={f.src} alt={f.alt} fill sizes="(min-width: 960px) 476px, calc(100vw - 44px)"
+            loading="eager" fetchPriority={i === 0 ? "high" : "auto"}
+            style={{ objectPosition: f.foco }} />
+        </div>
+      ))}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="marca" src="/img/logo-principal-offwhite.png" alt="Jordan Santos" />
+      <div className="pontos" aria-hidden>
+        {FOTOS_ABERTURA.map((f, i) => <span key={f.src} className={i === atual ? "ativo" : ""} />)}
+      </div>
+    </div>
   );
 }
 
@@ -866,13 +927,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                 (dívida "Nome e marca" no CLAUDE.md). */}
             <section className="etapa" {...atributosEtapa("inicio")}>
               <div className="boas-vindas">
-                <div className="foto-abertura">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/img/prewedding.jpg" alt="Casal no alto de uma caminhonete antiga, no campo, ao pôr do sol"
-                    width={1365} height={2048} fetchPriority="high" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="marca" src="/img/logo-principal-offwhite.png" alt="Jordan Santos" />
-                </div>
+                <FotosAbertura rodando={etapa === "inicio" && !enviado} />
                 <div className="carta etapa-corpo">
                   <h1>Que alegria ter vocês aqui</h1>
                   <p className="texto">
