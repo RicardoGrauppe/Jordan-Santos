@@ -1012,7 +1012,39 @@
 
   <!-- ============================================================= -->
   <section class="secao">
-    <h2><span class="num">18</span>Não faz</h2>
+    <h2><span class="num">18</span>Painel lateral do editor</h2>
+    <p class="legenda">Só no editor do contrato <strong>de um cliente</strong> (o editor de modelos não tem). Coluna de 320px à esquerda, fundo <code>--soft</code>, com <strong>cartões flutuantes</strong> empilhados (papel, raio 20px, <code>--sombra-card</code>, 12px entre eles). Cada cartão abre com o mesmo cabeçalho da ficha: ícone num quadrado de 36px (raio 13px, accent-tint) + título 14px semibold + uma linha de explicação. No celular vira gaveta pela esquerda.</p>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <div style="width:320px;background:var(--soft);padding:16px;border-radius:16px;display:grid;gap:12px">
+        <div style="background:var(--paper);border-radius:20px;padding:16px;box-shadow:var(--sombra-card)">
+          <div style="display:flex;gap:10px;align-items:center"><span style="width:36px;height:36px;border-radius:13px;background:#EAF1F3;color:var(--accent);display:inline-flex;align-items:center;justify-content:center"><i data-lucide="file-text" style="width:17px;height:17px"></i></span><div><div style="font-size:14px;font-weight:600">Modelo do contrato</div><div style="font-size:12px;color:var(--ink-soft)">Trocar substitui o texto deste contrato</div></div></div>
+          <div style="margin-top:12px;display:grid;gap:2px">
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:12px;background:#EAF1F3;color:var(--accent);font-size:13px;font-weight:600"><span style="width:18px;height:18px;border-radius:99px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center"><i data-lucide="check" style="width:12px;height:12px"></i></span><span style="flex:1">Contrato de fotografia</span><span style="border-radius:6px;padding:3px 8px;font-size:10.5px;font-weight:600;background:var(--paper);color:var(--ink-soft)">Padrão</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:12px;font-size:13px"><span style="width:18px;height:18px;border-radius:99px;background:var(--line)"></span><span style="flex:1">Contrato de ensaio</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:12px;font-size:13px;color:var(--ink-soft)"><i data-lucide="plus" style="width:18px;height:18px"></i>Novo modelo</div>
+          </div>
+        </div>
+        <div style="background:var(--paper);border-radius:20px;padding:16px;box-shadow:var(--sombra-card)">
+          <div style="display:flex;gap:10px;align-items:center"><span style="width:36px;height:36px;border-radius:13px;background:#EAF1F3;color:var(--accent);display:inline-flex;align-items:center;justify-content:center"><i data-lucide="braces" style="width:17px;height:17px"></i></span><div><div style="font-size:14px;font-weight:600">Campos</div><div style="font-size:12px;color:var(--ink-soft)">Clique pra pôr no cursor</div></div></div>
+          <div style="margin-top:14px;font-size:11.5px;font-weight:600;color:var(--ink-soft);display:flex;gap:6px;align-items:center"><i data-lucide="heart" style="width:13px;height:13px"></i>Casal</div>
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+            <span style="background:#EDE7DA;color:var(--accent);border-radius:7px;padding:5px 9px;font-size:12.5px;font-weight:500">Nome do noivo</span>
+            <span style="background:#EDE7DA;color:var(--accent);border-radius:7px;padding:5px 9px;font-size:12.5px;font-weight:500">CPF do noivo</span>
+            <span style="background:#E7F1EC;color:var(--ok);border-radius:7px;padding:5px 9px;font-size:12.5px;font-weight:500">✓ Inserido</span>
+          </div>
+        </div>
+      </div>
+      <div style="max-width:420px">
+        <p class="legenda"><strong>Campos com a cara do documento.</strong> O chip do campo usa o mesmo bege do campo dentro do texto (<code>--campo</code> #EDE7DA, texto accent, raio 7px): o que se clica é o que aparece no contrato. Hover escurece pra <code>--campo-hover</code> #E4D9C4 e sobe 1px; o clique encolhe pra .97 e o chip vira verde de "Inserido" por 0,9s.</p>
+        <p class="legenda" style="margin-top:10px"><strong>Escolha de modelo como rádio.</strong> O atual fica em accent-tint com o círculo cheio e o check; os outros têm o círculo vazio em <code>--line</code>. O padrão leva um selo neutro "Padrão" (raio 6px).</p>
+        <p class="legenda" style="margin-top:10px"><strong>Blocos em ladrilhos</strong> de duas colunas (fundo <code>--soft</code>, raio 14px, ícone accent, título e uma linha), que viram accent-tint no hover.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">19</span>Não faz</h2>
     <ul style="list-style:none;display:grid;gap:10px;max-width:640px">
       <li class="regra"><i data-lucide="x"></i><div>Não usa serifada. Só Inter.</div></li>
       <li class="regra"><i data-lucide="x"></i><div>Não usa focus ring em botão, input, link nem custom.</div></li>

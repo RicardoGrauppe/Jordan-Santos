@@ -205,8 +205,8 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
       {lateral ? (
         <div className="flex flex-1">
           {/* computador: coluna fixa à esquerda, grudada abaixo do cabeçalho, rolando sozinha */}
-          <aside className="hidden w-[300px] shrink-0 bg-soft md:block" aria-label="Painel do contrato">
-            <div className="sticky overflow-y-auto px-4 pb-8 pt-5"
+          <aside className="hidden w-[320px] shrink-0 bg-soft md:block" aria-label="Painel do contrato">
+            <div className="sticky overflow-y-auto p-4 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               style={{ top: alturaCabecalho, maxHeight: `calc(100dvh - ${alturaCabecalho}px)` }}>
               {lateral(editor, fecharGaveta)}
             </div>
@@ -222,7 +222,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
               <div className="flex shrink-0 items-center justify-end px-2 pt-[calc(var(--sat)+8px)]">
                 <button type="button" aria-label="Fechar painel" onClick={fecharGaveta} className={icone(false)}><X size={18} /></button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8">
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {gavetaAberta ? lateral(editor, fecharGaveta) : null}
               </div>
             </aside>

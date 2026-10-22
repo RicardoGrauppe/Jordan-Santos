@@ -25,9 +25,12 @@
 */
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Copy, ExternalLink, MessageCircle, PenTool, Plus, Send, Table } from "lucide-react";
+import {
+  ArrowLeft, Braces, CalendarHeart, Check, Copy, ExternalLink, FileText, Heart, LayoutTemplate, MapPin, MessageCircle, PenLine,
+  PenTool, Plus, Search, Send, Table, Wallet, type LucideIcon,
+} from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
 import { EditorContrato } from "@/components/EditorContrato";
@@ -41,13 +44,16 @@ const ESPERA_MS = 700;
 
 /* Campos da lateral, agrupados como a ficha agrupa. Toda chave aqui existe em
    ROTULOS_CAMPO (é a mesma lista que o gerador de PDF sabe preencher). */
-const GRUPOS_CAMPO: { titulo: string; campos: string[] }[] = [
-  { titulo: "Casal", campos: ["noivo", "cpf-noivo", "noiva", "cpf-noiva", "tel-noivo", "tel-noiva"] },
-  { titulo: "Endereço", campos: ["endereco", "numero", "bairro", "cidade", "complemento", "estado", "cep"] },
-  { titulo: "Evento", campos: ["data-formatada", "local", "horario"] },
-  { titulo: "Valores", campos: ["valor-total", "valor-entrada"] },
-  { titulo: "Assinatura", campos: ["cidade-assinatura", "data-assinatura"] },
+const GRUPOS_CAMPO: { titulo: string; icone: LucideIcon; campos: string[] }[] = [
+  { titulo: "Casal", icone: Heart, campos: ["noivo", "cpf-noivo", "noiva", "cpf-noiva", "tel-noivo", "tel-noiva"] },
+  { titulo: "Endereço", icone: MapPin, campos: ["endereco", "numero", "bairro", "cidade", "complemento", "estado", "cep"] },
+  { titulo: "Evento", icone: CalendarHeart, campos: ["data-formatada", "local", "horario"] },
+  { titulo: "Valores", icone: Wallet, campos: ["valor-total", "valor-entrada"] },
+  { titulo: "Assinatura", icone: PenLine, campos: ["cidade-assinatura", "data-assinatura"] },
 ];
+
+/* busca sem acento e sem caixa: "endereco" acha "Endereço" */
+const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 type ModeloResumo = { id: string; nome: string | null; ativo: boolean };
 
@@ -61,14 +67,46 @@ type LateralProps = {
   aoCriar: (nome: string) => Promise<boolean>;
 };
 
+/* Cartão flutuante da lateral: mesmo cabeçalho da ficha (ícone em quadrado
+   accent-tint + título + uma linha), ver brandbook "Painel lateral do editor". */
+function CartaoLateral({ icone: Icone, titulo, texto, children }: {
+  icone: LucideIcon; titulo: string; texto: string; children: ReactNode;
+}) {
+  return (
+    <section className="rounded-[20px] bg-paper p-4 shadow-card">
+      <div className="flex items-center gap-2.5">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
+          <Icone size={17} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="m-0 text-[14px] font-semibold leading-tight text-ink">{titulo}</h2>
+          <p className="m-0 mt-0.5 text-[12px] leading-snug text-ink-soft">{texto}</p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 /* Lateral exclusiva do contrato de um cliente (o editor de modelos não tem).
-   Em cima, o modelo do contrato (trocar ou criar um); embaixo, os campos e
-   blocos que antes ficavam escondidos no "+". */
+   Três cartões: o modelo do contrato (trocar ou criar), os campos do casal e
+   os blocos. */
 function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolher, aoCriar }: LateralProps) {
-  const inserir = (conteudo: JSONContent) => { editor.chain().focus().insertContent(conteudo).run(); fechar(); };
-  const item = "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-[7px] text-left text-[13px] text-ink transition-colors hover:bg-line";
   const [criando, setCriando] = useState(false);
   const [nome, setNome] = useState("");
+  const [busca, setBusca] = useState("");
+  /* o chip que acabou de entrar no texto fica verde por um instante */
+  const [inserido, setInserido] = useState<string | null>(null);
+  const timerInserido = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timerInserido.current) clearTimeout(timerInserido.current); }, []);
+
+  function inserir(chave: string, conteudo: JSONContent) {
+    editor.chain().focus().insertContent(conteudo).run();
+    setInserido(chave);
+    if (timerInserido.current) clearTimeout(timerInserido.current);
+    timerInserido.current = setTimeout(() => setInserido(null), 900);
+    fechar();
+  }
 
   async function criar() {
     const n = nome.trim();
@@ -76,69 +114,112 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
     if (await aoCriar(n)) { setCriando(false); setNome(""); }
   }
 
-  return (
-    <div>
-      <h2 className="m-0 text-[15px] font-bold text-ink">Modelo do contrato</h2>
-      <p className="m-0 mt-1 text-[12.5px] leading-snug text-ink-soft">Trocar o modelo substitui o texto deste contrato.</p>
-      <div className="mt-2">
-        {modelos === null ? (
-          <p className="m-0 px-2.5 py-[7px] text-[13px] text-ink-soft">Carregando modelos…</p>
-        ) : modelos.map((m) => {
-          const atual = m.id === modeloId;
-          return (
-            <button key={m.id} type="button" disabled={ocupado} aria-pressed={atual}
-              onClick={() => { if (!atual) aoEscolher(m.id); }}
-              className={item + " disabled:cursor-default " + (atual ? "bg-accent-tint font-semibold text-accent hover:bg-accent-tint" : "")}>
-              <span className="min-w-0 flex-1 truncate">{m.nome || "Sem nome"}</span>
-              {m.ativo ? <span className="shrink-0 text-[11.5px] font-normal text-ink-soft">padrão</span> : null}
-              {atual ? <Check size={15} className="shrink-0" /> : null}
-            </button>
-          );
-        })}
-        {criando ? (
-          <form className="mt-1 rounded-lg bg-paper p-2" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
-            <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
-              className="h-9 w-full rounded-lg bg-soft px-2.5 text-[13px] text-ink outline-none placeholder:text-ink-soft focus:bg-line" />
-            <p className="m-0 mt-1.5 text-[11.5px] leading-snug text-ink-soft">Nasce com o texto deste contrato.</p>
-            <div className="mt-2 flex gap-1.5">
-              <button type="submit" disabled={!nome.trim() || ocupado}
-                className="h-8 flex-1 cursor-pointer rounded-lg bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
-                Criar modelo
-              </button>
-              <button type="button" onClick={() => { setCriando(false); setNome(""); }}
-                className="h-8 cursor-pointer rounded-lg px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-soft hover:text-ink">
-                Cancelar
-              </button>
-            </div>
-          </form>
-        ) : (
-          <button type="button" disabled={ocupado} onClick={() => setCriando(true)} className={item + " text-ink-soft disabled:cursor-default"}>
-            <Plus size={15} /> Novo modelo
-          </button>
-        )}
-      </div>
+  const termo = semAcento(busca.trim());
+  const grupos = GRUPOS_CAMPO
+    .map((g) => ({ ...g, campos: termo ? g.campos.filter((c) => semAcento(ROTULOS_CAMPO[c]).includes(termo)) : g.campos }))
+    .filter((g) => g.campos.length);
 
-      <h2 className="m-0 mt-6 text-[15px] font-bold text-ink">Inserir no contrato</h2>
-      <p className="m-0 mt-1 text-[12.5px] leading-snug text-ink-soft">Clique pra pôr no lugar do cursor. O valor vem da ficha do cliente.</p>
-      {GRUPOS_CAMPO.map((g) => (
-        <section key={g.titulo} className="mt-4">
-          <h3 className="m-0 mb-1 px-2.5 text-[12.5px] font-semibold text-ink-soft">{g.titulo}</h3>
-          {g.campos.map((nome) => (
-            <button key={nome} type="button" className={item} onClick={() => inserir({ type: "campo", attrs: { campo: nome } })}>
-              {ROTULOS_CAMPO[nome]}
+  const linha = "flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2.5 text-left text-[13px] transition-colors disabled:cursor-default";
+
+  return (
+    <div className="grid gap-3">
+      <CartaoLateral icone={FileText} titulo="Modelo do contrato" texto="Trocar substitui o texto deste contrato.">
+        <div className="mt-3 grid gap-0.5">
+          {modelos === null ? (
+            <p className="m-0 flex h-10 items-center px-2.5 text-[13px] text-ink-soft">Carregando modelos…</p>
+          ) : modelos.map((m) => {
+            const atual = m.id === modeloId;
+            return (
+              <button key={m.id} type="button" disabled={ocupado} aria-pressed={atual}
+                onClick={() => { if (!atual) aoEscolher(m.id); }}
+                className={linha + " " + (atual ? "bg-accent-tint font-semibold text-accent" : "text-ink hover:bg-soft")}>
+                <span className={"inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-colors " +
+                  (atual ? "bg-accent text-white" : "bg-line")}>
+                  {atual ? <Check size={12} strokeWidth={3} /> : null}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{m.nome || "Sem nome"}</span>
+                {m.ativo ? (
+                  <span className={"shrink-0 rounded-[6px] px-2 py-[3px] text-[10.5px] font-semibold tracking-[.03em] " +
+                    (atual ? "bg-paper text-ink-soft" : "bg-soft text-ink-soft")}>Padrão</span>
+                ) : null}
+              </button>
+            );
+          })}
+
+          {criando ? (
+            <form className="mt-1 rounded-xl bg-soft p-2.5" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
+              <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
+                className="h-9 w-full rounded-[10px] bg-paper px-3 text-[13px] text-ink outline-none placeholder:text-ink-soft/70" />
+              <p className="m-0 mt-1.5 px-0.5 text-[11.5px] leading-snug text-ink-soft">Nasce com o texto deste contrato.</p>
+              <div className="mt-2.5 flex gap-1.5">
+                <button type="submit" disabled={!nome.trim() || ocupado}
+                  className="h-8 flex-1 cursor-pointer rounded-[10px] bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
+                  Criar modelo
+                </button>
+                <button type="button" onClick={() => { setCriando(false); setNome(""); }}
+                  className="h-8 cursor-pointer rounded-[10px] px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-line hover:text-ink">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button type="button" disabled={ocupado} onClick={() => setCriando(true)} className={linha + " text-ink-soft hover:bg-soft hover:text-ink"}>
+              <Plus size={18} className="shrink-0" /> Novo modelo
             </button>
-          ))}
-        </section>
-      ))}
-      <section className="mt-4">
-        <h3 className="m-0 mb-1 px-2.5 text-[12.5px] font-semibold text-ink-soft">Blocos</h3>
-        <button type="button" className={item} onClick={() => inserir({ type: "tabelaItens" })}>
-          <Table size={15} className="text-ink-soft" /> Tabela de itens
-        </button>
-        <button type="button" className={item} onClick={() => inserir({ type: "blocoAssinaturas" })}>
-          <PenTool size={15} className="text-ink-soft" /> Bloco de assinaturas
-        </button>
-      </section>
+          )}
+        </div>
+      </CartaoLateral>
+
+      <CartaoLateral icone={Braces} titulo="Campos" texto="Clique pra pôr no cursor. O valor vem da ficha.">
+        <label className="mt-3 flex h-9 items-center gap-2 rounded-[10px] bg-soft px-3 text-ink-soft">
+          <Search size={15} className="shrink-0" />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar campo" aria-label="Buscar campo"
+            className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-soft/70" />
+        </label>
+        {grupos.length ? grupos.map((g) => (
+          <div key={g.titulo} className="mt-3.5">
+            <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-ink-soft">
+              <g.icone size={13} /> {g.titulo}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {g.campos.map((c) => {
+                const ok = inserido === c;
+                return (
+                  <button key={c} type="button" onClick={() => inserir(c, { type: "campo", attrs: { campo: c } })}
+                    className={"inline-flex cursor-pointer items-center gap-1 rounded-[7px] px-[9px] py-[5px] text-[12.5px] font-medium transition-[translate,scale,background-color,box-shadow,color] duration-150 hover:-translate-y-px hover:shadow-card active:scale-[.97] " +
+                      (ok ? "bg-ok-tint text-ok" : "bg-campo text-accent hover:bg-campo-hover")}>
+                    {ok ? <><Check size={13} strokeWidth={2.5} /> Inserido</> : ROTULOS_CAMPO[c]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )) : (
+          <p className="m-0 mt-3 text-[12.5px] text-ink-soft">Nenhum campo com esse nome.</p>
+        )}
+      </CartaoLateral>
+
+      <CartaoLateral icone={LayoutTemplate} titulo="Blocos" texto="Partes prontas do contrato.">
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {([
+            ["tabelaItens", Table, "Tabela de itens", "Pacote, adicionais e total"],
+            ["blocoAssinaturas", PenTool, "Assinaturas", "Linhas pra assinar"],
+          ] as const).map(([tipo, Icone, titulo, texto]) => {
+            const ok = inserido === tipo;
+            return (
+              <button key={tipo} type="button" onClick={() => inserir(tipo, { type: tipo })}
+                className={"flex cursor-pointer flex-col items-start gap-2 rounded-[14px] p-3 text-left transition-[background-color,scale] duration-150 active:scale-[.97] " +
+                  (ok ? "bg-ok-tint" : "bg-soft hover:bg-accent-tint")}>
+                <span className={ok ? "text-ok" : "text-accent"}>{ok ? <Check size={18} /> : <Icone size={18} />}</span>
+                <span>
+                  <span className="block text-[12.5px] font-semibold text-ink">{ok ? "Inserido" : titulo}</span>
+                  <span className="mt-0.5 block text-[11.5px] leading-snug text-ink-soft">{texto}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </CartaoLateral>
     </div>
   );
 }
