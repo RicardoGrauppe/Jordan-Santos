@@ -241,6 +241,21 @@ export default function PaginaCliente() {
     const r = await api<Resposta>("/api/estudio?id=" + encodeURIComponent(id));
     carregadoId.current = id;
     aplicarResposta(r);
+
+    /* Pergunta à Autentique se o casal já viu ou assinou e, se mudou alguma
+       coisa, recarrega a ficha. Vem DEPOIS da primeira carga de propósito: a
+       ida até lá custa uma rede inteira, e segurar a tela por causa dela faria
+       toda ficha abrir devagar por um estado que quase sempre é o mesmo.
+       Sem chave configurada o servidor responde `sincronizado: false` e isto
+       não faz nada. Enquanto o app não tiver endereço público pra receber
+       webhook, este é o caminho por onde a novidade chega. */
+    void api<{ sincronizado?: boolean; status?: string }>(
+      "/api/estudio", { acao: "sincronizar-contrato", id },
+    ).then((sinc) => {
+      if (!sinc?.sincronizado) return;
+      if (sinc.status && sinc.status === r.contrato?.status) return;
+      return api<Resposta>("/api/estudio?id=" + encodeURIComponent(id)).then(aplicarResposta);
+    }).catch(() => { /* rede fora: a ficha segue com o que já está na tela */ });
   }, [aplicarResposta]);
 
   useEffect(() => {

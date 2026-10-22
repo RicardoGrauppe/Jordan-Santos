@@ -133,12 +133,16 @@ export async function gerarContratoPdf({
   assinaturaJordanDataUrl,
   signatario,
   assinadoEm,
+  semComprovante,
 }: {
   snapshot: SnapshotContrato;
   assinaturaCasalDataUrl?: string | null;
   assinaturaJordanDataUrl?: string | null;
   signatario: Signatario;
   assinadoEm: Date;
+  /** PDF que vai PRA Autentique assinar: tira a última folha, que é o nosso
+   *  comprovante de assinatura eletrônica. Quem comprova ali passa a ser ela. */
+  semComprovante?: boolean;
 }): Promise<Uint8Array> {
   const dados: SnapshotContrato = snapshot || {};
   const itens: ItemContrato[] = Array.isArray(dados.itens) ? dados.itens : [];
@@ -399,6 +403,10 @@ export async function gerarContratoPdf({
       y -= 17;
     }
   }
+
+  /* a última folha do template é o nosso comprovante de assinatura; indo pra
+     Autentique, quem comprova é ela, então a folha sai */
+  if (semComprovante) doc.removePage(doc.getPageCount() - 1);
 
   return doc.save();
 }

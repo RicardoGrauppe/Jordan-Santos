@@ -1,0 +1,248 @@
+import "server-only";
+/*
+  Cliente da API GraphQL da Autentique (v2), que desde 21/10/2026 é quem coleta
+  as assinaturas do contrato. Antes isso era uma tela nossa (/assinar) com pad
+  de assinatura, trilha de auditoria e PDF carimbado por nós.
+
+  Docs: https://docs.autentique.com.br/api
+
+  Portado do cliente que já roda no CRM da Nexus (server/services/autentique.ts),
+  com três diferenças que são deste produto:
+  - locale pt-BR, fuso de São Paulo e data DD/MM/AAAA (lá é cliente nos EUA);
+  - sem exigir CPF nem data de nascimento (decisão do Ricardo em 21/10/2026: o
+    fotógrafo atende gente sem CPF, e o número que importa já vem do cadastro
+    pro corpo do contrato);
+  - `reply_to` e o nome do remetente saem da CONTA da chave, que é a do próprio
+    Jordan. É isso que faz o casal receber o pedido em nome dele.
+
+  Ordem de assinatura (`sortable: true`): o fotógrafo é o primeiro signatário e
+  a própria plataforma assina por ele no envio (`signDocument`, que não manda
+  e-mail pro dono da chave); o casal é o segundo e só então é chamado.
+
+  Plano gratuito: 10 documentos por mês. `AUTENTIQUE_SANDBOX=true` cria
+  documento de teste, que não gasta cota e some em alguns dias.
+*/
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const ENDPOINT = "https://api.autentique.com.br/v2/graphql";
+
+export type AssinaturaAutentique = {
+  public_id: string;
+  name: string | null;
+  email: string | null;
+  action: { name: string } | null;
+  link: { short_link: string | null } | null;
+  viewed: { created_at: string } | null;
+  signed: { created_at: string } | null;
+  rejected: { created_at: string } | null;
+};
+
+export type DocumentoAutentique = {
+  id: string;
+  name: string;
+  files: { original: string | null; signed: string | null } | null;
+  signatures: AssinaturaAutentique[];
+};
+
+function chave(): string {
+  const t = process.env.AUTENTIQUE_API_TOKEN?.trim() ?? "";
+  if (!t) {
+    throw new Error(
+      "AUTENTIQUE_API_TOKEN não configurado. Gere a chave no painel da Autentique (menu API) e ponha no .env.local.",
+    );
+  }
+  return t;
+}
+
+/** Sem chave, o painel some com o botão de enviar em vez de dar erro na cara. */
+export function configurada(): boolean {
+  return Boolean(process.env.AUTENTIQUE_API_TOKEN?.trim());
+}
+
+export function ehSandbox(): boolean {
+  return process.env.AUTENTIQUE_SANDBOX?.trim().toLowerCase() === "true";
+}
+
+async function lerGraphql<T>(res: Response): Promise<T> {
+  const corpo = (await res.json().catch(() => null)) as
+    | { data?: T; errors?: { message: string }[] }
+    | null;
+  if (!res.ok || !corpo || corpo.errors?.length || !corpo.data) {
+    const msg = corpo?.errors?.map((e) => e.message).join("; ") || "HTTP " + res.status;
+    throw new Error("Autentique: " + msg);
+  }
+  return corpo.data;
+}
+
+async function gql<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+  const res = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + chave(), "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables }),
+  });
+  return lerGraphql<T>(res);
+}
+
+let contaEmCache: { nome: string; email: string } | null = null;
+
+/** Conta dona da chave: é ela que assina pelo fotógrafo e aparece como remetente. */
+export async function conta(): Promise<{ nome: string; email: string }> {
+  if (contaEmCache) return contaEmCache;
+  const d = await gql<{ me: { name: string | null; email: string | null } }>("query { me { name email } }");
+  if (!d.me?.email) throw new Error("Autentique: a conta da chave de API não tem e-mail");
+  contaEmCache = { nome: d.me.name ?? "Estúdio", email: d.me.email };
+  return contaEmCache;
+}
+
+const CAMPOS_ASSINATURA = `
+  public_id
+  name
+  email
+  action { name }
+  link { short_link }
+  viewed { created_at }
+  signed { created_at }
+  rejected { created_at }
+`;
+
+/**
+ * Sobe o PDF e cadastra os signatários NA ORDEM do array (fotógrafo, depois o
+ * casal). O upload segue o graphql-multipart-request-spec: `operations`, `map`
+ * e o arquivo em si.
+ */
+export async function criarDocumento(entrada: {
+  titulo: string;
+  pdf: Uint8Array;
+  signatarios: { nome: string; email: string }[];
+  mensagem?: string;
+  responderPara?: string;
+}): Promise<DocumentoAutentique> {
+  const sandbox = ehSandbox();
+  const query = `
+    mutation CriarDocumento($document: DocumentInput!, $signers: [SignerInput!]!, $file: Upload!) {
+      createDocument(sandbox: ${sandbox}, document: $document, signers: $signers, file: $file) {
+        id
+        name
+        files { original signed }
+        signatures { ${CAMPOS_ASSINATURA} }
+      }
+    }
+  `;
+  const variables = {
+    document: {
+      name: entrada.titulo,
+      ...(entrada.mensagem ? { message: entrada.mensagem } : {}),
+      refusable: true,
+      sortable: true,
+      new_signature_style: true,
+      /* decisão de 21/10/2026: nada de CPF nem nascimento na hora de assinar */
+      ignore_cpf: true,
+      ignore_birthdate: true,
+      ...(entrada.responderPara ? { reply_to: entrada.responderPara } : {}),
+      locale: {
+        country: "BR",
+        language: "pt-BR",
+        timezone: "America/Sao_Paulo",
+        date_format: "DD_MM_YYYY",
+      },
+    },
+    signers: entrada.signatarios.map((s) => ({ name: s.nome, email: s.email, action: "SIGN" })),
+    file: null,
+  };
+
+  const form = new FormData();
+  form.append("operations", JSON.stringify({ query, variables }));
+  form.append("map", JSON.stringify({ file: ["variables.file"] }));
+  const nomeArquivo = entrada.titulo.toLowerCase().endsWith(".pdf") ? entrada.titulo : entrada.titulo + ".pdf";
+  form.append("file", new Blob([new Uint8Array(entrada.pdf)], { type: "application/pdf" }), nomeArquivo);
+
+  const res = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + chave() },
+    body: form,
+  });
+  const d = await lerGraphql<{ createDocument: DocumentoAutentique }>(res);
+  return d.createDocument;
+}
+
+export async function buscarDocumento(id: string): Promise<DocumentoAutentique> {
+  /* id inline como no exemplo oficial (o tipo do argumento não é documentado);
+     só aceita caractere de id pra não abrir injeção na query */
+  if (!/^[A-Za-z0-9-]+$/.test(id)) throw new Error("Autentique: id de documento inválido");
+  const d = await gql<{ document: DocumentoAutentique }>(
+    `query {
+      document(id: "${id}") {
+        id
+        name
+        files { original signed }
+        signatures { ${CAMPOS_ASSINATURA} }
+      }
+    }`,
+  );
+  return d.document;
+}
+
+/**
+ * Assina como a conta dona da chave, que aqui é o próprio fotógrafo. A
+ * Autentique não manda e-mail pro dono pedindo que ele assine o próprio
+ * documento, então isto fecha a vez dele e chama o casal na hora.
+ */
+export async function assinarComoDono(id: string): Promise<boolean> {
+  const d = await gql<{ signDocument: boolean | null }>(
+    "mutation ($id: UUID!) { signDocument(id: $id) }",
+    { id },
+  );
+  return Boolean(d.signDocument);
+}
+
+/**
+ * Apaga o documento na Autentique. É o que impede o casal de assinar um
+ * contrato que o fotógrafo cancelou aqui: sem isso o link curto continuaria
+ * de pé, e um contrato cancelado no painel poderia voltar assinado.
+ */
+export async function apagarDocumento(id: string): Promise<boolean> {
+  const d = await gql<{ deleteDocument: boolean | null }>(
+    "mutation ($id: UUID!) { deleteDocument(id: $id) }",
+    { id },
+  );
+  return Boolean(d.deleteDocument);
+}
+
+export async function baixarAssinado(doc: DocumentoAutentique): Promise<Uint8Array> {
+  const url = doc.files?.signed;
+  if (!url) throw new Error("Autentique: PDF assinado ainda não disponível");
+  const res = await fetch(url, { headers: { Authorization: "Bearer " + chave() } });
+  if (!res.ok) throw new Error("Autentique: falha ao baixar o PDF assinado (HTTP " + res.status + ")");
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+/**
+ * Valida o cabeçalho x-autentique-signature (HMAC-SHA256 do corpo cru). Sem
+ * segredo configurado, aceita: a rota não confia no corpo, ela só pega o id e
+ * pergunta de novo pra Autentique, então um aviso falso não muda status nenhum.
+ */
+export function webhookConfere(corpoCru: string, assinatura: string | undefined): boolean {
+  const segredos = [
+    process.env.AUTENTIQUE_WEBHOOK_SECRET_DOCUMENTO,
+    process.env.AUTENTIQUE_WEBHOOK_SECRET_ASSINATURA,
+  ]
+    .map((v) => v?.trim())
+    .filter((v): v is string => Boolean(v));
+  if (segredos.length === 0) return true;
+  if (!assinatura) return false;
+  const recebida = Buffer.from(assinatura.trim());
+  return segredos.some((segredo) => {
+    const esperada = Buffer.from(createHmac("sha256", segredo).update(corpoCru).digest("hex"));
+    return esperada.length === recebida.length && timingSafeEqual(esperada, recebida);
+  });
+}
+
+/** Tira o id do documento de um evento de webhook (document.* ou signature.*). */
+export function idDoWebhook(payload: unknown): string | null {
+  const obj = (payload as { event?: { data?: { object?: Record<string, unknown> } } })?.event?.data?.object;
+  if (!obj) return null;
+  const doc = obj.document as { id?: string } | string | undefined;
+  if (typeof doc === "string") return doc;
+  if (doc?.id) return doc.id;
+  return typeof obj.id === "string" ? obj.id : null;
+}

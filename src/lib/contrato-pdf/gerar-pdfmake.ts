@@ -252,6 +252,7 @@ export async function gerarContratoPdfDinamico({
   assinaturaJordanDataUrl,
   signatario,
   assinadoEm,
+  semComprovante,
 }: {
   templateJson: unknown;
   snapshot: SnapshotContrato;
@@ -259,6 +260,9 @@ export async function gerarContratoPdfDinamico({
   assinaturaJordanDataUrl?: string | null;
   signatario: Signatario;
   assinadoEm: Date;
+  /** PDF que vai PRA Autentique assinar: a folha de comprovante é dela, não
+   *  nossa, e sair uma em branco no meio do caminho só confunde. */
+  semComprovante?: boolean;
 }): Promise<Buffer> {
   const dados: SnapshotContrato = snapshot || {};
   const extra: Extra = { signatario: signatario, assinadoEm: assinadoEm };
@@ -274,7 +278,7 @@ export async function gerarContratoPdfDinamico({
     pageSize: "A4",
     pageMargins: [56, 56, 56, 56],
     defaultStyle: { font: "Roboto", fontSize: 10, color: TINTA },
-    content: corpo.concat([paginaAuditoria(extra)]),
+    content: semComprovante ? corpo : corpo.concat([paginaAuditoria(extra)]),
   };
 
   const pdfDoc = printer.createPdfKitDocument(docDefinition);

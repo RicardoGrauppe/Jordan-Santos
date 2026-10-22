@@ -23,6 +23,8 @@ import { NextResponse } from "next/server";
 import { rest } from "@/lib/supabase";
 import { sessaoAtual } from "@/lib/sessao";
 import { filtrarCampos, normalizarCpf, textoCurto } from "@/lib/util";
+import { apagarDocumento as apagarDocumentoAutentique, configurada as autentiqueConfigurada } from "@/lib/autentique";
+import { enviarParaAssinatura, sincronizarContrato } from "@/lib/contrato-autentique";
 
 /* campos que a UI pode gravar (whitelist contra colunas inesperadas) */
 const CAMPOS = [
@@ -103,8 +105,21 @@ type LinhaTemplateHtml = { conteudo_html: string | null };
 type LinhaModeloPadrao = { id: string; nome: string | null; conteudo_html: string | null; conteudo_json: unknown };
 type LinhaContratoAtivo = { id: string; expira_em: string | null };
 type LinhaContratoConfirmar = { id: string; jordan_confirmado_em: string | null };
-type LinhaContratoLiberar = { id: string; token: string; status: string | null; jordan_confirmado_em: string | null };
-type LinhaClienteContato = { noivo: string | null; noiva: string | null; tel_noivo: string | null; tel_noiva: string | null };
+/* o que o envio pra Autentique precisa ler do contrato: estado, vínculo com o
+   documento de lá e o material do PDF (snapshot + modelo + assinatura do
+   fotógrafo). `status` não é nulo na tabela, o tipo só não dizia. */
+type LinhaContratoLiberar = {
+  id: string; token: string; status: string; jordan_confirmado_em: string | null;
+  autentique_id: string | null; autentique_link: string | null;
+  visualizado_em: string | null; assinado_em: string | null;
+  snapshot: Record<string, unknown> | null;
+  template_id: string | null; template_json_snapshot: unknown;
+  jordan_assinatura_dataurl: string | null;
+};
+type LinhaClienteContato = {
+  noivo: string | null; noiva: string | null;
+  tel_noivo: string | null; tel_noiva: string | null; email: string | null;
+};
 
 /** Objeto do corpo, ou {} quando veio outra coisa (o original lia `req.body || {}`). */
 function objeto(valor: unknown): Record<string, unknown> {
@@ -452,30 +467,95 @@ export async function POST(req: Request) {
     }
 
     if (acao === "liberar-contrato-cliente") {
-      const linhas = await rest<LinhaClienteContato[]>("clientes?id=eq." + id + "&select=noivo,noiva,tel_noivo,tel_noiva");
+      /* Desde 21/10/2026 quem coleta a assinatura é a AUTENTIQUE. Esta ação
+         deixou de "revelar o link da nossa tela" e passou a: subir o PDF,
+         assinar pelo fotógrafo e devolver o link curto do casal. O formato da
+         resposta é o mesmo de antes (link + mensagem de WhatsApp + telefone),
+         então o painel não mudou de contrato com o servidor. */
+      /* `apenasLink` é a leitura: devolve o link se o documento já existir e
+         NUNCA cria nada. É o que a tela de revisão usa ao abrir.
+         Sem isso, abrir a revisão de um contrato confirmado mandaria o
+         contrato pro casal sem ninguém ter clicado em nada: no fluxo antigo a
+         mesma chamada só revelava um link nosso, agora ela sobe o documento e
+         dispara o e-mail da Autentique. */
+      const apenasLink = corpo.apenasLink === true;
+
+      if (!apenasLink && !autentiqueConfigurada()) {
+        return NextResponse.json(
+          { erro: "falta a chave da Autentique (AUTENTIQUE_API_TOKEN) pra enviar o contrato" },
+          { status: 503 },
+        );
+      }
+
+      const linhas = await rest<LinhaClienteContato[]>(
+        "clientes?id=eq." + id + "&select=noivo,noiva,tel_noivo,tel_noiva,email",
+      );
       const cliente = linhas && linhas[0];
       if (!cliente) return NextResponse.json({ erro: "cliente não encontrado" }, { status: 404 });
 
-      /* aceita rascunho (1ª vez), enviado/visualizado (recuperar o link sem
-         gerar contrato novo) e também ASSINADO: depois de assinado o mesmo
-         link abre a tela com o botão de baixar a via, então é por ele que o
-         casal pede a segunda via. */
+      /* aceita rascunho (1ª vez), enviado/visualizado (pegar o link de novo) e
+         também ASSINADO: o mesmo link abre a via assinada na Autentique, então
+         é por ele que o casal pede a segunda via. */
       const ativos = await rest<LinhaContratoLiberar[]>(
         "contratos?cliente_id=eq." + id +
         "&status=in.(rascunho,enviado,visualizado,assinado)" +
-        "&select=id,token,status,jordan_confirmado_em&order=criado_em.desc&limit=1",
+        "&select=id,token,status,jordan_confirmado_em,autentique_id,autentique_link,visualizado_em,assinado_em," +
+        "snapshot,template_id,template_json_snapshot,jordan_assinatura_dataurl&order=criado_em.desc&limit=1",
       );
       const contrato = ativos && ativos[0];
       if (!contrato) return NextResponse.json({ erro: "nenhum contrato pronto pra enviar" }, { status: 404 });
+
+      /* leitura não cobra nada de ninguém: contrato sem documento (ou ainda
+         sem a confirmação do fotógrafo) responde "não há link", e a tela
+         mostra o botão de enviar */
+      if (apenasLink && (!contrato.autentique_id || !contrato.jordan_confirmado_em)) {
+        return NextResponse.json({ ok: true, link: null, mensagem: "" });
+      }
+
       if (!contrato.jordan_confirmado_em) {
         return NextResponse.json({ erro: "confirme (assine) o contrato antes de enviar ao cliente" }, { status: 409 });
       }
 
-      /* o link vai pelo WhatsApp, na mão do fotógrafo (decisão de 2026-07-25: o domínio
-         do estúdio não existe, então o Resend não entrega pra ninguém além dele) */
-      const link = baseUrlDe(req) + "/assinar?token=" + contrato.token;
-      /* cai pra noiva quando o contrato é só dela — senão a mensagem sairia
-         como "Oi! Aqui é o Jordan", sem nome */
+      const nomeCasal = [cliente.noivo, cliente.noiva].filter(Boolean).join(" e ");
+      const emailCasal = String(
+        cliente.email || (contrato.snapshot as { email?: string } | null)?.email || "",
+      ).trim();
+
+      let link = contrato.autentique_link || null;
+      try {
+        if (!contrato.autentique_id) {
+          /* a Autentique identifica o signatário pelo e-mail: sem ele não há
+             como mandar nem como travar o link naquela pessoa */
+          if (!emailCasal) {
+            return NextResponse.json(
+              { erro: "cadastre o e-mail do casal na ficha antes de enviar pra assinatura" },
+              { status: 409 },
+            );
+          }
+          const enviado = await enviarParaAssinatura(contrato, { nome: nomeCasal, email: emailCasal });
+          link = enviado.link;
+        } else {
+          /* já existe documento: aproveita pra atualizar o estado de lá */
+          const atual = await sincronizarContrato(contrato);
+          link = atual?.link || link;
+        }
+      } catch (e) {
+        console.error("autentique falhou:", (e as Error).message);
+        return NextResponse.json(
+          { erro: "não deu pra falar com a Autentique agora, tente de novo em instantes" },
+          { status: 502 },
+        );
+      }
+
+      if (!link) {
+        return NextResponse.json(
+          { erro: "a Autentique ainda não devolveu o link do casal, tente de novo em instantes" },
+          { status: 502 },
+        );
+      }
+
+      /* o link vai pelo WhatsApp, na mão do fotógrafo, como sempre foi (a
+         Autentique também avisa por e-mail, mas o casal responde é no zap) */
       const primeiroNome = String(cliente.noivo || cliente.noiva || "").trim().split(/\s+/)[0] || "";
       const jaAssinado = contrato.status === "assinado";
       const saudacao = "Oi" + (primeiroNome ? ", " + primeiroNome : "") + "! Aqui é o Jordan. ";
@@ -487,20 +567,49 @@ export async function POST(req: Request) {
           "link (dá pra fazer pelo celular, leva 1 minutinho):\n" +
           link + "\nQualquer dúvida, é só me chamar por aqui.";
 
-      /* só marca na primeira liberação: pegar o link de novo não pode regredir um
-         contrato já "visualizado" nem reescrever a data real do primeiro envio */
-      if (contrato.status === "rascunho") {
-        await rest("contratos?id=eq." + contrato.id, {
-          method: "PATCH", body: { status: "enviado", enviado_em: new Date().toISOString() },
-        });
-      }
       return NextResponse.json({
         ok: true, link: link, mensagem: mensagem, assinado: jaAssinado,
         telefone: String(cliente.tel_noivo || cliente.tel_noiva || "").replace(/\D/g, ""),
       });
     }
 
+    if (acao === "sincronizar-contrato") {
+      /* O painel chama ao abrir a ficha e a revisão: sem um endereço público
+         pra receber webhook (o domínio do estúdio não existe), é assim que o
+         "visto" e o "assinado" da Autentique chegam até aqui. Falha de rede
+         não é erro de tela: devolve ok e o painel segue com o que tem. */
+      if (!autentiqueConfigurada()) return NextResponse.json({ ok: true, sincronizado: false });
+      const ativos = await rest<LinhaContratoLiberar[]>(
+        "contratos?cliente_id=eq." + id +
+        "&autentique_id=not.is.null&status=in.(enviado,visualizado)" +
+        "&select=id,token,status,jordan_confirmado_em,autentique_id,autentique_link,visualizado_em,assinado_em," +
+        "snapshot,template_id,template_json_snapshot,jordan_assinatura_dataurl&order=criado_em.desc&limit=1",
+      );
+      const contrato = ativos && ativos[0];
+      if (!contrato) return NextResponse.json({ ok: true, sincronizado: false });
+      try {
+        const atual = await sincronizarContrato(contrato);
+        return NextResponse.json({ ok: true, sincronizado: true, status: atual?.status ?? contrato.status });
+      } catch (e) {
+        console.error("sincronizar autentique falhou:", (e as Error).message);
+        return NextResponse.json({ ok: true, sincronizado: false });
+      }
+    }
+
     if (acao === "cancelar-contrato") {
+      /* apaga TAMBÉM na Autentique, senão o link curto segue de pé e um
+         contrato cancelado aqui poderia voltar assinado de lá. Best-effort: se
+         a API estiver fora, o cancelamento no painel não fica refém dela, mas
+         o erro vai pro log pra alguém perceber. */
+      const pendentes = await rest<{ id: string; autentique_id: string | null }[]>(
+        "contratos?cliente_id=eq." + id + "&status=in.(rascunho,enviado,visualizado)&select=id,autentique_id",
+      );
+      for (const c of pendentes || []) {
+        if (!c.autentique_id) continue;
+        try { await apagarDocumentoAutentique(c.autentique_id); }
+        catch (e) { console.error("autentique: não deu pra apagar o documento:", (e as Error).message); }
+      }
+
       await rest(
         "contratos?cliente_id=eq." + id + "&status=in.(rascunho,enviado,visualizado)",
         { method: "PATCH", body: { status: "cancelado" } },

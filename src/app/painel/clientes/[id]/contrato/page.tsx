@@ -520,21 +520,26 @@ export default function PaginaRevisarContrato() {
   const voltarDaqui = useVoltar(hrefCliente);
 
   /* ---------- link pro casal ----------
-     Mesma ação da ficha ("liberar-contrato-cliente"), idempotente: na primeira
-     vez marca o contrato como enviado, nas seguintes só devolve o link. */
-  const carregarLinkDoCasal = useCallback(async () => {
-    setAvisoLink({ texto: "Gerando o link..." });
+     Mesma ação da ficha ("liberar-contrato-cliente"), com dois modos:
+     - `apenasLink` (ao ABRIR a tela): só pergunta se já existe link, nunca
+       cria nada. Desde que a assinatura é da Autentique, criar aqui
+       significaria mandar o contrato pro casal porque alguém abriu a revisão.
+     - sem ele (no clique de "Copiar link"): sobe o documento, assina pelo
+       fotógrafo e devolve o link do casal. */
+  const carregarLinkDoCasal = useCallback(async (apenasLink?: boolean) => {
+    setAvisoLink({ texto: apenasLink ? "" : "Enviando pra assinatura..." });
     try {
-      const j = await api<RespostaLiberar>({ acao: "liberar-contrato-cliente", id: clienteId });
+      const j = await api<RespostaLiberar>({ acao: "liberar-contrato-cliente", id: clienteId, apenasLink });
       setMensagemCasal(j.mensagem || j.link || "");
       setLinkCasal(j.link || "");
       setLinkDeViaAssinada(!!j.assinado);
       setAvisoLink(SEM_MENSAGEM);
     } catch (e) {
+      if (apenasLink) { setAvisoLink(SEM_MENSAGEM); return; }
       const msg = e instanceof Error ? e.message : "";
       setAvisoLink({
         texto: !msg || msg === "Não foi possível completar a ação."
-          ? "Não deu pra gerar o link agora. Volte pra ficha do cliente e tente por lá."
+          ? "Não deu pra enviar pra assinatura agora. Volte pra ficha do cliente e tente por lá."
           : msg,
         tom: "erro",
       });
@@ -598,7 +603,7 @@ export default function PaginaRevisarContrato() {
         setConfirmadoDataUrl(c.jordan_assinatura_dataurl);
         /* o link continua valendo depois de assinado: aí ele abre a tela de
            baixar a via, e é assim que o casal pede a segunda via */
-        void carregarLinkDoCasal();
+        void carregarLinkDoCasal(true);
       } else {
         setConfirmadoDataUrl(null);
         setLinkCasal("");
@@ -636,6 +641,30 @@ export default function PaginaRevisarContrato() {
   useEffect(() => {
     if (clienteId) void carregarRef.current();
   }, [clienteId]);
+
+  /* Autentique: pergunta se o casal já viu, assinou ou recusou e recarrega a
+     tela quando mudou. Num efeito próprio de propósito: dentro do
+     `carregarContrato` ele leria o `carregarRef`, que é alimentado com o
+     próprio `carregarContrato`, e o compilador do React barra esse laço.
+     Sem chave configurada o servidor responde que não sincronizou. */
+  const statusContrato = contrato?.status;
+  useEffect(() => {
+    if (!clienteId) return;
+    if (statusContrato !== "enviado" && statusContrato !== "visualizado") return;
+    let vivo = true;
+    void fetch("/api/estudio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acao: "sincronizar-contrato", id: clienteId }),
+    })
+      .then((res) => res.json())
+      .then((sinc: { sincronizado?: boolean; status?: string }) => {
+        if (!vivo || !sinc?.sincronizado) return;
+        if (sinc.status && sinc.status !== statusContrato) void carregarRef.current();
+      })
+      .catch(() => { /* rede fora: segue com o que está na tela */ });
+    return () => { vivo = false; };
+  }, [clienteId, statusContrato]);
 
   /* ---------- salvar um campo editado inline ---------- */
   const salvarCampo = useCallback(async (col: ColunaEditavel, valor: string | number, span: HTMLElement, textoOriginal: string) => {
@@ -889,7 +918,9 @@ export default function PaginaRevisarContrato() {
       });
       setAvisoConfirmar(SEM_MENSAGEM);
       setConfirmadoDataUrl(dataurl);
-      void carregarLinkDoCasal();
+      /* confirmar é "assinei a minha parte", não "manda pro casal": quem
+         envia pra Autentique é o botão abaixo, num clique só dele */
+      void carregarLinkDoCasal(true);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
       setAvisoConfirmar({ texto: !msg || msg === "Não foi possível completar a ação." ? "Não deu pra confirmar. Tente de novo." : msg, tom: "erro" });
@@ -970,7 +1001,13 @@ export default function PaginaRevisarContrato() {
   const versao = contrato?.versao || 1;
   const podeCancelar = status !== "assinado" && status !== "cancelado";
   const fabVisivel = !!contrato && status !== "cancelado";
-  const fabTexto = assinadoPeloCasal ? "Ver contrato assinado" : (confirmadoDataUrl ? "Copiar link do casal" : "Assinar agora");
+  /* o botão diz o PRÓXIMO passo, e desde a Autentique são três: assinar a
+     minha parte, mandar pra assinatura, e depois copiar o link pro casal */
+  const fabTexto = assinadoPeloCasal
+    ? "Ver contrato assinado"
+    : !confirmadoDataUrl
+      ? "Assinar agora"
+      : linkCasal ? "Copiar link do casal" : "Enviar pra assinatura";
 
   const eventos = contrato
     ? [
@@ -1290,7 +1327,9 @@ export default function PaginaRevisarContrato() {
             <p className="m-0 mb-5 text-[13.5px] text-ink-soft">
               {assinadoPeloCasal
                 ? "O casal já assinou. Baixe a via em PDF ou mande o link pra eles baixarem."
-                : "Agora é só mandar o link pro casal. Quem tem o link consegue assinar, então mande direto pra eles."}
+                : linkCasal
+                  ? "O contrato já está com o casal. Mande o link por WhatsApp se quiser lembrar; a Autentique avisa quando eles assinarem."
+                  : "Sua parte está assinada. Falta mandar pra assinatura do casal."}
             </p>
             <div className="rounded-xl bg-soft p-[18px] text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1303,6 +1342,22 @@ export default function PaginaRevisarContrato() {
                   Baixar contrato assinado
                 </Botao>
                 <div className="mt-3"><Estado texto={avisoBaixar.texto} tom={avisoBaixar.tom} /></div>
+              </>
+            ) : null}
+
+            {!linkCasal && !assinadoPeloCasal && confirmadoDataUrl ? (
+              <>
+                <Botao
+                  className="mt-3.5 w-full"
+                  disabled={!!avisoLink.texto}
+                  onClick={() => void carregarLinkDoCasal()}
+                >
+                  Enviar pra assinatura
+                </Botao>
+                <p className="m-0 mt-2 text-[12.5px] leading-[1.5] text-ink-soft">
+                  O contrato vai pra Autentique já assinado por você. O casal recebe o
+                  pedido por e-mail, e o link também fica aqui pra mandar no WhatsApp.
+                </p>
               </>
             ) : null}
 
@@ -1386,7 +1441,7 @@ export default function PaginaRevisarContrato() {
             </div>
 
             <Botao className="mt-3.5 w-full" disabled={confirmando} onClick={() => void confirmarAssinatura()}>
-              Confirmar e liberar contrato
+              Confirmar assinatura
             </Botao>
             <div className="mt-3"><Estado texto={avisoConfirmar.texto} tom={avisoConfirmar.tom} /></div>
           </div>

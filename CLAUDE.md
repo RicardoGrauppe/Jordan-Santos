@@ -25,11 +25,11 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             proposta comercial que o casal lê
-src/app/assinar              onde o casal assina (?token=…)
-src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura
+src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook)
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
-                             catalogo.ts, ficha.ts, email.ts, contrato-pdf/ (gerar.ts, gerar-pdfmake.ts, fontes)
+                             catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
+                             contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco)
 ```
 
@@ -62,6 +62,33 @@ não a que você digitou. Deixe só `hidden` + `md:inline-flex`.
 Sempre o Supabase local em Docker (`supabase start`, portas 553xx), nunca o
 banco do Jordan. `supabase/migrations/` é a verdade do schema: coluna nova
 entra como migração, nunca por `alter table` solto no psql.
+
+## Assinatura: Autentique (desde 21/10/2026)
+
+A tela própria (`/assinar`) **não existe mais**. Quem coleta assinatura é a
+Autentique, pela API GraphQL v2, com a chave da conta do **próprio fotógrafo**
+(é o nome dela que o casal vê no pedido).
+
+Caminho: o painel confirma o contrato (o fotógrafo assina a cursiva dele, que
+vai carimbada no PDF) → "enviar pro casal" monta o PDF **sem a nossa folha de
+comprovante**, sobe pra Autentique com dois signatários em ordem
+(`sortable`), assina pelo dono da chave (`signDocument`, que não gera e-mail
+pra ele) e devolve o link curto do casal, que o fotógrafo manda por WhatsApp
+como sempre fez. A Autentique também avisa o casal por e-mail.
+
+O estado continua nas colunas de sempre (`status`, `visualizado_em`,
+`assinado_em`, `pdf_base64`): `lib/contrato-autentique.ts` traduz o que vem de
+lá. Dois caminhos trazem a novidade, e os dois terminam na mesma função:
+`acao: "sincronizar-contrato"` (o painel chama ao abrir ficha e revisão) e o
+webhook em `/api/autentique`, que só entra em serviço quando houver endereço
+público. Recusa cai em `status: cancelado` + `recusado_em`, porque o CHECK da
+tabela não tem "recusado".
+
+Cancelar no painel **apaga o documento na Autentique**, senão o link curto
+seguiria de pé e um contrato cancelado aqui voltaria assinado de lá.
+
+O PDF assinado é baixado uma vez e guardado em `pdf_base64`: o painel não
+depende da Autentique estar no ar pra entregar a via.
 
 ## Dívidas conhecidas
 
