@@ -59,6 +59,11 @@ export type Contrato = {
   autentique_id?: string | null;
   autentique_link?: string | null;
   recusado_em?: string | null;
+  /* calculados no servidor (22/10/2026): tem texto editável e não foi
+     assinado; e o que está na Autentique é anterior à última edição */
+  editavel?: boolean;
+  alterado_desde_envio?: boolean;
+  template_json_snapshot?: unknown;
   aceite_texto?: string | null;
   aceite_em?: string | null;
   verificado_em?: string | null;

@@ -66,6 +66,14 @@ export function urlNoAutentique(autentiqueId: string): string {
 
 /** Rota da revisão do contrato de um cliente. */
 export function rotaDoContrato(clienteId: string): string {
+  /* desde 22/10/2026 o rascunho abre no EDITOR do contrato (texto editável +
+     campos fixos + "Assinar e enviar"); quem tem texto fixo antigo é mandado
+     de lá pra revisão de antes */
+  return "/painel/clientes/" + encodeURIComponent(clienteId) + "/contrato/editar";
+}
+
+/** Revisão de antes: só pros contratos antigos, de texto fixo, sem cópia editável. */
+export function rotaDaRevisaoAntiga(clienteId: string): string {
   return "/painel/clientes/" + encodeURIComponent(clienteId) + "/contrato";
 }
 

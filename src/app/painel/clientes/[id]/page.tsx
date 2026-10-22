@@ -41,7 +41,7 @@ import { PillsPacote, ResumoItens } from "@/components/PillsPacote";
 import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
 import { CATALOGO, PACOTES } from "@/lib/catalogo";
-import { abrirContratoEmNovaGuia } from "@/lib/painel";
+import { abrirContratoEmNovaGuia, rotaDoContrato } from "@/lib/painel";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
   formatarMoeda, parseMoeda, soDigitos, copiarTexto,
@@ -445,6 +445,13 @@ export default function PaginaCliente() {
     abrirContratoEmNovaGuia(clienteIdRef.current, contrato?.autentique_id);
   }
 
+  /* o editor do contrato, mesmo com ele já na Autentique (é por lá que se
+     edita e se manda a versão nova) */
+  function editarContrato() {
+    if (!clienteIdRef.current) return;
+    window.open(rotaDoContrato(clienteIdRef.current), "_blank");
+  }
+
   async function acaoDoContrato() {
     if (!clienteIdRef.current) return;
     /* com contrato na mão, abre direto a revisão, sem confirmação nem validação */
@@ -738,7 +745,7 @@ export default function PaginaCliente() {
 
               {/* só aparece quando existe mesmo um contrato pra este cliente */}
               {contrato ? (
-                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onCopiarLink={() => void copiarLink()} avisar={avisar} />
+                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={editarContrato} onCopiarLink={() => void copiarLink()} avisar={avisar} />
               ) : null}
             </div>
           </div>

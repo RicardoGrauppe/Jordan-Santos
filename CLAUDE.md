@@ -69,12 +69,24 @@ A tela própria (`/assinar`) **não existe mais**. Quem coleta assinatura é a
 Autentique, pela API GraphQL v2, com a chave da conta do **próprio fotógrafo**
 (é o nome dela que o casal vê no pedido).
 
-Caminho: o painel confirma o contrato (o fotógrafo assina a cursiva dele, que
-vai carimbada no PDF) → "enviar pra assinatura" monta o PDF **sem a nossa
+Caminho: "Abrir rascunho do contrato" leva pra tela de edição
+(`/painel/clientes/[id]/contrato/editar`), que edita a cópia do texto daquele
+contrato (`template_json_snapshot`, salva sozinha) com os campos fixos do casal
+e do pacote. Um clique em **"Assinar e enviar"** monta o PDF **sem a nossa
 folha de comprovante**, sobe pra Autentique com dois signatários em ordem
 (`sortable`), assina pelo dono da chave (`signDocument`, que não gera e-mail
-pra ele) e devolve o link curto do casal, que o fotógrafo manda por WhatsApp
-como sempre fez.
+pra ele) e devolve o link curto do casal, que o fotógrafo manda por WhatsApp.
+Não existe mais assinatura do fotógrafo dentro do app: o clique é a assinatura.
+Depois de enviado, o botão principal é sempre "Abrir na Autentique".
+
+**Editar depois de enviado = documento novo.** A Autentique não troca o
+arquivo de um documento (`updateDocument` só mexe em nome/mensagem), então
+"Atualizar na Autentique" apaga o documento de lá e cria outro: o link do casal
+muda e gasta 1 da cota de 10/mês. Por isso a tela pede confirmação. Quem diz se
+houve mudança é `autentique_hash` (sha256 do texto + dados do casal no envio),
+calculado só no servidor. Contrato de texto fixo antigo (sem
+`template_json_snapshot`) não é editável e cai na revisão antiga
+(`rotaDaRevisaoAntiga`).
 
 **Entrega é por LINK (`DELIVERY_METHOD_LINK`), e isso não é detalhe.** Medido
 em 22/10/2026, no primeiro envio real: no modo e-mail (o padrão) a Autentique

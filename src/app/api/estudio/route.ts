@@ -24,7 +24,7 @@ import { rest } from "@/lib/supabase";
 import { sessaoAtual } from "@/lib/sessao";
 import { filtrarCampos, normalizarCpf, textoCurto } from "@/lib/util";
 import { apagarDocumento as apagarDocumentoAutentique, configurada as autentiqueConfigurada } from "@/lib/autentique";
-import { enviarParaAssinatura, sincronizarContrato } from "@/lib/contrato-autentique";
+import { enviarParaAssinatura, hashDoConteudo, sincronizarContrato, substituirNaAutentique } from "@/lib/contrato-autentique";
 
 /* campos que a UI pode gravar (whitelist contra colunas inesperadas) */
 const CAMPOS = [
@@ -95,6 +95,10 @@ type LinhaContrato = {
   autentique_id?: string | null;
   autentique_link?: string | null;
   recusado_em?: string | null;
+  autentique_hash?: string | null;
+  template_json_snapshot?: unknown;
+  editavel?: boolean;
+  alterado_desde_envio?: boolean;
   aceite_texto: string | null;
   aceite_em: string | null;
   verificado_em: string | null;
@@ -115,7 +119,7 @@ type LinhaContratoConfirmar = { id: string; jordan_confirmado_em: string | null 
    fotógrafo). `status` não é nulo na tabela, o tipo só não dizia. */
 type LinhaContratoLiberar = {
   id: string; token: string; status: string; jordan_confirmado_em: string | null;
-  autentique_id: string | null; autentique_link: string | null;
+  autentique_id: string | null; autentique_link: string | null; autentique_hash: string | null;
   visualizado_em: string | null; assinado_em: string | null;
   snapshot: Record<string, unknown> | null;
   template_id: string | null; template_json_snapshot: unknown;
@@ -185,12 +189,22 @@ async function ultimoContrato(clienteId: string): Promise<ContratoComTemplate | 
       "doc_sha256,aceite_texto,aceite_em,verificado_em,verificacao_metodo," +
       "template_id,template_nome,template_html_snapshot," +
       /* vínculo com o documento lá: é o que acende o "Abrir na Autentique" */
-      "autentique_id,autentique_link,recusado_em" +
+      "autentique_id,autentique_link,recusado_em,autentique_hash,template_json_snapshot" +
       "&order=criado_em.desc&limit=1",
     );
     const linha = (linhas && linhas[0]) || null;
     if (!linha) return null;
     const contrato: ContratoComTemplate = { ...linha, template_html: null };
+    /* Dois avisos que o painel precisa e que só o servidor calcula direito:
+       - editavel: tem a cópia do texto (os antigos, de texto fixo, não têm) e
+         ainda não foi assinado pelo casal;
+       - alterado_desde_envio: o que está na Autentique é anterior à última
+         edição (do texto ou da ficha). O hash do envio fica no servidor; o
+         painel só recebe a resposta. */
+    contrato.editavel = !!linha.template_json_snapshot && linha.status !== "assinado" && linha.status !== "cancelado";
+    contrato.alterado_desde_envio = !!linha.autentique_id && !!linha.autentique_hash &&
+      linha.status !== "assinado" && (await hashDoConteudo(linha)) !== linha.autentique_hash;
+    delete contrato.autentique_hash;
     /* prefere o snapshot congelado (editar o modelo depois não afeta este
        contrato); só cai no join do modelo vivo pra contratos antigos gerados
        antes do snapshot existir. */
@@ -537,21 +551,26 @@ export async function POST(req: Request) {
       const ativos = await rest<LinhaContratoLiberar[]>(
         "contratos?cliente_id=eq." + id +
         "&status=in.(rascunho,enviado,visualizado,assinado)" +
-        "&select=id,token,status,jordan_confirmado_em,autentique_id,autentique_link,visualizado_em,assinado_em," +
+        "&select=id,token,status,jordan_confirmado_em,autentique_id,autentique_link,autentique_hash,visualizado_em,assinado_em," +
         "snapshot,template_id,template_json_snapshot,jordan_assinatura_dataurl&order=criado_em.desc&limit=1",
       );
       const contrato = ativos && ativos[0];
       if (!contrato) return NextResponse.json({ erro: "nenhum contrato pronto pra enviar" }, { status: 404 });
 
-      /* leitura não cobra nada de ninguém: contrato sem documento (ou ainda
-         sem a confirmação do fotógrafo) responde "não há link", e a tela
-         mostra o botão de enviar */
-      if (apenasLink && (!contrato.autentique_id || !contrato.jordan_confirmado_em)) {
-        return NextResponse.json({ ok: true, link: null, mensagem: "" });
-      }
+      /* mudou desde que foi pra Autentique? (texto ou dados do casal). Sem
+         hash = enviado antes de 22/10/2026: conta como igual ao enviado até a
+         primeira edição, que grava o hash de antes (ver salvar-texto-contrato) */
+      const alterado = !!contrato.autentique_id && !!contrato.autentique_hash &&
+        contrato.status !== "assinado" && (await hashDoConteudo(contrato)) !== contrato.autentique_hash;
 
-      if (!contrato.jordan_confirmado_em) {
-        return NextResponse.json({ erro: "confirme (assine) o contrato antes de enviar ao cliente" }, { status: 409 });
+      /* leitura não cobra nada de ninguém: contrato sem documento responde
+         "não há link", e a tela mostra o botão de enviar.
+         Não depende mais da confirmação do fotógrafo: desde 22/10/2026 ela
+         acontece NO envio (o clique é a assinatura dele), e uma edição da
+         ficha depois de enviado limpa essa confirmação, o que antes escondia
+         o link de um documento que continua de pé na Autentique. */
+      if (apenasLink && !contrato.autentique_id) {
+        return NextResponse.json({ ok: true, link: null, mensagem: "", alterado: false });
       }
 
       const nomeCasal = [cliente.noivo, cliente.noiva].filter(Boolean).join(" e ");
@@ -572,6 +591,18 @@ export async function POST(req: Request) {
           }
           const enviado = await enviarParaAssinatura(contrato, { nome: nomeCasal, email: emailCasal });
           link = enviado.link;
+        } else if (alterado && corpo.atualizar === true && !apenasLink) {
+          /* Mudou depois de enviado e a pessoa CONFIRMOU no painel que quer
+             mandar a versão nova. Apaga o documento lá e cria outro (a
+             Autentique não troca o PDF de um documento existente). */
+          if (!emailCasal) {
+            return NextResponse.json(
+              { erro: "cadastre o e-mail do casal na ficha antes de enviar pra assinatura" },
+              { status: 409 },
+            );
+          }
+          const novo = await substituirNaAutentique(contrato, { nome: nomeCasal, email: emailCasal });
+          link = novo.link;
         } else {
           /* já existe documento: aproveita pra atualizar o estado de lá */
           const atual = await sincronizarContrato(contrato);
@@ -605,10 +636,51 @@ export async function POST(req: Request) {
           "link (dá pra fazer pelo celular, leva 1 minutinho):\n" +
           link + "\nQualquer dúvida, é só me chamar por aqui.";
 
+      const substituiu = alterado && corpo.atualizar === true && !apenasLink;
       return NextResponse.json({
         ok: true, link: link, mensagem: mensagem, assinado: jaAssinado,
+        /* true = o que está na Autentique é a versão ANTERIOR à última edição */
+        alterado: alterado && !substituiu,
+        /* true = este pedido trocou o documento, então o link do casal mudou */
+        linkNovo: substituiu,
         telefone: String(cliente.tel_noivo || cliente.tel_noiva || "").replace(/\D/g, ""),
       });
+    }
+
+    if (acao === "salvar-texto-contrato") {
+      /* Texto do contrato DESTE cliente, editado na tela de edição (a cópia
+         do modelo que o contrato guarda em template_json_snapshot). Não mexe
+         no modelo e não vai pra Autentique sozinho: quem manda é o botão. */
+      const json = corpo.json;
+      const html = typeof corpo.html === "string" ? corpo.html : "";
+      if (!json || typeof json !== "object") return NextResponse.json({ erro: "texto inválido" }, { status: 400 });
+      if (JSON.stringify(json).length > 1_000_000) return NextResponse.json({ erro: "texto grande demais" }, { status: 413 });
+
+      const ativos = await rest<{
+        id: string; status: string; template_json_snapshot: unknown; snapshot: unknown;
+        autentique_id: string | null; autentique_hash: string | null;
+      }[]>(
+        "contratos?cliente_id=eq." + id + "&status=in.(rascunho,enviado,visualizado,assinado)" +
+        "&select=id,status,template_json_snapshot,snapshot,autentique_id,autentique_hash&order=criado_em.desc&limit=1",
+      );
+      const c = ativos && ativos[0];
+      if (!c) return NextResponse.json({ erro: "gere o contrato antes de editar" }, { status: 404 });
+      if (c.status === "assinado") return NextResponse.json({ erro: "contrato já assinado, não dá mais pra editar" }, { status: 409 });
+      if (!c.template_json_snapshot) {
+        return NextResponse.json({ erro: "este contrato usa o texto fixo antigo e não é editável" }, { status: 409 });
+      }
+      /* enviado antes de existir o hash: o texto de ANTES desta edição é o que
+         está na Autentique, então ele vira a referência do "alterado" */
+      const hashAntigo = c.autentique_id && !c.autentique_hash ? await hashDoConteudo(c) : null;
+      await rest("contratos?id=eq." + c.id, {
+        method: "PATCH",
+        body: {
+          template_json_snapshot: json,
+          template_html_snapshot: html,
+          ...(hashAntigo ? { autentique_hash: hashAntigo } : {}),
+        },
+      });
+      return NextResponse.json({ ok: true });
     }
 
     if (acao === "sincronizar-contrato") {

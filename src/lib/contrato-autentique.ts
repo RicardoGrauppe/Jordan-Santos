@@ -18,7 +18,7 @@ import "server-only";
 import { rest } from "@/lib/supabase";
 import { montarPdfDoContrato, type LinhaParaPdf } from "@/lib/contrato-pdf/montar";
 import {
-  assinarComoDono, baixarAssinado, buscarDocumento, conta, criarDocumento, ehSandbox,
+  apagarDocumento, assinarComoDono, baixarAssinado, buscarDocumento, conta, criarDocumento, ehSandbox,
   type DocumentoAutentique,
 } from "@/lib/autentique";
 
@@ -31,6 +31,8 @@ export type LinhaContratoAutentique = LinhaParaPdf & {
   visualizado_em?: string | null;
   assinado_em?: string | null;
   pdf_base64?: string | null;
+  autentique_hash?: string | null;
+  snapshot?: unknown;
 };
 
 export type ContatoCasal = { nome: string; email: string };
@@ -38,6 +40,17 @@ export type ContatoCasal = { nome: string; email: string };
 async function sha256hex(bytes: Uint8Array): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
   return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Impressão digital do que vai pra Autentique: o texto do contrato e os dados
+ * do casal. Calculado SEMPRE a partir da linha lida do banco (nunca do corpo
+ * de um pedido), pra o "na hora do envio" e o "agora" virem da mesma fonte e
+ * da mesma serialização do jsonb.
+ */
+export async function hashDoConteudo(c: { template_json_snapshot?: unknown; snapshot?: unknown }): Promise<string> {
+  const bruto = new TextEncoder().encode(JSON.stringify({ t: c.template_json_snapshot ?? null, s: c.snapshot ?? null }));
+  return sha256hex(bruto);
 }
 
 /** A assinatura do CASAL dentro do documento: é a que não é a da conta dona. */
@@ -88,18 +101,43 @@ export async function enviarParaAssinatura(
   const atualizado = await buscarDocumento(documento.id).catch(() => documento);
   const link = assinaturaDoCasal(atualizado, dono.email)?.link?.short_link ?? null;
 
+  const agora = new Date().toISOString();
   await rest("contratos?id=eq." + c.id, {
     method: "PATCH",
     body: {
       autentique_id: documento.id,
       autentique_link: link,
       autentique_sandbox: ehSandbox(),
+      autentique_hash: await hashDoConteudo(c),
       status: "enviado",
-      enviado_em: new Date().toISOString(),
+      enviado_em: agora,
+      /* documento novo começa do zero: o "visto" do documento anterior não
+         vale pra este */
+      visualizado_em: null,
+      /* desde 22/10/2026 o fotógrafo não assina mais dentro do app: o clique
+         em "Assinar e enviar" É a assinatura dele, feita na Autentique */
+      jordan_confirmado_em: agora,
     },
   });
 
   return { link, documento: atualizado };
+}
+
+/**
+ * Atualizar um contrato já enviado. A Autentique não troca o PDF de um
+ * documento existente, então isto APAGA o de lá e cria outro: link novo pro
+ * casal, um documento a mais da cota, e o fotógrafo reassina sozinho.
+ * Quem chama confirma isso com a pessoa antes (ver o painel).
+ */
+export async function substituirNaAutentique(
+  c: LinhaContratoAutentique,
+  casal: ContatoCasal,
+): Promise<{ link: string | null; documento: DocumentoAutentique }> {
+  if (c.autentique_id) {
+    try { await apagarDocumento(c.autentique_id); }
+    catch (e) { console.error("autentique: não deu pra apagar o documento antigo:", (e as Error).message); }
+  }
+  return enviarParaAssinatura({ ...c, autentique_id: null, autentique_link: null }, casal);
 }
 
 /**

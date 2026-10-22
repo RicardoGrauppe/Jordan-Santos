@@ -20,16 +20,18 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Check, ChevronDown, CircleDashed, Copy, ExternalLink, FileCheck, FileText, Lock } from "lucide-react";
+import { Check, ChevronDown, CircleDashed, Copy, ExternalLink, FileCheck, FileText, Lock, Pencil } from "lucide-react";
 import { Botao } from "./ui";
 import { copiarTexto, fmtDataHora, mascarar, type Contrato } from "@/lib/ficha";
 
 
 export function TimelineContrato({
-  contrato, onAbrirContrato, onCopiarLink, avisar,
+  contrato, onAbrirContrato, onEditarContrato, onCopiarLink, avisar,
 }: {
   contrato: Contrato;
   onAbrirContrato: () => void;
+  /** abre o editor do contrato (texto + campos), pra mexer depois de enviado */
+  onEditarContrato?: () => void;
   onCopiarLink: () => void;
   avisar: (texto: string, opts?: { ok?: boolean }) => void;
 }) {
@@ -101,8 +103,8 @@ export function TimelineContrato({
           {!(assinadoFotografo || jaAssinado) ? (
             <p className="m-0 mb-2.5 text-[12.5px] leading-[1.5] text-ink-soft">
               {precisaReconfirmar
-                ? "O contrato foi editado depois de enviado, assine de novo pra liberar a versão atualizada pro casal."
-                : "Abra o contrato e assine pra liberar o link do casal."}
+                ? "O contrato foi editado depois de enviado. Abra e clique em “Atualizar na Autentique” pra o casal ver a versão nova."
+                : "Abra o rascunho, ajuste o texto e clique em “Assinar e enviar”."}
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2.5 [&>*]:min-h-[42px] [&>*]:flex-[1_1_100%] min-[520px]:[&>*]:flex-[1_1_150px]">
@@ -118,9 +120,18 @@ export function TimelineContrato({
             ) : null}
             <Botao variante="secundario" className="text-accent" onClick={onAbrirContrato}>
               {jaAssinado ? <FileCheck size={16} /> : <FileText size={16} />}
-              {jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
+              {contrato.autentique_id ? "Abrir na Autentique" : jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
               <ExternalLink size={14} className="opacity-60" />
             </Botao>
+            {/* Já foi pra Autentique e o casal ainda não assinou: dá pra voltar
+                no texto. Editar aqui e clicar em "Atualizar na Autentique" lá
+                dentro troca o documento (link novo pro casal). */}
+            {contrato.autentique_id && contrato.editavel && onEditarContrato ? (
+              <Botao variante="secundario" onClick={onEditarContrato}>
+                <Pencil size={16} />
+                {contrato.alterado_desde_envio ? "Atualizar contrato" : "Editar contrato"}
+              </Botao>
+            ) : null}
           </div>
         </div>
       ) : null}
