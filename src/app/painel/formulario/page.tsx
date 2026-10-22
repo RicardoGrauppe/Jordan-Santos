@@ -122,6 +122,93 @@ function ChavesCampo({
   );
 }
 
+/* Título e explicação da etapa só se editam pelo LÁPIS (pedido do Ricardo
+   Grauppe): parados, são texto comum, e um clique sem querer não muda nada.
+   O lápis troca pelo campo já com o cursor; sair dele (ou Enter, no título)
+   fecha, e o Esc desfaz o que foi digitado desde que abriu. Vazio, o
+   servidor devolve o original. */
+function useEdicaoPeloLapis(valor: string, aoMudar: (v: string) => void) {
+  const [editando, setEditando] = useState(false);
+  const antes = useRef(valor);
+  function abrir() { antes.current = valor; setEditando(true); }
+  function fechar() { setEditando(false); }
+  function desfazer() { aoMudar(antes.current); setEditando(false); }
+  return { editando, abrir, fechar, desfazer };
+}
+
+const LAPIS =
+  "inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-[9px] bg-transparent " +
+  "text-ink-soft transition-colors hover:bg-line hover:text-accent";
+
+function TituloEtapa({ valor, padrao, aoMudar }: { valor: string; padrao: string; aoMudar: (v: string) => void }) {
+  const e = useEdicaoPeloLapis(valor, aoMudar);
+  if (!e.editando) {
+    return (
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="truncate">{valor || padrao}</span>
+        <button type="button" className={LAPIS} aria-label={"Editar o título " + (valor || padrao)} onClick={e.abrir}>
+          <Pencil size={13} />
+        </button>
+      </span>
+    );
+  }
+  return (
+    <input
+      autoFocus
+      aria-label={"Título da etapa " + padrao}
+      value={valor}
+      placeholder={padrao}
+      maxLength={LIMITES.titulo}
+      size={Math.max(6, (valor || padrao).length + 1)}
+      onChange={(ev) => aoMudar(ev.target.value)}
+      onBlur={e.fechar}
+      onKeyDown={(ev) => {
+        if (ev.key === "Enter") { ev.preventDefault(); e.fechar(); }
+        if (ev.key === "Escape") { ev.preventDefault(); e.desfazer(); }
+      }}
+      className="min-w-0 rounded-lg bg-soft px-2 py-1 -ml-2 text-[13px] font-semibold tracking-[.02em] text-ink outline-none placeholder:text-ink-soft"
+    />
+  );
+}
+
+function ExplicacaoEtapa({ id, valor, padrao, aoMudar }: { id: string; valor: string; padrao: string; aoMudar: (v: string) => void }) {
+  const e = useEdicaoPeloLapis(valor, aoMudar);
+  return (
+    <div className="mt-3">
+      <div className="mb-1.5 text-[11.5px] font-medium text-ink-soft" id={id + "-rotulo"}>Explicação pro casal</div>
+      {/* o mesmo card azul que o casal vê na etapa (brandbook 18) */}
+      <div className={"flex items-start gap-3 rounded-[14px] px-3 py-2.5 transition-colors " + (e.editando ? "bg-[#DFEAEE]" : "bg-accent-tint")}>
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] bg-white text-accent">
+          <Info size={16} strokeWidth={1.8} />
+        </span>
+        {e.editando ? (
+          <textarea
+            id={id}
+            autoFocus
+            aria-labelledby={id + "-rotulo"}
+            value={valor}
+            placeholder={padrao}
+            maxLength={LIMITES.explicacao}
+            /* cresce com o texto (field-sizing onde existe; rows aproxima no Safari) */
+            rows={Math.max(1, Math.ceil((valor || padrao).length / 48))}
+            onChange={(ev) => aoMudar(ev.target.value)}
+            onBlur={e.fechar}
+            onKeyDown={(ev) => { if (ev.key === "Escape") { ev.preventDefault(); e.desfazer(); } }}
+            className="min-w-0 flex-1 resize-none self-center bg-transparent py-1 text-[13.5px] leading-[1.5] text-accent outline-none [field-sizing:content] placeholder:text-accent/50"
+          />
+        ) : (
+          <>
+            <p id={id} className="m-0 min-w-0 flex-1 self-center py-1 text-[13.5px] leading-[1.5] text-accent">{valor || padrao}</p>
+            <button type="button" className={LAPIS + " hover:bg-white/70"} aria-label="Editar a explicação" onClick={e.abrir}>
+              <Pencil size={13} />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* Legenda dos ícones, uma vez só, entre as fotos e o primeiro bloco de
    campos: é onde os botões começam */
 function LegendaBotoes() {
@@ -504,49 +591,15 @@ export default function PaginaFormulario() {
                   <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
                     <Icone size={16} />
                   </span>
-                  {/* título editável ali mesmo (brandbook 18): campo sem fundo
-                      que ganha o bege no hover e no foco; o lápis só indica.
-                      Vazio, o servidor devolve o título original. */}
-                  <label className="group inline-flex min-w-0 max-w-full cursor-text items-center gap-1.5 rounded-lg px-2 py-1 -ml-1 transition-colors hover:bg-soft focus-within:bg-soft">
-                    <input
-                      aria-label={"Título da etapa " + secao.titulo}
-                      value={form.titulos[secao.id]}
-                      placeholder={secao.titulo}
-                      maxLength={LIMITES.titulo}
-                      /* largura do próprio texto, pra o lápis ficar colado nele */
-                      size={Math.max(6, (form.titulos[secao.id] || secao.titulo).length + 1)}
-                      onChange={(e) => mudar({ ...form, titulos: { ...form.titulos, [secao.id]: e.target.value } })}
-                      className="min-w-0 bg-transparent text-[13px] font-semibold tracking-[.02em] text-ink outline-none placeholder:text-ink-soft"
-                    />
-                    <Pencil size={13} className="shrink-0 text-ink-soft opacity-70 transition-opacity group-hover:opacity-100" aria-hidden />
-                  </label>
+                  <TituloEtapa valor={form.titulos[secao.id]} padrao={secao.titulo}
+                    aoMudar={(v) => mudar({ ...form, titulos: { ...form.titulos, [secao.id]: v } })} />
                 </h2>
                 {AJUDA_SECAO[secao.id] ? (
                   <p className="m-0 mt-2 text-[12.5px] text-ink-soft">{AJUDA_SECAO[secao.id]}</p>
                 ) : null}
 
-                {/* explicação da etapa, editável ali mesmo no mesmo card azul que
-                    o casal vê (brandbook 18); vazio, volta o padrão */}
-                <div className="mt-3">
-                  <label htmlFor={"explica-" + secao.id} className="mb-1.5 block text-[11.5px] font-medium text-ink-soft">
-                    Explicação pro casal
-                  </label>
-                  <div className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-3 py-2.5 transition-colors focus-within:bg-[#DFEAEE] hover:bg-[#E3EDF0]">
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] bg-white text-accent">
-                      <Info size={16} strokeWidth={1.8} />
-                    </span>
-                    <textarea
-                      id={"explica-" + secao.id}
-                      value={form.explicacoes[secao.id]}
-                      placeholder={EXPLICACAO_PADRAO[secao.id]}
-                      maxLength={LIMITES.explicacao}
-                      /* cresce com o texto (field-sizing onde existe; rows aproxima no Safari) */
-                      rows={Math.max(1, Math.ceil((form.explicacoes[secao.id] || EXPLICACAO_PADRAO[secao.id]).length / 48))}
-                      onChange={(e) => mudar({ ...form, explicacoes: { ...form.explicacoes, [secao.id]: e.target.value } })}
-                      className="min-w-0 flex-1 resize-none self-center bg-transparent py-1 text-[13.5px] leading-[1.5] text-accent outline-none [field-sizing:content] placeholder:text-accent/50"
-                    />
-                  </div>
-                </div>
+                <ExplicacaoEtapa id={"explica-" + secao.id} valor={form.explicacoes[secao.id]} padrao={EXPLICACAO_PADRAO[secao.id]}
+                  aoMudar={(v) => mudar({ ...form, explicacoes: { ...form.explicacoes, [secao.id]: v } })} />
 
                 <div className="mt-4 flex flex-col gap-2">
                   {fixos.map((def) => (
