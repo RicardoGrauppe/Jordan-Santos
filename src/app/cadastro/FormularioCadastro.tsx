@@ -45,6 +45,7 @@ import {
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
 import Image from "next/image";
+import { Lightbulb } from "lucide-react";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
@@ -241,7 +242,6 @@ const CSS = `
 .cad .carta h1{font-size:34px;line-height:1.18;margin:0;text-wrap:balance}
 .cad .carta .texto{font-size:16px;line-height:1.7;color:var(--ink);margin-top:16px}
 .cad .carta .texto + .texto{margin-top:12px}
-.cad .assinatura{height:72px;width:auto;margin:14px 0 0 -6px;filter:brightness(0);opacity:.8;display:block}
 .cad .caminho-rotulo{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);margin-top:34px}
 .cad .passos{list-style:none;margin:16px 0 0;display:grid;gap:18px}
 .cad .passos li{display:flex;gap:16px;align-items:baseline}
@@ -249,7 +249,10 @@ const CSS = `
 .cad .passos strong{display:block;font-weight:500;font-size:15.5px;color:var(--ink);line-height:1.35}
 .cad .passos small{display:block;font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin-top:2px}
 .cad .carta .cta{margin-top:34px}
-.cad .tempo{font-size:12.5px;color:var(--ink-soft);margin-top:14px;text-align:center}
+/* recado prático da abertura: card petróleo claro com lâmpada, sem borda */
+.cad .dica-card{display:flex;gap:12px;align-items:center;background:#EAF1F3;border-radius:16px;padding:14px 16px;margin-top:18px}
+.cad .dica-icone{flex-shrink:0;width:36px;height:36px;border-radius:12px;background:var(--paper);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.cad .dica-card p{font-size:14px;line-height:1.5;color:var(--accent);font-weight:400}
 @media (min-width:960px){
   .cad .pagina.larga{max-width:1040px}
   .cad .boas-vindas{grid-template-columns:1fr 1fr;gap:64px;align-items:center}
@@ -922,8 +925,8 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
 
             {/* ---------- boas-vindas ----------
                 Uma carta, não um formulário (a primeira versão, com selo
-                "Cadastro" e caixas cinzas, foi achada fria). Foto, logo e
-                assinatura são do Jordan, fixas como o resto da marca dele
+                "Cadastro" e caixas cinzas, foi achada fria). Fotos e logo
+                são do Jordan, fixas como o resto da marca dele
                 (dívida "Nome e marca" no CLAUDE.md). */}
             <section className="etapa" {...atributosEtapa("inicio")}>
               <div className="boas-vindas">
@@ -934,11 +937,10 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                     Cada casal que chega até a gente traz uma história, e a de vocês já começou a nos encantar.
                     Antes de guardar essa data na nossa agenda, queremos conhecer vocês um pouquinho melhor.
                   </p>
-                  <p className="texto">
-                    São poucos passos, com calma. Dá pra voltar quando quiserem, e no fim vocês conferem tudo antes de enviar.
-                  </p>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="assinatura" src="/img/assinatura-offwhite.png" alt="Assinatura de Jordan Santos" />
+                  <div className="dica-card">
+                    <span className="dica-icone"><Lightbulb size={18} strokeWidth={1.8} aria-hidden /></span>
+                    <p>Leva uns 3 minutos. Dá pra voltar quando quiserem e conferir tudo antes de enviar.</p>
+                  </div>
                   <div className="caminho-rotulo">O nosso caminho até a data</div>
                   <ol className="passos">
                     {secoes.map((id, i) => (
@@ -949,7 +951,6 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                     ))}
                   </ol>
                   <button className="cta" type="submit">{textoDoBotao}</button>
-                  <p className="tempo">Leva uns 3 minutos, sem pressa</p>
                 </div>
               </div>
             </section>
