@@ -255,8 +255,17 @@ export default function ListaClientes() {
                tabela que no celular não existe: colada só no primeiro card,
                com a altura do padding (a camada de colunas some ali), e o
                botão de excluir vazando por baixo. */
-            "relative mb-2.5 h-[52px] rounded-2xl pl-[18px] pr-[18px] transition-colors duration-200 " +
-            "md:mb-0 md:block md:h-auto md:rounded-none md:py-3.5 " +
+            /* ENTRADA NO CELULAR: a barra não aparece de uma vez. Ela cresce
+               de 0 a 52px (e a margem de 0 a 10px), então os cards de baixo
+               DESCEM junto em vez de pularem, e o conteúdo dela sobe 4px
+               enquanto acende (camada de ações, abaixo). 300ms na curva do
+               app. `invisible` no fim da saída tira os botões do foco e do
+               leitor de tela enquanto ela está fechada.
+               Fundo petróleo nos dois estados no celular: se trocasse pro
+               cinza ao fechar, ia piscar cinza enquanto encolhe. */
+            "relative overflow-hidden rounded-2xl pl-[18px] pr-[18px] " +
+            "transition-[height,margin,opacity,visibility,background-color] duration-300 ease-[var(--ease-desliza)] " +
+            "md:visible md:mb-0 md:block md:h-auto md:overflow-visible md:rounded-none md:py-3.5 md:opacity-100 " +
             /* no celular a lista é longa e a faixa fica no TOPO dela: sem
                grudar, você marca um cliente lá embaixo e o botão de excluir
                some da tela. Gruda logo abaixo do cabeçalho do app (56px), que
@@ -274,8 +283,8 @@ export default function ListaClientes() {
                é passageiro. Com seleção, petróleo CHEIO: a faixa muda de
                função e a cor diz isso antes de qualquer texto. */
             (marcados.length
-              ? "block bg-accent"
-              : "hidden bg-line")
+              ? "visible mb-2.5 h-[52px] bg-accent opacity-100"
+              : "invisible mb-0 h-0 bg-accent opacity-0 md:bg-line")
           }
         >
           {/* marca a lista inteira (o que está VISÍVEL, então respeita o
