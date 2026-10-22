@@ -57,7 +57,7 @@ const TELAS: { rota: RegExp; titulo: string; voltar: string | null; selo?: strin
   { rota: /^\/painel\/clientes\/[^/]+\/?$/, titulo: "Cliente", voltar: "/painel/clientes" },
   { rota: /^\/painel\/clientes\/?$/, titulo: "Clientes", voltar: null },
   { rota: /^\/painel\/atelie\/?$/, titulo: "Ateliê", voltar: null },
-  { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Contrato e assinatura", voltar: "/painel/configuracoes" },
+  { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Modelos de contrato", voltar: "/painel/configuracoes" },
   { rota: /^\/painel\/configuracoes\/?$/, titulo: "Configurações", voltar: "/painel" },
   { rota: /^\/painel\/produtos\/?$/, titulo: "Produtos e serviços", voltar: "/painel" },
   { rota: /^\/painel\/formulario\/?$/, titulo: "Formulário", voltar: "/painel", selo: "Beta" },
