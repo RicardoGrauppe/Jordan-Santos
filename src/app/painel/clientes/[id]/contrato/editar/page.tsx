@@ -28,7 +28,7 @@
 import { use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Braces, CalendarHeart, Check, Copy, ExternalLink, FileText, Heart, LayoutTemplate, MapPin, MessageCircle, PenLine,
+  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, Copy, ExternalLink, FileText, Heart, LayoutTemplate, MapPin, MessageCircle, PenLine,
   PenTool, Plus, Search, Send, Table, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
@@ -111,8 +111,11 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
   async function criar() {
     const n = nome.trim();
     if (!n || ocupado) return;
-    if (await aoCriar(n)) { setCriando(false); setNome(""); }
+    if (await aoCriar(n)) { setCriando(false); setNome(""); setAberto(false); }
   }
+
+  const [aberto, setAberto] = useState(false);
+  const modeloAtual = modelos?.find((m) => m.id === modeloId) ?? null;
 
   const termo = semAcento(busca.trim());
   const grupos = GRUPOS_CAMPO
@@ -124,49 +127,66 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
   return (
     <div className="grid gap-3">
       <CartaoLateral icone={FileText} titulo="Modelo do contrato" texto="Trocar substitui o texto deste contrato.">
-        <div className="mt-3 grid gap-0.5">
-          {modelos === null ? (
-            <p className="m-0 flex h-10 items-center px-2.5 text-[13px] text-ink-soft">Carregando modelos…</p>
-          ) : modelos.map((m) => {
-            const atual = m.id === modeloId;
-            return (
-              <button key={m.id} type="button" disabled={ocupado} aria-pressed={atual}
-                onClick={() => { if (!atual) aoEscolher(m.id); }}
-                className={linha + " " + (atual ? "bg-accent-tint font-semibold text-accent" : "text-ink hover:bg-soft")}>
-                <span className={"inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-colors " +
-                  (atual ? "bg-accent text-white" : "bg-line")}>
-                  {atual ? <Check size={12} strokeWidth={3} /> : null}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{m.nome || "Sem nome"}</span>
-                {m.ativo ? (
-                  <span className={"shrink-0 rounded-[6px] px-2 py-[3px] text-[10.5px] font-semibold tracking-[.03em] " +
-                    (atual ? "bg-paper text-ink-soft" : "bg-soft text-ink-soft")}>Padrão</span>
-                ) : null}
-              </button>
-            );
-          })}
+        {/* dropdown que abre DENTRO do cartão: o gatilho mostra o modelo atual
+            e a lista expande empurrando o resto da lateral pra baixo */}
+        <button type="button" aria-expanded={aberto} disabled={modelos === null} onClick={() => setAberto((v) => !v)}
+          className="mt-3 flex h-11 w-full cursor-pointer items-center gap-2.5 rounded-xl bg-soft px-3 text-left text-[13px] transition-colors hover:bg-line disabled:cursor-default">
+          <span className={"min-w-0 flex-1 truncate " + (modelos === null ? "text-ink-soft" : "font-semibold text-ink")}>
+            {modelos === null ? "Carregando modelos…" : modeloAtual?.nome || (modeloId ? "Modelo apagado" : "Sem modelo")}
+          </span>
+          {modeloAtual?.ativo ? (
+            <span className="shrink-0 rounded-[6px] bg-paper px-2 py-[3px] text-[10.5px] font-semibold tracking-[.03em] text-ink-soft">Padrão</span>
+          ) : null}
+          <ChevronDown size={16} className={"shrink-0 text-ink-soft transition-[rotate] duration-300 " + (aberto ? "rotate-180" : "")} />
+        </button>
 
-          {criando ? (
-            <form className="mt-1 rounded-xl bg-soft p-2.5" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
-              <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
-                className="h-9 w-full rounded-[10px] bg-paper px-3 text-[13px] text-ink outline-none placeholder:text-ink-soft/70" />
-              <p className="m-0 mt-1.5 px-0.5 text-[11.5px] leading-snug text-ink-soft">Nasce com o texto deste contrato.</p>
-              <div className="mt-2.5 flex gap-1.5">
-                <button type="submit" disabled={!nome.trim() || ocupado}
-                  className="h-8 flex-1 cursor-pointer rounded-[10px] bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
-                  Criar modelo
+        <div inert={!aberto}
+          className={"grid transition-[grid-template-rows,opacity] duration-300 ease-[var(--ease-desliza)] " +
+            (aberto ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
+          <div className="min-h-0 overflow-hidden">
+            <div className="grid gap-0.5 pt-1.5">
+              {(modelos || []).map((m) => {
+                const atual = m.id === modeloId;
+                return (
+                  <button key={m.id} type="button" disabled={ocupado} aria-pressed={atual}
+                    onClick={() => { setAberto(false); if (!atual) aoEscolher(m.id); }}
+                    className={linha + " " + (atual ? "bg-accent-tint font-semibold text-accent" : "text-ink hover:bg-soft")}>
+                    <span className={"inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-colors " +
+                      (atual ? "bg-accent text-white" : "bg-line")}>
+                      {atual ? <Check size={12} strokeWidth={3} /> : null}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{m.nome || "Sem nome"}</span>
+                    {m.ativo ? (
+                      <span className={"shrink-0 rounded-[6px] px-2 py-[3px] text-[10.5px] font-semibold tracking-[.03em] " +
+                        (atual ? "bg-paper text-ink-soft" : "bg-soft text-ink-soft")}>Padrão</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+
+              {criando ? (
+                <form className="mt-1 rounded-xl bg-soft p-2.5" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
+                  <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
+                    className="h-9 w-full rounded-[10px] bg-paper px-3 text-[13px] text-ink outline-none placeholder:text-ink-soft/70" />
+                  <p className="m-0 mt-1.5 px-0.5 text-[11.5px] leading-snug text-ink-soft">Nasce com o texto deste contrato.</p>
+                  <div className="mt-2.5 flex gap-1.5">
+                    <button type="submit" disabled={!nome.trim() || ocupado}
+                      className="h-8 flex-1 cursor-pointer rounded-[10px] bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
+                      Criar modelo
+                    </button>
+                    <button type="button" onClick={() => { setCriando(false); setNome(""); }}
+                      className="h-8 cursor-pointer rounded-[10px] px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-line hover:text-ink">
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button type="button" disabled={ocupado} onClick={() => setCriando(true)} className={linha + " text-ink-soft hover:bg-soft hover:text-ink"}>
+                  <Plus size={18} className="shrink-0" /> Novo modelo
                 </button>
-                <button type="button" onClick={() => { setCriando(false); setNome(""); }}
-                  className="h-8 cursor-pointer rounded-[10px] px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-line hover:text-ink">
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          ) : (
-            <button type="button" disabled={ocupado} onClick={() => setCriando(true)} className={linha + " text-ink-soft hover:bg-soft hover:text-ink"}>
-              <Plus size={18} className="shrink-0" /> Novo modelo
-            </button>
-          )}
+              )}
+            </div>
+          </div>
         </div>
       </CartaoLateral>
 
