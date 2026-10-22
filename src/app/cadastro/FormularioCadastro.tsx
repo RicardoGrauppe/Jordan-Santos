@@ -49,8 +49,8 @@ import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import {
-  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, DEFINICAO, SECOES, TITULO_SECAO,
-  type CampoFixoId, type Formulario, type Pergunta, type SecaoFormulario,
+  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, urlFoto, DEFINICAO, SECOES, TITULO_SECAO,
+  type CampoFixoId, type FotoAbertura, type Formulario, type Pergunta, type SecaoFormulario,
 } from "@/lib/formulario";
 
 type CampoId = CampoFixoId;
@@ -491,59 +491,51 @@ function CampoPergunta({
 }
 
 /* ---------- fotos da abertura ----------
-   Portfólio do Jordan, fixo como o resto da marca dele (dívida "Nome e
-   marca" no CLAUDE.md). `foco` é o object-position de cada uma: as fotos são
-   retrato 2:3 e o quadro do celular é 4:3, então sem isso metade dos casais
-   sairia sem cabeça.
-   Os arquivos são webp prontos em public/img/abertura/ (750 e 1200px),
-   gerados por tools/fotos-abertura/gerar.mjs. Não passam pelo next/image: no
-   iPhone do Jordan o otimizador do dev não entregava as fotos, e arquivo
-   estático chega igual em qualquer aparelho. */
-const FOTOS_ABERTURA = [
-  { nome: "prewedding", foco: "50% 62%", alt: "Casal no alto de uma caminhonete antiga, no campo, ao pôr do sol" },
-  { nome: "casal-jardim", foco: "50% 40%", alt: "Noivos caminhando de mãos dadas em um jardim" },
-  { nome: "entrega-1", foco: "50% 45%", alt: "Noivo beijando o rosto da noiva, em preto e branco" },
-  { nome: "casal-palacio", foco: "50% 35%", alt: "Noivos em um palácio, em preto e branco" },
-  { nome: "casal-campo", foco: "50% 65%", alt: "Noivos caminhando ao lado de um milharal, em preto e branco" },
-  { nome: "noiva-retrato", foco: "50% 30%", alt: "Retrato da noiva com véu, sentada, em preto e branco" },
-  { nome: "entrega-3", foco: "50% 35%", alt: "Retrato próximo dos noivos" },
-  { nome: "entrega-2", foco: "50% 70%", alt: "Noiva em um salão histórico, em preto e branco" },
-];
+   A lista vem da config do formulário (o fotógrafo escolhe no editor; sem
+   escolha, valem as do portfólio do Jordan). Cada foto existe em 750 e
+   1200px de webp prontos, sem passar pelo next/image: no iPhone do Jordan o
+   otimizador do dev não entregava as fotos, e arquivo pronto chega igual em
+   qualquer aparelho. `foco` é a posição vertical do recorte (as fotos
+   costumam ser retrato e o quadro do celular é 4:3). */
 const TEMPO_FOTO = 5500;
 
-/* Só a atual e a próxima são baixadas: as oito juntas passariam de 10MB no
-   4G do casal. Cada troca libera mais uma. Parada quando a etapa não está na
-   tela e pra quem pede menos movimento (aí fica a primeira). */
-function FotosAbertura({ rodando }: { rodando: boolean }) {
+/* Só a atual e a próxima são baixadas: todas juntas passariam de vários MB
+   no 4G do casal. Cada troca libera mais uma. Parada quando a etapa não está
+   na tela, com uma foto só e pra quem pede menos movimento (aí fica a
+   primeira). */
+function FotosAbertura({ fotos, rodando }: { fotos: FotoAbertura[]; rodando: boolean }) {
   const [atual, setAtual] = useState(0);
   const [baixadas, setBaixadas] = useState(2);
+  const total = fotos.length;
 
   useEffect(() => {
-    if (!rodando || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!rodando || total < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t = setInterval(() => {
-      setAtual((a) => (a + 1) % FOTOS_ABERTURA.length);
-      setBaixadas((b) => Math.min(FOTOS_ABERTURA.length, b + 1));
+      setAtual((a) => (a + 1) % total);
+      setBaixadas((b) => Math.min(total, b + 1));
     }, TEMPO_FOTO);
     return () => clearInterval(t);
-  }, [rodando]);
+  }, [rodando, total]);
 
   return (
     <div className="foto-abertura">
-      {FOTOS_ABERTURA.slice(0, baixadas).map((f, i) => (
-        <div key={f.nome} className={"slide" + (i === atual ? " ativa" : "")} aria-hidden={i !== atual}>
+      {fotos.slice(0, baixadas).map((f, i) => (
+        <div key={f.id} className={"slide" + (i === atual ? " ativa" : "")} aria-hidden={i !== atual}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={"/img/abertura/" + f.nome + "-750.webp"}
-            srcSet={"/img/abertura/" + f.nome + "-750.webp 750w, /img/abertura/" + f.nome + "-1200.webp 1200w"}
+          <img src={urlFoto(f, 750)}
+            srcSet={urlFoto(f, 750) + " 750w, " + urlFoto(f, 1200) + " 1200w"}
             sizes="(min-width: 960px) 476px, calc(100vw - 44px)"
             alt={f.alt} fetchPriority={i === 0 ? "high" : "auto"} decoding="async"
-            style={{ objectPosition: f.foco }} />
+            style={{ objectPosition: "50% " + f.foco + "%" }} />
         </div>
       ))}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="marca" src="/img/logo-principal-offwhite.png" alt="Jordan Santos" />
-      <div className="pontos" aria-hidden>
-        {FOTOS_ABERTURA.map((f, i) => <span key={f.nome} className={i === atual ? "ativo" : ""} />)}
-      </div>
+      {total > 1 ? (
+        <div className="pontos" aria-hidden>
+          {fotos.map((f, i) => <span key={f.id} className={i === atual ? "ativo" : ""} />)}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1149,7 +1141,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                 (dívida "Nome e marca" no CLAUDE.md). */}
             <section className="etapa" {...atributosEtapa("inicio")}>
               <div className="boas-vindas">
-                <FotosAbertura rodando={etapa === "inicio" && !enviado} />
+                <FotosAbertura fotos={formulario.fotos} rodando={etapa === "inicio" && !enviado} />
                 <div className="carta etapa-corpo">
                   <h1>Que alegria ter vocês aqui</h1>
                   <p className="texto">

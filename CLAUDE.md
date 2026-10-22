@@ -22,15 +22,16 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
   page.tsx                   home (saudação, clima, KPIs, próximos eventos, links)
   clientes/                  lista, [id] (ficha), [id]/contrato (revisão e confirmação)
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
-  formulario/                editor do /cadastro (texto, aparece, obrigatório, perguntas novas)
+  formulario/                editor do /cadastro (fotos da abertura, texto, aparece, obrigatório, perguntas novas)
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             proposta comercial que o casal lê
-src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), formulario
+src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), formulario (+ fotos)
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              formulario.ts (regras e travas), formulario-servidor.ts (config no banco),
+                             formulario-fotos.ts (fotos da abertura no Storage),
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco)
 ```
@@ -125,6 +126,16 @@ do casal não é confiável. Pergunta nova não ganha coluna: a resposta vai pra
 `clientes.respostas_formulario` com o texto da pergunta, e a ficha mostra só
 leitura.
 
+Fotos da abertura: a lista também mora nessa config (`fotos`). Sem lista,
+valem as 8 do portfólio do Jordan, em webp prontos em `public/img/abertura/`
+(regenerar com `node tools/fotos-abertura/gerar.mjs`). As que o fotógrafo
+envia viram dois webp (750 e 1200px) no bucket PRIVADO `formulario-fotos` e
+são entregues pela rota `/api/formulario/fotos/<arquivo>`, nunca pela URL do
+Storage (a do local é 127.0.0.1, que o celular não abre). Nenhuma foto passa
+pelo `next/image`: no iPhone o otimizador do dev não entregava. Quem apaga o
+arquivo de uma foto tirada é o `POST /api/formulario`, depois de gravar a
+lista sem ela.
+
 O `/cadastro` é um fluxo em etapas (boas-vindas, uma etapa por seção, revisão),
 com todas as etapas montadas e só a atual visível: o intl-tel-input do WhatsApp
 se prende ao input na montagem e se perderia se a etapa desmontasse.
@@ -149,7 +160,8 @@ se prende ao input na montagem e se perderia se a etapa desmontasse.
   `NOME_FOTOGRAFO_PADRAO` e a legenda "CONTRATADA" em `clientes/[id]/contrato`,
   saudação do WhatsApp em `api/estudio`, remetente e `DESTINO_JORDAN` em
   `lib/email.ts`, e-mails de `api/orcamento`, as imagens em `public/img/`, e a
-  abertura do `/cadastro` (fotos do portfólio e logo do Jordan).
+  abertura do `/cadastro` (a logo do Jordan e as 8 fotos padrão; as fotos já
+  são trocáveis pelo editor de Formulário).
   Tudo isso precisa sair de `config` (perfil) quando houver mais de um estúdio.
 - E-mail: com `RESEND_API_KEY` vazia todo envio falha e vai pro `console.error`,
   mas nada trava: cadastro do casal e assinatura gravam e respondem `ok` do

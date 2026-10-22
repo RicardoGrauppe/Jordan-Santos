@@ -50,6 +50,24 @@ export async function rest<T = unknown>(caminho: string, opcoes: OpcoesRest = {}
   return texto ? (JSON.parse(texto) as T) : null;
 }
 
+/* ---------- Supabase Storage ---------- */
+
+/**
+ * Storage com a service role: storage("object/<bucket>/<arquivo>", init).
+ * Devolve a Response crua, porque quem chama decide o que fazer com o corpo
+ * (gravar, repassar a imagem, ignorar). Erro de rede vira exceção; status
+ * de erro, não: olhe o `ok`.
+ */
+export async function storage(caminho: string, init: { method?: string; body?: BodyInit; contentType?: string; extra?: Record<string, string> } = {}): Promise<Response> {
+  const { method = "GET", body, contentType, extra } = init;
+  return fetch(BASE + "/storage/v1/" + caminho, {
+    method,
+    headers: { apikey: CHAVE!, Authorization: "Bearer " + CHAVE, ...(contentType ? { "Content-Type": contentType } : {}), ...extra },
+    body,
+    cache: "no-store",
+  });
+}
+
 /* ---------- Supabase Auth (GoTrue) ---------- */
 
 export type UsuarioAuth = { id: string; email?: string } & Record<string, unknown>;

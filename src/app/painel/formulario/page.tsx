@@ -22,6 +22,7 @@ import {
 import { Botao, BotaoVoltar, Campo, CartaoAviso, Chave, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { TituloMobile } from "@/components/cabecalho-mobile";
+import { EditorFotos } from "./EditorFotos";
 import {
   CAMPOS_FIXOS, SECOES, SEM_PLACEHOLDER, TIPOS_PERGUNTA, LIMITES, novoIdPergunta,
   type AjusteCampo, type DefinicaoCampo, type Formulario, type Pergunta, type SecaoFormulario, type TipoPergunta,
@@ -331,6 +332,16 @@ export default function PaginaFormulario() {
     });
   }, []);
 
+  /* lê a lista do formRef, não do estado: várias fotos sobem em sequência e
+     cada uma tem que entrar na lista que já tem a anterior */
+  function mudarFotos(fn: (atual: Formulario["fotos"]) => Formulario["fotos"]) {
+    const atual = formRef.current;
+    if (!atual) return;
+    const fotos = fn(atual.fotos);
+    if (fotos === atual.fotos) return;
+    mudar({ ...atual, fotos });
+  }
+
   function mudarCampo(id: DefinicaoCampo["id"], ajuste: AjusteCampo) {
     if (!form) return;
     mudar({ ...form, campos: { ...form.campos, [id]: ajuste } });
@@ -408,6 +419,7 @@ export default function PaginaFormulario() {
 
       {form ? (
         <>
+          <EditorFotos fotos={form.fotos} aoMudar={mudarFotos} />
           {SECOES.map((secao) => {
             const Icone = ICONE_SECAO[secao.id];
             const fixos = CAMPOS_FIXOS.filter((c) => c.secao === secao.id);

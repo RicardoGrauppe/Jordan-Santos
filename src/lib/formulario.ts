@@ -115,9 +115,41 @@ export type Pergunta = {
   opcoes: string[];
 };
 
+/* ---------- fotos da abertura do /cadastro ----------
+   "padrao" são as do portfólio do Jordan que já vêm no app (webp prontos em
+   public/img/abertura/); "enviada" são as que o fotógrafo sobe pelo editor,
+   guardadas no bucket privado formulario-fotos e entregues pela rota
+   /api/formulario/fotos/<arquivo>. As duas têm 750 e 1200px de largura.
+   `foco` é a posição vertical do recorte, de 0 (topo) a 100 (base): as fotos
+   costumam ser retrato e o quadro é 4:3. */
+export type FotoAbertura = { id: string; origem: "padrao" | "enviada"; foco: number; alt: string };
+
+export const FOTOS_PADRAO: readonly FotoAbertura[] = [
+  { id: "prewedding", origem: "padrao", foco: 62, alt: "Casal no alto de uma caminhonete antiga, no campo, ao pôr do sol" },
+  { id: "casal-jardim", origem: "padrao", foco: 40, alt: "Noivos caminhando de mãos dadas em um jardim" },
+  { id: "entrega-1", origem: "padrao", foco: 45, alt: "Noivo beijando o rosto da noiva, em preto e branco" },
+  { id: "casal-palacio", origem: "padrao", foco: 35, alt: "Noivos em um palácio, em preto e branco" },
+  { id: "casal-campo", origem: "padrao", foco: 65, alt: "Noivos caminhando ao lado de um milharal, em preto e branco" },
+  { id: "noiva-retrato", origem: "padrao", foco: 30, alt: "Retrato da noiva com véu, sentada, em preto e branco" },
+  { id: "entrega-3", origem: "padrao", foco: 35, alt: "Retrato próximo dos noivos" },
+  { id: "entrega-2", origem: "padrao", foco: 70, alt: "Noiva em um salão histórico, em preto e branco" },
+];
+
+export const MAX_FOTOS = 12;
+
+/** id de foto enviada: "f_" + aleatório. É também o nome do arquivo no bucket. */
+export const ID_FOTO_ENVIADA = /^f_[a-z0-9]{8,24}$/;
+
+export function urlFoto(f: Pick<FotoAbertura, "id" | "origem">, largura: 750 | 1200): string {
+  return f.origem === "padrao"
+    ? "/img/abertura/" + f.id + "-" + largura + ".webp"
+    : "/api/formulario/fotos/" + f.id + "-" + largura + ".webp";
+}
+
 export type Formulario = {
   campos: Record<CampoFixoId, AjusteCampo>;
   perguntas: Pergunta[];
+  fotos: FotoAbertura[];
 };
 
 /** O que fica gravado no cliente: a resposta com a pergunta do momento. */
@@ -154,7 +186,22 @@ export function formularioPadrao(): Formulario {
   return {
     campos: Object.fromEntries(CAMPOS_FIXOS.map((d) => [d.id, ajustePadrao(d)])) as Record<CampoFixoId, AjusteCampo>,
     perguntas: [],
+    fotos: FOTOS_PADRAO.map((f) => ({ ...f })),
   };
+}
+
+const IDS_PADRAO = new Set(FOTOS_PADRAO.map((f) => f.id));
+
+function normalizarFoto(v: unknown): FotoAbertura | null {
+  const f = obj(v);
+  const id = typeof f.id === "string" ? f.id : "";
+  const origem = f.origem === "enviada" ? "enviada" : f.origem === "padrao" ? "padrao" : null;
+  if (!origem) return null;
+  if (origem === "padrao" && !IDS_PADRAO.has(id)) return null;
+  if (origem === "enviada" && !ID_FOTO_ENVIADA.test(id)) return null;
+  const foco = typeof f.foco === "number" && isFinite(f.foco) ? Math.min(100, Math.max(0, Math.round(f.foco))) : 50;
+  const padrao = FOTOS_PADRAO.find((p) => p.id === id);
+  return { id, origem, foco, alt: texto(f.alt, LIMITES.rotulo) || padrao?.alt || "Foto do portfólio" };
 }
 
 /** Id de pergunta nova. Curto e sem relação com o texto: renomear não muda. */
@@ -211,6 +258,17 @@ export function normalizarFormulario(bruto: unknown): Formulario {
     .map(normalizarPergunta)
     .filter((p): p is Pergunta => !!p && !vistos.has(p.id) && !!vistos.add(p.id))
     .slice(0, LIMITES.perguntas);
+
+  /* sem a chave (config antiga) ou com a lista vazia, valem as do portfólio:
+     a abertura nunca fica sem foto */
+  if (Array.isArray(b.fotos)) {
+    const vistas = new Set<string>();
+    const fotos = b.fotos
+      .map(normalizarFoto)
+      .filter((f): f is FotoAbertura => !!f && !vistas.has(f.id) && !!vistas.add(f.id))
+      .slice(0, MAX_FOTOS);
+    if (fotos.length) saida.fotos = fotos;
+  }
 
   return saida;
 }
