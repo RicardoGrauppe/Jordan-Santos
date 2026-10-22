@@ -14,6 +14,10 @@ export const TIPOS_DE_BLOCO = [
   "Citacao",
   "Chamada",
   "Rodape",
+  "TituloTexto",
+  "Galeria",
+  "FotoComTexto",
+  "Espaco",
 ] as const;
 
 export type TipoDeBloco = (typeof TIPOS_DE_BLOCO)[number];

@@ -1093,7 +1093,7 @@
         </div>
       </div>
     </div>
-    <p class="legenda" style="margin-top:14px"><strong>Peças do Puck com a pele da casa.</strong> Os campos, a lista de itens e a estrutura vêm do editor open source, mas os tokens dele são trocados no tema (<code>editor-tema.css</code>): largura de borda e de foco zero, campo com fundo <code>--soft</code> e raio 10px (foco escurece pra <code>#EEF0F3</code>), cor de ação petróleo, Inter. O bloco selecionado na página é marcado por um véu petróleo de 10% e pela etiqueta com o nome dele, nunca por contorno.</p>
+    <p class="legenda" style="margin-top:14px"><strong>Peças do Puck com a pele da casa.</strong> Os campos, a lista de itens e a estrutura vêm do editor open source, mas os tokens dele são trocados no tema (<code>editor-tema.css</code>): largura de borda e de foco zero, campo com fundo <code>--soft</code> e raio 10px (foco escurece pra <code>#EEF0F3</code>), cor de ação petróleo, Inter. O bloco selecionado na página é marcado por um véu petróleo de 10% e pela etiqueta com o nome dele, nunca por contorno. Escolha em rádio (fundo, alinhamento, colunas) vira trilho <code>--soft</code> com a opção marcada em branco elevado e texto petróleo, o mesmo desenho do seletor Computador/Celular.</p>
     <p class="legenda"><strong>Blocos em lista</strong>, cada um com ícone accent num quadrado accent-tint, nome e uma linha do que ele é. Clicar põe o bloco logo depois do selecionado (ou no fim da página); arrastar solta onde quiser. Hover em <code>--soft</code>.</p>
     <p class="legenda"><strong>Salvamento sem botão</strong>, como no contrato: o estado fica embaixo do nome (Salvando…, Tudo salvo em verde, erro em vermelho). Publicar é a única ação primária, e só aparece ligada quando há mudança fora do ar.</p>
     <p class="legenda"><strong>No celular</strong> a página ocupa a tela e as três colunas viram uma barra flutuante embaixo (Blocos, Estrutura, Campos) que abre cada painel como folha de baixo pra cima (raio 22px no topo). Tocar num bloco da página abre os campos dele.</p>
@@ -1127,7 +1127,24 @@
 
   <!-- ============================================================= -->
   <section class="secao">
-    <h2><span class="num">22</span>Não faz</h2>
+    <h2><span class="num">22</span>Blocos genéricos do site (Ateliê)</h2>
+    <p class="legenda">Exceção a este brandbook, que é do painel: os blocos aparecem no <strong>site do fotógrafo</strong>, então falam a língua da proposta (Bodoni Moda nos títulos em caixa alta espaçada, Jost leve no texto, petróleo <code>#003646</code>, selo <code>.dica</code> em pílula, entrada ao rolar). São pra montar páginas do zero sem fugir dessa língua. Tudo mobile-first: o celular é o padrão e o computador vem no <code>min-width</code>.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;max-width:760px;margin-bottom:16px">
+      <div style="background:var(--paper);border-radius:16px;box-shadow:var(--sombra-card);padding:14px;text-align:center"><div style="font:500 13px Georgia,serif;letter-spacing:.14em;color:#003646">TÍTULO E TEXTO</div><div style="height:4px;width:70%;margin:10px auto 4px;background:#E8E1DC;border-radius:4px"></div><div style="height:4px;width:55%;margin:0 auto;background:#E8E1DC;border-radius:4px"></div></div>
+      <div style="background:var(--paper);border-radius:16px;box-shadow:var(--sombra-card);padding:14px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px"><span style="aspect-ratio:2/3;background:#c9c1b4"></span><span style="aspect-ratio:2/3;background:#8b8076"></span><span style="aspect-ratio:2/3;background:#5b6b63"></span></div><div style="font-size:11px;color:var(--ink-soft);margin-top:8px;text-align:center">Galeria</div></div>
+      <div style="background:var(--paper);border-radius:16px;box-shadow:var(--sombra-card);padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center"><span style="aspect-ratio:4/5;background:#8b8076"></span><div><div style="font:500 10px Georgia,serif;letter-spacing:.12em;color:#003646">FOTO COM TEXTO</div><div style="height:3px;background:#E8E1DC;margin-top:6px;border-radius:3px"></div><div style="height:3px;width:70%;background:#E8E1DC;margin-top:4px;border-radius:3px"></div></div></div>
+      <div style="background:var(--paper);border-radius:16px;box-shadow:var(--sombra-card);padding:14px"><div style="height:26px;background:#F6F3F0;border-radius:6px"></div><div style="font-size:11px;color:var(--ink-soft);margin-top:8px;text-align:center">Espaço</div></div>
+    </div>
+    <p class="legenda"><strong>Título e texto:</strong> selo opcional, título <code>h2</code> da proposta, parágrafos (linha em branco separa) em Jost 16px, altura 1.8, coluna de até 620px. Alinhado ao centro ou à esquerda.</p>
+    <p class="legenda"><strong>Galeria:</strong> grade de fotos cortadas na mesma proporção (retrato 2:3, quadrada ou paisagem 3:2), com foco por foto. Duas colunas no celular (uma, se a galeria tiver só duas por linha) e de duas a quatro no computador. Respiro de 10px entre as fotos, sem moldura.</p>
+    <p class="legenda"><strong>Foto com texto:</strong> foto 4:5 de um lado, selo, título e texto do outro, e um botão opcional no estilo do <code>.cta</code> da proposta, em petróleo. No celular a foto vai em cima. A foto pode ficar à esquerda ou à direita. Link do botão aceita só endereço da web, WhatsApp, e-mail, telefone ou âncora (#), nunca script.</p>
+    <p class="legenda"><strong>Espaço:</strong> respiro vazio de três alturas (pequeno, médio, grande), pra separar blocos sem linha nenhuma.</p>
+    <p class="legenda"><strong>Fundo</strong>, nos três primeiros e no espaço: branco (o da página), claro (<code>#F6F3F0</code>, o <code>--soft</code> da proposta) ou escuro (<code>#1D1D1B</code>, o da capa, com título e texto em <code>#E8E1DC</code>). É a única forma de separar um bloco do outro: fundo diferente, nunca borda.</p>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">23</span>Não faz</h2>
     <ul style="list-style:none;display:grid;gap:10px;max-width:640px">
       <li class="regra"><i data-lucide="x"></i><div>Não usa serifada. Só Inter.</div></li>
       <li class="regra"><i data-lucide="x"></i><div>Não usa focus ring em botão, input, link nem custom.</div></li>

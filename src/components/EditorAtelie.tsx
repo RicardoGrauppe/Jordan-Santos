@@ -22,8 +22,9 @@ import { createUsePuck, Drawer, Puck, type Dictionary } from "@puckeditor/core";
 import "@puckeditor/core/no-external.css";
 import "@/lib/atelie/editor-tema.css";
 import {
-  Blocks, FileText, GalleryHorizontal, Image as IconeImagem, Images, LayoutGrid, ListTree, MessageCircle,
-  Monitor, Package, PanelBottom, PanelTop, Quote, Redo2, SlidersHorizontal, Smartphone, Undo2, X,
+  Blocks, Columns2, FileText, GalleryHorizontal, Grid2x2, Heading, Image as IconeImagem, Images, LayoutGrid, ListTree,
+  MessageCircle, Monitor, MoveVertical, Package, PanelBottom, PanelTop, Quote, Redo2, SlidersHorizontal, Smartphone,
+  Undo2, X,
 } from "lucide-react";
 import { configAtelie, type DadosSite } from "@/lib/atelie/blocos";
 import { TIPOS_DE_BLOCO, type TipoDeBloco } from "@/lib/atelie/tipos";
@@ -86,7 +87,19 @@ const APRESENTACAO: Record<TipoDeBloco, { Icone: ComponentType<{ size?: number }
   Citacao: { Icone: Quote, linha: "Uma frase grande sobre a foto" },
   Chamada: { Icone: MessageCircle, linha: "Convite com o botão do WhatsApp" },
   Rodape: { Icone: PanelBottom, linha: "Assinatura e contatos do estúdio" },
+  TituloTexto: { Icone: Heading, linha: "Título e parágrafos, pra contar a história" },
+  Galeria: { Icone: Grid2x2, linha: "Grade de fotos do mesmo formato" },
+  FotoComTexto: { Icone: Columns2, linha: "Uma foto de um lado, texto do outro" },
+  Espaco: { Icone: MoveVertical, linha: "Respiro entre dois blocos" },
 };
+
+/* A lista abre pelos blocos de montar do zero; os da proposta vêm depois.
+   O segundo grupo é "todo o resto", pra bloco novo nunca sumir da lista. */
+const DO_ZERO: TipoDeBloco[] = ["TituloTexto", "FotoComTexto", "Galeria", "Espaco"];
+const GRUPOS: { titulo: string; tipos: TipoDeBloco[] }[] = [
+  { titulo: "Pra montar do zero", tipos: DO_ZERO },
+  { titulo: "Da proposta", tipos: TIPOS_DE_BLOCO.filter((t) => !DO_ZERO.includes(t)) },
+];
 
 /** Leva a página do editor (que mora num iframe) até o bloco quando o topo
     dele está fora da tela, assim que ele aparecer lá dentro. Bloco à vista
@@ -165,8 +178,10 @@ function ListaDeBlocos({ aoInserir }: { aoInserir?: () => void }) {
 
   return (
     <Drawer>
-      <div className="grid gap-1">
-        {TIPOS_DE_BLOCO.map((tipo) => {
+      {GRUPOS.map((grupo) => (
+      <div key={grupo.titulo} className="mb-3 grid gap-1">
+        <div className="px-2 pb-0.5 pt-1 text-[11.5px] font-semibold text-ink-soft">{grupo.titulo}</div>
+        {grupo.tipos.map((tipo) => {
           const { Icone, linha } = APRESENTACAO[tipo];
           return (
             <Drawer.Item key={tipo} name={tipo} label={rotuloDe(tipo)}>
@@ -186,6 +201,7 @@ function ListaDeBlocos({ aoInserir }: { aoInserir?: () => void }) {
           );
         })}
       </div>
+      ))}
     </Drawer>
   );
 }

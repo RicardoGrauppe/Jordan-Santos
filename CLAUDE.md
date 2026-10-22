@@ -144,6 +144,13 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   o resto, por prefixo de classe, que é estável porque a versão está fixada.
   Textos do Puck em português pelo `dictionary`. Importe sempre
   `no-external.css`: o CSS padrão puxa a Inter de um servidor de fora.
+- **Blocos genéricos** (Título e texto, Foto com texto, Galeria, Espaço)
+  falam a língua da proposta, não a do painel (brandbook, seção 22), com CSS
+  próprio (`bl-*`, `fundo-*`) no fim de `proposta-css.ts`, mobile-first.
+  Separar bloco de bloco é por fundo (branco, claro, escuro), nunca borda.
+- **Link que vem de campo passa por `linkSeguro`**: só http(s), mailto, tel,
+  # ou caminho do site. A página é pública, e um `javascript:` colado num
+  campo viraria script rodando no celular do casal.
 - Bloco novo entra em três lugares: `tipos.ts` (a API valida contra ela),
   `configAtelie` e a lista do editor (ícone e uma linha). Se `tipos.ts` e o
   config divergirem, o build quebra.

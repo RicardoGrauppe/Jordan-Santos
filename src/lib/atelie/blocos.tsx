@@ -79,6 +79,23 @@ type CitacaoProps = Foto & { texto: string };
 type ChamadaProps = { ancora: string; selo: string; titulo: string; texto: string; botao: string };
 type RodapeProps = { assinatura: string; assinaturaAlt: string; frase: string };
 
+/* blocos genéricos (brandbook, seção 22) */
+type Fundo = "branco" | "claro" | "escuro";
+type TituloTextoProps = {
+  ancora: string; fundo: Fundo; alinhamento: "centro" | "esquerda";
+  selo: string; titulo: string; texto: string;
+};
+type GaleriaProps = {
+  ancora: string; fundo: Fundo; selo: string; titulo: string;
+  colunas: "2" | "3" | "4"; proporcao: "retrato" | "quadrada" | "paisagem"; fotos: Foto[];
+};
+type FotoComTextoProps = {
+  ancora: string; fundo: Fundo; lado: "esquerda" | "direita";
+  foto: string; fotoAlt: string; foco: string;
+  selo: string; titulo: string; texto: string; botao: string; link: string;
+};
+type EspacoProps = { altura: "pequeno" | "medio" | "grande"; fundo: Fundo };
+
 export type Blocos = {
   Capa: CapaProps;
   FotoInteira: FotoInteiraProps;
@@ -89,6 +106,10 @@ export type Blocos = {
   Citacao: CitacaoProps;
   Chamada: ChamadaProps;
   Rodape: RodapeProps;
+  TituloTexto: TituloTextoProps;
+  Galeria: GaleriaProps;
+  FotoComTexto: FotoComTextoProps;
+  Espaco: EspacoProps;
 };
 /* As chaves de Blocos têm de ser exatamente a lista de `tipos.ts`, que é a que
    a API usa pra validar o que o editor manda: se um lado ganhar bloco e o
@@ -148,6 +169,22 @@ function comQuebras(texto: string): ReactNode {
   ));
 }
 
+/** Texto corrido: linha em branco separa parágrafos, quebra simples vira <br>. */
+function paragrafos(texto: string): ReactNode {
+  return texto.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean).map((t, i) => <p key={i}>{comQuebras(t)}</p>);
+}
+
+/* Link de botão vindo do campo: só web, WhatsApp, e-mail, telefone, âncora ou
+   caminho do site. Qualquer outra coisa (um "javascript:" colado, por
+   exemplo) não vira link, porque esta página é pública. */
+function linkSeguro(link: string): string | null {
+  const l = link.trim();
+  return /^(https?:\/\/|mailto:|tel:|#|\/(?!\/))/i.test(l) ? l : null;
+}
+
+const CLASSE_FUNDO: Record<Fundo, string> = { branco: "", claro: " fundo-claro", escuro: " fundo-escuro" };
+const PROPORCAO: Record<GaleriaProps["proporcao"], string> = { retrato: "2/3", quadrada: "1/1", paisagem: "3/2" };
+
 /** Lista de itens escrita um por linha no campo. */
 function itensPorLinha(texto: string): string[] {
   return texto.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -180,6 +217,10 @@ const campoTitulo = { type: "text" as const, label: "Título", contentEditable: 
    guardado nesses blocos continua indo pro style, mas sem campo. */
 const campoFoco = { type: "custom" as const, label: "Foco da foto", render: CampoFoco };
 const campoFocoEscondido = { ...campoFoco, visible: false };
+const campoFundo = {
+  type: "radio" as const, label: "Fundo",
+  options: [{ label: "Branco", value: "branco" }, { label: "Claro", value: "claro" }, { label: "Escuro", value: "escuro" }],
+};
 const campoFoto = (label: string) => ({ type: "custom" as const, label, render: CampoFoto });
 const campoFotoOpcional = (label: string) => ({ type: "custom" as const, label, render: CampoFotoOpcional });
 
@@ -508,6 +549,146 @@ export const configAtelie: Config<Blocos, RaizProps> = {
           </footer>
         );
       },
+    },
+
+    TituloTexto: {
+      label: "Título e texto",
+      fields: {
+        ancora: campoAncora,
+        fundo: campoFundo,
+        alinhamento: {
+          type: "radio", label: "Alinhamento",
+          options: [{ label: "Centro", value: "centro" }, { label: "Esquerda", value: "esquerda" }],
+        },
+        selo: campoSelo,
+        titulo: campoTitulo,
+        texto: { type: "textarea", label: "Texto (linha em branco separa parágrafos)" },
+      },
+      defaultProps: {
+        ancora: "", fundo: "branco", alinhamento: "centro", selo: "", titulo: "Nossa história",
+        texto: "Conte aqui quem vocês são e como trabalham.\n\nUm segundo parágrafo, se precisar.",
+      },
+      render: ({ ancora, fundo, alinhamento, selo, titulo, texto }) => (
+        <section className={"pagina" + CLASSE_FUNDO[fundo]} id={ancora || undefined}>
+          <div className={"bl-texto reveal" + (alinhamento === "centro" ? " centro" : "")}>
+            {selo && <span className="dica">{selo}</span>}
+            {titulo && <h2>{titulo}</h2>}
+            {paragrafos(texto)}
+          </div>
+        </section>
+      ),
+    },
+
+    Galeria: {
+      label: "Galeria de fotos",
+      fields: {
+        ancora: campoAncora,
+        fundo: campoFundo,
+        selo: campoSelo,
+        titulo: { ...campoTitulo, label: "Título (opcional)" },
+        colunas: {
+          type: "radio", label: "Fotos por linha no computador",
+          options: [{ label: "2", value: "2" }, { label: "3", value: "3" }, { label: "4", value: "4" }],
+        },
+        proporcao: {
+          type: "radio", label: "Formato das fotos",
+          options: [{ label: "Retrato", value: "retrato" }, { label: "Quadrada", value: "quadrada" }, { label: "Paisagem", value: "paisagem" }],
+        },
+        fotos: {
+          type: "array",
+          label: "Fotos",
+          getItemSummary: (f) => f.alt || "Foto",
+          defaultItemProps: { src: "", alt: "", foco: "" },
+          arrayFields: { src: campoFoto("Foto"), alt: { type: "text", label: "Descrição da foto" }, foco: campoFoco },
+        },
+      },
+      defaultProps: {
+        ancora: "", fundo: "branco", selo: "", titulo: "", colunas: "3", proporcao: "retrato",
+        fotos: [
+          { src: "/img/entrega-1.jpg", alt: "Noivos em um corredor clássico", foco: "50% 25%" },
+          { src: "/img/entrega-2.jpg", alt: "Noiva em um salão histórico", foco: "50% 28%" },
+          { src: "/img/entrega-3.jpg", alt: "Retrato próximo dos noivos", foco: "50% 40%" },
+        ],
+      },
+      render: ({ ancora, fundo, selo, titulo, colunas, proporcao, fotos }) => (
+        <section className={"pagina" + CLASSE_FUNDO[fundo]} id={ancora || undefined}>
+          <div className="bl-galeria">
+            {selo || titulo ? (
+              <div className="bl-cabeca centro reveal">
+                {selo && <span className="dica">{selo}</span>}
+                {titulo && <h2>{titulo}</h2>}
+              </div>
+            ) : null}
+            <div className={"bl-grade cols-" + colunas + " reveal"} style={{ "--proporcao": PROPORCAO[proporcao] } as CSSProperties}>
+              {fotos.filter((f) => f.src).map((f, i) => (
+                <img key={i} src={f.src} alt={f.alt} loading="lazy" style={estiloFoco(f.foco ?? "")} />
+              ))}
+            </div>
+          </div>
+        </section>
+      ),
+    },
+
+    FotoComTexto: {
+      label: "Foto com texto",
+      fields: {
+        ancora: campoAncora,
+        fundo: campoFundo,
+        lado: {
+          type: "radio", label: "Foto do lado",
+          options: [{ label: "Esquerdo", value: "esquerda" }, { label: "Direito", value: "direita" }],
+        },
+        foto: campoFoto("Foto"),
+        fotoAlt: { type: "text", label: "Descrição da foto" },
+        foco: campoFoco,
+        selo: campoSelo,
+        titulo: campoTitulo,
+        texto: { type: "textarea", label: "Texto (linha em branco separa parágrafos)" },
+        botao: { type: "text", label: "Texto do botão (opcional)" },
+        link: { type: "text", label: "Link do botão (site, wa.me, e-mail ou #âncora)" },
+      },
+      defaultProps: {
+        ancora: "", fundo: "branco", lado: "esquerda",
+        foto: "/img/noiva-retrato.jpg", fotoAlt: "", foco: "48% 30%",
+        selo: "", titulo: "Sobre nós", texto: "Conte aqui um pouco do seu olhar e do que o casal pode esperar.",
+        botao: "", link: "",
+      },
+      render: ({ ancora, fundo, lado, foto, fotoAlt, foco, selo, titulo, texto, botao, link }) => {
+        const href = linkSeguro(link);
+        const externo = href ? /^https?:/i.test(href) : false;
+        return (
+          <section className={"pagina" + CLASSE_FUNDO[fundo]} id={ancora || undefined}>
+            <div className={"bl-fototexto" + (lado === "direita" ? " foto-direita" : "")}>
+              <div className="bl-lado-foto reveal">
+                {foto && <img src={foto} alt={fotoAlt} loading="lazy" style={estiloFoco(foco)} />}
+              </div>
+              <div className="bl-lado-texto reveal">
+                {selo && <span className="dica">{selo}</span>}
+                {titulo && <h2>{titulo}</h2>}
+                {paragrafos(texto)}
+                {botao.trim() && href ? (
+                  <a className="cta cta-accent" href={href} {...(externo ? { target: "_blank", rel: "noopener" } : {})}>{botao}</a>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        );
+      },
+    },
+
+    Espaco: {
+      label: "Espaço",
+      fields: {
+        altura: {
+          type: "radio", label: "Altura",
+          options: [{ label: "Pequeno", value: "pequeno" }, { label: "Médio", value: "medio" }, { label: "Grande", value: "grande" }],
+        },
+        fundo: campoFundo,
+      },
+      defaultProps: { altura: "medio", fundo: "branco" },
+      render: ({ altura, fundo }) => (
+        <div className={"bl-espaco" + (altura === "pequeno" ? "" : " " + altura) + CLASSE_FUNDO[fundo]} aria-hidden="true" />
+      ),
     },
   },
 };

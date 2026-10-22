@@ -141,4 +141,47 @@ html{scroll-behavior:smooth}
   .prop .foto-banner{margin:0 -20px 56px}
   .prop .foto-banner img{height:24vh}
 }
+
+/* ---------- blocos genéricos do Ateliê (brandbook, seção 22) ----------
+   Classes próprias (bl-*, fundo-*), pra não mexer em nada da proposta.
+   Mobile-first: o celular é o padrão e o computador vem no min-width. */
+.prop .fundo-claro{background:var(--soft)}
+.prop .fundo-claro .dica{background:var(--paper)}
+.prop .fundo-escuro{background:var(--noir);color:#E8E1DC}
+.prop .fundo-escuro h2{color:#E8E1DC}
+.prop .fundo-escuro .dica{background:rgba(232,225,220,.1);color:#E8E1DC}
+
+.prop .bl-texto{max-width:620px;margin:0 auto}
+.prop .bl-texto p{font-size:16px;line-height:1.8;margin-top:16px}
+.prop .fundo-escuro .bl-texto p,.prop .fundo-escuro .bl-fototexto p{color:#D8D4CE}
+
+.prop .bl-galeria{max-width:1080px;margin:0 auto}
+.prop .bl-galeria .bl-cabeca{margin-bottom:36px}
+.prop .bl-galeria .bl-grade{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.prop .bl-galeria .bl-grade.cols-2{grid-template-columns:1fr}
+.prop .bl-galeria img{width:100%;aspect-ratio:var(--proporcao,2/3);object-fit:cover}
+
+.prop .bl-fototexto{max-width:1000px;margin:0 auto;display:grid;gap:32px;align-items:center}
+.prop .bl-fototexto img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.prop .bl-fototexto p{font-size:16px;line-height:1.8;margin-top:14px}
+.prop .cta-accent{background:var(--accent);color:#fff}
+.prop .fundo-escuro .cta-accent{background:#E8E1DC;color:var(--noir)}
+
+.prop .bl-espaco{height:28px}
+.prop .bl-espaco.medio{height:56px}
+.prop .bl-espaco.grande{height:96px}
+
+@media (min-width:641px){
+  .prop .bl-galeria .bl-grade{gap:14px}
+  .prop .bl-galeria .bl-grade.cols-2{grid-template-columns:repeat(2,1fr)}
+  .prop .bl-galeria .bl-grade.cols-3{grid-template-columns:repeat(3,1fr)}
+  .prop .bl-galeria .bl-grade.cols-4{grid-template-columns:repeat(4,1fr)}
+  .prop .bl-espaco{height:40px}
+  .prop .bl-espaco.medio{height:80px}
+  .prop .bl-espaco.grande{height:140px}
+}
+@media (min-width:768px){
+  .prop .bl-fototexto{grid-template-columns:1fr 1fr;gap:64px}
+  .prop .bl-fototexto.foto-direita .bl-lado-foto{order:2}
+}
 `;
