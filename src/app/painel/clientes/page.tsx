@@ -219,27 +219,99 @@ export default function ListaClientes() {
       {/* no computador a lista é uma tabela num cartão só; no celular, cards
           soltos (as duas formas convivem nas mesmas linhas) */}
       <div className="md:overflow-hidden md:rounded-[20px] md:bg-paper md:shadow-[0_1px_2px_rgba(29,29,27,.04),0_14px_32px_rgba(29,29,27,.08)]">
-        <div className={"hidden bg-soft px-[18px] py-3.5 text-[11px] font-semibold uppercase tracking-[.06em] text-ink-soft md:grid " + COLUNAS}>
-          <span className="flex items-center gap-3">
-            {/* marca a lista inteira. Fica na coluna do casal, alinhada com os
-                avatares, porque é o mesmo alvo repetido no cabeçalho. */}
+        {/* CABEÇALHO QUE VIRA BARRA DE AÇÃO.
+            Com alguém marcado, a mesma faixa deixa de listar colunas e passa a
+            dizer o que dá pra fazer com a seleção (pedido do Ricardo em
+            22/10/2026, no lugar da barra flutuante que existia antes).
+
+            São duas camadas no MESMO lugar, trocando por opacidade e um passo
+            de 4px: a de colunas sobe e some, a de ações entra de baixo. A
+            caixa de marcar fica FORA das duas, no mesmo ponto, porque é o que
+            amarra uma coisa na outra: o olho vê a faixa mudar de função, não
+            uma barra nova aparecer.
+
+            A altura não muda (a camada de ações é absoluta), então a lista não
+            pula quando a seleção começa ou acaba.
+
+            `translate` e não `transform`: no Tailwind 4 as classes translate-*
+            escrevem a propriedade `translate`, e uma transição em `transform`
+            simplesmente não anima. */}
+        <div
+          className={
+            "relative py-3.5 pl-[18px] pr-[18px] transition-colors duration-200 md:block " +
+            /* no celular a lista é longa e a faixa fica no TOPO dela: sem
+               grudar, você marca um cliente lá embaixo e o botão de excluir
+               some da tela. Gruda logo abaixo do cabeçalho do app (56px), que
+               também é sticky. No computador a lista cabe e a faixa é o
+               cabeçalho da tabela, que não precisa seguir ninguém. */
+            "sticky top-14 z-20 md:static " +
+            (marcados.length
+              ? "block rounded-t-2xl bg-accent-tint md:rounded-none"
+              : "hidden bg-soft")
+          }
+        >
+          {/* marca a lista inteira (o que está VISÍVEL, então respeita o
+              filtro). Alinhada na coluna dos avatares: é o mesmo alvo da
+              linha, repetido no cabeçalho. */}
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={todosMarcados ? true : marcados.length ? "mixed" : false}
+            aria-label={todosMarcados ? "Desmarcar todos" : "Marcar todos"}
+            onClick={() => setMarcados(todosMarcados ? [] : visiveis.map((x) => x.id))}
+            className={
+              "absolute left-[21px] top-1/2 z-[1] flex h-[18px] w-[18px] -translate-y-1/2 cursor-pointer items-center " +
+              "justify-center rounded-[6px] transition-colors md:left-[25px] " +
+              (marcados.length ? "bg-accent text-white" : `bg-line text-transparent hover:bg-ink-soft/40`)
+            }
+          >
+            {todosMarcados
+              ? <Check size={12} strokeWidth={3} />
+              : marcados.length ? <Minus size={12} strokeWidth={3} /> : null}
+          </button>
+
+          {/* camada 1: os nomes das colunas */}
+          <div
+            aria-hidden={marcados.length ? true : undefined}
+            className={
+              "hidden pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-ink-soft " +
+              "transition-[opacity,translate] duration-200 ease-[var(--ease-desliza)] md:grid " +
+              (marcados.length ? "pointer-events-none -translate-y-1 opacity-0 " : "") + COLUNAS
+            }
+          >
+            <span>Casal</span><span>Data</span><span>Status</span>
+            <span className="text-right">Total</span><span aria-label="Ações" />
+          </div>
+
+          {/* camada 2: o que fazer com os marcados */}
+          <div
+            aria-hidden={marcados.length ? undefined : true}
+            className={
+              "absolute inset-y-0 left-[58px] right-3 flex items-center gap-2 md:left-[62px] md:right-[18px] " +
+              "transition-[opacity,translate] duration-200 ease-[var(--ease-desliza)] " +
+              (marcados.length ? "" : "pointer-events-none translate-y-1 opacity-0")
+            }
+          >
+            <span className="text-[13px] font-semibold text-accent">
+              {marcados.length === 1 ? "1 selecionado" : marcados.length + " selecionados"}
+            </span>
             <button
               type="button"
-              role="checkbox"
-              aria-checked={todosMarcados ? true : marcados.length ? "mixed" : false}
-              aria-label={todosMarcados ? "Desmarcar todos" : "Marcar todos"}
               onClick={() => setMarcados(todosMarcados ? [] : visiveis.map((x) => x.id))}
-              className={
-                "flex h-[18px] w-[18px] shrink-0 cursor-pointer items-center justify-center rounded-[6px] transition-colors " +
-                (marcados.length ? "bg-accent text-white" : `bg-line text-transparent hover:bg-ink-soft/40`)
-              }
+              className={"ml-auto cursor-pointer rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-accent transition-colors hover:bg-paper"}
             >
-              {todosMarcados
-                ? <Check size={12} strokeWidth={3} />
-                : marcados.length ? <Minus size={12} strokeWidth={3} /> : null}
+              {todosMarcados ? "Limpar" : "Todos"}
             </button>
-            Casal
-          </span><span>Data</span><span>Status</span><span className="text-right">Total</span><span aria-label="Ações" />
+            <button
+              type="button"
+              onClick={() => void excluirMarcados()}
+              className={"inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-erro px-3.5 text-[12.5px] font-semibold text-white " +
+                `transition-[filter] duration-150 hover:brightness-90 active:scale-[.96]`}
+            >
+              <Trash2 size={14} />
+              Excluir
+            </button>
+          </div>
         </div>
 
         {!clientes ? (
@@ -333,38 +405,6 @@ export default function ListaClientes() {
         )}
       </div>
 
-      {/* Barra do que está marcado. Flutua acima da barra de baixo no celular
-          (que tem 68px + respiro) e no rodapé no computador. Ela é o único
-          sinal de que existe seleção, então aparece com o primeiro marcado e
-          some junto com o último. */}
-      {marcados.length ? (
-        <div
-          className={
-            "fixed inset-x-4 bottom-[calc(0.75rem+68px+10px+var(--sab))] z-60 mx-auto flex max-w-[520px] items-center gap-3 " +
-            "rounded-full bg-paper py-2 pl-5 pr-2 shadow-alta md:bottom-6"
-          }
-        >
-          <span className="text-[13.5px] font-medium text-ink">
-            {marcados.length === 1 ? "1 selecionado" : marcados.length + " selecionados"}
-          </span>
-          <button
-            type="button"
-            onClick={() => setMarcados(todosMarcados ? [] : visiveis.map((c) => c.id))}
-            className={`ml-auto cursor-pointer rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-ink-soft transition-colors hover:bg-soft hover:text-ink`}
-          >
-            {todosMarcados ? "Limpar" : "Todos"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void excluirMarcados()}
-            className={"inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-erro px-4 text-[13.5px] font-semibold text-white " +
-              `transition-[filter] duration-150 hover:brightness-90 active:scale-[.96]`}
-          >
-            <Trash2 size={15} />
-            Excluir
-          </button>
-        </div>
-      ) : null}
     </div>
     </PuxarPraAtualizar>
   );
