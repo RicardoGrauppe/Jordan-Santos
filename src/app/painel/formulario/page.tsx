@@ -19,7 +19,7 @@ import {
   ArrowDown, ArrowUp, Asterisk, CalendarHeart, ExternalLink, Eye, EyeOff, Info, Lock, LockOpen, MapPin, Pencil, Plus,
   Sparkles, Trash2, TriangleAlert, UserRound, X,
 } from "lucide-react";
-import { Botao, BotaoVoltar, Campo, CartaoAviso, Estado } from "@/components/ui";
+import { Botao, BotaoVoltar, Campo, CartaoAviso, Estado, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { EditorFotos } from "./EditorFotos";
@@ -563,7 +563,9 @@ export default function PaginaFormulario() {
       <div className="hidden md:block">
         <BotaoVoltar href="/painel" rotulo="Home" />
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="m-0 text-[26px] font-bold text-ink">Formulário</h1>
+          <h1 className="m-0 flex items-center gap-2.5 text-[26px] font-bold text-ink">
+            Formulário <Selo tom="accent">Beta</Selo>
+          </h1>
           <Botao variante="secundario" onClick={abrirFormulario}>
             <ExternalLink size={15} /> Ver formulário
           </Botao>

@@ -37,6 +37,8 @@ export type AcaoMobile = {
 export type CabecalhoMobile = {
   titulo: string;
   voltar: string | null;
+  /** selo ao lado do título (ex.: "Beta") */
+  selo?: string;
   acao: Omit<AcaoMobile, "aoAcionar"> | null;
 };
 
@@ -51,12 +53,12 @@ export type CabecalhoMobile = {
    CAMPO editável com o estado do salvamento embaixo, e a revisão do contrato
    (/painel/clientes/<id>/contrato), que roda SEM moldura nenhuma — lá não
    existe cabeçalho pra receber título. */
-const TELAS: { rota: RegExp; titulo: string; voltar: string | null }[] = [
+const TELAS: { rota: RegExp; titulo: string; voltar: string | null; selo?: string }[] = [
   { rota: /^\/painel\/clientes\/[^/]+\/?$/, titulo: "Cliente", voltar: "/painel" },
   { rota: /^\/painel\/clientes\/?$/, titulo: "Clientes", voltar: null },
   { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Contrato e assinatura", voltar: "/painel/configuracoes" },
   { rota: /^\/painel\/configuracoes\/?$/, titulo: "Configurações", voltar: "/painel" },
-  { rota: /^\/painel\/formulario\/?$/, titulo: "Formulário", voltar: "/painel" },
+  { rota: /^\/painel\/formulario\/?$/, titulo: "Formulário", voltar: "/painel", selo: "Beta" },
   { rota: /^\/painel\/pendencias\/?$/, titulo: "Precisa de atenção", voltar: "/painel" },
   { rota: /^\/painel\/tempo\/?$/, titulo: "Previsão do tempo", voltar: "/painel" },
 ];
@@ -133,6 +135,7 @@ export function useCabecalhoMobile(caminho: string): CabecalhoMobile | null {
   return {
     titulo: pagina.titulo || tela.titulo,
     voltar: tela.voltar,
+    selo: tela.selo,
     acao: pagina.acao,
   };
 }

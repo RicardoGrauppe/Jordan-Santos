@@ -30,6 +30,7 @@ import { ArrowLeft, Bell, ChevronRight, ClipboardList, Crown, FileText, House, L
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
+import { Selo } from "@/components/ui";
 import { acionarAcaoMobile, useCabecalhoMobile } from "@/components/cabecalho-mobile";
 import { registrarNavegacao, useVoltar } from "@/lib/voltar";
 
@@ -491,8 +492,9 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   <ArrowLeft size={18} />
                 </Link>
               ) : null}
-              <h1 className="m-0 flex-1 truncate text-[22px] font-bold tracking-tight text-ink">
-                {cabecalhoCelular.titulo}
+              <h1 className="m-0 flex min-w-0 flex-1 items-center gap-2 text-[22px] font-bold tracking-tight text-ink">
+                <span className="truncate">{cabecalhoCelular.titulo}</span>
+                {cabecalhoCelular.selo ? <Selo tom="accent">{cabecalhoCelular.selo}</Selo> : null}
               </h1>
               {/* Canto de ação da tela, no mesmo formato do "marcar todas como
                   lidas" das Notificações: redondo, só ícone, fundo soft. No
