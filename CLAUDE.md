@@ -69,6 +69,15 @@ SQL da sua migração com `psql` e registre a versão em
 `supabase_migrations.schema_migrations`, sem `repair` (apagaria o histórico
 delas).
 
+O editor de contrato (cliente e modelos) é uma **folha A4 com as medidas do
+PDF** (`lib/contrato-folha.ts` + `.folha-a4` no globals.css, Roboto 10 pt,
+margem 56 pt): a quebra de página é simulada como o pdfmake faz (bloco que não
+cabe desce, parágrafo é partido na linha) e bateu linha a linha com o PDF
+gerado. Mudou medida, fonte ou margem no `gerar-pdfmake.ts`? Mude nos dois
+lugares. A tabela de itens e o bloco de assinaturas são desenhados de verdade;
+a tabela pode ser digitada à mão no contrato do cliente (`attrs.linhas` do nó,
+que o PDF respeita).
+
 Pacote, adicionais, total e entrada se escolhem no cartão "Pacote e valores"
 do editor do contrato, com as opções de `produtos`; a ficha só mostra o
 resumo e não manda esses campos no salvamento. O item guarda o valor do

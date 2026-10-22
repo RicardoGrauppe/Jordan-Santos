@@ -23,7 +23,20 @@ import type { ReactNode } from "react";
 import {
   AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Italic, List, ListOrdered, PanelLeft, PenTool, Plus, Table, X,
 } from "lucide-react";
-import { EXTENSOES, ROTULOS_CAMPO, jsonParaHtml } from "@/lib/contrato-editor";
+import { Roboto } from "next/font/google";
+import { BlocoAssinaturas, EXTENSOES, ROTULOS_CAMPO, TabelaItens, jsonParaHtml } from "@/lib/contrato-editor";
+import { BlocoAssinaturasFolha, Paginacao, TabelaItensFolha, definirDadosFolha, type DadosFolha } from "@/lib/contrato-folha";
+
+/* A fonte do PDF (pdfmake usa Roboto Regular e Medium). A folha usa a mesma
+   pra as linhas quebrarem no mesmo lugar que no contrato gerado. */
+const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500"], style: ["normal", "italic"], variable: "--font-roboto", display: "swap" });
+
+/* Os nós próprios ganham desenho de verdade (tabela, assinaturas) e a
+   paginação vem por cima. Só aqui: o servidor importa contrato-editor puro. */
+const EXTENSOES_FOLHA = [
+  ...EXTENSOES.map((e) => (e === TabelaItens ? TabelaItensFolha : e === BlocoAssinaturas ? BlocoAssinaturasFolha : e)),
+  Paginacao,
+];
 
 type Estilo = "p" | "h2" | "h3";
 type Alinhamento = "left" | "center" | "right" | "justify";
@@ -43,11 +56,18 @@ export type EditorContratoProps = {
    *  pra poder inserir no cursor, e `fechar` pra gaveta do celular sumir
    *  depois de uma ação. */
   lateral?: (editor: Editor, fechar: () => void) => ReactNode;
+  /** dados do casal pra tabela de itens e assinaturas desenhadas na folha
+   *  (o editor de modelos não tem casal: elas aparecem com texto de exemplo) */
+  dados?: DadosFolha;
 };
 
-export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: EditorContratoProps) {
+export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados = null }: EditorContratoProps) {
+  /* a loja das NodeViews acompanha o que a lateral mexe (pacote, total) */
+  useEffect(() => { definirDadosFolha(dados); }, [dados]);
+  useEffect(() => () => definirDadosFolha(null), []);
+
   const editor = useEditor({
-    extensions: EXTENSOES,
+    extensions: EXTENSOES_FOLHA,
     content: conteudoInicial ?? "<p></p>",
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
@@ -122,7 +142,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
   const divisor = <span className="mx-1.5 h-5 w-px shrink-0 self-center bg-line" aria-hidden />;
 
   return (
-    <div className="editor-contrato flex min-h-dvh flex-col bg-paper">
+    <div className={"editor-contrato flex min-h-dvh flex-col bg-paper " + roboto.variable}>
       {/* UM cabeçalho só: o nome do arquivo e a barra de formatação são faixas
           do mesmo bloco, mesmo fundo e sem linha entre elas — foi o que o
           original fez ao abrir o editor (`.editor-aberto .topo-estudio
@@ -211,7 +231,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
               {lateral(editor, fecharGaveta)}
             </div>
           </aside>
-          <EditorContent editor={editor} className="documento-editor min-w-0 flex-1 px-5 pb-24 md:px-7" />
+          <EditorContent editor={editor} className="documento-editor folha-a4 min-w-0 flex-1" />
           {/* celular: gaveta pela esquerda, por cima do documento */}
           <div className={"fixed inset-0 z-30 md:hidden " + (gavetaAberta ? "" : "pointer-events-none")} aria-hidden={!gavetaAberta}>
             <div onClick={fecharGaveta}
@@ -229,7 +249,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral }: Edit
           </div>
         </div>
       ) : (
-        <EditorContent editor={editor} className="documento-editor flex-1 px-5 pb-24 md:px-7" />
+        <EditorContent editor={editor} className="documento-editor folha-a4 flex-1" />
       )}
     </div>
   );

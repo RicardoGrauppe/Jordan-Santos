@@ -25,7 +25,7 @@
 */
 "use client";
 
-import { use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
@@ -233,7 +233,7 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
 }
 
 type Cliente = {
-  id: string; noivo?: string | null; noiva?: string | null; email?: string | null;
+  id: string; noivo?: string | null; noiva?: string | null; email?: string | null; cidade?: string | null;
   itens?: ItemEscolhido[] | null; total?: number | string | null; entrada?: number | string | null;
 };
 type Resposta = { cliente: Cliente; contrato: Contrato | null };
@@ -514,6 +514,12 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
     }
   }
 
+  /* o que a folha desenha na tabela de itens e nas assinaturas: a ficha +
+     o pacote e o total que a lateral está mexendo agora */
+  const dadosFolha = useMemo(() => (carga ? {
+    noivo: carga.cliente.noivo, noiva: carga.cliente.noiva, cidade: carga.cliente.cidade, itens, total,
+  } : null), [carga, itens, total]);
+
   /* ---------- telas de estado ---------- */
   if (erroCarga) return <p className="px-5 pt-6 text-[13px] text-erro">{erroCarga}</p>;
   if (!carga) return <p className="px-5 pt-6 text-[13px] text-ink-soft">Abrindo…</p>;
@@ -586,6 +592,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       conteudoInicial={(contrato.template_json_snapshot as JSONContent) ?? null}
       aoMudar={aoMudar}
       topo={topo}
+      dados={dadosFolha}
       lateral={(editor, fechar) => (
         <LateralContrato editor={editor} fechar={fechar} modelos={modelos} modeloId={modeloId} ocupado={trocando || !!enviando}
           aoEscolher={(m) => { void trocarModelo(editor, m, true).then((ok) => { if (ok) fechar(); }); }}

@@ -69,10 +69,25 @@ export const Campo = Node.create({
   },
 });
 
+/** Linha da tabela de itens preenchida à mão no editor do contrato do cliente.
+ *  Sem `linhas` (null), a tabela sai do pacote e dos adicionais do casal. */
+export type LinhaTabela = { qtd: string; descricao: string; valor: number | null };
+
 export const TabelaItens = Node.create({
   name: "tabelaItens",
   group: "block",
   atom: true,
+  addAttributes() {
+    return {
+      linhas: {
+        default: null,
+        parseHTML: (el) => {
+          try { return JSON.parse((el as HTMLElement).getAttribute("data-linhas") || "null"); } catch { return null; }
+        },
+        renderHTML: (attrs) => (attrs.linhas ? { "data-linhas": JSON.stringify(attrs.linhas) } : {}),
+      },
+    };
+  },
   parseHTML() { return [{ tag: 'table[aria-label="Serviços contratados"]' }]; },
   renderHTML() {
     return ["table", { "aria-label": "Serviços contratados" },
@@ -158,7 +173,15 @@ function noParaHtml(no: JSONContent): string {
     return `<${tag}>${itens}</${tag}>`;
   }
   if (no.type === "tabelaItens") {
-    return '<table aria-label="Serviços contratados"><thead><tr><th>QTD</th><th>DESCRIÇÃO DOS SERVIÇOS</th><th>VALOR TOTAL</th></tr></thead><tbody id="tabela-servicos"></tbody></table>';
+    /* à mão: as linhas já vão no HTML (as telas antigas só preenchem a tabela
+       vazia, a automática) */
+    const linhas = Array.isArray(no.attrs?.linhas) ? (no.attrs!.linhas as LinhaTabela[]) : null;
+    const corpo = linhas
+      ? linhas.map((l) => "<tr><td>" + esc(l.qtd) + "</td><td>" + esc(l.descricao) + "</td><td>" +
+          (l.valor != null ? esc(Number(l.valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })) : "") + "</td></tr>").join("")
+      : "";
+    return '<table aria-label="Serviços contratados"' + (linhas ? ' data-linhas="' + esc(JSON.stringify(linhas)) + '"' : "") +
+      '><thead><tr><th>QTD</th><th>DESCRIÇÃO DOS SERVIÇOS</th><th>VALOR TOTAL</th></tr></thead><tbody id="tabela-servicos">' + corpo + "</tbody></table>";
   }
   if (no.type === "blocoAssinaturas") {
     return '<div class="assinaturas" id="bloco-assinaturas">' +

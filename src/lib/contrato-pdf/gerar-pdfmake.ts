@@ -109,13 +109,21 @@ function inlineDe(node: NoTiptap, dados: SnapshotContrato, extra: Extra): Conten
   return { text: "" };
 }
 
-function tabelaItens(dados: SnapshotContrato): Content {
+type LinhaManual = { qtd?: unknown; descricao?: unknown; valor?: unknown };
+
+/* `manuais`: linhas que o fotógrafo digitou no editor do contrato do cliente
+   (attrs.linhas do nó). Sem elas, a tabela sai do pacote e dos adicionais. */
+function tabelaItens(dados: SnapshotContrato, manuais?: LinhaManual[] | null): Content {
   const itens: ItemContrato[] = Array.isArray(dados.itens) ? dados.itens : [];
   const pacote = itens.find(ehPacote);
   const adicionais = itens.filter(function (i) { return !ehPacote(i); });
-  const linhas = [
-    { desc: pacote ? (pacote.nome || pacote.id) : "Serviços fotográficos contratados" },
-  ].concat(adicionais.map(function (a) { return { desc: a.nome || a.id }; }));
+  const linhas: { qtd: string; desc: string; valor: string }[] = manuais
+    ? manuais.map(function (l) {
+        const v = l.valor == null || l.valor === "" ? null : Number(l.valor);
+        return { qtd: String(l.qtd ?? ""), desc: String(l.descricao ?? ""), valor: v != null && isFinite(v) ? moeda(v) : "" };
+      })
+    : [{ qtd: "1", desc: pacote ? (pacote.nome || pacote.id || "") : "Serviços fotográficos contratados", valor: "" }]
+      .concat(adicionais.map(function (a) { return { qtd: "1", desc: a.nome || a.id || "", valor: "" }; }));
 
   const cab = function (t: string): ContentText {
     return { text: t, bold: true, fontSize: 8.5, fillColor: FUNDO_TH };
@@ -124,7 +132,7 @@ function tabelaItens(dados: SnapshotContrato): Content {
     [cab("QTD"), cab("DESCRIÇÃO DOS SERVIÇOS"), cab("VALOR TOTAL")],
   ] as ContentText[][]).concat(linhas.map(function (l): ContentText[] {
     return [
-      { text: "1" }, { text: l.desc ?? "" }, { text: "" },
+      { text: l.qtd }, { text: l.desc }, { text: l.valor },
     ];
   })).concat([
     [{ text: "" }, { text: "VALOR TOTAL", bold: true }, { text: moeda(valorTotal(dados)), bold: true }],
@@ -148,7 +156,10 @@ function blocoAssinaturas(
 ): Content[] {
   const conteudo: Content[] = [
     { text: valorDoCampo("cidade-assinatura", dados, extra) + ", " + valorDoCampo("data-assinatura", dados, extra), margin: [0, 10, 0, 14] },
-    { text: extra.signatario.nome + (extra.signatario.cpf ? " – CPF " + cpfFormatado(extra.signatario.cpf) : "") + " – CONTRATANTE", margin: [0, 0, 0, 4] },
+    /* PDF que vai pra Autentique sai sem signatário (ninguém assinou ainda):
+       o nome é o do casal, senão a linha ficava só " – CONTRATANTE" */
+    { text: (extra.signatario.nome || [dados.noivo, dados.noiva].filter(Boolean).join(" e ") || "Contratante") +
+        (extra.signatario.cpf ? " – CPF " + cpfFormatado(extra.signatario.cpf) : "") + " – CONTRATANTE", margin: [0, 0, 0, 4] },
   ];
   if (assinaturaCasalDataUrl) {
     conteudo.push({ image: assinaturaCasalDataUrl, width: 160, margin: [0, 2, 0, 8] });
@@ -204,7 +215,8 @@ function converterNo(
       : [{ ul: itens, margin: [0, 0, 0, 8] }];
   }
   if (no.type === "tabelaItens") {
-    return [tabelaItens(dados)];
+    const manuais = (no.attrs || {}).linhas;
+    return [tabelaItens(dados, Array.isArray(manuais) ? (manuais as LinhaManual[]) : null)];
   }
   if (no.type === "blocoAssinaturas") {
     return blocoAssinaturas(dados, extra, assinaturas.casal, assinaturas.jordan);
