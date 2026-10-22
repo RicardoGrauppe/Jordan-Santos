@@ -16,7 +16,7 @@
 */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import type { ReactNode } from "react";
@@ -137,8 +137,41 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
     return () => ro.disconnect();
   }, [editor]);
 
-  /* celular: a lateral vira gaveta, aberta pelo botão da barra */
+  /* barra de formatação que rola de lado no celular: degradê nas pontas
+     enquanto houver mais pra ver, e um "puxa e solta" suave nas três
+     primeiras aberturas, pra ensinar que ela rola */
+  const barraRef = useRef<HTMLDivElement>(null);
+  const [barraRola, setBarraRola] = useState({ esq: false, dir: false });
+  const medirBarra = useCallback(() => {
+    const b = barraRef.current;
+    if (!b) return;
+    const esq = b.scrollLeft > 2;
+    const dir = b.scrollLeft + b.clientWidth < b.scrollWidth - 2;
+    setBarraRola((v) => (v.esq === esq && v.dir === dir ? v : { esq, dir }));
+  }, []);
+  useEffect(() => {
+    const b = barraRef.current;
+    if (!b || !rodapeMobile) return;
+    const ro = new ResizeObserver(medirBarra);
+    ro.observe(b);
+    let volta: ReturnType<typeof setTimeout> | undefined;
+    const vai = setTimeout(() => {
+      if (b.scrollWidth <= b.clientWidth + 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      let vezes = 0;
+      try { vezes = Number(localStorage.getItem("editor:dica-barra")) || 0; } catch { /* sem storage */ }
+      if (vezes >= 3) return;
+      try { localStorage.setItem("editor:dica-barra", String(vezes + 1)); } catch { /* sem storage */ }
+      b.scrollTo({ left: 64, behavior: "smooth" });
+      volta = setTimeout(() => b.scrollTo({ left: 0, behavior: "smooth" }), 700);
+    }, 800);
+    return () => { ro.disconnect(); clearTimeout(vai); clearTimeout(volta); };
+  }, [editor, rodapeMobile, medirBarra]);
+
+  /* celular: a lateral vira um sheet de baixo pra cima (80% da tela), aberto
+     pelo botão Painel; arrastar a alça pra baixo fecha */
   const [gavetaAberta, setGavetaAberta] = useState(false);
+  const [arrasto, setArrasto] = useState<number | null>(null);
+  const inicioArrasto = useRef(0);
   useEffect(() => {
     if (!gavetaAberta) return;
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setGavetaAberta(false); };
@@ -180,9 +213,17 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
         {topo}
         {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
             ao desktop, onde tudo cabe numa só */}
-        <div className={rodapeMobile
+        <div className={rodapeMobile ? "relative -mx-5 md:mx-0" : ""}>
+        {/* celular: a barra rola de lado; o degradê na ponta avisa que tem mais */}
+        {rodapeMobile ? (
+          <>
+            <span aria-hidden className={"pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-paper to-transparent transition-opacity duration-200 md:hidden " + (barraRola.esq ? "opacity-100" : "opacity-0")} />
+            <span aria-hidden className={"pointer-events-none absolute inset-y-0 right-0 z-[1] w-12 bg-gradient-to-l from-paper to-transparent transition-opacity duration-200 md:hidden " + (barraRola.dir ? "opacity-100" : "opacity-0")} />
+          </>
+        ) : null}
+        <div ref={barraRef} onScroll={medirBarra} className={rodapeMobile
           /* uma linha só, rolando de lado se não couber; sem `order` */
-          ? "-mx-5 flex items-center gap-1.5 overflow-x-auto px-5 py-1.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:justify-center md:overflow-visible md:px-0 [&>*]:shrink-0 [&>*]:basis-auto [&_*]:order-none"
+          ? "flex items-center gap-1.5 overflow-x-auto px-5 py-1.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:justify-center md:overflow-visible md:px-0 [&>*]:shrink-0 [&>*]:basis-auto [&_*]:order-none"
           : "flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap md:justify-center"}>
         <select
           aria-label="Estilo do texto"
@@ -247,6 +288,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
           </button>
         ) : null}
       </div>
+      </div>
 
       </div>
 
@@ -269,17 +311,25 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
               {rodapeMobile(() => setGavetaAberta(true))}
             </div>
           ) : null}
-          {/* celular: gaveta pela esquerda, por cima do documento */}
+          {/* celular: sheet de baixo pra cima, por cima do documento */}
           <div className={"fixed inset-0 z-30 md:hidden " + (gavetaAberta ? "" : "pointer-events-none")} aria-hidden={!gavetaAberta}>
             <div onClick={fecharGaveta}
               className={"absolute inset-0 bg-ink/30 transition-opacity duration-300 " + (gavetaAberta ? "opacity-100" : "opacity-0")} />
             <aside aria-label="Painel do contrato"
-              className={"absolute inset-y-0 left-0 flex w-[min(320px,86vw)] flex-col bg-[#ECEEF1] shadow-alta transition-[translate] duration-300 ease-[var(--ease-desliza)] " +
-                (gavetaAberta ? "translate-x-0" : "-translate-x-full")}>
-              <div className="flex shrink-0 items-center justify-end px-2 pt-[calc(var(--sat)+8px)]">
-                <button type="button" aria-label="Fechar painel" onClick={fecharGaveta} className={icone(false)}><X size={18} /></button>
+              style={arrasto ? { translate: `0 ${arrasto}px` } : undefined}
+              className={"absolute inset-x-0 bottom-0 flex h-[80dvh] flex-col rounded-t-[20px] bg-[#ECEEF1] shadow-alta " +
+                (arrasto === null ? "transition-[translate] duration-300 ease-[var(--ease-desliza)] " : "") +
+                (gavetaAberta ? "translate-y-0" : "translate-y-full")}>
+              <div className="relative flex shrink-0 touch-none items-center justify-center px-2 pb-1 pt-2.5"
+                onPointerDown={(e) => { inicioArrasto.current = e.clientY; setArrasto(0); e.currentTarget.setPointerCapture(e.pointerId); }}
+                onPointerMove={(e) => { if (arrasto !== null) setArrasto(Math.max(0, e.clientY - inicioArrasto.current)); }}
+                onPointerUp={() => { if ((arrasto ?? 0) > 90) fecharGaveta(); setArrasto(null); }}
+                onPointerCancel={() => setArrasto(null)}>
+                <span className="h-1.5 w-10 rounded-full bg-ink/15" aria-hidden />
+                <button type="button" aria-label="Fechar painel" onClick={fecharGaveta} onPointerDown={(e) => e.stopPropagation()}
+                  className={"absolute right-2 top-1.5 " + icone(false)}><X size={18} /></button>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-[calc(24px+var(--sab))] pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {gavetaAberta ? lateral(editor, fecharGaveta) : null}
               </div>
             </aside>
