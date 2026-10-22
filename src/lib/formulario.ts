@@ -34,7 +34,7 @@ export type SecaoFormulario = "assinar" | "endereco" | "evento" | "extra";
    como estão, porque são o que está gravado nas perguntas novas. */
 export const SECOES: readonly { id: SecaoFormulario; titulo: string }[] = [
   { id: "assinar", titulo: "Sobre vocês" },
-  { id: "endereco", titulo: "Onde vocês moram" },
+  { id: "endereco", titulo: "Endereço do contrato" },
   { id: "evento", titulo: "Sobre o grande dia" },
   { id: "extra", titulo: "Conta pra gente" },
 ];

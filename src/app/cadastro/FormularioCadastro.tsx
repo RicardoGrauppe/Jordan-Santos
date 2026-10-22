@@ -30,7 +30,7 @@
   bairro + cidade...) só existe quando os dois aparecem.
 
   Fluxo em ETAPAS (22/10/2026, brandbook seção 18): boas-vindas, uma etapa por
-  seção (a "Conta pra gente" só se houver pergunta, "Onde vocês moram" só se
+  seção (a "Conta pra gente" só se houver pergunta, "Endereço do contrato" só se
   sobrar campo), e revisão antes de enviar. Todas as etapas ficam MONTADAS e
   só a atual aparece: o intl-tel-input se prende ao input do WhatsApp na
   montagem e o perderia se a etapa desmontasse, e é assim também que o valor
@@ -45,7 +45,7 @@ import {
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
 import Image from "next/image";
-import { CalendarHeart, Heart, House, Lightbulb, MessageCircleHeart, UsersRound } from "lucide-react";
+import { CalendarHeart, Heart, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
@@ -478,8 +478,8 @@ const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> 
     resumo: "Quem assina o contrato e como falamos com vocês",
   },
   endereco: {
-    explica: "Esse endereço entra no contrato. Digite o CEP que a gente completa o resto pra vocês.",
-    resumo: "O endereço que vai no contrato",
+    explica: "O contrato pede um endereço pra ficar completo, e é só pra isso que usamos. Digitem o CEP que a gente preenche o resto.",
+    resumo: "Só o que o documento pede",
   },
   evento: {
     explica: "Com a data, o horário e o local a gente reserva a agenda e começa a planejar a cobertura.",
@@ -494,7 +494,7 @@ const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> 
 /* ícone de cada etapa no caminho da abertura (brandbook 18) */
 const ICONE_ETAPA: Record<SecaoFormulario, typeof Heart> = {
   assinar: UsersRound,
-  endereco: House,
+  endereco: MapPin,
   evento: CalendarHeart,
   extra: MessageCircleHeart,
 };
@@ -1015,7 +1015,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                       <span className="icone"><Heart size={18} strokeWidth={1.8} fill="currentColor" aria-hidden /></span>
                       <span className="texto-passo">
                         <strong>A data é de vocês</strong>
-                        <small>Conferimos tudo e mandamos o contrato pelo WhatsApp</small>
+                        <small>Conferimos tudo e mandamos o contrato pra vocês</small>
                       </span>
                     </li>
                   </ol>
