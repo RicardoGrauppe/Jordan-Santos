@@ -115,12 +115,17 @@ export function TimelineContrato({
 
   const email = statusDoEmail(contrato.autentique_email);
   const aguardandoCasal = !!contrato.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado");
+  /* Enviado pelo sistema ANTIGO (link de /assinar, antes da Autentique) e
+     nunca assinado. Aquele link não abre mais: pra o casal assinar, o
+     contrato precisa sair de novo, agora pela Autentique (22/10/2026). */
+  const legado = !contrato.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado");
 
   /* A SITUAÇÃO vem primeiro e em uma frase: é a pergunta com que se abre
      a ficha ("e aí, assinaram?"). A linha do tempo embaixo é o detalhe. */
   const situacao: { tom: keyof typeof TONS; Icone: typeof Mail; titulo: string; texto?: ReactNode; acao?: { rotulo: string; aoClicar: () => void } } =
     cancelado ? { tom: "neutro", Icone: CircleDashed, titulo: "Contrato cancelado" }
     : jaAssinado ? { tom: "ok", Icone: FileCheck, titulo: "Assinado pelo casal", texto: contrato.assinado_em ? "Em " + fmtDataHora(contrato.assinado_em) : undefined }
+    : legado ? { tom: "atencao", Icone: RotateCw, titulo: "Reenviar pela Autentique", texto: "Saiu pelo sistema antigo e o casal não assinou. Aquele link não abre mais: confira o texto e envie de novo.", acao: { rotulo: "Abrir e enviar", aoClicar: onAbrirContrato } }
     : editadoDepois || precisaReconfirmar ? { tom: "atencao", Icone: Pencil, titulo: "Você editou depois de enviar", texto: "O casal ainda vê a versão anterior. Atualize na Autentique pra mandar a nova.", acao: onEditarContrato && contrato.editavel ? { rotulo: "Abrir o editor", aoClicar: onEditarContrato } : undefined }
     : email?.erro ? { tom: "atencao", Icone: Mail, titulo: "O e-mail não chegou", texto: email.texto, acao: onTrocarEmail ? { rotulo: "Trocar e-mail e reenviar", aoClicar: onTrocarEmail } : undefined }
     : contrato.status === "visualizado" ? { tom: "accent", Icone: Eye, titulo: "O casal abriu, falta assinar", texto: contrato.visualizado_em ? "Aberto em " + fmtDataHora(contrato.visualizado_em) : undefined }
@@ -129,8 +134,9 @@ export function TimelineContrato({
 
   const passos: { titulo: string; data: string | null | undefined; ok?: boolean }[] = [
     { titulo: "Criado", data: contrato.criado_em },
-    { titulo: "Enviado", data: contrato.enviado_em },
-    { titulo: "Aberto", data: contrato.visualizado_em },
+    /* no legado, envio e visto foram do link antigo: não valem mais */
+    { titulo: "Enviado", data: legado ? null : contrato.enviado_em },
+    { titulo: "Aberto", data: legado ? null : contrato.visualizado_em },
     { titulo: "Assinado", data: contrato.assinado_em, ok: true },
   ];
   const curta = (d: string) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
@@ -188,17 +194,26 @@ export function TimelineContrato({
         <div className="mt-5 flex flex-wrap gap-2.5 [&>*]:min-h-[44px] [&>*]:flex-[1_1_100%] [&>*]:whitespace-nowrap min-[520px]:[&>*]:flex-[1_1_150px]">
           {/* Rótulos curtos: a coluna é estreita e "Abrir contrato assinado"
               quebrava em duas linhas dentro do botão. */}
-          {assinadoFotografo || jaAssinado ? (
+          {/* link do casal só existe depois de ir pra Autentique (o do sistema
+              antigo morreu junto com a tela /assinar) */}
+          {contrato.autentique_id && (assinadoFotografo || jaAssinado) ? (
             <Botao onClick={onCopiarLink}>
               <Copy size={16} />
               Copiar link
             </Botao>
           ) : null}
-          <Botao variante="secundario" className="text-accent" onClick={onAbrirContrato}>
-            {jaAssinado ? <FileCheck size={16} /> : <FileText size={16} />}
-            {contrato.autentique_id || jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
-            <ExternalLink size={14} className="opacity-60" />
-          </Botao>
+          {legado ? (
+            <Botao onClick={onAbrirContrato}>
+              <Send size={16} />
+              Abrir e enviar pela Autentique
+            </Botao>
+          ) : (
+            <Botao variante="secundario" className="text-accent" onClick={onAbrirContrato}>
+              {jaAssinado ? <FileCheck size={16} /> : <FileText size={16} />}
+              {contrato.autentique_id || jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
+              <ExternalLink size={14} className="opacity-60" />
+            </Botao>
+          )}
         </div>
       ) : null}
     </CascaContrato>

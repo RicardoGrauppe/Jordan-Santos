@@ -355,11 +355,25 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   /* ---------- carga ---------- */
   useEffect(() => {
     let vivo = true;
-    api<Resposta>("/api/estudio?id=" + encodeURIComponent(id))
+    const ler = () => api<Resposta>("/api/estudio?id=" + encodeURIComponent(id));
+    ler()
+      .then(async (r) => {
+        const c0 = r.contrato;
+        /* Contrato do sistema antigo, de texto fixo. Assinado: a via é a da
+           revisão de antes. NÃO assinado (o casal nunca chegou a assinar):
+           ganha a cópia editável do modelo e segue no fluxo da Autentique,
+           como um contrato novo (ver "modernizar-contrato" na API). */
+        if (c0 && !c0.template_json_snapshot && !c0.autentique_id &&
+            (c0.status === "rascunho" || c0.status === "enviado" || c0.status === "visualizado")) {
+          await api("/api/estudio", { acao: "modernizar-contrato", id });
+          return ler();
+        }
+        return r;
+      })
       .then((r) => {
         if (!vivo) return;
         const c = r.contrato;
-        /* contrato antigo, de texto fixo: não tem o que editar aqui */
+        /* antigo e já assinado: não tem o que editar aqui */
         if (c && !c.template_json_snapshot && c.status !== "cancelado") {
           router.replace(rotaDaRevisaoAntiga(id));
           return;
@@ -664,7 +678,10 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
               ? "Assinado pelos dois. A via oficial está na Autentique."
               : contrato.autentique_id
                 ? (alterado ? "Você editou depois de enviar. Atualize pra o casal ver a versão nova." : "Enviado. Esperando a assinatura do casal.")
-                : "Rascunho. Edite o texto e insira os campos pela lateral. Os dados vêm da ficha do cliente.")}
+                : contrato.status === "enviado" || contrato.status === "visualizado"
+                  /* saiu pelo sistema antigo e o casal não assinou */
+                  ? "Saiu pelo sistema antigo e não foi assinado. Confira o texto e envie de novo, agora pela Autentique."
+                  : "Rascunho. Edite o texto e insira os campos pela lateral. Os dados vêm da ficha do cliente.")}
           </p>
         </div>
         {botao("topo")}

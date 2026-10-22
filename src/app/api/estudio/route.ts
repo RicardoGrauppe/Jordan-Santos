@@ -577,6 +577,16 @@ export async function POST(req: Request) {
       if (apenasLink && !contrato.autentique_id) {
         return NextResponse.json({ ok: true, link: null, mensagem: "", alterado: false });
       }
+      /* Assinado no sistema ANTIGO (antes da Autentique): está valendo e não
+         tem documento lá. Mandar pra Autentique agora pediria uma segunda
+         assinatura de um contrato já fechado e ainda viraria o status pra
+         "enviado". A via dele é o PDF do próprio painel. */
+      if (contrato.status === "assinado" && !contrato.autentique_id) {
+        return NextResponse.json(
+          { erro: "este contrato foi assinado no sistema antigo: baixe a via assinada pela ficha" },
+          { status: 409 },
+        );
+      }
 
       const nomeCasal = [cliente.noivo, cliente.noiva].filter(Boolean).join(" e ");
       const emailCasal = String(
@@ -650,6 +660,47 @@ export async function POST(req: Request) {
         linkNovo: substituiu,
         telefone: String(cliente.tel_noivo || cliente.tel_noiva || "").replace(/\D/g, ""),
       });
+    }
+
+    if (acao === "modernizar-contrato") {
+      /* Contrato do sistema ANTIGO que o casal nunca assinou (22/10/2026):
+         saiu com o texto fixo e o link de /assinar, que não existe mais. Pra
+         o Jordan reenviar pelo fluxo da Autentique, o contrato ganha a cópia
+         editável do texto, como os novos: do modelo que o originou, se ainda
+         existir, senão do padrão. Só preenche o que falta; contrato já
+         assinado, cancelado ou já na Autentique fica como está. */
+      const ativos = await rest<{
+        id: string; status: string; template_id: string | null;
+        template_json_snapshot: unknown; autentique_id: string | null;
+      }[]>(
+        "contratos?cliente_id=eq." + id + "&status=in.(rascunho,enviado,visualizado)" +
+        "&select=id,status,template_id,template_json_snapshot,autentique_id&order=criado_em.desc&limit=1",
+      );
+      const c = ativos && ativos[0];
+      if (!c) return NextResponse.json({ erro: "nenhum contrato pendente pra este cliente" }, { status: 404 });
+      if (c.template_json_snapshot || c.autentique_id) return NextResponse.json({ ok: true, jaEstava: true });
+
+      let modelo: { id: string; nome: string | null; conteudo_json: unknown; conteudo_html: string | null } | null = null;
+      if (c.template_id) {
+        const deOrigem = await rest<typeof modelo[]>(
+          "contrato_templates?id=eq." + c.template_id + "&select=id,nome,conteudo_json,conteudo_html&limit=1",
+        );
+        modelo = (deOrigem && deOrigem[0]) || null;
+      }
+      if (!modelo) modelo = await modeloPadrao();
+      if (!modelo) {
+        return NextResponse.json({ erro: "crie um modelo de contrato em Configurações antes de reenviar" }, { status: 409 });
+      }
+      await rest("contratos?id=eq." + c.id, {
+        method: "PATCH",
+        body: {
+          template_id: modelo.id,
+          template_nome: modelo.nome,
+          template_html_snapshot: modelo.conteudo_html,
+          template_json_snapshot: modelo.conteudo_json,
+        },
+      });
+      return NextResponse.json({ ok: true });
     }
 
     if (acao === "salvar-texto-contrato") {

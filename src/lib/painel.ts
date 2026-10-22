@@ -199,7 +199,12 @@ export function pendenciasDe(clientes: ClienteLista[], limpasLista?: string[]): 
     if (c.status === "arquivado" || c.status === "realizado") return;
     const cs = c.contrato_status;
     if (!cs && c.status === "novo") { if (!limpas.has(chavePend("novo", c))) g.novo.push(c); }
-    else if (cs === "rascunho") { if (!limpas.has(chavePend("rascunho", c))) g.rascunho.push(c); }
+    /* enviado pelo sistema antigo (sem documento na Autentique) e nunca
+       assinado: o link morreu, quem age é o fotógrafo, reenviando. Conta
+       como contrato a enviar, não como "esperando o casal". */
+    else if (cs === "rascunho" || ((cs === "enviado" || cs === "visualizado") && !c.contrato_autentique_id)) {
+      if (!limpas.has(chavePend("rascunho", c))) g.rascunho.push(c);
+    }
     else if (cs === "enviado" || cs === "visualizado") { if (!limpas.has(chavePend("aguardando", c))) g.aguardando.push(c); }
     else if ((!cs || cs === "cancelado") && c.status === "confirmado") { if (!limpas.has(chavePend("semContrato", c))) g.semContrato.push(c); }
   });

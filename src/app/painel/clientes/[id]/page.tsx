@@ -668,6 +668,7 @@ export default function PaginaCliente() {
 
   /* o quarto número do herói: a mesma situação do cartão Contrato, curta */
   const situacaoCurta = !contratoGerado ? "Sem contrato"
+    : !contrato?.autentique_id && (contrato?.status === "enviado" || contrato?.status === "visualizado") ? "Reenviar pela Autentique"
     : contrato?.status === "visualizado" ? "Aberto pelo casal"
     : contrato?.status === "enviado" ? (contrato.alterado_desde_envio ? "Editado, falta reenviar" : "Esperando assinatura")
     : "Rascunho";

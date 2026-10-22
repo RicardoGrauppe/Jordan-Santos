@@ -81,7 +81,9 @@ export function montarNotificacoes(clientes: ClienteLista[] | null | undefined):
         tipo: "assinado", quando: c.contrato_em || "", cid: c.id, chave: "assinado|" + c.id,
         titulo: "Contrato assinado", sub: nomeCasal(c),
       });
-    } else if (c.contrato_status === "enviado" || c.contrato_status === "visualizado") {
+    } else if ((c.contrato_status === "enviado" || c.contrato_status === "visualizado") && c.contrato_autentique_id) {
+      /* só contrato que está na Autentique: o "enviado" do sistema antigo é
+         de um link que não abre mais (ver pendenciasDe em lib/painel) */
       const viu = c.contrato_status === "visualizado";
       lista.push({
         tipo: "contrato", quando: c.contrato_em || "", cid: c.id,
