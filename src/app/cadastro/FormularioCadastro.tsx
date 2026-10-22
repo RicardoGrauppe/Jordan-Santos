@@ -317,9 +317,9 @@ const CSS = `
   .cad .barra-cta{display:none}
 }
 
-/* seta e brilho do botão (brandbook 18): a seta vai em todo botão de
-   avançar; o brilho e o vaivém da seta só no "Vamos começar", que é o
-   convite pra entrar no fluxo */
+/* seta e brilho do botão (brandbook 18): o brilho vai em todo botão do
+   fluxo, até o "Confirmar nossa data"; a seta (com vaivém) só nos de
+   avançar, porque o de confirmar é o fim */
 .cad .cta .seta{display:inline-block;vertical-align:-3px;margin-left:10px}
 .cad .cta.brilho{position:relative;overflow:hidden;isolation:isolate}
 .cad .cta.brilho::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;pointer-events:none;
@@ -1154,7 +1154,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                     <p>{SOBRE_ETAPA[secao].explica}</p>
                   </div>
                   {corpoDaSecao(secao)}
-                  <button className="cta" type="submit">{conteudoDoBotao}</button>
+                  <button className="cta brilho" type="submit">{conteudoDoBotao}</button>
                 </div>
               </section>
             ))}
@@ -1196,7 +1196,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                     })}
                   </div>
                 ) : null}
-                <button className="cta" type="submit" disabled={enviando}>{textoDoBotao}</button>
+                <button className="cta brilho" type="submit" disabled={enviando}>{textoDoBotao}</button>
                 <p className="erro" role="alert">{erroGeral}</p>
               </div>
             </section>
@@ -1205,7 +1205,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                 repete aqui porque no celular é aqui que o olho está */}
             <div className="barra-cta">
               {etapa === "revisar" && erroGeral ? <p className="erro" aria-hidden>{erroGeral}</p> : null}
-              <button className={"cta" + (etapa === "inicio" ? " brilho" : "")} type="submit"
+              <button className="cta brilho" type="submit"
                 disabled={etapa === "revisar" && enviando}>{conteudoDoBotao}</button>
             </div>
           </form>
