@@ -226,6 +226,9 @@ Vieram do estúdio original e cada uma custou tempo pra descobrir:
 1. **Nenhuma borda pra separar ou marcar estado.** Nunca. Separação é fundo
    diferente mais sombra (`shadow-card`) ou diferença de tom entre `paper`,
    `soft` e `line`. Antes de escrever `border`, resolva com tom ou sombra.
+   Única exceção (decisão do Ricardo, 22/10/2026): o contorno azul do bloco
+   em edição no canvas do Ateliê, que é ferramenta por cima do site e não
+   borda de interface (`editor-tema.css`, tokens `--puck-slot-component-*`).
 2. **Nenhum anel de foco colorido.** Foco muda o fundo, sutil.
 3. **Hover só onde existe mouse.** Sempre `[@media(hover:hover)]:hover:…`. Sem
    isso, no celular o estado fica preso depois do toque e não volta.

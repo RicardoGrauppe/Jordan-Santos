@@ -148,11 +148,17 @@ function rolarAte(id: string, tentativas = 20) {
     if (tentativas > 0) setTimeout(() => rolarAte(id, tentativas - 1), 50);
     return;
   }
+  const janela = frame?.contentWindow;
+  if (!janela) return;
   const { top } = alvo.getBoundingClientRect();
-  const altura = frame?.contentWindow?.innerHeight ?? 0;
-  /* salto direto, não suave: a página tem `scroll-behavior: smooth` (é da
-     proposta) e a animação nem sempre anda dentro do iframe do editor */
-  if (top < 0 || top > altura * 0.8) alvo.scrollIntoView({ behavior: "instant", block: "start" });
+  /* Rola SÓ a página do site (a janela do iframe). scrollIntoView rolaria
+     também as caixas do editor em volta, e a do quadro encolhido subia junto,
+     cortando o topo e deixando uma faixa vazia embaixo. Salto direto, não
+     suave: a página tem `scroll-behavior: smooth` e a animação nem sempre
+     anda dentro do iframe. */
+  if (top < 0 || top > janela.innerHeight * 0.8) {
+    janela.scrollTo({ top: top + janela.scrollY, behavior: "instant" });
+  }
 }
 
 const rotuloDe = (tipo: string) => configAtelie.components[tipo as TipoDeBloco]?.label ?? tipo;
@@ -332,11 +338,32 @@ function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
      encolhida (transform), pra valerem as regras de computador do site. */
   const larguraVisivel = aparelhoCelular ? undefined : tela === "celular" ? LARGURA_CELULAR : undefined;
   let quadro: CSSProperties = { width: "100%", height: "100%" };
+  let escala = 1;
   if (!aparelhoCelular && tela === "computador" && tamanho.largura > 0) {
     const largura = Math.max(tamanho.largura, LARGURA_COMPUTADOR);
-    const escala = tamanho.largura / largura;
+    escala = tamanho.largura / largura;
     quadro = { width: largura, height: tamanho.altura / escala, transform: `scale(${escala})`, transformOrigin: "top left" };
   }
+
+  /* O contorno de seleção é desenhado DENTRO da página, que no modo
+     Computador está encolhida: 2px viravam 1px na tela. A espessura é
+     compensada pela escala, no documento do iframe (é lá que o Puck lê o
+     token). O iframe pode ainda não existir no primeiro instante: tenta de
+     novo algumas vezes. */
+  useEffect(() => {
+    let tentativas = 20;
+    let t: ReturnType<typeof setTimeout>;
+    const aplicar = () => {
+      const doc = document.querySelector<HTMLIFrameElement>("#preview-frame")?.contentDocument;
+      if (doc?.documentElement) {
+        doc.documentElement.style.setProperty("--puck-slot-component-border-width", (2 / escala).toFixed(2) + "px");
+        return;
+      }
+      if (tentativas-- > 0) t = setTimeout(aplicar, 100);
+    };
+    aplicar();
+    return () => clearTimeout(t);
+  }, [escala]);
 
   return (
     <div className="atelie-editor fixed inset-0 z-50 flex flex-col bg-soft">
@@ -370,9 +397,13 @@ function Moldura({ topo, acoes }: { topo: ReactNode; acoes: ReactNode }) {
 
         {/* a página */}
         <main className="flex min-h-0 min-w-0 flex-1 justify-center overflow-hidden">
+          {/* overflow-clip, não hidden: o quadro de dentro é maior que o
+              palco (desenhado em 1280px e encolhido), e hidden ainda deixa
+              rolar por código; aí a página toda subia e cortava. clip não
+              rola de jeito nenhum. */}
           <div
             ref={palco}
-            className="h-full w-full overflow-hidden bg-paper md:rounded-2xl md:shadow-alta"
+            className="h-full w-full overflow-clip bg-paper md:rounded-2xl md:shadow-alta"
             style={larguraVisivel ? { maxWidth: larguraVisivel } : undefined}
           >
             <div style={quadro}>

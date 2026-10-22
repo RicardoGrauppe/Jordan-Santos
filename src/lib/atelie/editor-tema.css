@@ -11,6 +11,9 @@
   app. O Puck copia estes estilos pra dentro do iframe da página, e é assim
   que a marca do bloco selecionado também fica no padrão.
 
+  Exceção única: o contorno azul do bloco em edição na página (ver o token
+  --puck-slot-component-*), que é ferramenta e não borda de interface.
+
   O que não tem token é ajustado por prefixo de classe ([class*="_Nome_"]):
   as classes do Puck vêm com sufixo de hash, mas o prefixo é estável dentro
   da versão, que está fixada no package.json.
@@ -41,9 +44,17 @@
   --puck-color-interactive-soft-hover: #eef0f3;
   --puck-color-interactive-neutral-hover: #eef0f3;
 
-  /* bloco selecionado: véu petróleo, sem contorno */
-  --puck-color-selection-bg: rgba(0, 54, 70, 0.1);
-  --puck-color-selection-border: transparent;
+  /* Contorno de seleção (exceção à regra de borda, brandbook seção 20): é
+     ferramenta de edição desenhada por cima do site, não borda da interface,
+     e nunca aparece pro casal. Azul de ferramenta, que aparece sobre foto
+     escura e sobre fundo claro (o petróleo da marca sumia nos dois). Só os
+     tokens do contorno do bloco (slot-component); o foco dos campos segue
+     sem anel, porque --puck-border-width-focus continua zero. */
+  --puck-slot-component-border-width: 2px;
+  --puck-slot-component-color-overlay-border: rgba(37, 99, 235, 0.55);
+  --puck-slot-component-color-border-selected: #2563eb;
+  --puck-color-selection-bg: rgba(37, 99, 235, 0.05);
+  --puck-color-selection-border: #2563eb;
   --puck-line-placeholder-width: 3px;
 
   --puck-radius-m: 10px;
