@@ -117,6 +117,14 @@
 html, body {
   margin: 0;
   padding: 0;
+  /* Comportamento de app (22/10/2026, pedido do Ricardo): `manipulation`
+     desliga o "toque duplo pra ampliar" do iOS. Com ele ligado, o Safari
+     segura cada toque esperando um possível segundo, e se a página já tinha
+     ampliado (foco num campo de letra pequena, como a folha do contrato) o
+     primeiro toque se perdia: era o "precisa clicar duas vezes". Rolar e o
+     arraste das linhas continuam iguais. */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
   /* Desliga o pull-to-refresh DO NAVEGADOR e mantém o elástico.
      É o que a especificação define pro `contain`: ele "desabilita a navegação
      nativa do navegador, incluindo o gesto vertical de pull-to-refresh",

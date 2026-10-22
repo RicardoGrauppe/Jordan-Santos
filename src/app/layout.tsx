@@ -29,11 +29,17 @@ export const metadata: Metadata = {
 
 /* viewport-fit=cover é o que faz env(safe-area-inset-*) devolver valor no
    iPhone; sem isso a barra inferior fica embaixo da barrinha de home. Vale pro
-   site todo porque não custa nada a quem não usa. A trava de zoom, essa sim,
-   fica só no painel. */
+   site todo porque não custa nada a quem não usa. */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  /* Sem zoom (22/10/2026, pedido do Ricardo: "que já se comporte como um app
+     mobile"). `maximumScale: 1` é o que impede o iOS de ampliar sozinho ao
+     focar um campo ou o texto da folha do contrato (letra menor que 16px); o
+     `userScalable: false` tira a pinça nos navegadores que respeitam. Vale
+     pro site todo, inclusive o /cadastro que o casal preenche no celular. */
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 

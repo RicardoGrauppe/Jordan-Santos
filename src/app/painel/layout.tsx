@@ -12,17 +12,15 @@ import { AppShell } from "@/components/AppShell";
 */
 
 /*
-  PWA e trava de zoom ficam AQUI, não no layout raiz: valem só pra área logada.
+  PWA fica AQUI, não no layout raiz: vale só pra área logada.
 
   - `appleWebApp` é o trio apple-mobile-web-app-*: salvo na tela de início, o
     painel abre SEM a barra do Safari, que é o que dá cara de aplicativo.
     `statusBarStyle: "default"` (texto escuro) porque o header é claro;
     "black-translucent" deixaria a hora branca sobre fundo branco.
-  - A trava de zoom (`maximumScale`/`userScalable`) NÃO entra aqui, e isso é
-    decisão, não esquecimento: ela mata o zoom de pinça, que é acessibilidade,
-    e nem resolve o problema que parecia resolver. O zoom que incomodava era o
-    do iOS ao focar um campo com fonte menor que 16px, e quem cuida disso é a
-    regra de 16px no `globals.css`.
+  - A trava de zoom mora no layout RAIZ desde 22/10/2026: o Ricardo quis o
+    app sem zoom nenhum, como app nativo. A regra de 16px nos campos não
+    bastava porque a folha do contrato é texto editável em letra pequena.
 */
 export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Estúdio", statusBarStyle: "default" },
