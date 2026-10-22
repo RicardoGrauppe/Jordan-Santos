@@ -148,7 +148,8 @@ se prende ao input na montagem e se perderia se a etapa desmontasse.
   textos de `/proposta`, `NOME_FOTOGRAFO` em `assinar/Assinar.tsx`,
   `NOME_FOTOGRAFO_PADRAO` e a legenda "CONTRATADA" em `clientes/[id]/contrato`,
   saudação do WhatsApp em `api/estudio`, remetente e `DESTINO_JORDAN` em
-  `lib/email.ts`, e-mails de `api/orcamento`, e as imagens em `public/img/`.
+  `lib/email.ts`, e-mails de `api/orcamento`, as imagens em `public/img/`, e a
+  abertura do `/cadastro` (foto do pré-wedding, logo e assinatura do Jordan).
   Tudo isso precisa sair de `config` (perfil) quando houver mais de um estúdio.
 - E-mail: com `RESEND_API_KEY` vazia todo envio falha e vai pro `console.error`,
   mas nada trava: cadastro do casal e assinatura gravam e respondem `ok` do

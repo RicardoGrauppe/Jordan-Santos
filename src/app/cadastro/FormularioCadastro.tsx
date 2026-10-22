@@ -221,13 +221,32 @@ const CSS = `
 .cad .etapa-corpo > :nth-child(15){animation-delay:860ms}
 .cad .etapa .cta{margin-top:30px}
 
-/* boas-vindas: as etapas que vêm pela frente, numeradas */
-.cad .passos{list-style:none;margin:6px 0 0;display:grid;gap:10px}
-.cad .passos li{display:flex;gap:14px;align-items:flex-start;background:var(--soft);border-radius:14px;padding:14px 16px}
-.cad .passos .n{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--paper);color:var(--accent);font-family:var(--serif);font-size:15px;display:flex;align-items:center;justify-content:center}
-.cad .passos strong{display:block;font-weight:500;font-size:15px;color:var(--ink);line-height:1.4}
-.cad .passos small{display:block;font-size:13px;color:var(--ink-soft);line-height:1.45;margin-top:2px}
-.cad .tempo{font-size:12.5px;color:var(--ink-soft);margin-top:18px;text-align:center}
+/* boas-vindas: uma carta do estúdio (brandbook 18). Uma coluna no celular,
+   foto ao lado da carta a partir de 960px, só nesta etapa. */
+.cad .boas-vindas{display:grid;gap:30px}
+.cad .foto-abertura{position:relative;border-radius:22px;overflow:hidden;aspect-ratio:4/3;background:var(--soft)}
+.cad .foto-abertura img{width:100%;height:100%;object-fit:cover;object-position:50% 62%;display:block;animation:cad-respira 1.6s cubic-bezier(.22,1,.36,1) both}
+@keyframes cad-respira{from{transform:scale(1.06);opacity:0}to{transform:none;opacity:1}}
+.cad .foto-abertura::after{content:"";position:absolute;inset:auto 0 0 0;height:45%;background:linear-gradient(to top,rgba(29,29,27,.55),rgba(29,29,27,0))}
+.cad .foto-abertura .marca{position:absolute;left:20px;bottom:18px;z-index:1;height:30px;width:auto;opacity:.95}
+.cad .carta h1{font-size:34px;line-height:1.18;margin:0;text-wrap:balance}
+.cad .carta .texto{font-size:16px;line-height:1.7;color:var(--ink);margin-top:16px}
+.cad .carta .texto + .texto{margin-top:12px}
+.cad .assinatura{height:72px;width:auto;margin:14px 0 0 -6px;filter:brightness(0);opacity:.8;display:block}
+.cad .caminho-rotulo{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);margin-top:34px}
+.cad .passos{list-style:none;margin:16px 0 0;display:grid;gap:18px}
+.cad .passos li{display:flex;gap:16px;align-items:baseline}
+.cad .passos .n{flex-shrink:0;width:22px;font-family:var(--serif);font-size:22px;line-height:1;color:var(--accent)}
+.cad .passos strong{display:block;font-weight:500;font-size:15.5px;color:var(--ink);line-height:1.35}
+.cad .passos small{display:block;font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin-top:2px}
+.cad .carta .cta{margin-top:34px}
+.cad .tempo{font-size:12.5px;color:var(--ink-soft);margin-top:14px;text-align:center}
+@media (min-width:960px){
+  .cad .pagina.larga{max-width:1040px}
+  .cad .boas-vindas{grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+  .cad .foto-abertura{aspect-ratio:4/5}
+  .cad .carta h1{font-size:40px}
+}
 
 /* revisão: um bloco por etapa, no fundo soft, com o Editar no canto */
 .cad .revisao{display:grid;gap:12px}
@@ -250,7 +269,7 @@ const CSS = `
 
 /* quem pediu menos movimento no sistema recebe a troca seca */
 @media (prefers-reduced-motion:reduce){
-  .cad .etapa,.cad .etapa-corpo > *,.cad .sucesso{animation:none}
+  .cad .etapa,.cad .etapa-corpo > *,.cad .sucesso,.cad .foto-abertura img{animation:none}
   .cad .check path{animation:none;stroke-dashoffset:0}
   .cad .progresso span{transition:none}
 }
@@ -727,7 +746,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   }
 
   const textoDoBotao =
-    etapa === "inicio" ? "Começar"
+    etapa === "inicio" ? "Vamos começar"
     : etapa === "revisar" ? (enviando ? "Confirmando..." : "Confirmar nossa data")
     : daRevisao ? "Salvar e revisar"
     : "Continuar";
@@ -808,7 +827,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
       <style>{CSS}</style>
-      <div className="pagina">
+      <div className={"pagina" + (etapa === "inicio" && !enviado ? " larga" : "")}>
         {enviado ? (
           <div className="sucesso">
             <svg className="check" viewBox="0 0 64 64" aria-hidden>
@@ -840,25 +859,43 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
               </div>
             ) : null}
 
-            {/* ---------- boas-vindas ---------- */}
+            {/* ---------- boas-vindas ----------
+                Uma carta, não um formulário (a primeira versão, com selo
+                "Cadastro" e caixas cinzas, foi achada fria). Foto, logo e
+                assinatura são do Jordan, fixas como o resto da marca dele
+                (dívida "Nome e marca" no CLAUDE.md). */}
             <section className="etapa" {...atributosEtapa("inicio")}>
-              <div className="etapa-corpo">
-                <span className="dica">Cadastro</span>
-                <h1>Vamos confirmar nossa data</h1>
-                <p className="sub">
-                  Que alegria ter vocês com a gente! Em poucos passos reunimos o que precisamos pro contrato.
-                  Dá pra voltar em qualquer etapa, e no fim vocês conferem tudo antes de enviar.
-                </p>
-                <ol className="passos">
-                  {secoes.map((id, i) => (
-                    <li key={id}>
-                      <span className="n">{i + 1}</span>
-                      <span><strong>{TITULO_SECAO[id]}</strong><small>{SOBRE_ETAPA[id].resumo}</small></span>
-                    </li>
-                  ))}
-                </ol>
-                <button className="cta" type="submit">{textoDoBotao}</button>
-                <p className="tempo">Leva uns 3 minutos</p>
+              <div className="boas-vindas">
+                <div className="foto-abertura">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/img/prewedding.jpg" alt="Casal no alto de uma caminhonete antiga, no campo, ao pôr do sol"
+                    width={1365} height={2048} fetchPriority="high" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="marca" src="/img/logo-principal-offwhite.png" alt="Jordan Santos" />
+                </div>
+                <div className="carta etapa-corpo">
+                  <h1>Que alegria ter vocês aqui</h1>
+                  <p className="texto">
+                    Cada casal que chega até a gente traz uma história, e a de vocês já começou a nos encantar.
+                    Antes de guardar essa data na nossa agenda, queremos conhecer vocês um pouquinho melhor.
+                  </p>
+                  <p className="texto">
+                    São poucos passos, com calma. Dá pra voltar quando quiserem, e no fim vocês conferem tudo antes de enviar.
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="assinatura" src="/img/assinatura-offwhite.png" alt="Assinatura de Jordan Santos" />
+                  <div className="caminho-rotulo">O nosso caminho até a data</div>
+                  <ol className="passos">
+                    {secoes.map((id, i) => (
+                      <li key={id}>
+                        <span className="n">{i + 1}</span>
+                        <span><strong>{TITULO_SECAO[id]}</strong><small>{SOBRE_ETAPA[id].resumo}</small></span>
+                      </li>
+                    ))}
+                  </ol>
+                  <button className="cta" type="submit">{textoDoBotao}</button>
+                  <p className="tempo">Leva uns 3 minutos, sem pressa</p>
+                </div>
               </div>
             </section>
 
