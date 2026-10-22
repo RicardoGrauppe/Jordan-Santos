@@ -1044,7 +1044,33 @@
 
   <!-- ============================================================= -->
   <section class="secao">
-    <h2><span class="num">19</span>Não faz</h2>
+    <h2><span class="num">19</span>Ateliê: galeria de modelos</h2>
+    <p class="legenda">Em <code>/painel/atelie</code>, os modelos de site do fotógrafo. Cada modelo é um <strong>cartão com miniatura</strong>: a própria página encolhida no topo (o topo do site em 1440px, raio 18px só em cima), nome 14.5px semibold e a data da última edição embaixo. É a cara do site que identifica o modelo, não um ícone. Cartão branco com <code>--sombra-card</code>; no hover sobe 1px e a sombra abre (<code>--sombra-card-hover</code>), só onde existe mouse.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;max-width:760px;margin-bottom:18px">
+      <div style="position:relative;background:var(--paper);border-radius:18px;box-shadow:var(--sombra-card);overflow:hidden">
+        <div style="aspect-ratio:16/10;background:#1D1D1B;display:flex;align-items:center;justify-content:center;color:#E8E1DC;font:500 15px/1 Georgia,serif;letter-spacing:.2em">JORDAN SANTOS</div>
+        <span style="position:absolute;top:12px;left:12px;border-radius:6px;padding:3px 10px;font-size:10.5px;font-weight:600;letter-spacing:.03em;background:#E7F1EC;color:#2E6B4F">No ar</span>
+        <span style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:0 1px 2px rgba(29,29,27,.08),0 4px 10px rgba(29,29,27,.1);display:inline-flex;align-items:center;justify-content:center;color:var(--ink)"><i data-lucide="more-vertical" style="width:16px;height:16px"></i></span>
+        <div style="padding:14px 16px 16px"><div style="font-weight:600;font-size:14.5px">Proposta casamento</div><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">Editado em 22 out 2026</div></div>
+      </div>
+      <div style="position:relative;background:var(--paper);border-radius:18px;box-shadow:var(--sombra-card);overflow:hidden">
+        <div style="aspect-ratio:16/10;background:#F3F1EE;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px">miniatura do site</div>
+        <span style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:0 1px 2px rgba(29,29,27,.08),0 4px 10px rgba(29,29,27,.1);display:inline-flex;align-items:center;justify-content:center;color:var(--ink)"><i data-lucide="more-vertical" style="width:16px;height:16px"></i></span>
+        <div style="padding:14px 16px 16px"><div style="font-weight:600;font-size:14.5px">Natal 2026</div><div style="font-size:12px;color:var(--ink-soft);margin-top:4px">Editado em 20 out 2026</div></div>
+      </div>
+      <div style="background:#EEF0F3;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:200px;color:var(--accent);font-size:13.5px;font-weight:600">
+        <span style="width:44px;height:44px;border-radius:14px;background:var(--paper);box-shadow:var(--sombra-card);display:inline-flex;align-items:center;justify-content:center"><i data-lucide="plus" style="width:20px;height:20px"></i></span>
+        Novo modelo
+      </div>
+    </div>
+    <p class="legenda"><strong>Estado em selo, por cima da miniatura</strong> (raio 6px, seção 17): <em>No ar</em> é o verde de sucesso, porque é o que está valendo. Quando o modelo no ar tem edição que ainda não foi publicada, ganha um segundo selo âmbar, <em>Mudanças fora do ar</em>. Modelo fora do ar não leva selo: ausência já diz.</p>
+    <p class="legenda"><strong>Ações no kebab</strong>, num disco branco translúcido sobre a miniatura (que pode ser escura): Pôr no ar, Ver como fica, Duplicar, Renomear, Apagar. Pôr no ar e Apagar pedem confirmação. O modelo no ar não se apaga (a opção fica desligada, com o motivo no título).</p>
+    <p class="legenda"><strong>Novo modelo sem borda tracejada.</strong> O cartão de criar é um fundo <code>#EEF0F3</code> (um degrau abaixo do <code>--soft</code> do painel, onde ele sumiria) com o ícone num quadrado branco elevado: o tracejado do índice de contratos é borda, e borda não separa nada aqui. No hover o fundo vira <code>accent-tint</code>.</p>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">20</span>Não faz</h2>
     <ul style="list-style:none;display:grid;gap:10px;max-width:640px">
       <li class="regra"><i data-lucide="x"></i><div>Não usa serifada. Só Inter.</div></li>
       <li class="regra"><i data-lucide="x"></i><div>Não usa focus ring em botão, input, link nem custom.</div></li>

@@ -3,7 +3,8 @@
 
   Desde o Ateliê (22/10/2026) esta página não tem conteúdo próprio: mostra o
   modelo que o fotógrafo deixou no ar (versão publicada), montado com os
-  blocos de `lib/atelie/blocos.tsx`. Sem modelo publicado, mostra o
+  blocos de `lib/atelie/blocos.tsx`. É a mesma página da raiz `/`, que virou
+  o endereço do site; esta fica pra não quebrar link já enviado. Sem modelo publicado, mostra o
   MODELO_INICIAL, que é a proposta de sempre, portada do `index.html` do
   estúdio do Jordan.
 
@@ -12,9 +13,8 @@
   depois de conversar). A voz é a do estúdio em primeira pessoa do plural.
 */
 import type { Metadata } from "next";
-import { Render } from "@puckeditor/core";
-import { configAtelie, contatoDaPagina } from "@/lib/atelie/blocos";
 import { siteNoAr } from "@/lib/atelie/modelos";
+import { PaginaDoSite } from "@/lib/atelie/PaginaDoSite";
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await siteNoAr();
@@ -25,6 +25,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PaginaProposta() {
-  const site = await siteNoAr();
-  return <Render config={configAtelie} data={site} metadata={{ contato: contatoDaPagina(site.root.props) }} />;
+  return <PaginaDoSite dados={await siteNoAr()} />;
 }

@@ -17,20 +17,23 @@ Tiptap (editor de contrato) · Puck 0.23, fixado (editor de blocos do Ateliê) �
 ## Mapa
 
 ```
+src/app/page.tsx             a raiz é o SITE do fotógrafo (modelo do Ateliê no ar); o painel entra por /painel ou /entrar
 src/app/entrar               login
 src/app/painel/              área logada; layout.tsx checa a sessão: tela nova nasce protegida
   page.tsx                   home (saudação, clima, KPIs, próximos eventos, links)
   clientes/                  lista, [id] (ficha), [id]/contrato (revisão e confirmação)
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
+  atelie/                    galeria dos modelos de site (pôr no ar, duplicar, renomear, apagar)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
-src/app/proposta             site que o casal lê: renderiza o modelo do Ateliê que está no ar
+src/app/proposta             mesmo site da raiz, mantido pra não quebrar link já enviado
+src/app/atelie/previa/[id]   prévia do RASCUNHO de um modelo, só pra quem está logado (404 pros outros)
 src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), atelie
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
-                             atelie/ (blocos.tsx, proposta-css.ts, modelo-inicial.ts, modelos.ts)
+                             atelie/ (blocos.tsx, proposta-css.ts, modelo-inicial.ts, modelos.ts, PaginaDoSite.tsx)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos)
 ```
 
@@ -129,6 +132,10 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   (cliente) e no `<Render>` (servidor).
 - No editor a página fica num iframe, então a animação de entrada é
   desligada lá (`.editando`).
+- **"Pôr no ar" publica o modelo do jeito que ele está** (rascunho vira
+  publicado) e troca o site na hora, por isso confirma. Modelo sem bloco não
+  vai pro ar e o modelo no ar não se apaga: as duas coisas deixariam o site
+  em branco.
 
 ## Dívidas conhecidas
 

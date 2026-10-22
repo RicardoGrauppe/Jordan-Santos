@@ -16,7 +16,7 @@
     Ricardo em 05/10/2026). Antes era um botão com preferência guardada no
     localStorage; agora não há estado pra lembrar, porque o repouso é sempre o
     recolhido e o aberto dura o tempo do mouse.
-  - No celular a barra de baixo é a navegação inteira: os cinco destinos são os
+  - No celular a barra de baixo é a navegação inteira: os seis destinos são os
     mesmos que o computador tem espalhados pelo header e pela lateral. Avisos,
     busca e conta viram tela cheia, porque dropdown no polegar não funciona.
 */
@@ -26,7 +26,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Search, Settings, Users } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Palette, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
@@ -57,6 +57,7 @@ const itemMenuConta =
 const ITENS = [
   { href: "/painel", rotulo: "Home", Icone: House },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: Users },
+  { href: "/painel/atelie", rotulo: "Ateliê", Icone: Palette },
 ];
 
 /** telas cheias que só existem no celular */
@@ -72,6 +73,7 @@ type TelaMobileAberta = null | "avisos" | "busca" | "conta";
 const POSICAO_NAV: Record<string, number> = {
   "/painel": 0,
   "/painel/clientes": 1,
+  "/painel/atelie": 1.5,
   avisos: 2,
   busca: 3,
   conta: 4,
@@ -626,7 +628,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           iPhone (--sab). Sem borda: o que a destaca é a LUZ, vinda de cima —
           degradê de branco pro quase-branco, fio claro na aresta de cima, fio
           escuro na de baixo e a sombra caindo em camadas (ver
-          --shadow-flutuante no globals.css). Só ícones: cinco destinos fixos, e
+          --shadow-flutuante no globals.css). Só ícones: seis destinos fixos, e
           o rótulo que sobrava embaixo comia altura sem dizer nada novo depois
           do primeiro uso. */}
       <nav className={

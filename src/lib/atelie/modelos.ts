@@ -9,7 +9,7 @@
 import "server-only";
 import { cache } from "react";
 import { rest } from "@/lib/supabase";
-import type { DadosSite } from "./blocos";
+import type { DadosSite, RaizProps } from "./blocos";
 import { MODELO_INICIAL, NOME_MODELO_INICIAL } from "./modelo-inicial";
 
 export const CHAVE_SITE_ATIVO = "site_ativo";
@@ -19,7 +19,28 @@ export type ResumoModelo = {
   nome: string;
   atualizado_em: string;
   publicado_em: string | null;
+  /** quantos blocos o modelo tem (no rascunho) */
+  blocos: number;
+  /** o rascunho tem mudança que ainda não foi publicada */
+  pendente: boolean;
 };
+
+type LinhaModelo = {
+  id: string;
+  nome: string;
+  atualizado_em: string;
+  publicado_em: string | null;
+  rascunho: DadosSite;
+  publicado: DadosSite | null;
+};
+
+const NOME_MAX = 80;
+
+/** Nome limpo, ou null quando não sobra nada. */
+export function nomeValido(nome: unknown): string | null {
+  const limpo = typeof nome === "string" ? nome.trim().slice(0, NOME_MAX) : "";
+  return limpo || null;
+}
 
 type LinhaConfig = { valor: string | null };
 
@@ -46,11 +67,94 @@ export const siteNoAr = cache(async (): Promise<DadosSite> => {
   }
 });
 
-/** Lista dos modelos, do mais recente pro mais antigo. */
+/** Lista dos modelos, do mais recente pro mais antigo. Traz o conteúdo pra
+    contar blocos e comparar rascunho com publicado: são poucos modelos, e o
+    jsonb do Postgres devolve as chaves sempre na mesma ordem, então comparar
+    o texto basta. */
 export async function listarModelos(): Promise<ResumoModelo[]> {
-  return (await rest<ResumoModelo[]>(
-    "site_modelos?select=id,nome,atualizado_em,publicado_em&order=atualizado_em.desc",
+  const linhas = (await rest<LinhaModelo[]>(
+    "site_modelos?select=id,nome,atualizado_em,publicado_em,rascunho,publicado&order=atualizado_em.desc",
   )) ?? [];
+  return linhas.map((l) => ({
+    id: l.id,
+    nome: l.nome,
+    atualizado_em: l.atualizado_em,
+    publicado_em: l.publicado_em,
+    blocos: l.rascunho?.content?.length ?? 0,
+    pendente: !l.publicado || JSON.stringify(l.rascunho) !== JSON.stringify(l.publicado),
+  }));
+}
+
+async function lerModelo(id: string): Promise<LinhaModelo | null> {
+  const linhas = await rest<LinhaModelo[]>(
+    "site_modelos?id=eq." + encodeURIComponent(id) + "&select=*&limit=1",
+  );
+  return linhas?.[0] ?? null;
+}
+
+async function inserir(nome: string, rascunho: DadosSite): Promise<string> {
+  const criados = await rest<{ id: string }[]>("site_modelos", {
+    method: "POST",
+    body: { nome, rascunho },
+    prefer: "return=representation",
+  });
+  const id = criados?.[0]?.id;
+  if (!id) throw new Error("modelo não criado");
+  return id;
+}
+
+async function gravarSiteAtivo(id: string): Promise<void> {
+  await rest("config", {
+    method: "POST",
+    body: { chave: CHAVE_SITE_ATIVO, valor: id, atualizado_em: new Date().toISOString() },
+    prefer: "resolution=merge-duplicates",
+  });
+}
+
+/** Modelo em branco: sem blocos, mas com o contato do site que está no ar,
+    pra ninguém ter de redigitar telefone e e-mail a cada modelo novo. */
+export async function criarModeloEmBranco(nome: string): Promise<string> {
+  const noAr = await siteNoAr();
+  const contato = { ...MODELO_INICIAL.root.props, ...noAr.root.props } as RaizProps;
+  return inserir(nome, { root: { props: contato }, content: [], zones: {} });
+}
+
+/** Cópia do rascunho de um modelo, fora do ar e nunca publicada. */
+export async function duplicarModelo(id: string): Promise<string | null> {
+  const original = await lerModelo(id);
+  if (!original) return null;
+  return inserir(nomeValido(original.nome + " (cópia)") ?? original.nome, original.rascunho);
+}
+
+export async function renomearModelo(id: string, nome: string): Promise<void> {
+  await rest("site_modelos?id=eq." + encodeURIComponent(id), {
+    method: "PATCH",
+    body: { nome, atualizado_em: new Date().toISOString() },
+  });
+}
+
+/**
+ * Põe o modelo no ar do jeito que ele está: o rascunho vira a versão
+ * publicada e o modelo vira o site ativo. Modelo sem bloco nenhum não vai pro
+ * ar, porque deixaria o site em branco pra quem abrir o link.
+ */
+export async function porNoAr(id: string): Promise<"ok" | "nao-existe" | "vazio"> {
+  const modelo = await lerModelo(id);
+  if (!modelo) return "nao-existe";
+  if (!modelo.rascunho?.content?.length) return "vazio";
+  await rest("site_modelos?id=eq." + encodeURIComponent(id), {
+    method: "PATCH",
+    body: { publicado: modelo.rascunho, publicado_em: new Date().toISOString() },
+  });
+  await gravarSiteAtivo(id);
+  return "ok";
+}
+
+/** Apaga um modelo. O que está no ar não se apaga: o site ficaria sem nada. */
+export async function apagarModelo(id: string): Promise<"ok" | "no-ar"> {
+  if ((await idDoSiteAtivo()) === id) return "no-ar";
+  await rest("site_modelos?id=eq." + encodeURIComponent(id), { method: "DELETE" });
+  return "ok";
 }
 
 /**
@@ -69,9 +173,13 @@ export async function garantirModeloInicial(): Promise<void> {
   });
   const id = criados?.[0]?.id;
   if (!id) return;
-  await rest("config", {
-    method: "POST",
-    body: { chave: CHAVE_SITE_ATIVO, valor: id, atualizado_em: agora },
-    prefer: "resolution=merge-duplicates",
-  });
+  await gravarSiteAtivo(id);
+}
+
+/** Rascunho de um modelo, pra prévia do fotógrafo. null quando não existe. */
+export async function rascunhoDe(id: string): Promise<{ nome: string; rascunho: DadosSite } | null> {
+  const linhas = await rest<{ nome: string; rascunho: DadosSite }[]>(
+    "site_modelos?id=eq." + encodeURIComponent(id) + "&select=nome,rascunho&limit=1",
+  );
+  return linhas?.[0] ?? null;
 }
