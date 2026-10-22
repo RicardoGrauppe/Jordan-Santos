@@ -243,8 +243,13 @@ export default function ListaClientes() {
                grudar, você marca um cliente lá embaixo e o botão de excluir
                some da tela. Gruda logo abaixo do cabeçalho do app (56px), que
                também é sticky. No computador a lista cabe e a faixa é o
-               cabeçalho da tabela, que não precisa seguir ninguém. */
-            "sticky top-14 z-20 md:static " +
+               cabeçalho da tabela, que não precisa seguir ninguém.
+
+               `md:relative` e NUNCA `md:static`: as duas camadas aqui dentro
+               são absolutas e precisam desta faixa como âncora. Com `static`
+               elas se penduram no container da página e vão parar fora da
+               tabela, uma em cada ponta da tela (foi o que aconteceu). */
+            "sticky top-14 z-20 md:relative md:top-auto md:z-auto " +
             (marcados.length
               ? "block rounded-t-2xl bg-accent-tint md:rounded-none"
               : "hidden bg-soft")
