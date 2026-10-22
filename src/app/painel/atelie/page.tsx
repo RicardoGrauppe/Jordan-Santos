@@ -27,6 +27,7 @@ import { Sk, SkCartaoModelo, SkCartaoNovo } from "@/components/Skeleton";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { FormulariosAtelie } from "@/components/FormulariosAtelie";
+import { ModalNovoAtelie } from "@/components/ModalNovoAtelie";
 import { BannerPainel, BOTAO_BANNER, BOTAO_BANNER_2 } from "@/components/BannerPainel";
 import { api, esperaMin, ERRO_SESSAO } from "@/lib/painel";
 import { fmtData } from "@/lib/util";
@@ -226,6 +227,7 @@ export default function Atelie() {
   }, [dados]);
   const capasProntas = !!dados && (desistiu || dados.modelos.every((m) => pintadas.has(m.id)));
   const [criando, setCriando] = useState(false);
+  const [escolhendoNovo, setEscolhendoNovo] = useState(false);
   const [versoesDe, setVersoesDe] = useState<{ modelo: Modelo; noAr: boolean } | null>(null);
   const fecharVersoes = useCallback(() => setVersoesDe(null), []);
 
@@ -329,6 +331,15 @@ export default function Atelie() {
     catch (e) { falhou(e, "Não consegui apagar, tente de novo."); }
   }
 
+  /* o mesmo que o "Novo formulário" da seção de baixo (FormulariosAtelie) */
+  async function novoFormulario() {
+    setCriando(true);
+    try {
+      const { id } = await api<{ id: string }>("/api/formulario", { acao: "criar", nome: "Formulário sem título" });
+      router.push("/painel/atelie/formulario/" + id);
+    } catch (e) { falhou(e, "Não consegui criar o formulário, tente de novo."); setCriando(false); }
+  }
+
   async function novo() {
     setCriando(true);
     try {
@@ -373,7 +384,13 @@ export default function Atelie() {
 
   return (
     <div className="mx-auto max-w-[1040px]">
-      <TituloMobile titulo="Ateliê" acao={{ rotulo: "Abrir o site", Icone: ExternalLink, aoAcionar: abrirSite }} />
+      {/* no celular o botão do cabeçalho é o "Novo" (Abrir o site já está no
+          banner), e pergunta o quê: site ou formulário */}
+      <TituloMobile titulo="Ateliê" acao={{ rotulo: "Novo", Icone: Plus, aoAcionar: () => setEscolhendoNovo(true) }} />
+      {escolhendoNovo ? (
+        <ModalNovoAtelie ocupado={criando} aoFechar={() => setEscolhendoNovo(false)}
+          aoSite={() => void novo()} aoFormulario={() => void novoFormulario()} />
+      ) : null}
       {/* BANNER (22/10/2026, pedido do Ricardo): no lugar do título solto e do
           cartão bege do beta. Mesma família do herói da ficha do cliente
           (degradê petróleo, luz no canto, nada com sombra por dentro). À
