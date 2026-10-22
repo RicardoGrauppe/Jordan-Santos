@@ -1267,7 +1267,7 @@ export default function PaginaRevisarContrato() {
               <div className="mt-3">
                 <Aviso>
                   <Info size={16} className="mt-0.5 shrink-0 text-[#B99524]" strokeWidth={1.6} />
-                  <span>Este contrato ainda é rascunho, você pode editar clicando nos campos. O casal só vê depois que você copiar e mandar o link.</span>
+                  <span>Este contrato ainda é rascunho e vive aqui: edite clicando nos campos. Ele só vai pra Autentique quando você assinar sua parte e clicar em “Enviar pra assinatura”, e é de lá que o casal assina.</span>
                 </Aviso>
               </div>
             ) : null}
