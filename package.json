@@ -11,6 +11,7 @@
     "contrato:verificar": "node tools/contrato-template/verificar.mjs"
   },
   "dependencies": {
+    "@puckeditor/core": "0.23.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.109.0",
     "@tiptap/core": "^3.31.3",
