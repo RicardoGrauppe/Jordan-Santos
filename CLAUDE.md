@@ -141,8 +141,9 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   Ricardo Grauppe, 22/10/2026, depois de comparar com uma moldura própria
   que deixava coisa do Puck de fora): `components/EditorAtelie.tsx` é só o
   `<Puck>` com o config, os textos em português (`lib/atelie/dicionario.ts`)
-  e o Publicar dele ligado à nossa publicação, com um Voltar antes dele
-  (`headerActions`, com o `Button` do Puck: o único override). Sem pele da
+  e o Publicar dele ligado à nossa publicação, mais uma seta de voltar no
+  quadrado vazio do canto esquerdo do cabeçalho (override `header`, com o
+  `IconButton` do Puck: o único override). Sem pele da
   casa, tamanhos de tela nem permissões próprias, então no celular também se
   monta a página (decisão do Ricardo, 22/10/2026); estilo fica pra depois. Nome,
   prévia, versões e descartar moram no menu do cartão, na galeria. Importe
