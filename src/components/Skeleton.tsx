@@ -40,7 +40,9 @@ export function SkCartaoModelo() {
   );
 }
 
-/** O "Novo modelo"/"Novo formulário" carregando: só a placa, sem texto. */
+/** O "Novo modelo"/"Novo formulário" carregando: a placa no mesmo cinza da
+ *  de verdade (#EEF0F3), sem o "+" e o texto. Shimmer aqui sumia: o degradê
+ *  do Sk é do tom da página. */
 export function SkCartaoNovo() {
-  return <Sk className="min-h-[120px] rounded-[18px] sm:min-h-[200px]" />;
+  return <span aria-hidden className="block min-h-[120px] rounded-[18px] bg-[#EEF0F3] sm:min-h-[200px]" />;
 }

@@ -23,7 +23,7 @@ import { ClipboardList, Copy, TriangleAlert, EllipsisVertical, ExternalLink, Eye
 import { CartaoAviso, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
-import { Sk, SkCartaoModelo, SkCartaoNovo, SkLinha } from "@/components/Skeleton";
+import { Sk, SkCartaoModelo, SkCartaoNovo } from "@/components/Skeleton";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { FormulariosAtelie } from "@/components/FormulariosAtelie";
@@ -67,10 +67,9 @@ const rotaEditor = (id: string) => "/painel/atelie/" + id;
 function Miniatura({ id, versao }: { id: string; versao: string }) {
   const caixa = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0);
-  /* a prévia é a página inteira do site e demora: até ela pintar, o lugar
-     dela é um esqueleto de site (faixa de capa, título, dois blocos), que
-     some num fade quando o iframe termina de carregar. Volta a valer a cada
-     versão nova (key do iframe). */
+  /* a prévia é a página inteira do site e demora: até ela pintar, a capa
+     fica no shimmer, que some num fade quando o iframe termina de carregar.
+     Volta a valer a cada versão nova (key do iframe). */
   const [pronta, setPronta] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,13 +97,11 @@ function Miniatura({ id, versao }: { id: string; versao: string }) {
           style={{ width: LARGURA_SITE, height: LARGURA_SITE / 1.6, transform: `scale(${escala})` }}
         />
       ) : null}
-      <div aria-hidden className={"pointer-events-none absolute inset-0 flex flex-col bg-paper transition-opacity duration-500 " + (pronta === versao ? "opacity-0" : "opacity-100")}>
-        <Sk className="h-[58%] w-full rounded-none" />
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6">
-          <SkLinha style={{ width: "46%" }} />
-          <SkLinha className="h-[9px]" style={{ width: "30%" }} />
-        </div>
-      </div>
+      {/* o MESMO shimmer da capa do skeleton da lista (SkCartaoModelo): a
+          lista chega, o cartão aparece e a capa continua igual até a prévia
+          pintar. Um desenho diferente aqui (era um "site falso") parecia um
+          segundo skeleton trocando por cima do primeiro. */}
+      <Sk className={"pointer-events-none absolute inset-0 rounded-none transition-opacity duration-500 " + (pronta === versao ? "opacity-0" : "opacity-100")} />
     </div>
   );
 }
