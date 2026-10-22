@@ -64,6 +64,9 @@ export type Contrato = {
   editavel?: boolean;
   alterado_desde_envio?: boolean;
   template_json_snapshot?: unknown;
+  /* modelo que deu origem ao texto (o texto em si é a cópia acima) */
+  template_id?: string | null;
+  template_nome?: string | null;
   aceite_texto?: string | null;
   aceite_em?: string | null;
   verificado_em?: string | null;

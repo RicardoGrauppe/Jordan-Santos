@@ -27,7 +27,7 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, ExternalLink, MessageCircle, PenTool, Send, Table } from "lucide-react";
+import { ArrowLeft, Check, Copy, ExternalLink, MessageCircle, PenTool, Plus, Send, Table } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
 import { EditorContrato } from "@/components/EditorContrato";
@@ -35,7 +35,7 @@ import { useConfirmar } from "@/components/ModalConfirmar";
 import { useVoltar } from "@/lib/voltar";
 import { copiarTexto, type Contrato } from "@/lib/ficha";
 import { ERRO_SESSAO, api, rotaDaRevisaoAntiga, urlNoAutentique } from "@/lib/painel";
-import { ROTULOS_CAMPO } from "@/lib/contrato-editor";
+import { ROTULOS_CAMPO, jsonParaHtml } from "@/lib/contrato-editor";
 
 const ESPERA_MS = 700;
 
@@ -49,15 +49,76 @@ const GRUPOS_CAMPO: { titulo: string; campos: string[] }[] = [
   { titulo: "Assinatura", campos: ["cidade-assinatura", "data-assinatura"] },
 ];
 
+type ModeloResumo = { id: string; nome: string | null; ativo: boolean };
+
+type LateralProps = {
+  editor: Editor;
+  fechar: () => void;
+  modelos: ModeloResumo[] | null;
+  modeloId: string | null;
+  ocupado: boolean;
+  aoEscolher: (id: string) => void;
+  aoCriar: (nome: string) => Promise<boolean>;
+};
+
 /* Lateral exclusiva do contrato de um cliente (o editor de modelos não tem).
-   Começa com o que já existia escondido no "+": os campos e os blocos, agora
-   à vista e agrupados. As próximas funções entram aqui como seções novas. */
-function LateralContrato({ editor, fechar }: { editor: Editor; fechar: () => void }) {
+   Em cima, o modelo do contrato (trocar ou criar um); embaixo, os campos e
+   blocos que antes ficavam escondidos no "+". */
+function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolher, aoCriar }: LateralProps) {
   const inserir = (conteudo: JSONContent) => { editor.chain().focus().insertContent(conteudo).run(); fechar(); };
   const item = "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-[7px] text-left text-[13px] text-ink transition-colors hover:bg-line";
+  const [criando, setCriando] = useState(false);
+  const [nome, setNome] = useState("");
+
+  async function criar() {
+    const n = nome.trim();
+    if (!n || ocupado) return;
+    if (await aoCriar(n)) { setCriando(false); setNome(""); }
+  }
+
   return (
     <div>
-      <h2 className="m-0 text-[15px] font-bold text-ink">Inserir no contrato</h2>
+      <h2 className="m-0 text-[15px] font-bold text-ink">Modelo do contrato</h2>
+      <p className="m-0 mt-1 text-[12.5px] leading-snug text-ink-soft">Trocar o modelo substitui o texto deste contrato.</p>
+      <div className="mt-2">
+        {modelos === null ? (
+          <p className="m-0 px-2.5 py-[7px] text-[13px] text-ink-soft">Carregando modelos…</p>
+        ) : modelos.map((m) => {
+          const atual = m.id === modeloId;
+          return (
+            <button key={m.id} type="button" disabled={ocupado} aria-pressed={atual}
+              onClick={() => { if (!atual) aoEscolher(m.id); }}
+              className={item + " disabled:cursor-default " + (atual ? "bg-accent-tint font-semibold text-accent hover:bg-accent-tint" : "")}>
+              <span className="min-w-0 flex-1 truncate">{m.nome || "Sem nome"}</span>
+              {m.ativo ? <span className="shrink-0 text-[11.5px] font-normal text-ink-soft">padrão</span> : null}
+              {atual ? <Check size={15} className="shrink-0" /> : null}
+            </button>
+          );
+        })}
+        {criando ? (
+          <form className="mt-1 rounded-lg bg-paper p-2" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
+            <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
+              className="h-9 w-full rounded-lg bg-soft px-2.5 text-[13px] text-ink outline-none placeholder:text-ink-soft focus:bg-line" />
+            <p className="m-0 mt-1.5 text-[11.5px] leading-snug text-ink-soft">Nasce com o texto deste contrato.</p>
+            <div className="mt-2 flex gap-1.5">
+              <button type="submit" disabled={!nome.trim() || ocupado}
+                className="h-8 flex-1 cursor-pointer rounded-lg bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
+                Criar modelo
+              </button>
+              <button type="button" onClick={() => { setCriando(false); setNome(""); }}
+                className="h-8 cursor-pointer rounded-lg px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-soft hover:text-ink">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button type="button" disabled={ocupado} onClick={() => setCriando(true)} className={item + " text-ink-soft disabled:cursor-default"}>
+            <Plus size={15} /> Novo modelo
+          </button>
+        )}
+      </div>
+
+      <h2 className="m-0 mt-6 text-[15px] font-bold text-ink">Inserir no contrato</h2>
       <p className="m-0 mt-1 text-[12.5px] leading-snug text-ink-soft">Clique pra pôr no lugar do cursor. O valor vem da ficha do cliente.</p>
       {GRUPOS_CAMPO.map((g) => (
         <section key={g.titulo} className="mt-4">
@@ -104,6 +165,10 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   /* editado depois de ir pra Autentique (o servidor diz ao abrir; a tela
      marca sozinha a cada gravação, pra o botão mudar na hora) */
   const [alterado, setAlterado] = useState(false);
+  /* modelos pra lateral; null = ainda carregando */
+  const [modelos, setModelos] = useState<ModeloResumo[] | null>(null);
+  const [modeloId, setModeloId] = useState<string | null>(null);
+  const [trocando, setTrocando] = useState(false);
 
   const pendente = useRef<{ json: JSONContent; html: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +189,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
           return;
         }
         setCarga(r);
+        setModeloId(c?.template_id ?? null);
         temDocumento.current = !!c?.autentique_id;
         setAlterado(!!c?.alterado_desde_envio);
         /* já foi pra Autentique: mostra o link do casal desde a abertura */
@@ -139,6 +205,21 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       });
     return () => { vivo = false; };
   }, [id, router]);
+
+  /* ---------- modelos ---------- */
+  const carregarModelos = useCallback(
+    () => api<{ modelos: ModeloResumo[] }>("/api/templates")
+      .catch(() => null)
+      .then((r) => setModelos(r?.modelos ?? [])),
+    [],
+  );
+  useEffect(() => {
+    let vivo = true;
+    api<{ modelos: ModeloResumo[] }>("/api/templates")
+      .catch(() => null)
+      .then((r) => { if (vivo) setModelos(r?.modelos ?? []); });
+    return () => { vivo = false; };
+  }, []);
 
   /* ---------- salvamento automático (mesmo desenho do editor de modelos) ---------- */
   const salvarAgora = useCallback(async () => {
@@ -213,6 +294,60 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       setEstado({ texto: (e as Error).message || "Não deu pra falar com a Autentique.", tom: "erro" });
     } finally {
       setEnviando(false);
+    }
+  }
+
+  /* troca o texto pelo do modelo; o servidor grava e devolve o texto novo */
+  async function trocarModelo(editor: Editor, modelo: string, perguntar: boolean): Promise<boolean> {
+    if (perguntar) {
+      const nomeModelo = modelos?.find((m) => m.id === modelo)?.nome || "este modelo";
+      const ok = await confirmar({
+        titulo: "Trocar o modelo do contrato?",
+        texto:
+          "O texto deste contrato vira o de \"" + nomeModelo + "\". O que você editou só aqui se perde. " +
+          "Os dados do casal continuam vindo da ficha.",
+        rotuloOk: "Trocar modelo",
+      });
+      if (!ok) return false;
+    }
+    setTrocando(true);
+    try {
+      await descarregar();
+      const j = await api<{ json: JSONContent; alterado: boolean }>("/api/estudio", {
+        acao: "trocar-modelo-contrato", id, modelo_id: modelo,
+      });
+      /* sem emitir update: o servidor já gravou, não precisa salvar de novo */
+      if (perguntar) editor.commands.setContent(j.json, { emitUpdate: false });
+      setModeloId(modelo);
+      if (temDocumento.current) setAlterado(j.alterado);
+      if (perguntar) setEstado({ texto: "Modelo trocado", tom: "ok" });
+      return true;
+    } catch (e) {
+      if ((e as Error).message === ERRO_SESSAO) { router.replace("/entrar"); return false; }
+      setEstado({ texto: (e as Error).message || "Não consegui trocar o modelo.", tom: "erro" });
+      return false;
+    } finally {
+      setTrocando(false);
+    }
+  }
+
+  /* modelo novo com o texto deste contrato, que passa a ser o modelo dele */
+  async function criarModelo(editor: Editor, nome: string): Promise<boolean> {
+    setTrocando(true);
+    try {
+      const json = editor.getJSON();
+      const criado = await api<{ modelo: { id: string } }>("/api/templates", { acao: "criar", nome });
+      await api("/api/templates", { acao: "salvar", id: criado.modelo.id, conteudo_json: json, conteudo_html: jsonParaHtml(json) });
+      await carregarModelos();
+      const ok = await trocarModelo(editor, criado.modelo.id, false);
+      if (ok) setEstado({ texto: "Modelo \"" + nome + "\" criado", tom: "ok" });
+      return ok;
+    } catch (e) {
+      if ((e as Error).message === ERRO_SESSAO) { router.replace("/entrar"); return false; }
+      setEstado({ texto: (e as Error).message || "Não consegui criar o modelo.", tom: "erro" });
+      return false;
+    } finally {
+      setTrocando(false);
     }
   }
 
@@ -318,7 +453,11 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       conteudoInicial={(contrato.template_json_snapshot as JSONContent) ?? null}
       aoMudar={aoMudar}
       topo={topo}
-      lateral={(editor, fechar) => <LateralContrato editor={editor} fechar={fechar} />}
+      lateral={(editor, fechar) => (
+        <LateralContrato editor={editor} fechar={fechar} modelos={modelos} modeloId={modeloId} ocupado={trocando || enviando}
+          aoEscolher={(m) => { void trocarModelo(editor, m, true).then((ok) => { if (ok) fechar(); }); }}
+          aoCriar={(nome) => criarModelo(editor, nome)} />
+      )}
     />
   );
 }

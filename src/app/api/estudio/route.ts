@@ -683,6 +683,49 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (acao === "trocar-modelo-contrato") {
+      /* Troca o TEXTO deste contrato pelo de um modelo (lateral do editor do
+         cliente). Substitui a cópia inteira: o que foi editado só neste
+         contrato se perde, e o painel confirma isso antes. Mesmas travas do
+         salvar-texto-contrato. Devolve o texto novo pro editor recarregar sem
+         segunda leitura, e se agora difere do que está na Autentique. */
+      const modeloId = String(corpo.modelo_id || "");
+      if (!/^[0-9a-f-]{36}$/i.test(modeloId)) return NextResponse.json({ erro: "modelo inválido" }, { status: 400 });
+      const modelos = await rest<{ id: string; nome: string | null; conteudo_json: unknown; conteudo_html: string | null }[]>(
+        "contrato_templates?id=eq." + modeloId + "&select=id,nome,conteudo_json,conteudo_html&limit=1",
+      );
+      const modelo = modelos && modelos[0];
+      if (!modelo) return NextResponse.json({ erro: "modelo não encontrado" }, { status: 404 });
+
+      const ativos = await rest<{
+        id: string; status: string; template_json_snapshot: unknown; snapshot: unknown;
+        autentique_id: string | null; autentique_hash: string | null;
+      }[]>(
+        "contratos?cliente_id=eq." + id + "&status=in.(rascunho,enviado,visualizado,assinado)" +
+        "&select=id,status,template_json_snapshot,snapshot,autentique_id,autentique_hash&order=criado_em.desc&limit=1",
+      );
+      const c = ativos && ativos[0];
+      if (!c) return NextResponse.json({ erro: "gere o contrato antes de escolher o modelo" }, { status: 404 });
+      if (c.status === "assinado") return NextResponse.json({ erro: "contrato já assinado, não dá mais pra trocar o modelo" }, { status: 409 });
+
+      /* mesma regra do salvar: enviado antes de existir o hash, o texto de
+         antes desta troca é a referência do "alterado" */
+      const hashEnvio = c.autentique_id ? (c.autentique_hash || await hashDoConteudo(c)) : null;
+      await rest("contratos?id=eq." + c.id, {
+        method: "PATCH",
+        body: {
+          template_id: modelo.id,
+          template_nome: modelo.nome,
+          template_json_snapshot: modelo.conteudo_json,
+          template_html_snapshot: modelo.conteudo_html,
+          ...(c.autentique_id && !c.autentique_hash ? { autentique_hash: hashEnvio } : {}),
+        },
+      });
+      const alterado = !!hashEnvio &&
+        (await hashDoConteudo({ template_json_snapshot: modelo.conteudo_json, snapshot: c.snapshot })) !== hashEnvio;
+      return NextResponse.json({ ok: true, json: modelo.conteudo_json, alterado });
+    }
+
     if (acao === "sincronizar-contrato") {
       /* O painel chama ao abrir a ficha e a revisão: sem um endereço público
          pra receber webhook (o domínio do estúdio não existe), é assim que o
