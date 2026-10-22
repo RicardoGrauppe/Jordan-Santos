@@ -255,13 +255,14 @@ export default function ListaClientes() {
                elas se penduram no container da página e vão parar fora da
                tabela, uma em cada ponta da tela (foi o que aconteceu). */
             "sticky top-14 z-20 md:relative md:top-auto md:z-auto " +
-            /* Em repouso, accent-tint: diferente da página (soft) e das
-               linhas (paper), que era o que faltava, já que antes o cabeçalho
-               tinha a cor exata do fundo. Com seleção, petróleo CHEIO: a faixa
-               muda de função e a cor diz isso antes de qualquer texto. */
+            /* Em repouso, cinza `line`: diferente da página (soft) e das
+               linhas (paper). O accent-tint que ficou aqui por um commit foi
+               recusado pelo Ricardo; ele segue só no hover da linha, onde
+               é passageiro. Com seleção, petróleo CHEIO: a faixa muda de
+               função e a cor diz isso antes de qualquer texto. */
             (marcados.length
               ? "block rounded-t-2xl bg-accent md:rounded-none"
-              : "hidden bg-accent-tint")
+              : "hidden bg-line")
           }
         >
           {/* marca a lista inteira (o que está VISÍVEL, então respeita o
@@ -292,7 +293,7 @@ export default function ListaClientes() {
                  cabeçalho começava 12px por coluna à direita do conteúdo,
                  porque nas linhas os gaps saem do espaço da 1ª coluna (1fr) e
                  empurram as outras pra esquerda */
-              "hidden gap-x-3 pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-accent-deep " +
+              "hidden gap-x-3 pl-[44px] text-[11px] font-semibold uppercase tracking-[.06em] text-ink-soft " +
               "transition-[opacity,translate] duration-200 ease-[var(--ease-desliza)] md:grid " +
               (marcados.length ? "pointer-events-none -translate-y-1 opacity-0 " : "") + COLUNAS
             }
