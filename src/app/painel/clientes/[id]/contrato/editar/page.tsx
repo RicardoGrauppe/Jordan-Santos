@@ -35,6 +35,7 @@ import type { JSONContent } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
 import { EditorContrato } from "@/components/EditorContrato";
 import { useConfirmar } from "@/components/ModalConfirmar";
+import { ModalNovoModelo, type BaseModelo } from "@/components/ModalNovoModelo";
 import { useVoltar } from "@/lib/voltar";
 import { copiarTexto, type Contrato } from "@/lib/ficha";
 import { ERRO_SESSAO, api, rotaDaRevisaoAntiga, urlNoAutentique } from "@/lib/painel";
@@ -56,8 +57,6 @@ const GRUPOS_CAMPO: { titulo: string; icone: LucideIcon; campos: string[] }[] = 
 const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 type ModeloResumo = { id: string; nome: string | null; ativo: boolean };
-/** de onde o modelo novo parte: o texto deste contrato ou uma folha em branco */
-type BaseModelo = "contrato" | "branco";
 
 type LateralProps = {
   editor: Editor;
@@ -95,12 +94,6 @@ function CartaoLateral({ icone: Icone, titulo, texto, children }: {
    os blocos. */
 function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolher, aoCriar }: LateralProps) {
   const [criando, setCriando] = useState(false);
-  const [base, setBase] = useState<BaseModelo>("contrato");
-  /* foco no nome quando o "Novo modelo" abre (só na abertura: o rádio de
-     baixo não pode devolver o foco pro campo a cada clique) */
-  const inputNome = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (criando) inputNome.current?.focus({ preventScroll: true }); }, [criando]);
-  const [nome, setNome] = useState("");
   const [busca, setBusca] = useState("");
   /* o chip que acabou de entrar no texto fica verde por um instante */
   const [inserido, setInserido] = useState<string | null>(null);
@@ -113,12 +106,6 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
     if (timerInserido.current) clearTimeout(timerInserido.current);
     timerInserido.current = setTimeout(() => setInserido(null), 900);
     fechar();
-  }
-
-  async function criar() {
-    const n = nome.trim();
-    if (!n || ocupado) return;
-    if (await aoCriar(n, base)) { setCriando(false); setNome(""); setBase("contrato"); setAberto(false); }
   }
 
   const [aberto, setAberto] = useState(false);
@@ -171,60 +158,16 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
                 );
               })}
 
-              {/* "Novo modelo" também é dropdown: abre no lugar, com o nome e de
-                  onde o modelo parte */}
-              <button type="button" disabled={ocupado} aria-expanded={criando} onClick={() => setCriando((v) => !v)}
-                className={linha + " " + (criando ? "bg-soft text-ink" : "text-ink-soft hover:bg-soft hover:text-ink")}>
-                <Plus size={18} className={"shrink-0 transition-[rotate] duration-300 " + (criando ? "rotate-45" : "")} />
-                <span className="flex-1">Novo modelo</span>
-                <ChevronDown size={16} className={"shrink-0 text-ink-soft transition-[rotate] duration-300 " + (criando ? "rotate-180" : "")} />
+              {/* "Novo modelo" abre um pop-up (nome + de onde parte) */}
+              <button type="button" disabled={ocupado} onClick={() => setCriando(true)}
+                className={linha + " text-ink-soft hover:bg-soft hover:text-ink"}>
+                <Plus size={18} className="shrink-0" /> Novo modelo
               </button>
-              <div inert={!criando}
-                className={"grid transition-[grid-template-rows,opacity] duration-300 ease-[var(--ease-desliza)] " +
-                  (criando ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
-                <div className="min-h-0 overflow-hidden">
-                  <form className="mt-1 rounded-xl bg-soft p-2.5" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
-                    <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
-                      ref={inputNome}
-                      className="h-9 w-full rounded-[10px] bg-paper px-3 text-[13px] text-ink outline-none placeholder:text-ink-soft/70" />
-                    <div role="radiogroup" aria-label="Começar com" className="mt-2 grid gap-1">
-                      {([
-                        ["contrato", "Texto deste contrato", "Vira o modelo deste contrato"],
-                        ["branco", "Em branco", "Abre no editor de modelos"],
-                      ] as const).map(([v, titulo, dica]) => {
-                        const marcado = base === v;
-                        return (
-                          <button key={v} type="button" role="radio" aria-checked={marcado} onClick={() => setBase(v)}
-                            className={"flex cursor-pointer items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left transition-colors " +
-                              (marcado ? "bg-paper" : "hover:bg-line")}>
-                            <span className={"inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors " +
-                              (marcado ? "bg-accent" : "bg-line")}>
-                              {marcado ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block text-[12.5px] font-semibold text-ink">{titulo}</span>
-                              <span className="block text-[11.5px] leading-snug text-ink-soft">{dica}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-2.5 flex gap-1.5">
-                      <button type="submit" disabled={!nome.trim() || ocupado}
-                        className="h-8 flex-1 cursor-pointer rounded-[10px] bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
-                        Criar modelo
-                      </button>
-                      <button type="button" onClick={() => { setCriando(false); setNome(""); }}
-                        className="h-8 cursor-pointer rounded-[10px] px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-line hover:text-ink">
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
             </div>
           </div>
         </div>
+        <ModalNovoModelo aberto={criando} ocupado={ocupado} aoFechar={() => setCriando(false)}
+          aoCriar={async (n, b) => { const ok = await aoCriar(n, b); if (ok) setAberto(false); return ok; }} />
       </CartaoLateral>
 
       <CartaoLateral icone={Braces} titulo="Campos" texto="Clique pra pôr no cursor. O valor vem da ficha.">
