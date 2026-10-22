@@ -40,8 +40,9 @@ import { TituloMobile } from "@/components/cabecalho-mobile";
 import { PillsPacote, ResumoItens } from "@/components/PillsPacote";
 import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
+import { ModalContratoEnviado, type DadosEnviado } from "@/components/ModalContratoEnviado";
 import { CATALOGO, PACOTES } from "@/lib/catalogo";
-import { abrirContratoEmNovaGuia, rotaDoContrato } from "@/lib/painel";
+import { abrirContratoEmNovaGuia, rotaDoContrato, urlNoAutentique } from "@/lib/painel";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
   formatarMoeda, parseMoeda, soDigitos, copiarTexto,
@@ -167,7 +168,11 @@ export default function PaginaCliente() {
   /* `?campo=email`: quem chega mandado pra preencher um campo (hoje, o
      editor do contrato quando falta o e-mail pra Autentique) cai com a seção
      aberta e o cursor no campo */
-  const campoAlvo = useSearchParams().get("campo");
+  const parametros = useSearchParams();
+  const campoAlvo = parametros.get("campo");
+  /* `?enviado=1|atualizado`: o editor do contrato acabou de mandar pra
+     Autentique e voltou pra cá; a ficha abre o pop-up de compartilhar */
+  const enviadoAgora = parametros.get("enviado");
   const confirmar = useConfirmar();
   const { mostrar: avisar, elemento: toast } = useToast();
 
@@ -180,6 +185,8 @@ export default function PaginaCliente() {
   const [erroCarga, setErroCarga] = useState("");
   const [statusSalvo, setStatusSalvo] = useState<Msg>({ texto: "" });
   const [modalLink, setModalLink] = useState<DadosLink | null>(null);
+  const [modalEnviado, setModalEnviado] = useState<DadosEnviado | null>(null);
+  const enviadoTratado = useRef(false);
   const [ocupado, setOcupado] = useState(false);
 
   const travado = contrato?.status === "assinado";
@@ -288,6 +295,29 @@ export default function PaginaCliente() {
     /* tira o ?campo da URL: recarregar a ficha não deve puxar o foco de novo */
     window.history.replaceState(null, "", window.location.pathname);
   }, [carregando, campoAlvo]);
+
+  useEffect(() => {
+    if (carregando || !enviadoAgora || enviadoTratado.current) return;
+    const id = clienteIdRef.current;
+    const autentiqueId = contrato?.autentique_id;
+    if (!id || !autentiqueId) return;
+    enviadoTratado.current = true;
+    window.history.replaceState(null, "", window.location.pathname);
+    /* apenasLink: só lê o link de um documento que já existe, nunca envia */
+    api<{ link: string | null; mensagem?: string; telefone?: string }>(
+      "/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true },
+    ).then((r) => {
+      if (!r.link) return;
+      setModalEnviado({
+        link: r.link,
+        mensagem: r.mensagem || r.link,
+        telefone: r.telefone || "",
+        email: fichaRef.current.email || "",
+        urlContrato: urlNoAutentique(autentiqueId),
+        atualizado: enviadoAgora === "atualizado",
+      });
+    }).catch((e: unknown) => falhou(e, (msg) => avisar(msg)));
+  }, [carregando, enviadoAgora, contrato, falhou, avisar]);
 
   /* ---------- salvamento ---------- */
 
@@ -774,6 +804,7 @@ export default function PaginaCliente() {
       )}
 
       {modalLink ? <ModalLink dados={modalLink} onFechar={() => setModalLink(null)} /> : null}
+      {modalEnviado ? <ModalContratoEnviado dados={modalEnviado} onFechar={() => setModalEnviado(null)} /> : null}
       {toast}
     </div>
   );

@@ -28,7 +28,7 @@
 import { use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, Copy, ExternalLink, FileText, Heart, LayoutTemplate, MapPin, MessageCircle, PenLine,
+  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, LayoutTemplate, LoaderCircle, MapPin, PenLine,
   PenTool, Plus, Search, Send, Table, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
@@ -37,7 +37,7 @@ import { EditorContrato } from "@/components/EditorContrato";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { ModalNovoModelo, type BaseModelo } from "@/components/ModalNovoModelo";
 import { useVoltar } from "@/lib/voltar";
-import { copiarTexto, type Contrato } from "@/lib/ficha";
+import type { Contrato } from "@/lib/ficha";
 import { ERRO_SESSAO, api, rotaDaRevisaoAntiga, urlNoAutentique } from "@/lib/painel";
 import { ROTULOS_CAMPO, jsonParaHtml } from "@/lib/contrato-editor";
 
@@ -240,9 +240,8 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   const [carga, setCarga] = useState<Resposta | null>(null);
   const [erroCarga, setErroCarga] = useState("");
   const [estado, setEstado] = useState<Estado>({ texto: "" });
-  const [enviando, setEnviando] = useState(false);
-  /* o que a Autentique devolveu: link do casal e a mensagem pronta */
-  const [envio, setEnvio] = useState<RespostaEnvio | null>(null);
+  /* tela de carregamento por cima de tudo enquanto a Autentique responde */
+  const [enviando, setEnviando] = useState<false | "enviando" | "atualizando">(false);
   /* editado depois de ir pra Autentique (o servidor diz ao abrir; a tela
      marca sozinha a cada gravação, pra o botão mudar na hora) */
   const [alterado, setAlterado] = useState(false);
@@ -261,7 +260,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   useEffect(() => {
     let vivo = true;
     api<Resposta>("/api/estudio?id=" + encodeURIComponent(id))
-      .then(async (r) => {
+      .then((r) => {
         if (!vivo) return;
         const c = r.contrato;
         /* contrato antigo, de texto fixo: não tem o que editar aqui */
@@ -273,12 +272,6 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
         setModeloId(c?.template_id ?? null);
         temDocumento.current = !!c?.autentique_id;
         setAlterado(!!c?.alterado_desde_envio);
-        /* já foi pra Autentique: mostra o link do casal desde a abertura */
-        if (c?.autentique_id) {
-          const j = await api<RespostaEnvio>("/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true })
-            .catch(() => null);
-          if (vivo && j?.link) setEnvio(j);
-        }
       })
       .catch((e: Error) => {
         if (e.message === ERRO_SESSAO) { router.replace("/entrar"); return; }
@@ -370,30 +363,22 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       });
       if (!ok) return;
     }
-    setEnviando(true);
-    setEstado({ texto: atualizar ? "Atualizando na Autentique…" : "Enviando pra Autentique…" });
+    setEnviando(atualizar ? "atualizando" : "enviando");
+    setEstado({ texto: "" });
     try {
       await descarregar();
       const j = await api<RespostaEnvio>("/api/estudio", { acao: "liberar-contrato-cliente", id, atualizar });
-      setEnvio(j);
-      temDocumento.current = true;
-      setAlterado(!!j.alterado);
-      setEstado({
-        texto: j.linkNovo
-          ? "Atualizado. O link do casal mudou: mande o novo."
-          : "Assinado por você e enviado. Agora é com o casal.",
-        tom: "ok",
-      });
-      /* a ficha e a Home leem o estado de novo na próxima visita */
-      const r = await api<Resposta>("/api/estudio?id=" + encodeURIComponent(id)).catch(() => null);
-      if (r) setCarga(r);
+      /* deu certo: volta pra ficha, que abre o pop-up de compartilhar (link,
+         WhatsApp, e-mail e "Ver contrato"). A tela de carregamento fica até
+         a ficha montar, sem piscar o editor no meio. */
+      router.push("/painel/clientes/" + encodeURIComponent(id) + "?enviado=" + (j.linkNovo ? "atualizado" : "1"));
+      return;
     } catch (e) {
+      setEnviando(false);
       if ((e as Error).message === ERRO_SESSAO) { router.replace("/entrar"); return; }
       /* o e-mail sumiu da ficha em outra aba depois que esta abriu */
       if (/e-mail do casal/.test((e as Error).message)) { setEstado({ texto: "" }); await pedirEmail(); return; }
       setEstado({ texto: (e as Error).message || "Não deu pra falar com a Autentique.", tom: "erro" });
-    } finally {
-      setEnviando(false);
     }
   }
 
@@ -463,11 +448,6 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
     }
   }
 
-  async function copiar(texto: string, rotulo: string) {
-    const ok = await copiarTexto(texto);
-    setEstado({ texto: ok ? rotulo + " copiado" : "Não consegui copiar. Selecione e copie à mão.", tom: ok ? "ok" : "erro" });
-  }
-
   /* ---------- telas de estado ---------- */
   if (erroCarga) return <p className="px-5 pt-6 text-[13px] text-erro">{erroCarga}</p>;
   if (!carga) return <p className="px-5 pt-6 text-[13px] text-ink-soft">Abrindo…</p>;
@@ -497,15 +477,11 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       </a>
     )
     : (
-      <button type="button" disabled={enviando} onClick={() => void enviar(!!contrato.autentique_id)}
+      <button type="button" disabled={!!enviando} onClick={() => void enviar(!!contrato.autentique_id)}
         className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-accent px-4 text-[13.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
         <Send size={15} /> {contrato.autentique_id ? "Atualizar na Autentique" : "Assinar e enviar"}
       </button>
     );
-
-  const whatsapp = envio?.telefone && envio.mensagem
-    ? "https://wa.me/" + envio.telefone + "?text=" + encodeURIComponent(envio.mensagem)
-    : null;
 
   const topo = (
     <div className="pt-2">
@@ -529,29 +505,6 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
         {botao}
       </div>
 
-      {/* link do casal, depois de enviado: é por aqui que ele vai pro WhatsApp */}
-      {envio?.link && !assinado ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-soft px-3 py-2 text-[12.5px]">
-          <span className="text-ink-soft">{envio.linkNovo ? "Link novo do casal:" : "Link do casal:"}</span>
-          <span className="min-w-0 flex-1 truncate font-medium text-ink">{envio.link}</span>
-          <button type="button" onClick={() => void copiar(envio.link as string, "Link")}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-ink-soft transition-colors hover:bg-line hover:text-accent">
-            <Copy size={13} /> Copiar link
-          </button>
-          {envio.mensagem ? (
-            <button type="button" onClick={() => void copiar(envio.mensagem as string, "Mensagem")}
-              className="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-ink-soft transition-colors hover:bg-line hover:text-accent">
-              <Copy size={13} /> Copiar mensagem
-            </button>
-          ) : null}
-          {whatsapp ? (
-            <a href={whatsapp} target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-ink-soft no-underline transition-colors hover:bg-line hover:text-accent">
-              <MessageCircle size={13} /> WhatsApp
-            </a>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 
@@ -561,15 +514,40 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   }
 
   return (
+    <>
+    {enviando ? <CarregandoAutentique atualizando={enviando === "atualizando"} /> : null}
     <EditorContrato
       conteudoInicial={(contrato.template_json_snapshot as JSONContent) ?? null}
       aoMudar={aoMudar}
       topo={topo}
       lateral={(editor, fechar) => (
-        <LateralContrato editor={editor} fechar={fechar} modelos={modelos} modeloId={modeloId} ocupado={trocando || enviando}
+        <LateralContrato editor={editor} fechar={fechar} modelos={modelos} modeloId={modeloId} ocupado={trocando || !!enviando}
           aoEscolher={(m) => { void trocarModelo(editor, m, true).then((ok) => { if (ok) fechar(); }); }}
           aoCriar={(nome, base) => criarModelo(editor, nome, base)} />
       )}
     />
+    </>
+  );
+}
+
+/* Tela de carregamento do envio. Não finge etapas: o servidor faz tudo num
+   pedido só (PDF, upload, assinatura do fotógrafo), então diz o que está
+   acontecendo e quanto costuma levar. */
+function CarregandoAutentique({ atualizando }: { atualizando: boolean }) {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[rgba(246,247,249,.82)] p-5 backdrop-blur-[3px]"
+      role="status" aria-live="polite">
+      <div className="flex w-full max-w-[360px] flex-col items-center rounded-[18px] bg-paper px-8 py-9 text-center shadow-alta">
+        <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-accent-tint text-accent">
+          <LoaderCircle size={26} className="animate-spin" />
+        </span>
+        <h2 className="m-0 mt-5 text-[19px] font-semibold text-ink">
+          {atualizando ? "Atualizando na Autentique" : "Enviando pra Autentique"}
+        </h2>
+        <p className="m-0 mt-2 text-[14px] leading-[1.55] text-ink-soft">
+          Montando o PDF, subindo o contrato e assinando por você. Costuma levar alguns segundos.
+        </p>
+      </div>
+    </div>
   );
 }

@@ -629,7 +629,7 @@ export async function POST(req: Request) {
       const jaAssinado = contrato.status === "assinado";
       const saudacao = "Oi" + (primeiroNome ? ", " + primeiroNome : "") + "! Aqui é o Jordan. ";
       const mensagem = jaAssinado
-        ? saudacao + "Segue o link da via assinada do contrato — é só abrir e " +
+        ? saudacao + "Segue o link da via assinada do contrato. É só abrir e " +
           "baixar o PDF, fica sempre disponível aí:\n" +
           link + "\nQualquer coisa, me chama por aqui."
         : saudacao + "Segue o contrato pra você revisar e assinar direto pelo " +
