@@ -174,6 +174,15 @@ const CSS = `
 .cad .campo .iti input{margin-top:0}
 .cad .iti__selected-country{border:0;background:none}
 .cad .iti__selected-country-primary{border-radius:10px 0 0 10px}
+/* O reset ".cad *{margin:0;padding:0}" vence as regras do plugin (mesma
+   especificidade, e este CSS vem depois) e zerava os espaços do seletor: a
+   bandeira colava na borda e seta e DDI se amontoavam. Devolvidos aqui, com o
+   recuo da esquerda igual ao do texto dos campos (14px). O DDI ganha o corpo
+   do número digitado, senão herdava o 12,5px do rótulo. */
+.cad .campo .iti__selected-country-primary{padding:0 7px 0 14px}
+.cad .campo .iti__arrow{margin:-2px 0 0 7px}
+.cad .campo .iti__arrow--up{margin-top:4px}
+.cad .campo .iti__selected-dial-code{margin-left:6px;font-size:16px;font-weight:400;color:var(--ink)}
 @media (hover:hover){.cad .iti__selected-country-primary:hover{background:var(--soft-foco)}}
 .iti__country-selector{font-family:var(--fonte-sans),"Helvetica Neue",sans-serif;font-size:14px;border:0;border-radius:12px;box-shadow:0 10px 34px rgba(29,29,27,.14);background:#FFFFFF;z-index:200}
 .iti__search-input{border:0;background:#F6F3F0;border-radius:8px;font:inherit;outline:none}
