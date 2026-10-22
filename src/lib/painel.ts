@@ -52,6 +52,16 @@ export const ROTULO_STATUS: Record<string, string> = {
   novo: "Novo", confirmado: "Confirmado", realizado: "Realizado", arquivado: "Arquivado",
 };
 
+/**
+ * Documento no painel da Autentique. É pra onde o "Abrir na Autentique" leva:
+ * lá estão o histórico, a trilha de auditoria e a via final na fonte.
+ * Abre em guia nova e com login próprio (a sessão é do navegador do
+ * fotógrafo, não nossa).
+ */
+export function urlNoAutentique(autentiqueId: string): string {
+  return "https://painel.autentique.com.br/documentos/" + encodeURIComponent(autentiqueId);
+}
+
 /** Rota da revisão do contrato de um cliente. */
 export function rotaDoContrato(clienteId: string): string {
   return "/painel/clientes/" + encodeURIComponent(clienteId) + "/contrato";

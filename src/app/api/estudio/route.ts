@@ -90,6 +90,9 @@ type LinhaContrato = {
   assinante_ip: string | null;
   assinante_ua: string | null;
   doc_sha256: string | null;
+  autentique_id?: string | null;
+  autentique_link?: string | null;
+  recusado_em?: string | null;
   aceite_texto: string | null;
   aceite_em: string | null;
   verificado_em: string | null;
@@ -174,7 +177,9 @@ async function ultimoContrato(clienteId: string): Promise<ContratoComTemplate | 
          pdf_base64 fica de fora de propósito (blob grande; o schema avisa). */
       "signatario_nome,signatario_cpf,signatario_email,assinante_ip,assinante_ua," +
       "doc_sha256,aceite_texto,aceite_em,verificado_em,verificacao_metodo," +
-      "template_id,template_nome,template_html_snapshot" +
+      "template_id,template_nome,template_html_snapshot," +
+      /* vínculo com o documento lá: é o que acende o "Abrir na Autentique" */
+      "autentique_id,autentique_link,recusado_em" +
       "&order=criado_em.desc&limit=1",
     );
     const linha = (linhas && linhas[0]) || null;

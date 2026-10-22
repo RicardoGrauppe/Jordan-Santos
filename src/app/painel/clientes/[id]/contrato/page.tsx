@@ -32,7 +32,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Dancing_Script } from "next/font/google";
 import SignaturePad from "signature_pad";
 import {
-  ArrowLeft, Check, CircleX, Copy, Download, EllipsisVertical, Eye, FileCheck,
+  ArrowLeft, Check, CircleX, Copy, Download, EllipsisVertical, ExternalLink, Eye, FileCheck,
   Info, Pencil, Send, ShieldCheck, TriangleAlert, Users, X,
 } from "lucide-react";
 import { useVoltar } from "@/lib/voltar";
@@ -41,6 +41,7 @@ import { LateralAssinantes, type AssinanteLateral, type ItemAuditoria } from "@/
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { fmtData, moeda } from "@/lib/util";
 import { htmlContratoTemplate } from "@/lib/contrato-template";
+import { urlNoAutentique } from "@/lib/painel";
 
 
 /* a cursiva da assinatura: a mesma fonte alimenta o preview na tela e o canvas
@@ -95,6 +96,10 @@ type Contrato = {
   template_id?: string | null;
   template_nome?: string | null;
   template_html?: string | null;
+  /* documento na Autentique (desde 21/10/2026) */
+  autentique_id?: string | null;
+  autentique_link?: string | null;
+  recusado_em?: string | null;
 };
 
 type Cliente = { id?: string; noivo?: string | null; noiva?: string | null };
@@ -1224,6 +1229,21 @@ export default function PaginaRevisarContrato() {
                       <FileCheck size={15} className="opacity-85" />
                       <span>Baixar contrato assinado</span>
                     </ItemMenu>
+                    {contrato?.autentique_id ? (
+                      /* link de verdade (e não botão): é saída pra fora do
+                         app, abre em guia nova e o Jordan entra com a conta
+                         dele. `noreferrer` porque é site de terceiro. */
+                      <a
+                        href={urlNoAutentique(contrato.autentique_id)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => setMenuAberto(false)}
+                        className="flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-4 py-3.5 text-left text-[15px] text-ink no-underline transition-colors hover:bg-soft sm:py-2.5 sm:text-[13.5px]"
+                      >
+                        <ExternalLink size={15} className="opacity-85" />
+                        <span>Abrir na Autentique</span>
+                      </a>
+                    ) : null}
                     {podeCancelar ? (
                       <ItemMenu perigo onClick={() => void cancelarContrato()}>
                         <X size={15} className="opacity-85" />

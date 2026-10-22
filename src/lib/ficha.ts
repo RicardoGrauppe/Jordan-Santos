@@ -55,6 +55,10 @@ export type Contrato = {
   assinante_ip?: string | null;
   assinante_ua?: string | null;
   doc_sha256?: string | null;
+  /* vínculo com o documento na Autentique (desde 21/10/2026) */
+  autentique_id?: string | null;
+  autentique_link?: string | null;
+  recusado_em?: string | null;
   aceite_texto?: string | null;
   aceite_em?: string | null;
   verificado_em?: string | null;
