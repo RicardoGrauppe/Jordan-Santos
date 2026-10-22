@@ -517,7 +517,7 @@ const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> 
     resumo: "Quem assina o contrato e como falamos com vocês",
   },
   endereco: {
-    explica: "O contrato pede um endereço pra ficar completo, e é só pra isso que usamos. Digitem o CEP que a gente preenche o resto.",
+    explica: "O contrato pede um endereço pra ficar completo. Digitem o CEP que a gente preenche o resto.",
     resumo: "Só o que o documento pede",
   },
   evento: {
