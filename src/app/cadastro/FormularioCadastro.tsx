@@ -592,6 +592,10 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
         initialCountry: "br",
         countryOrder: ["br", "us", "pt", "ar", "py", "es", "it"],
         separateDialCode: true,
+        /* sempre o dropdown de altura fixa com rolagem por dentro. No
+           padrão ("AUTO") o plugin troca pra uma lista em tela cheia no
+           celular e em telas de até 500px. */
+        countrySelectorMode: "DROPDOWN",
         dropdownParent: document.body,
         loadUtils: () => import("intl-tel-input/utils"),
       });
