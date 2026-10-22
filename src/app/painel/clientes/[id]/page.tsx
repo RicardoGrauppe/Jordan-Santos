@@ -304,15 +304,13 @@ export default function PaginaCliente() {
     enviadoTratado.current = true;
     window.history.replaceState(null, "", window.location.pathname);
     /* apenasLink: só lê o link de um documento que já existe, nunca envia */
-    api<{ link: string | null; mensagem?: string; telefone?: string }>(
+    api<{ link: string | null; mensagem?: string }>(
       "/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true },
     ).then((r) => {
       if (!r.link) return;
       setModalEnviado({
         link: r.link,
         mensagem: r.mensagem || r.link,
-        telefone: r.telefone || "",
-        email: fichaRef.current.email || "",
         urlContrato: urlNoAutentique(autentiqueId),
         atualizado: enviadoAgora === "atualizado",
       });
