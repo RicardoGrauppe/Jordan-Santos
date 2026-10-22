@@ -1,20 +1,21 @@
 /*
-  Contrato e assinatura: o índice. Duas grades com a mesma forma (modelos de
-  contrato e assinaturas), cards com kebab, e o card tracejado de criar.
-  Portado de configuracoes.html (#contrato-indice).
+  Modelos de contrato: o índice. Grade de cards com kebab e o card tracejado
+  de criar. Portado de configuracoes.html (#contrato-indice).
 
-  "Definir como padrão" pede confirmação nos dois casos porque é a única ação
-  daqui que muda o que o casal recebe: modelo padrão é o texto de todo contrato
-  novo, assinatura padrão é a que vai carimbada nele.
+  A grade de ASSINATURAS saiu em 22/10/2026 (pedido do Ricardo): desde a
+  Autentique o fotógrafo assina lá, no clique de "Assinar e enviar", e a
+  assinatura desenhada no app não vai mais pra contrato nenhum.
+
+  "Definir como padrão" pede confirmação porque é a única ação daqui que muda
+  o que o casal recebe: o modelo padrão é o texto de todo contrato novo.
 */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheck, EllipsisVertical, FileText, Pencil, PenTool, Plus, Trash2 } from "lucide-react";
+import { CircleCheck, EllipsisVertical, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { BotaoVoltar, CartaoAviso, Secao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
-import { ModalAssinatura, type Assinatura } from "@/components/ModalAssinatura";
 import { fmtData } from "@/lib/util";
 
 /* O que a tela FAZ, em uma frase. Fixo: vale com tudo em ordem e vale enquanto
@@ -23,10 +24,9 @@ import { fmtData } from "@/lib/util";
    página e os dois cabeçalhos de seção já dizem isso três vezes. Sobra só o
    que não está escrito em lugar nenhum. */
 const TEXTO_DA_TELA =
-  "A assinatura marcada como padrão já vem aplicada quando você confirma um contrato. Editar um modelo não muda contratos já gerados.";
+  "O modelo padrão é o texto de todo contrato novo. Editar um modelo não muda contratos já gerados.";
 
 type Modelo = { id: string; nome: string; ativo: boolean; atualizado_em: string };
-type AssinaturaSalva = Assinatura & { id: string; atualizado_em: string };
 
 
 async function api<T = unknown>(corpo?: unknown): Promise<T> {
@@ -99,19 +99,16 @@ export default function ContratoIndice() {
   const router = useRouter();
   const confirmar = useConfirmar();
   const [modelos, setModelos] = useState<Modelo[]>([]);
-  const [assinaturas, setAssinaturas] = useState<AssinaturaSalva[]>([]);
-  const [modal, setModal] = useState<{ aberto: boolean; editando: AssinaturaSalva | null }>({ aberto: false, editando: null });
 
   const carregar = useCallback(async () => {
-    const r = await api<{ modelos: Modelo[]; assinaturas: AssinaturaSalva[] }>();
+    const r = await api<{ modelos: Modelo[] }>();
     setModelos(r.modelos ?? []);
-    setAssinaturas(r.assinaturas ?? []);
   }, []);
   /* o estado é escrito no callback, nunca no corpo do efeito */
   useEffect(() => {
     let vivo = true;
-    api<{ modelos: Modelo[]; assinaturas: AssinaturaSalva[] }>()
-      .then((r) => { if (!vivo) return; setModelos(r.modelos ?? []); setAssinaturas(r.assinaturas ?? []); })
+    api<{ modelos: Modelo[] }>()
+      .then((r) => { if (vivo) setModelos(r.modelos ?? []); })
       .catch(() => {});
     return () => { vivo = false; };
   }, []);
@@ -140,73 +137,28 @@ export default function ContratoIndice() {
     }
   }
 
-  async function acaoAssinatura(acao: string, a: AssinaturaSalva) {
-    if (acao === "padrao") {
-      const ok = await confirmar({
-        titulo: "Tornar esta a assinatura padrão?",
-        texto: `A assinatura "${a.nome}" passa a vir aplicada toda vez que você confirmar um contrato, e é ela que aparece no PDF que o casal recebe.\n\nVocê ainda pode trocar na hora de confirmar, e contratos já assinados continuam com a assinatura que foi usada neles.`,
-        aviso: "Isto não é um teste. O próximo contrato que você confirmar já sai com esta assinatura.",
-        rotuloOk: "Definir como padrão",
-      });
-      if (!ok) return;
-      await api({ acao: "assinatura-definir-padrao", id: a.id }); await carregar();
-    }
-    if (acao === "renomear") {
-      const nome = window.prompt("Novo nome da assinatura:", a.nome);
-      if (!nome?.trim()) return;
-      await api({ acao: "assinatura-renomear", id: a.id, nome: nome.trim() }); await carregar();
-    }
-    if (acao === "excluir") {
-      const ok = await confirmar({ titulo: "Apagar esta assinatura?", texto: `A assinatura "${a.nome}" sai da lista. Contratos já assinados com ela não mudam, porque cada contrato guarda a sua própria cópia.`, rotuloOk: "Apagar", perigo: true });
-      if (!ok) return;
-      try { await api({ acao: "assinatura-excluir", id: a.id }); await carregar(); }
-      catch (e) { alert((e as Error).message); }
-    }
-  }
-
   async function novoModelo() {
     const r = await api<{ modelo: { id: string } }>({ acao: "criar", nome: "Documento sem título" });
     router.push("/painel/configuracoes/contrato/" + r.modelo.id);
   }
 
-  async function salvarAssinatura(a: Assinatura) {
-    await api({ acao: "assinatura-salvar", ...a });
-    await carregar();
-  }
-
-  const amostra = (a: AssinaturaSalva) => (
-    <span className="flex h-[58px] w-full items-center justify-center overflow-hidden rounded-[10px] bg-paper px-2.5 py-1.5">
-      {a.tipo === "cursiva"
-        ? <span className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-2xl text-ink" style={{ fontFamily: '"Segoe Script","Bradley Hand",cursive' }}>{a.valor}</span>
-        : <img src={a.valor} alt="" className="max-h-[46px] max-w-full object-contain" />}
-    </span>
-  );
-
   /* O cartão diz SEMPRE a mesma frase, que é a explicação da tela. O que muda
-     é só a COR, porque cor é sinal: âmbar enquanto falta alguma coisa pro
-     contrato sair inteiro (assinatura cadastrada, assinatura padrão, modelo
-     padrão), neutro quando está tudo no lugar.
-
-     Um booleano só, e não um caso por falta: sem título e sem texto variável,
-     três ramos amareleriam a mesma faixa do mesmo jeito — seria distinção que
-     não chega à tela. */
-  const faltaAlgo =
-    !assinaturas.length ||
-    !assinaturas.some((a) => a.ativo) ||
-    (modelos.length > 0 && !modelos.some((m) => m.ativo));
+     é só a COR, porque cor é sinal: âmbar enquanto não há modelo padrão (o
+     contrato novo sairia sem texto), neutro quando está tudo no lugar. */
+  const faltaAlgo = modelos.length > 0 && !modelos.some((m) => m.ativo);
 
   return (
     <div className="mx-auto max-w-[880px]">
       {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
       <div className="hidden md:block">
         <BotaoVoltar href="/painel/configuracoes" rotulo="Configurações" />
-        <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Contrato e assinatura</h1>
+        <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Modelos de contrato</h1>
       </div>
       <div className="mb-5">
         <CartaoAviso tom={faltaAlgo ? "atencao" : "info"}>{TEXTO_DA_TELA}</CartaoAviso>
       </div>
 
-      <Secao icone={<FileText size={17} />} titulo="Modelos de contrato">
+      <Secao icone={<FileText size={17} />} titulo="Seus modelos">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">
           {modelos.map((m) => (
             <Card key={m.id} nome={m.nome} meta={"Atualizado " + fmtData(m.atualizado_em)} ativo={m.ativo} icone={<FileText size={18} />}
@@ -221,23 +173,7 @@ export default function ContratoIndice() {
         </div>
       </Secao>
 
-      <Secao icone={<PenTool size={17} />} titulo="Assinaturas">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">
-          {assinaturas.map((a) => (
-            <Card key={a.id} nome={a.nome} meta={"Atualizada " + fmtData(a.atualizado_em)} ativo={!!a.ativo} amostra={amostra(a)}
-              aoAbrir={() => setModal({ aberto: true, editando: a })}
-              menu={[
-                { rotulo: "Definir como padrão", icone: <CircleCheck size={15} />, disabled: !!a.ativo, titulo: a.ativo ? "Esta já é a assinatura padrão" : undefined, acao: () => acaoAssinatura("padrao", a) },
-                { rotulo: "Renomear", icone: <Pencil size={15} />, acao: () => acaoAssinatura("renomear", a) },
-                { rotulo: "Excluir", icone: <Trash2 size={15} />, perigo: true, acao: () => acaoAssinatura("excluir", a) },
-              ]} />
-          ))}
-          <CardNovo rotulo="Nova assinatura" aoClicar={() => setModal({ aberto: true, editando: null })} />
-        </div>
-      </Secao>
 
-      <ModalAssinatura aberto={modal.aberto} editando={modal.editando} existentes={assinaturas}
-        aoFechar={() => setModal({ aberto: false, editando: null })} aoSalvar={salvarAssinatura} />
     </div>
   );
 }

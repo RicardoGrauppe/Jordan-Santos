@@ -590,7 +590,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   <CartaoPlano nome={nome} compacto />
                   <Link href="/painel/configuracoes/contrato" onClick={() => setMenuAberto(false)}
                     className={itemMenuConta}>
-                    <FileText size={15} className="opacity-85" /> Contrato e assinatura
+                    <FileText size={15} className="opacity-85" /> Modelos de contrato
                     <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
                   </Link>
                   <Link href="/painel/produtos" onClick={() => setMenuAberto(false)}
@@ -807,7 +807,7 @@ function TelaContaMobile({
 
         <Link href="/painel/configuracoes/contrato" tabIndex={aba} onClick={aoFechar} className={item}>
           <FileText size={19} className="shrink-0 text-ink-soft" />
-          Contrato e assinatura
+          Modelos de contrato
           <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
         </Link>
         <Link href="/painel/produtos" tabIndex={aba} onClick={aoFechar} className={item}>
