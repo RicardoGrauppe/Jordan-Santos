@@ -1101,7 +1101,33 @@
 
   <!-- ============================================================= -->
   <section class="secao">
-    <h2><span class="num">21</span>Não faz</h2>
+    <h2><span class="num">21</span>Fotos no Ateliê: campo, biblioteca e foco</h2>
+    <p class="legenda"><strong>Campo de foto</strong> nos campos do bloco: a miniatura da foto (raio 12px, proporção 16:10, <code>object-fit: cover</code>) com os botões embaixo, <em>Trocar foto</em> (secundário) e, quando a foto é opcional, <em>Tirar</em> (fantasma). Sem foto, a miniatura vira um ladrilho <code>#EEF0F3</code> com o ícone e "Escolher foto", e clicar nele abre a biblioteca. Nunca se digita endereço de imagem.</p>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-bottom:16px">
+      <div style="width:290px;background:var(--paper);border-radius:20px;box-shadow:var(--sombra-card);padding:14px">
+        <div style="font-size:12.5px;font-weight:500;color:var(--ink-soft);margin-bottom:6px">Foto</div>
+        <div style="aspect-ratio:16/10;border-radius:12px;background:linear-gradient(135deg,#5b6b63,#c9c1b4)"></div>
+        <div style="display:flex;gap:8px;margin-top:8px"><span style="background:var(--soft);color:var(--accent);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:600">Trocar foto</span><span style="color:var(--ink-soft);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:600">Tirar</span></div>
+        <div style="font-size:12.5px;font-weight:500;color:var(--ink-soft);margin:14px 0 6px">Foco da foto</div>
+        <div style="position:relative;aspect-ratio:16/10;border-radius:12px;background:linear-gradient(135deg,#5b6b63,#c9c1b4)"><span style="position:absolute;left:48%;top:30%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:999px;background:rgba(255,255,255,.9);box-shadow:0 0 0 6px rgba(255,255,255,.35),0 2px 8px rgba(0,0,0,.35)"></span></div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:6px">Toque no ponto que não pode ser cortado (o rosto, quase sempre).</div>
+      </div>
+      <div style="flex:1;min-width:260px;max-width:430px;background:var(--paper);border-radius:22px;box-shadow:0 10px 34px rgba(29,29,27,.14);padding:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font-weight:600;font-size:15px">Suas fotos</div><span style="background:var(--accent);color:#fff;border-radius:12px;padding:8px 12px;font-size:13px;font-weight:600;display:inline-flex;gap:6px;align-items:center"><i data-lucide="upload" style="width:15px;height:15px"></i>Enviar fotos</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div style="position:relative;aspect-ratio:1;border-radius:12px;background:linear-gradient(135deg,#3d4a45,#a49c90)"><span style="position:absolute;inset:0;border-radius:12px;background:rgba(0,54,70,.28)"></span><span style="position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:999px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center"><i data-lucide="check" style="width:13px;height:13px"></i></span></div>
+          <div style="aspect-ratio:1;border-radius:12px;background:linear-gradient(135deg,#8b8076,#e2d8cc)"></div>
+          <div style="aspect-ratio:1;border-radius:12px;background:#EEF0F3;display:flex;align-items:center;justify-content:center;font-size:11.5px;color:var(--ink-soft)">Enviando…</div>
+        </div>
+      </div>
+    </div>
+    <p class="legenda"><strong>Biblioteca</strong> em janela sobre a tela (raio 22px, <code>--shadow-alta</code>; no celular, folha de baixo pra cima): primeiro <em>Suas fotos</em>, as enviadas, da mais nova pra mais antiga; depois <em>Fotos que vieram com o site</em>. Grade quadrada de raio 12px. A foto escolhida ganha um véu petróleo de 28% e um disco petróleo com o check no canto, como o círculo cheio do rádio (seção 18). Nada de anel em volta: seria borda marcando estado. Enviando, o ladrilho fica <code>#EEF0F3</code> com o texto. Apagar é um disco branco com a lixeira no canto da foto, sempre visível (no celular não existe hover), e pede confirmação; foto em uso num modelo não se apaga.</p>
+    <p class="legenda"><strong>A foto é reduzida no navegador antes de subir</strong> (lado maior até 2560px, JPEG): foto de câmera tem 10 MB, e o site não precisa disso pra abrir rápido no celular do casal.</p>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">22</span>Não faz</h2>
     <ul style="list-style:none;display:grid;gap:10px;max-width:640px">
       <li class="regra"><i data-lucide="x"></i><div>Não usa serifada. Só Inter.</div></li>
       <li class="regra"><i data-lucide="x"></i><div>Não usa focus ring em botão, input, link nem custom.</div></li>

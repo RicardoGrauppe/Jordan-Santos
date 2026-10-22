@@ -105,6 +105,7 @@ export const MODELO_INICIAL: DadosSite = {
         ancora: "album",
         faixa: "/img/album.jpg",
         faixaAlt: "Álbum de fotografias aberto mostrando as lâminas",
+        faixaFoco: "",
         selo: "Opções de álbum",
         titulo: "Álbum",
         cartoes: [

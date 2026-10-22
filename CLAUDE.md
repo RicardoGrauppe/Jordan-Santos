@@ -28,13 +28,14 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             mesmo site da raiz, mantido pra não quebrar link já enviado
 src/app/atelie/previa/[id]   prévia do RASCUNHO de um modelo, só pra quem está logado (404 pros outros)
+src/app/midia/[caminho]      entrega as fotos do Ateliê (do Storage) pro site; pública, nome sorteado
 src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), atelie
-src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, Skeleton
-src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
+src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, CamposAtelie (foto, biblioteca, foco), Skeleton
+src/lib/                     supabase.ts, storage.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
-                             atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelos.ts, PaginaDoSite.tsx, editor-tema.css)
-supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos)
+                             atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelos.ts, midias.ts, PaginaDoSite.tsx, editor-tema.css)
+supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos) + atelie_midias (site_midias)
 ```
 
 ## Dependências travadas
@@ -66,6 +67,10 @@ não a que você digitou. Deixe só `hidden` + `md:inline-flex`.
 Sempre o Supabase local em Docker (`supabase start`, portas 553xx), nunca o
 banco do Jordan. `supabase/migrations/` é a verdade do schema: coluna nova
 entra como migração, nunca por `alter table` solto no psql.
+
+O Storage local precisa estar ligado (`[storage] enabled = true` no
+`supabase/config.toml`): as fotos do Ateliê moram lá, no bucket privado
+`atelie`, que o app cria sozinho na primeira foto enviada.
 
 ## Assinatura: Autentique (desde 21/10/2026)
 
@@ -142,6 +147,15 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
 - Bloco novo entra em três lugares: `tipos.ts` (a API valida contra ela),
   `configAtelie` e a lista do editor (ícone e uma linha). Se `tipos.ts` e o
   config divergirem, o build quebra.
+- **Foto nunca é endereço digitado.** Campo de foto abre a biblioteca
+  (`CamposAtelie.tsx`); a foto é reduzida no navegador (2560px) antes de
+  subir e vai pro bloco como `/midia/<uuid>.jpg`. Nunca a URL do Storage:
+  ela aponta pra 127.0.0.1 e quebra no celular da rede local. Foto em uso num
+  modelo não se apaga.
+- **Foco só onde a foto é cortada** (grade do "Texto com fotos", faixa dos
+  "Cartões"). Nos blocos de foto em altura natural o `foco` segue no dado e
+  no style, mas o campo fica escondido (`visible: false`): lá ele não muda
+  nada.
 - **"Pôr no ar" publica o modelo do jeito que ele está** (rascunho vira
   publicado) e troca o site na hora, por isso confirma. Modelo sem bloco não
   vai pro ar e o modelo no ar não se apaga: as duas coisas deixariam o site

@@ -25,6 +25,7 @@ import type { Config, Data } from "@puckeditor/core";
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import { RevealAoRolar } from "@/app/proposta/RevealAoRolar";
+import { CampoFoco, CampoFoto, CampoFotoOpcional } from "@/components/CamposAtelie";
 import { CSS_PROPOSTA } from "./proposta-css";
 import type { TipoDeBloco } from "./tipos";
 
@@ -62,6 +63,7 @@ type CartoesProps = {
   ancora: string;
   faixa: string;
   faixaAlt: string;
+  faixaFoco: string;
   selo: string;
   titulo: string;
   cartoes: { descricao: string; preco: string }[];
@@ -169,7 +171,17 @@ function IconeWhatsApp() {
 const campoAncora = { type: "text" as const, label: "Âncora (pra links com #)" };
 const campoSelo = { type: "text" as const, label: "Selo", contentEditable: true };
 const campoTitulo = { type: "text" as const, label: "Título", contentEditable: true };
-const campoFoco = { type: "text" as const, label: "Foco da foto (ex.: 50% 30%)" };
+/* campos de foto: escolha na biblioteca e foco por toque (CamposAtelie.tsx).
+   Só a REFERÊNCIA aos componentes mora aqui; nada daquele módulo de cliente
+   é chamado quando este config roda no servidor.
+   O campo de foco só aparece onde a foto é CORTADA (grade do "Texto com
+   fotos", faixa dos "Cartões"). Foto inteira, fundo da lista e citação
+   aparecem em altura natural, e lá o ponto não mudaria nada: o `foco`
+   guardado nesses blocos continua indo pro style, mas sem campo. */
+const campoFoco = { type: "custom" as const, label: "Foco da foto", render: CampoFoco };
+const campoFocoEscondido = { ...campoFoco, visible: false };
+const campoFoto = (label: string) => ({ type: "custom" as const, label, render: CampoFoto });
+const campoFotoOpcional = (label: string) => ({ type: "custom" as const, label, render: CampoFotoOpcional });
 
 /* ---------- config ---------- */
 
@@ -196,7 +208,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
     Capa: {
       label: "Capa",
       fields: {
-        logo: { type: "text", label: "Logo (endereço da imagem)" },
+        logo: campoFoto("Logo"),
         logoAlt: { type: "text", label: "Descrição do logo" },
         frase: { type: "text", label: "Frase", contentEditable: true },
       },
@@ -212,9 +224,9 @@ export const configAtelie: Config<Blocos, RaizProps> = {
     FotoInteira: {
       label: "Foto inteira",
       fields: {
-        src: { type: "text", label: "Foto (endereço da imagem)" },
+        src: campoFoto("Foto"),
         alt: { type: "text", label: "Descrição da foto" },
-        foco: campoFoco,
+        foco: campoFocoEscondido,
       },
       defaultProps: { src: "/img/casal-jardim.jpg", alt: "", foco: "" },
       render: ({ src, alt, foco }) => (
@@ -286,11 +298,11 @@ export const configAtelie: Config<Blocos, RaizProps> = {
             valor: { type: "text", label: "Valor" },
           },
         },
-        foto: { type: "text", label: "Foto de fundo (endereço da imagem)" },
-        foco: campoFoco,
+        foto: campoFoto("Foto de fundo"),
         legenda: { type: "textarea", label: "Legenda sobre a foto (opcional)" },
         corCeu: { type: "text", label: "Cor do céu no celular" },
         subida: { type: "number", label: "Quanto a foto sobe no celular", min: 0, max: 100 },
+        foco: campoFocoEscondido,
       },
       defaultProps: {
         ancora: "", selo: "", titulo: "Adicionais", linhas: [], foto: "/img/casal-campo.jpg",
@@ -335,8 +347,9 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       label: "Cartões com preço",
       fields: {
         ancora: campoAncora,
-        faixa: { type: "text", label: "Foto em faixa no topo (opcional)" },
+        faixa: campoFotoOpcional("Foto em faixa no topo (opcional)"),
         faixaAlt: { type: "text", label: "Descrição da foto em faixa" },
+        faixaFoco: { ...campoFoco, label: "Foco da foto em faixa" },
         selo: campoSelo,
         titulo: campoTitulo,
         cartoes: {
@@ -350,12 +363,12 @@ export const configAtelie: Config<Blocos, RaizProps> = {
           },
         },
       },
-      defaultProps: { ancora: "", faixa: "", faixaAlt: "", selo: "", titulo: "Álbum", cartoes: [] },
-      render: ({ ancora, faixa, faixaAlt, selo, titulo, cartoes }) => (
+      defaultProps: { ancora: "", faixa: "", faixaAlt: "", faixaFoco: "", selo: "", titulo: "Álbum", cartoes: [] },
+      render: ({ ancora, faixa, faixaAlt, faixaFoco, selo, titulo, cartoes }) => (
         <section className="pagina" id={ancora || undefined} style={faixa ? { paddingTop: 0 } : undefined}>
           {faixa && (
             <figure className="foto-banner">
-              <img src={faixa} alt={faixaAlt} />
+              <img src={faixa} alt={faixaAlt} style={estiloFoco(faixaFoco ?? "")} />
             </figure>
           )}
           <div className="miolo">
@@ -393,7 +406,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
           getItemSummary: (f) => f.alt || "Foto",
           defaultItemProps: { src: "", alt: "", foco: "" },
           arrayFields: {
-            src: { type: "text", label: "Foto (endereço da imagem)" },
+            src: campoFoto("Foto"),
             alt: { type: "text", label: "Descrição da foto" },
             foco: campoFoco,
           },
@@ -426,9 +439,9 @@ export const configAtelie: Config<Blocos, RaizProps> = {
       label: "Citação sobre foto",
       fields: {
         texto: { type: "textarea", label: "Citação", contentEditable: true },
-        src: { type: "text", label: "Foto (endereço da imagem)" },
+        src: campoFoto("Foto"),
         alt: { type: "text", label: "Descrição da foto" },
-        foco: campoFoco,
+        foco: campoFocoEscondido,
       },
       defaultProps: { texto: "", src: "/img/casal-palacio.jpg", alt: "", foco: "" },
       render: ({ texto, src, alt, foco }) => (
@@ -472,7 +485,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
     Rodape: {
       label: "Rodapé com contatos",
       fields: {
-        assinatura: { type: "text", label: "Assinatura (endereço da imagem)" },
+        assinatura: campoFotoOpcional("Assinatura"),
         assinaturaAlt: { type: "text", label: "Descrição da assinatura" },
         frase: { type: "textarea", label: "Frase" },
       },
