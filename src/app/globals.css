@@ -114,6 +114,20 @@
 
 * { box-sizing: border-box; }
 
+/* Seleção de texto só onde se escreve (22/10/2026, pedido do Ricardo), e só
+   no toque: segurar o dedo num botão, num cartão ou num título selecionava a
+   palavra e abria a lupa e o menu de copiar do iOS, coisa de site e não de
+   app. Campo, área de texto e a folha do contrato (contenteditable) seguem
+   selecionáveis. No computador nada muda: lá selecionar pra copiar é útil.
+   `touch-callout: none` tira o menu de "abrir em nova aba / copiar link" que
+   o iOS mostra ao segurar um link ou imagem. */
+@media (hover: none) and (pointer: coarse) {
+  html { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  input, textarea, select, [contenteditable="true"], [contenteditable="true"] * {
+    -webkit-user-select: text; user-select: text; -webkit-touch-callout: default;
+  }
+}
+
 html, body {
   margin: 0;
   padding: 0;
