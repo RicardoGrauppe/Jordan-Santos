@@ -22,13 +22,15 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
   page.tsx                   home (saudação, clima, KPIs, próximos eventos, links)
   clientes/                  lista, [id] (ficha), [id]/contrato (revisão e confirmação)
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
+  formulario/                editor do /cadastro (texto, aparece, obrigatório, perguntas novas)
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             proposta comercial que o casal lê
-src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook)
+src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), formulario
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
+                             formulario.ts (regras e travas), formulario-servidor.ts (config no banco),
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco)
 ```
@@ -109,6 +111,19 @@ seguiria de pé e um contrato cancelado aqui voltaria assinado de lá.
 
 O PDF assinado é baixado uma vez e guardado em `pdf_base64`: o painel não
 depende da Autentique estar no ar pra entregar a via.
+
+## Formulário de cadastro editável
+
+O `/cadastro` lê a config que o fotógrafo edita em `/painel/formulario`
+(tabela `config`, chave `formulario_cadastro`; sem chave = formulário padrão).
+`lib/formulario.ts` é a fonte das regras: cada campo fixo tem uma `regra`
+(`travado`, `opcional`, `livre`) e `normalizarFormulario` aplica as travas ao
+ler e ao salvar. Nomes, WhatsApp, e-mail e data nunca saem nem viram
+opcionais: o contrato, a Autentique e a busca de ficha duplicada dependem
+deles. `/api/orcamento` confere de novo com a mesma config, porque o navegador
+do casal não é confiável. Pergunta nova não ganha coluna: a resposta vai pra
+`clientes.respostas_formulario` com o texto da pergunta, e a ficha mostra só
+leitura.
 
 ## Dívidas conhecidas
 

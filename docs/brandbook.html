@@ -1012,7 +1012,30 @@
 
   <!-- ============================================================= -->
   <section class="secao">
-    <h2><span class="num">18</span>Não faz</h2>
+    <h2><span class="num">18</span>Formulário (editor de campos)</h2>
+    <p class="legenda">Tela <code>/painel/formulario</code>, item <strong>Formulário</strong> do menu lateral (ícone <code>clipboard-list</code>, logo abaixo de Clientes) e do Menu da conta no celular. Edita o formulário que o casal abre em <code>/cadastro</code>. Um card branco por seção do formulário (Quem vai assinar, Endereço, O evento, Mais sobre vocês), e dentro dele uma <strong>linha por campo</strong> no pastel <code>#F7F9FA</code>, raio 14px, sem borda. A linha fechada mostra o nome do campo e as chaves; o lápis abre a pergunta e o texto de exemplo logo abaixo, na mesma linha.</p>
+    <div style="max-width:560px;display:grid;gap:8px;margin-top:6px">
+      <div style="display:flex;align-items:center;gap:12px;background:#F7F9FA;border-radius:14px;padding:12px 14px">
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">E-mail</div><div style="font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:4px;margin-top:2px"><i data-lucide="lock" style="width:11px;height:11px"></i>Sempre pedido (o contrato usa)</div></div>
+        <span style="width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft)"><i data-lucide="pencil" style="width:14px;height:14px"></i></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:#F7F9FA;border-radius:14px;padding:12px 14px">
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">Horário</div><div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px">Obrigatório</div></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft)">Obrigatório <span style="width:34px;height:20px;border-radius:999px;background:var(--accent);position:relative;display:inline-block"><span style="position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(29,29,27,.25)"></span></span></label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft)">Aparece <span style="width:34px;height:20px;border-radius:999px;background:var(--accent);position:relative;display:inline-block"><span style="position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(29,29,27,.25)"></span></span></label>
+        <span style="width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft)"><i data-lucide="pencil" style="width:14px;height:14px"></i></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:#F7F9FA;border-radius:14px;padding:12px 14px;opacity:.6">
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">Complemento</div><div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px">Escondido</div></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft)">Aparece <span style="width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;display:inline-block"><span style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(29,29,27,.25)"></span></span></label>
+      </div>
+    </div>
+    <p class="legenda" style="margin-top:12px"><strong>Chave liga/desliga:</strong> trilho 34×20, raio cheio, desligada em <code>--line</code>, ligada em <code>--accent</code>; bolinha branca 16px com sombra curta, desliza 14px em 150ms. Sem borda e sem anel: o foco escurece o trilho. Campo escondido fica com a linha a 60% de opacidade, pra continuar achável. Campo que o contrato precisa (nomes, WhatsApp, e-mail, data) não tem chave: leva o cadeado e a frase do porquê. Pergunta nova tem também tipo (texto, parágrafo, número, data, escolha), setas de ordem e lixeira com confirmação. Salva sozinho, como a ficha.</p>
+  </section>
+
+  <!-- ============================================================= -->
+  <section class="secao">
+    <h2><span class="num">19</span>Não faz</h2>
     <ul style="list-style:none;display:grid;gap:10px;max-width:640px">
       <li class="regra"><i data-lucide="x"></i><div>Não usa serifada. Só Inter.</div></li>
       <li class="regra"><i data-lucide="x"></i><div>Não usa focus ring em botão, input, link nem custom.</div></li>

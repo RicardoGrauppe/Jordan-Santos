@@ -56,6 +56,7 @@ const TELAS: { rota: RegExp; titulo: string; voltar: string | null }[] = [
   { rota: /^\/painel\/clientes\/?$/, titulo: "Clientes", voltar: null },
   { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Contrato e assinatura", voltar: "/painel/configuracoes" },
   { rota: /^\/painel\/configuracoes\/?$/, titulo: "Configurações", voltar: "/painel" },
+  { rota: /^\/painel\/formulario\/?$/, titulo: "Formulário", voltar: "/painel" },
   { rota: /^\/painel\/pendencias\/?$/, titulo: "Precisa de atenção", voltar: "/painel" },
   { rota: /^\/painel\/tempo\/?$/, titulo: "Previsão do tempo", voltar: "/painel" },
 ];

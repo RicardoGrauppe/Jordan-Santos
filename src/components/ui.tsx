@@ -260,3 +260,38 @@ export function Estado({ texto, tom }: { texto: string; tom?: "ok" | "erro" }) {
   const cor = tom === "ok" ? "text-ok" : tom === "erro" ? "text-erro" : "text-ink-soft";
   return <p className={"m-0 min-h-[18px] text-[12.5px] " + cor}>{texto}</p>;
 }
+
+/* ---------- chave liga/desliga ----------
+   Brandbook, seção 18 (Formulário). Trilho em --line desligada e --accent
+   ligada; sem borda e sem anel: o foco escurece o trilho. O rótulo fica À
+   ESQUERDA e faz parte do botão, então tocar no texto também alterna. */
+export function Chave({
+  ligada, aoMudar, rotulo, desligada = false,
+}: { ligada: boolean; aoMudar: (v: boolean) => void; rotulo: string; desligada?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={ligada}
+      disabled={desligada}
+      onClick={() => aoMudar(!ligada)}
+      className="group inline-flex cursor-pointer items-center gap-2 rounded-lg bg-transparent py-1 text-[12px] text-ink-soft outline-none disabled:cursor-default disabled:opacity-45"
+    >
+      {rotulo}
+      <span
+        aria-hidden
+        className={
+          "relative inline-block h-5 w-[34px] shrink-0 rounded-full transition-colors duration-150 " +
+          (ligada ? "bg-accent group-focus-visible:bg-accent-hover" : "bg-line group-focus-visible:bg-[#D3D7DD]")
+        }
+      >
+        <span
+          className={
+            "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-[0_1px_3px_rgba(29,29,27,.25)] " +
+            "transition-[translate] duration-150 " + (ligada ? "translate-x-3.5" : "translate-x-0")
+          }
+        />
+      </span>
+    </button>
+  );
+}

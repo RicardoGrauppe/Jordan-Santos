@@ -21,6 +21,13 @@
     substitui a máscara manual de número BR que o original aplicava.
   - Clique em campo de data/hora abre o picker: o padrão nativo só abre pelo
     iconezinho da direita, o resto do campo fica "morto".
+
+  Desde 22/10/2026 o texto, o "aparece" e o "obrigatório" de cada campo vêm
+  da config que o fotógrafo edita em /painel/formulario, e ele pode criar
+  perguntas suas (regras em lib/formulario.ts). A rota confere de novo com a
+  mesma config: o que esta tela exige é conveniência, quem manda é o servidor.
+  Campo escondido vira par de uma coluna só: a linha de dois (CEP + número,
+  bairro + cidade...) só existe quando os dois aparecem.
 */
 "use client";
 
@@ -31,11 +38,12 @@ import {
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
+import {
+  campoExigido, erroDaResposta, perguntasVisiveis,
+  type CampoFixoId, type Formulario, type Pergunta, type SecaoFormulario,
+} from "@/lib/formulario";
 
-type CampoId =
-  | "noivo" | "noiva" | "cpfNoivo" | "cpfNoiva" | "contato" | "email"
-  | "cep" | "numero" | "endereco" | "complemento" | "bairro" | "cidade" | "estado"
-  | "data" | "horario" | "local";
+type CampoId = CampoFixoId;
 
 /* o WhatsApp fica fora do estado: o intl-tel-input é dono do valor do input
    (formata enquanto digita), então ele é lido direto do plugin na hora de
@@ -49,7 +57,8 @@ const VAZIO: Valores = {
   data: "", horario: "", local: "",
 };
 
-type Erro = { campo: CampoId; msg: string } | null;
+/* `campo` é o id de um campo fixo ou de uma pergunta nova ("p_...") */
+type Erro = { campo: string; msg: string } | null;
 
 type RespostaViaCep = { erro?: boolean; logradouro?: string; bairro?: string; localidade?: string; uf?: string };
 
@@ -114,8 +123,22 @@ const CSS = `
   background:var(--soft);border:0;border-radius:10px;-webkit-appearance:none;appearance:none;
   transition:background .15s ease;
 }
-.cad .campo input::placeholder{color:var(--ink-soft);opacity:.6}
+.cad .campo input::placeholder,.cad .campo textarea::placeholder{color:var(--ink-soft);opacity:.6}
 .cad .campo input:focus,.cad .campo input:focus-visible{outline:none;background:var(--soft-foco)}
+/* parágrafo e escolha (perguntas novas) seguem o mesmo campo: fundo, sem borda */
+.cad .campo textarea,.cad .campo select{
+  display:block;width:100%;margin-top:7px;padding:12px 14px;
+  font-family:inherit;font-size:16px;font-weight:400;color:var(--ink);line-height:1.5;
+  background:var(--soft);border:0;border-radius:10px;-webkit-appearance:none;appearance:none;
+  transition:background .15s ease;
+}
+.cad .campo textarea{min-height:110px;resize:vertical}
+.cad .campo select{height:50px;padding-right:40px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23706F6F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center}
+.cad .campo select.vazio{color:rgba(112,111,111,.6)}
+.cad .campo textarea:focus,.cad .campo select:focus{outline:none;background-color:var(--soft-foco)}
+.cad .campo-invalido textarea,.cad .campo-invalido select{background-color:var(--erro-tint)}
 /* <input type=date|time> é controle NATIVO: calcula a própria altura e desenha
    o valor num shadow element que não herda alinhamento nem margem. Altura
    fixa (acima) é o único jeito determinístico de igualar aos vizinhos. */
@@ -160,6 +183,7 @@ const CSS = `
 @media (max-width:820px){.cad input,.cad select,.cad textarea{font-size:16px !important}}
 `;
 
+
 /* ---------- campo ---------- */
 
 type PropsCampo = InputHTMLAttributes<HTMLInputElement> & {
@@ -184,29 +208,90 @@ function CampoTexto({ id, rotulo, opcional, erro, inputRef, classe = "", extra, 
   );
 }
 
+/** Dois campos lado a lado quando os dois aparecem; senão, o que sobrou sozinho. */
+function Par({ a, b }: { a: ReactNode; b: ReactNode }) {
+  if (a && b) return <div className="campo-linha">{a}{b}</div>;
+  return <>{a}{b}</>;
+}
+
+type ElementoCampo = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+
+/** Pergunta criada pelo fotógrafo, no tipo que ele escolheu. */
+function CampoPergunta({
+  p, valor, erro, aoMudar, elRef,
+}: {
+  p: Pergunta;
+  valor: string;
+  erro: Erro;
+  aoMudar: (v: string) => void;
+  elRef: (el: ElementoCampo | null) => void;
+}) {
+  const invalido = erro?.campo === p.id;
+  const id = "o-" + p.id;
+  let controle: ReactNode;
+  if (p.tipo === "paragrafo") {
+    controle = <textarea ref={elRef} id={id} placeholder={p.placeholder || undefined} value={valor}
+      onChange={(e) => aoMudar(e.target.value)} />;
+  } else if (p.tipo === "escolha") {
+    controle = (
+      <select ref={elRef} id={id} value={valor} className={valor ? "" : "vazio"} onChange={(e) => aoMudar(e.target.value)}>
+        <option value="">Selecione</option>
+        {p.opcoes.filter(Boolean).map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  } else {
+    controle = (
+      <input ref={elRef} id={id}
+        type={p.tipo === "data" ? "date" : "text"}
+        inputMode={p.tipo === "numero" ? "decimal" : undefined}
+        placeholder={p.placeholder || undefined}
+        value={valor}
+        onClick={p.tipo === "data" ? abrirPicker : undefined}
+        onChange={(e) => aoMudar(e.target.value)} />
+    );
+  }
+  return (
+    <label className={"campo" + (invalido ? " campo-invalido" : "")}>
+      {p.rotulo}{p.obrigatorio ? null : <> <span className="opc">(opcional)</span></>}
+      {controle}
+      {invalido ? <span className="campo-erro-msg">{erro.msg}</span> : null}
+    </label>
+  );
+}
+
 /* ============================================================ */
 
-export function FormularioCadastro() {
+export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   const [valores, setValores] = useState<Valores>(VAZIO);
+  const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [erro, setErro] = useState<Erro>(null);
   const [erroGeral, setErroGeral] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [cepStatus, setCepStatus] = useState("");
 
-  const camposRef = useRef<Partial<Record<CampoId, HTMLInputElement | null>>>({});
+  const camposRef = useRef<Partial<Record<string, ElementoCampo | null>>>({});
   const itiRef = useRef<Iti | null>(null);
   const ultimoCepRef = useRef("");
 
-  const registrar = useCallback((id: CampoId) => (el: HTMLInputElement | null) => {
+  const registrar = useCallback((id: string) => (el: ElementoCampo | null) => {
     camposRef.current[id] = el;
   }, []);
+
+  const cfg = formulario.campos;
+  const aparece = (id: CampoId) => cfg[id].visivel;
+  /* "(opcional)" só em campo que o fotógrafo deixou opcional. Nomes e CPF
+     seguem a regra do par, explicada no texto da seção. */
+  const opcional = (id: CampoId) => cfg[id].visivel && !cfg[id].obrigatorio && id !== "noivo" && id !== "noiva" &&
+    id !== "cpfNoivo" && id !== "cpfNoiva";
+  const perguntas = perguntasVisiveis(formulario);
+  const perguntasDa = (secao: SecaoFormulario) => perguntas.filter((p) => p.secao === secao);
 
   /* ---------- WhatsApp com DDI ----------
      Import dinâmico: o plugin mexe em document ao carregar, e este componente
      é renderizado no servidor antes de hidratar. */
   useEffect(() => {
-    const input = camposRef.current.contato;
+    const input = camposRef.current.contato as HTMLInputElement | null | undefined;
     if (!input) return;
     let vivo = true;
     let iti: Iti | null = null;
@@ -276,8 +361,13 @@ export function FormularioCadastro() {
     if (id === "cep") buscarCep(v);
   }
 
+  function mudarResposta(id: string, v: string) {
+    setRespostas((a) => ({ ...a, [id]: v }));
+    if (erro && erro.campo === id) setErro(null);
+  }
+
   /* ---------- validação ---------- */
-  function marcarErro(campo: CampoId, msg: string) {
+  function marcarErro(campo: string, msg: string) {
     setErro({ campo, msg });
     const el = camposRef.current[campo];
     if (!el) return;
@@ -316,21 +406,32 @@ export function FormularioCadastro() {
     setErro(null);
     if (!validarContratantes()) return false;
     const v = (id: CampoControlado) => valores[id].trim();
-    const regras: { campo: CampoId; ok: boolean; msg: string }[] = [
-      { campo: "contato", ok: !!valorContato(), msg: "Preencha o WhatsApp." },
-      { campo: "email", ok: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v("email")), msg: "Digite um e-mail válido." },
-      { campo: "cep", ok: soDigitos(v("cep")).length === 8, msg: "Confira o CEP (8 dígitos)." },
-      { campo: "numero", ok: !!v("numero"), msg: "Preencha o número." },
-      { campo: "endereco", ok: !!v("endereco"), msg: "Preencha o endereço." },
-      { campo: "bairro", ok: !!v("bairro"), msg: "Preencha o bairro." },
-      { campo: "cidade", ok: !!v("cidade"), msg: "Preencha a cidade." },
-      { campo: "estado", ok: !!v("estado"), msg: "Preencha o estado." },
-      { campo: "data", ok: !!v("data"), msg: "Escolha a data do casamento." },
-      { campo: "horario", ok: !!v("horario"), msg: "Escolha o horário." },
-      { campo: "local", ok: !!v("local"), msg: "Preencha o local do evento." },
+    /* `ok` é a regra do campo PREENCHIDO; vazio só é erro quando o fotógrafo
+       deixou o campo obrigatório (e aparecendo) */
+    const regras: { campo: CampoId; valor: string; ok: boolean; vazio: string; invalido?: string }[] = [
+      { campo: "contato", valor: valorContato(), ok: true, vazio: "Preencha o WhatsApp." },
+      { campo: "email", valor: v("email"), ok: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v("email")), vazio: "Digite um e-mail válido.", invalido: "Digite um e-mail válido." },
+      { campo: "cep", valor: v("cep"), ok: soDigitos(v("cep")).length === 8, vazio: "Confira o CEP (8 dígitos).", invalido: "Confira o CEP (8 dígitos)." },
+      { campo: "numero", valor: v("numero"), ok: true, vazio: "Preencha o número." },
+      { campo: "endereco", valor: v("endereco"), ok: true, vazio: "Preencha o endereço." },
+      { campo: "bairro", valor: v("bairro"), ok: true, vazio: "Preencha o bairro." },
+      { campo: "cidade", valor: v("cidade"), ok: true, vazio: "Preencha a cidade." },
+      { campo: "estado", valor: v("estado"), ok: true, vazio: "Preencha o estado." },
+      { campo: "data", valor: v("data"), ok: true, vazio: "Escolha a data do casamento." },
+      { campo: "horario", valor: v("horario"), ok: true, vazio: "Escolha o horário." },
+      { campo: "local", valor: v("local"), ok: true, vazio: "Preencha o local do evento." },
     ];
     for (const r of regras) {
-      if (!r.ok) { marcarErro(r.campo, r.msg); return false; }
+      if (!aparece(r.campo)) continue;
+      if (!r.valor) {
+        if (campoExigido(formulario, r.campo)) { marcarErro(r.campo, r.vazio); return false; }
+        continue;
+      }
+      if (!r.ok) { marcarErro(r.campo, r.invalido ?? r.vazio); return false; }
+    }
+    for (const p of perguntas) {
+      const msg = erroDaResposta(p, (respostas[p.id] ?? "").trim());
+      if (msg) { marcarErro(p.id, msg); return false; }
     }
     return true;
   }
@@ -363,6 +464,7 @@ export function FormularioCadastro() {
           dataEvento: v("data"),
           horario: v("horario"),
           local: v("local"),
+          respostas: Object.fromEntries(perguntas.map((p) => [p.id, (respostas[p.id] ?? "").trim()])),
           /* sem itens/total: o fotógrafo escolhe o pacote/adicionais depois,
              no painel. A rota trata a ausência disso de propósito. */
         }),
@@ -380,6 +482,27 @@ export function FormularioCadastro() {
   }
 
   const contatoInvalido = erro?.campo === "contato";
+
+  /* campo fixo pronto pra desenhar, ou null quando o fotógrafo escondeu */
+  function fixo(id: CampoControlado, props: Omit<InputHTMLAttributes<HTMLInputElement>, "id"> & { classe?: string; extra?: ReactNode } = {}) {
+    if (!aparece(id)) return null;
+    return (
+      <CampoTexto id={id} rotulo={cfg[id].rotulo} opcional={opcional(id)} erro={erro} inputRef={registrar(id)}
+        type="text" placeholder={cfg[id].placeholder || undefined} value={valores[id]} onChange={aoMudar} {...props} />
+    );
+  }
+
+  function extras(secao: SecaoFormulario) {
+    return perguntasDa(secao).map((p) => (
+      <CampoPergunta key={p.id} p={p} valor={respostas[p.id] ?? ""} erro={erro}
+        aoMudar={(val) => mudarResposta(p.id, val)} elRef={registrar(p.id)} />
+    ));
+  }
+
+  const ajudaContratantes = "Se só um de vocês vai assinar, preencha só os dados dele." +
+    (aparece("cpfNoivo") || aparece("cpfNoiva") ? " O CPF é opcional: se não tiver, pode deixar em branco." : "");
+  const temEndereco = (["cep", "numero", "endereco", "complemento", "bairro", "cidade", "estado"] as const).some(aparece) ||
+    perguntasDa("endereco").length > 0;
 
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
@@ -399,23 +522,16 @@ export function FormularioCadastro() {
 
             <form onSubmit={(ev) => void enviar(ev)} noValidate>
               <div className="form-secao">Quem vai assinar</div>
-              <p className="ajuda-secao">Se só um de vocês vai assinar, preencha só os dados dele. O CPF é opcional: se não tiver, pode deixar em branco.</p>
-              <CampoTexto id="noivo" rotulo="Nome do noivo" erro={erro} inputRef={registrar("noivo")}
-                type="text" autoComplete="given-name" value={valores.noivo} onChange={aoMudar} />
-              <CampoTexto id="noiva" rotulo="Nome da noiva" erro={erro} inputRef={registrar("noiva")}
-                type="text" autoComplete="given-name" value={valores.noiva} onChange={aoMudar} />
-              <div className="campo-linha">
-                <CampoTexto id="cpfNoivo" rotulo="CPF do noivo" erro={erro} inputRef={registrar("cpfNoivo")}
-                  type="text" inputMode="numeric" placeholder="000.000.000-00" value={valores.cpfNoivo} onChange={aoMudar} />
-                <CampoTexto id="cpfNoiva" rotulo="CPF da noiva" erro={erro} inputRef={registrar("cpfNoiva")}
-                  type="text" inputMode="numeric" placeholder="000.000.000-00" value={valores.cpfNoiva} onChange={aoMudar} />
-              </div>
+              <p className="ajuda-secao">{ajudaContratantes}</p>
+              {fixo("noivo", { autoComplete: "given-name" })}
+              {fixo("noiva", { autoComplete: "given-name" })}
+              <Par a={fixo("cpfNoivo", { inputMode: "numeric" })} b={fixo("cpfNoiva", { inputMode: "numeric" })} />
 
               {/* o input do WhatsApp fica num <div> próprio: o intl-tel-input
                   embrulha o input num .iti, e o React nunca precisa mexer nos
                   filhos desse div */}
               <label className={"campo" + (contatoInvalido ? " campo-invalido" : "")}>
-                WhatsApp
+                {cfg.contato.rotulo}
                 <div>
                   <input
                     ref={registrar("contato")}
@@ -430,41 +546,33 @@ export function FormularioCadastro() {
                 {contatoInvalido ? <span className="campo-erro-msg">{erro.msg}</span> : null}
               </label>
 
-              <CampoTexto id="email" rotulo="E-mail" erro={erro} inputRef={registrar("email")}
-                type="email" autoComplete="email" value={valores.email} onChange={aoMudar} />
+              {fixo("email", { type: "email", autoComplete: "email" })}
+              {extras("assinar")}
 
-              <div className="form-secao">Endereço</div>
-              <div className="campo-linha">
-                <CampoTexto id="cep" rotulo="CEP" erro={erro} inputRef={registrar("cep")} classe="campo-cep"
-                  type="text" inputMode="numeric" placeholder="00000-000" autoComplete="postal-code"
-                  value={valores.cep} onChange={aoMudar}
-                  extra={<span className="cep-status">{cepStatus}</span>} />
-                <CampoTexto id="numero" rotulo="Número" erro={erro} inputRef={registrar("numero")}
-                  type="text" inputMode="numeric" autoComplete="address-line2" value={valores.numero} onChange={aoMudar} />
-              </div>
-              <CampoTexto id="endereco" rotulo="Endereço" erro={erro} inputRef={registrar("endereco")}
-                type="text" autoComplete="address-line1" placeholder="Rua, avenida..." value={valores.endereco} onChange={aoMudar} />
-              <CampoTexto id="complemento" rotulo="Complemento" opcional erro={erro} inputRef={registrar("complemento")}
-                type="text" value={valores.complemento} onChange={aoMudar} />
-              <div className="campo-linha">
-                <CampoTexto id="bairro" rotulo="Bairro" erro={erro} inputRef={registrar("bairro")}
-                  type="text" autoComplete="address-level3" value={valores.bairro} onChange={aoMudar} />
-                <CampoTexto id="cidade" rotulo="Cidade" erro={erro} inputRef={registrar("cidade")}
-                  type="text" autoComplete="address-level2" value={valores.cidade} onChange={aoMudar} />
-              </div>
-              <CampoTexto id="estado" rotulo="Estado" erro={erro} inputRef={registrar("estado")}
-                type="text" inputMode="text" maxLength={2} placeholder="UF" autoComplete="address-level1"
-                value={valores.estado} onChange={aoMudar} />
+              {temEndereco ? <div className="form-secao">Endereço</div> : null}
+              <Par
+                a={fixo("cep", {
+                  classe: "campo-cep", inputMode: "numeric", autoComplete: "postal-code",
+                  extra: <span className="cep-status">{cepStatus}</span>,
+                })}
+                b={fixo("numero", { inputMode: "numeric", autoComplete: "address-line2" })}
+              />
+              {fixo("endereco", { autoComplete: "address-line1" })}
+              {fixo("complemento")}
+              <Par a={fixo("bairro", { autoComplete: "address-level3" })} b={fixo("cidade", { autoComplete: "address-level2" })} />
+              {fixo("estado", { inputMode: "text", maxLength: 2, autoComplete: "address-level1" })}
+              {extras("endereco")}
 
               <div className="form-secao">O evento</div>
-              <div className="campo-linha">
-                <CampoTexto id="data" rotulo="Data do casamento" erro={erro} inputRef={registrar("data")}
-                  type="date" value={valores.data} onChange={aoMudar} onClick={abrirPicker} />
-                <CampoTexto id="horario" rotulo="Horário" erro={erro} inputRef={registrar("horario")}
-                  type="time" value={valores.horario} onChange={aoMudar} onClick={abrirPicker} />
-              </div>
-              <CampoTexto id="local" rotulo="Local do evento" erro={erro} inputRef={registrar("local")}
-                type="text" placeholder="Nome do espaço ou endereço" value={valores.local} onChange={aoMudar} />
+              <Par
+                a={fixo("data", { type: "date", onClick: abrirPicker })}
+                b={fixo("horario", { type: "time", onClick: abrirPicker })}
+              />
+              {fixo("local")}
+              {extras("evento")}
+
+              {perguntasDa("extra").length ? <div className="form-secao">Mais sobre vocês</div> : null}
+              {extras("extra")}
 
               <button className="cta" type="submit" disabled={enviando}>
                 {enviando ? "Confirmando..." : "Confirmar nossa data"}

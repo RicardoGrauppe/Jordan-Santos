@@ -26,7 +26,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Search, Settings, Users } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, ClipboardList, Crown, FileText, House, LogOut, Menu, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
@@ -54,9 +54,13 @@ const OURO = "#F2D9A0";
 const itemMenuConta =
   "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] text-ink no-underline hover:bg-soft";
 
-const ITENS = [
+const ITENS: { href: string; rotulo: string; Icone: typeof House; soLateral?: boolean }[] = [
   { href: "/painel", rotulo: "Home", Icone: House },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: Users },
+  /* o /cadastro que o casal preenche (22/10/2026). `soLateral`: a barra de
+     baixo do celular lê esta mesma lista e já tem os cinco lugares ocupados,
+     então lá ele mora no Menu da conta */
+  { href: "/painel/formulario", rotulo: "Formulário", Icone: ClipboardList, soLateral: true },
 ];
 
 /** telas cheias que só existem no celular */
@@ -634,7 +638,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
         "bg-[linear-gradient(180deg,#ffffff,#f9fafb)] shadow-flutuante " +
         (semNavegacao ? "hidden" : "flex")
       }>
-        {ITENS.map(({ href, rotulo, Icone }) => (
+        {ITENS.filter((i) => !i.soLateral).map(({ href, rotulo, Icone }) => (
           <Link
             key={href}
             href={href}
@@ -785,6 +789,11 @@ function TelaContaMobile({
       <CorpoTelaMobile>
         <CartaoPlano nome={nome} />
 
+        <Link href="/painel/formulario" tabIndex={aba} onClick={aoFechar} className={item}>
+          <ClipboardList size={19} className="shrink-0 text-ink-soft" />
+          Formulário
+          <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
+        </Link>
         <Link href="/painel/configuracoes/contrato" tabIndex={aba} onClick={aoFechar} className={item}>
           <FileText size={19} className="shrink-0 text-ink-soft" />
           Contrato e assinatura

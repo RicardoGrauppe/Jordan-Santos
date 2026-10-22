@@ -11,14 +11,22 @@
 
   POST {noivo, noiva, cpfNoivo, cpfNoiva, contato, email, cep, endereco, numero,
         complemento?, bairro, cidade, estado, dataEvento, horario, local,
-        itens?, totalNumero?, entradaNumero?}
+        itens?, totalNumero?, entradaNumero?, respostas?: {[idPergunta]: valor}}
     → upsert em `clientes` (status "novo", origem "Orçamento do site";
       reenvio do mesmo casal atualiza — ver a busca explícita no fim).
+
+  O que é obrigatório vem da config que o fotógrafo edita em
+  /painel/formulario (22/10/2026), lida aqui de novo: o navegador do casal só
+  adianta o aviso. Nomes (regra do par), WhatsApp, e-mail e data seguem
+  sempre exigidos, porque a config não deixa desligá-los. As respostas das
+  perguntas novas vão pra `respostas_formulario`, com o texto da pergunta.
 */
 import { NextResponse } from "next/server";
 import { rest, supabaseConfigurado } from "@/lib/supabase";
 import { textoCurto, criarLimite, ipDe, normalizarCpf } from "@/lib/util";
 import { enviarEmail, DESTINO_JORDAN } from "@/lib/email";
+import { campoExigido, exibirResposta, validarRespostas, type CampoFixoId, type RespostaFormulario } from "@/lib/formulario";
+import { lerFormulario } from "@/lib/formulario-servidor";
 
 const estourou = criarLimite(15 * 60_000, 20);
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -34,16 +42,17 @@ type DadosEmail = {
   cpfNoivaFmt: string;
   contato: string;
   email: string;
-  endereco: string;
-  numero: string;
+  endereco: string | null;
+  numero: string | null;
   complemento: string | null;
-  bairro: string;
-  cidade: string;
-  estado: string;
-  cep: string;
+  bairro: string | null;
+  cidade: string | null;
+  estado: string | null;
+  cep: string | null;
   dataBr: string | null;
-  horario: string;
-  local: string;
+  horario: string | null;
+  local: string | null;
+  respostas: RespostaFormulario[];
   itens: Item[];
   total: number | null;
 };
@@ -129,6 +138,7 @@ function templateNovoCliente(c: DadosEmail, link: string): { html: string; texto
             linha("Data do evento", c.dataBr) +
             linha("Horário", c.horario) +
             linha("Local", c.local) +
+            c.respostas.map((r) => linha(escHtml(r.rotulo), exibirResposta(r))).join("") +
             linha("Origem", "Orçamento do site") +
           '</table>' +
         '</div>' +
@@ -151,8 +161,9 @@ function templateNovoCliente(c: DadosEmail, link: string): { html: string; texto
     rotuloCpf + ": " + cpfs + "\n" +
     "Endereço: " + endereco + "\n" +
     "Data do evento: " + c.dataBr + "\n" +
-    "Horário: " + c.horario + "\n" +
-    "Local: " + c.local + "\n" +
+    "Horário: " + (c.horario ?? "") + "\n" +
+    "Local: " + (c.local ?? "") + "\n" +
+    c.respostas.map((r) => r.rotulo + ": " + exibirResposta(r) + "\n").join("") +
     "Origem: Orçamento do site\n\n" +
     (c.itens.length
       ? "Itens do pacote:\n" + c.itens.map((i) => "- " + i.nome + (i.valor != null ? " (" + brl.format(i.valor) + ")" : "")).join("\n") + "\n"
@@ -198,14 +209,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ erro: "informe o nome de quem tem o CPF preenchido" }, { status: 400 });
   }
 
-  if (!contato || !email || !cep || !endereco || !numero || !bairro ||
-    !cidade || !estado || !dataIso || !horario || !local) {
-    return NextResponse.json({ erro: "preencha todos os campos obrigatórios" }, { status: 400 });
-  }
-
   if (!supabaseConfigurado()) {
     return NextResponse.json({ erro: "cadastro indisponível no momento" }, { status: 503 });
   }
+
+  /* lido depois do teste do Supabase: sem banco, a leitura cairia no padrão e
+     a resposta seria a mesma 503 de qualquer jeito */
+  const formulario = await lerFormulario();
+  const preenchido: Record<Exclude<CampoFixoId, "noivo" | "noiva" | "cpfNoivo" | "cpfNoiva">, unknown> = {
+    contato, email, cep, endereco, numero, complemento, bairro, cidade, estado,
+    data: dataIso, horario, local,
+  };
+  const faltando = (Object.keys(preenchido) as (keyof typeof preenchido)[])
+    .some((id) => campoExigido(formulario, id) && !preenchido[id]);
+  /* contato, e-mail e data são travados na config e já estão em `faltando`;
+     repetidos aqui pro TypeScript saber que não chegam vazios lá embaixo */
+  if (faltando || !contato || !email || !dataIso) {
+    return NextResponse.json({ erro: "preencha todos os campos obrigatórios" }, { status: 400 });
+  }
+
+  const conferencia = validarRespostas(formulario, dados.respostas);
+  if (conferencia.erro) {
+    const p = formulario.perguntas.find((x) => x.id === conferencia.perguntaId);
+    return NextResponse.json(
+      { erro: (p ? "Confira \"" + p.rotulo + "\": " : "") + conferencia.erro },
+      { status: 400 },
+    );
+  }
+  const respostas = conferencia.respostas;
 
   const ip = ipDe(req.headers);
   if (estourou(ip || "sem-ip")) {   /* ipDe devolve null quando não há proxy */
@@ -232,9 +263,11 @@ export async function POST(req: Request) {
     /* null, NUNCA "" — ver o comentário do upsert abaixo */
     cpf_noivo: cpfNoivo || null, cpf_noiva: cpfNoiva || null,
     tel_noivo: contato, email: email,
-    cep: cep, endereco: endereco, numero: numero, complemento: complemento || null,
+    /* null quando o fotógrafo deixou o campo opcional ou escondido */
+    cep: cep || null, endereco: endereco, numero: numero, complemento: complemento || null,
     bairro: bairro, cidade: cidade, estado: estado,
     data_evento: dataIso, horario: horario, local_evento: local,
+    respostas_formulario: respostas,
     itens: itens, total: totalNum, entrada: entradaNum,
     origem: "Orçamento do site", observacoes: null,
   };
@@ -286,6 +319,7 @@ export async function POST(req: Request) {
       contato: contato, email: email,
       endereco: endereco, numero: numero, complemento: complemento, bairro: bairro, cidade: cidade, estado: estado, cep: cep,
       dataBr: dataBr(dataIso), horario: horario, local: local,
+      respostas: respostas,
       itens: itens, total: totalNum,
     }, link);
     await enviarEmail({

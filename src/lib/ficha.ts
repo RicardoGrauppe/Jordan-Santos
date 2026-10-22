@@ -35,6 +35,8 @@ export type Cliente = Partial<Record<CampoFicha, string | number | null>> & {
   id: string;
   status?: string | null;
   itens?: ItemContrato[] | null;
+  /** perguntas novas do /cadastro (lib/formulario.ts), só leitura na ficha */
+  respostas_formulario?: unknown;
 };
 
 export type Contrato = {

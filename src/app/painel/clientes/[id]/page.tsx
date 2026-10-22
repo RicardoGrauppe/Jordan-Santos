@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen } from "lucide-react";
+import { CalendarHeart, ChevronDown, ClipboardList, File, FileCheck, FileText, Heart, MapPin, NotebookPen } from "lucide-react";
 import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
@@ -42,6 +42,7 @@ import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
 import { CATALOGO, PACOTES } from "@/lib/catalogo";
 import { abrirContratoEmNovaGuia, rotaDoContrato } from "@/lib/painel";
+import { exibirResposta, respostasDoCliente } from "@/lib/formulario";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
   formatarMoeda, parseMoeda, soDigitos, copiarTexto,
@@ -712,6 +713,22 @@ export default function PaginaCliente() {
                   </div>
                 </div>
               </SecaoFicha>
+
+              {/* Perguntas que o fotógrafo criou em /painel/formulario. Só
+                  leitura: é o que o casal escreveu, com a pergunta do jeito
+                  que estava quando ele respondeu. Só aparece se houver. */}
+              {respostasDoCliente(cliente?.respostas_formulario).length ? (
+                <SecaoFicha icone={<ClipboardList size={15} />} titulo="Respostas do formulário">
+                  <dl className="m-0 grid grid-cols-1 gap-x-6 gap-y-3.5 lg:grid-cols-2">
+                    {respostasDoCliente(cliente?.respostas_formulario).map((r, i) => (
+                      <div key={r.id + i} className={"min-w-0 " + (r.tipo === "paragrafo" ? "col-span-full" : "")}>
+                        <dt className="mb-1 text-[12.5px] font-medium text-ink-soft">{r.rotulo}</dt>
+                        <dd className="m-0 whitespace-pre-line break-words rounded-[10px] bg-soft px-3.5 py-3 text-sm text-ink">{exibirResposta(r)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </SecaoFicha>
+              ) : null}
             </div>
 
             {/* ---------- coluna direita: contrato ---------- */}
