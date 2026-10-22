@@ -11,7 +11,7 @@
 */
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleCheck, EllipsisVertical, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { BotaoVoltar, CartaoAviso, Secao, Selo } from "@/components/ui";
@@ -45,15 +45,22 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
   aoAbrir: () => void; menu: { rotulo: string; icone: React.ReactNode; perigo?: boolean; disabled?: boolean; titulo?: string; acao: () => void }[];
 }) {
   const [aberto, setAberto] = useState(false);
+  const raiz = useRef<HTMLDivElement>(null);
+  /* Fecha ao tocar FORA do cartão, testando contenção. Era um ouvinte que
+     fechava em QUALQUER pointerdown, contando com o stopPropagation do menu
+     pra se proteger; mas o React escuta no próprio `document`, então o
+     stopPropagation não segura este ouvinte: o menu sumia no início do toque
+     e o clique em Excluir/Renomear nunca chegava (no celular, sempre). Mesmo
+     conserto do cartão do Ateliê (22/10/2026). */
   useEffect(() => {
     if (!aberto) return;
-    const f = () => setAberto(false);
+    const f = (e: PointerEvent) => { if (!raiz.current?.contains(e.target as Node)) setAberto(false); };
     document.addEventListener("pointerdown", f);
     return () => document.removeEventListener("pointerdown", f);
   }, [aberto]);
 
   return (
-    <div className={`relative rounded-2xl bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)] transition-[transform,background] hover:-translate-y-px hover:bg-[#F0F4F6]`}>
+    <div ref={raiz} className={`relative rounded-2xl bg-[#F7F9FA] shadow-[0_1px_2px_rgba(29,41,61,.03)] transition-[transform,background] hover:-translate-y-px hover:bg-[#F0F4F6]`}>
       <button type="button" onClick={aoAbrir}
         className={"flex w-full min-h-[120px] cursor-pointer flex-col items-start gap-2.5 bg-transparent px-[18px] pb-4 text-left " + (amostra ? "pt-[46px]" : "pt-[18px]")}>
         {amostra ?? <span className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-[11px] bg-accent-tint text-accent">{icone}</span>}
@@ -64,14 +71,14 @@ function Card({ nome, meta, ativo, amostra, icone, aoAbrir, menu }: {
       <div className="absolute right-3 top-3 z-[2] flex items-center gap-1.5">
         {ativo ? <Selo tom="accent">Padrão</Selo> : null}
         <button type="button" aria-label="Opções" aria-haspopup="true" aria-expanded={aberto}
-          onPointerDown={(e) => e.stopPropagation()} onClick={() => setAberto((v) => !v)}
+          onClick={() => setAberto((v) => !v)}
           className={`inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-ink-soft hover:bg-line hover:text-ink ` + (aberto ? "bg-line text-ink" : "")}>
           <EllipsisVertical size={16} />
         </button>
       </div>
 
       {aberto ? (
-        <div onPointerDown={(e) => e.stopPropagation()} className="absolute right-3 top-11 z-[5] min-w-[196px] rounded-xl bg-paper p-1.5 shadow-alta">
+        <div className="absolute right-3 top-11 z-[5] min-w-[196px] rounded-xl bg-paper p-1.5 shadow-alta">
           {menu.map((m) => (
             <button key={m.rotulo} type="button" disabled={m.disabled} title={m.titulo}
               onClick={() => { setAberto(false); m.acao(); }}
