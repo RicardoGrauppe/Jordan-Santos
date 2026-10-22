@@ -23,7 +23,7 @@ import { ClipboardList, Copy, TriangleAlert, EllipsisVertical, ExternalLink, Eye
 import { CartaoAviso, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
-import { Sk, SkLinha } from "@/components/Skeleton";
+import { Sk, SkCartaoModelo, SkCartaoNovo, SkLinha } from "@/components/Skeleton";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { FormulariosAtelie } from "@/components/FormulariosAtelie";
@@ -64,6 +64,11 @@ const rotaEditor = (id: string) => "/painel/atelie/" + id;
 function Miniatura({ id, versao }: { id: string; versao: string }) {
   const caixa = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0);
+  /* a prévia é a página inteira do site e demora: até ela pintar, o lugar
+     dela é um esqueleto de site (faixa de capa, título, dois blocos), que
+     some num fade quando o iframe termina de carregar. Volta a valer a cada
+     versão nova (key do iframe). */
+  const [pronta, setPronta] = useState<string | null>(null);
 
   useEffect(() => {
     const el = caixa.current;
@@ -85,10 +90,18 @@ function Miniatura({ id, versao }: { id: string; versao: string }) {
           aria-hidden="true"
           tabIndex={-1}
           loading="lazy"
+          onLoad={() => setPronta(versao)}
           className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
           style={{ width: LARGURA_SITE, height: LARGURA_SITE / 1.6, transform: `scale(${escala})` }}
         />
       ) : null}
+      <div aria-hidden className={"pointer-events-none absolute inset-0 flex flex-col bg-paper transition-opacity duration-300 " + (pronta === versao ? "opacity-0" : "opacity-100")}>
+        <Sk className="h-[58%] w-full rounded-none" />
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6">
+          <SkLinha style={{ width: "46%" }} />
+          <SkLinha className="h-[9px]" style={{ width: "30%" }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -181,18 +194,6 @@ function CartaoNovo({ aoClicar, ocupado }: { aoClicar: () => void; ocupado: bool
       </span>
       Novo modelo
     </button>
-  );
-}
-
-function CartaoCarregando() {
-  return (
-    <div className="overflow-hidden rounded-[18px] bg-paper shadow-card">
-      <Sk className="aspect-[16/10] w-full rounded-none" />
-      <div className="px-4 pb-4 pt-3.5">
-        <SkLinha style={{ width: "60%" }} />
-        <SkLinha className="mt-2" style={{ width: "40%" }} />
-      </div>
-    </div>
   );
 }
 
@@ -432,8 +433,8 @@ export default function Atelie() {
           </>
         ) : (
           <>
-            <CartaoCarregando />
-            <CartaoCarregando />
+            <SkCartaoModelo />
+            <SkCartaoNovo />
           </>
         )}
       </div>

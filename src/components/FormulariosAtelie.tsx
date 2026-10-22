@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { CircleCheck, ClipboardList, Copy, EllipsisVertical, ExternalLink, Pencil, PenLine, Plus, Trash2 } from "lucide-react";
 import { Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
-import { Sk, SkLinha } from "@/components/Skeleton";
+import { Sk, SkCartaoModelo, SkCartaoNovo } from "@/components/Skeleton";
 import { api, ERRO_SESSAO } from "@/lib/painel";
 import { fmtData } from "@/lib/util";
 import { urlFoto } from "@/lib/formulario";
@@ -34,6 +34,8 @@ const rotaEditor = (id: string) => "/painel/atelie/formulario/" + id;
 
 function Cartao({ modelo, emUso, aoAbrir, menu }: { modelo: Resumo; emUso: boolean; aoAbrir: () => void; menu: ItemMenu[] }) {
   const [aberto, setAberto] = useState(false);
+  /* a capa chega depois do cartão: shimmer no lugar dela até a foto pintar */
+  const [capaPronta, setCapaPronta] = useState(false);
   const raiz = useRef<HTMLDivElement>(null);
   /* fecha ao tocar fora, por contenção (mesmo motivo do cartão de site) */
   useEffect(() => {
@@ -49,10 +51,12 @@ function Cartao({ modelo, emUso, aoAbrir, menu }: { modelo: Resumo; emUso: boole
         <span className="relative block aspect-[16/10] w-full overflow-hidden rounded-t-[18px] bg-accent-tint">
           {modelo.capa ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={urlFoto(modelo.capa, 750)} alt="" className="h-full w-full object-cover" />
+            <img src={urlFoto(modelo.capa, 750)} alt="" onLoad={() => setCapaPronta(true)} onError={() => setCapaPronta(true)}
+              className={"h-full w-full object-cover transition-opacity duration-300 " + (capaPronta ? "opacity-100" : "opacity-0")} />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-accent"><ClipboardList size={30} strokeWidth={1.5} /></span>
           )}
+          {modelo.capa && !capaPronta ? <Sk className="absolute inset-0 rounded-none" /> : null}
         </span>
         <span className="block px-4 pb-4 pt-3.5">
           <span className="block truncate text-[14.5px] font-semibold leading-[1.3] text-ink">{modelo.nome}</span>
@@ -193,10 +197,10 @@ export function FormulariosAtelie({ mostrar }: { mostrar: (texto: string, opts?:
           </button>
         </>
       ) : (
-        <div className="overflow-hidden rounded-[18px] bg-paper shadow-card">
-          <Sk className="aspect-[16/10] w-full rounded-none" />
-          <div className="px-4 pb-4 pt-3.5"><SkLinha style={{ width: "60%" }} /><SkLinha className="mt-2" style={{ width: "40%" }} /></div>
-        </div>
+        <>
+          <SkCartaoModelo />
+          <SkCartaoNovo />
+        </>
       )}
     </div>
   );
