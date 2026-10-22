@@ -19,7 +19,7 @@ import { rest } from "@/lib/supabase";
 import { montarPdfDoContrato, type LinhaParaPdf } from "@/lib/contrato-pdf/montar";
 import {
   apagarDocumento, assinarComoDono, baixarAssinado, buscarDocumento, conta, criarDocumento, ehSandbox,
-  linkDoSignatario, recriarSignatario, reenviarEmail, trocarSignatario,
+  adicionarSignatario, linkDoSignatario, recriarSignatario, reenviarEmail, trocarSignatario,
   type DocumentoAutentique,
 } from "@/lib/autentique";
 
@@ -183,7 +183,19 @@ export async function trocarEmailDoCasal(
   }
   const doc = await buscarDocumento(c.autentique_id);
   const antiga = assinaturaDoCasal(doc, dono.email);
-  if (!antiga) throw new Error("não achei a assinatura do casal no documento da Autentique");
+  /* documento sem o casal (nasceu com o e-mail do casal igual ao da conta):
+     não há o que trocar, então põe o casal agora, no mesmo documento */
+  if (!antiga) {
+    try {
+      const nova = await adicionarSignatario(doc.id, { nome: casal.nome || "Contratante", email: casal.email });
+      const link = nova.link?.short_link ?? await linkDoSignatario(nova.public_id).catch(() => null);
+      if (link) await rest("contratos?id=eq." + c.id, { method: "PATCH", body: { autentique_link: link } });
+      return { link };
+    } catch (e) {
+      console.error("autentique: não deu pra pôr o casal no documento:", (e as Error).message);
+      throw new Error("a Autentique não aceitou pôr o casal neste documento; use \"Atualizar na Autentique\" pra mandar um novo");
+    }
+  }
   if (antiga.signed?.created_at) throw new Error("o casal já assinou, não dá mais pra trocar o e-mail");
   /* mesmo e-mail: é reenvio. Em modo e-mail, a Autentique manda de novo; em
      modo link (contratos de antes de a entrega voltar a ser por e-mail),

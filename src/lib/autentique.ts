@@ -286,6 +286,27 @@ export async function recriarSignatario(
 }
 
 /**
+ * Põe o casal num documento que ficou SEM ele (22/10/2026): o caso do e-mail
+ * do casal igual ao da conta, em que a Autentique juntou os dois e o
+ * documento nasceu só com o fotógrafo. Mesmo documento, sem gastar cota.
+ */
+export async function adicionarSignatario(
+  documentoId: string,
+  novo: { nome: string; email: string },
+): Promise<AssinaturaAutentique> {
+  const d = await gql<{ createSigner: AssinaturaAutentique }>(
+    `mutation ($doc: UUID!, $signer: SignerInput!) {
+      createSigner(document_id: $doc, signer: $signer) { ${CAMPOS_ASSINATURA} }
+    }`,
+    {
+      doc: documentoId,
+      signer: { name: novo.nome, email: novo.email, action: "SIGN", delivery_method: "DELIVERY_METHOD_EMAIL" },
+    },
+  );
+  return d.createSigner;
+}
+
+/**
  * Troca quem assina sem trocar o documento (22/10/2026): tira o signatário
  * antigo e põe um novo, com o e-mail certo, no mesmo documento. A assinatura
  * de quem já assinou (o fotógrafo) fica, o PDF é o mesmo e não gasta cota,
