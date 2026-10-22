@@ -12,7 +12,7 @@ Jordan, nem o banco de dados dele.
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4 · Supabase
 (PostgREST + Auth via service role, sempre no servidor) · lucide-react ·
-Tiptap (editor de contrato) · jose (cookie de sessão).
+Tiptap (editor de contrato) · Puck 0.23, fixado (editor de blocos do Ateliê) · jose (cookie de sessão).
 
 ## Mapa
 
@@ -24,13 +24,14 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
-src/app/proposta             proposta comercial que o casal lê
-src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook)
+src/app/proposta             site que o casal lê: renderiza o modelo do Ateliê que está no ar
+src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), atelie
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
-                             contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes)
-supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco)
+                             contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
+                             atelie/ (blocos.tsx, proposta-css.ts, modelo-inicial.ts, modelos.ts)
+supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos)
 ```
 
 ## Dependências travadas
@@ -110,6 +111,25 @@ seguiria de pé e um contrato cancelado aqui voltaria assinado de lá.
 O PDF assinado é baixado uma vez e guardado em `pdf_base64`: o painel não
 depende da Autentique estar no ar pra entregar a via.
 
+## Ateliê: o site do fotógrafo, montado com blocos
+
+O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
+`lib/atelie/blocos.tsx`, no editor Puck. Um modelo fica no ar (chave
+`site_ativo` em `config`) e o público vê a versão **publicada** dele
+(`site_modelos.publicado`); o `rascunho` nunca aparece pra quem abre o link.
+
+- **Os blocos são a proposta do Jordan cortada em pedaços**, com o mesmo HTML
+  e o CSS de `proposta-css.ts`. Mudou um bloco? Meça pelo DOM em 1440px e no
+  celular contra o que estava antes: a régua é "igual ao original".
+- **O site nunca cai por causa do banco.** Falha de leitura, nada no ar ou
+  modelo nunca publicado: `siteNoAr()` devolve o `MODELO_INICIAL`.
+- **Contato do estúdio é campo da página** (raiz do Puck), não de bloco, e
+  chega à chamada e ao rodapé pelo `metadata`. Trocar o número é num lugar só.
+- Nada de hook ou contexto dentro de bloco: o mesmo config roda no editor
+  (cliente) e no `<Render>` (servidor).
+- No editor a página fica num iframe, então a animação de entrada é
+  desligada lá (`.editando`).
+
 ## Dívidas conhecidas
 
 - **Multi-tenant fica pra DEPOIS, por decisão do Ricardo (2026-09-16).** A
@@ -126,7 +146,7 @@ depende da Autentique estar no ar pra entregar a via.
   config por fotógrafo. A janela barata pra isso é a migração do banco pro
   Supabase do Ricardo, porque o volume é pequeno (4 clientes e 4 contratos).
 - **Nome e marca do fotógrafo ainda são do Jordan** em pontos fixos: logo e
-  textos de `/proposta`, `NOME_FOTOGRAFO` em `assinar/Assinar.tsx`,
+  textos do modelo inicial do Ateliê (`lib/atelie/modelo-inicial.ts`), `NOME_FOTOGRAFO` em `assinar/Assinar.tsx`,
   `NOME_FOTOGRAFO_PADRAO` e a legenda "CONTRATADA" em `clientes/[id]/contrato`,
   saudação do WhatsApp em `api/estudio`, remetente e `DESTINO_JORDAN` em
   `lib/email.ts`, e-mails de `api/orcamento`, e as imagens em `public/img/`.

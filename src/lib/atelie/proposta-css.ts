@@ -39,15 +39,8 @@ html{scroll-behavior:smooth}
 .prop .foto-full img{width:100%;height:auto}
 .prop .foto-banner{margin:0 -24px 72px}
 .prop .foto-banner img{width:100%;height:34vh;object-fit:cover}
-/* foco das fotos: ancora o corte do cover nos rostos */
-.prop img[src*="casal-jardim"]{object-position:50% 20%}
-.prop img[src*="noiva-retrato"]{object-position:48% 30%}
-.prop img[src*="casal-campo"]{object-position:45% 45%}
-.prop img[src*="prewedding"]{object-position:50% 35%}
-.prop img[src*="entrega-1"]{object-position:50% 25%}
-.prop img[src*="entrega-2"]{object-position:50% 28%}
-.prop img[src*="entrega-3"]{object-position:50% 40%}
-.prop img[src*="casal-palacio"]{object-position:55% 28%}
+/* o foco de cada foto (object-position) vem do bloco, em style: é dado
+   da foto, não do nome do arquivo */
 
 /* pacotes */
 .prop .swoosh{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -55,8 +48,8 @@ html{scroll-behavior:smooth}
 .prop .card{position:relative;display:block;width:100%;text-align:inherit;padding:36px 40px;border-radius:16px;background:var(--paper);box-shadow:0 1px 2px rgba(29,29,27,.04),0 8px 24px rgba(29,29,27,.08)}
 .prop .card-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
 .prop .card-cabecalho h3{margin-bottom:0}
-.prop .pacote-eternal{max-width:460px;text-align:left}
-.prop .pacote-heritage{max-width:460px;margin-left:auto;margin-top:56px;text-align:right}
+.prop .pacote-esq{max-width:460px;text-align:left}
+.prop .pacote-dir{max-width:460px;margin-left:auto;margin-top:56px;text-align:right}
 .prop .card h3{font-family:var(--serif);font-weight:500;font-size:30px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
 .prop .card ul{list-style:none;font-size:15px;color:var(--ink)}
 .prop .card li{padding:2.5px 0}
@@ -65,7 +58,9 @@ html{scroll-behavior:smooth}
 
 /* seções com foto de fundo em tamanho natural: a foto é um <img> no fluxo, a
    altura da seção É a altura da imagem; o conteúdo fica em camada por cima */
-.prop #adicionais,.prop #prewedding{position:relative;padding:0}
+/* ".pagina.sobre-foto" (3 classes) pra vencer o padding de ".pagina" no
+   celular, que vem depois no arquivo */
+.prop .pagina.sobre-foto{position:relative;padding:0}
 .prop .secao-bg{display:block;width:100%;height:auto}
 .prop .secao-conteudo{position:absolute;top:0;left:0;right:0;padding:104px 24px}
 
@@ -77,25 +72,19 @@ html{scroll-behavior:smooth}
 
 @media (max-width:900px){
   /* em tela estreita o céu não comporta a lista: o conteúdo flui num bloco
-     da cor do céu e a foto sobe por trás do fim da lista, com fade no topo */
-  .prop #adicionais{background:#FEFEFE;overflow:hidden}
-  .prop #adicionais .secao-conteudo{position:relative;z-index:1;padding:44px 16px 0}
-  .prop #adicionais .secao-bg{position:relative;z-index:0;margin-top:-40vw;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 20vw);mask-image:linear-gradient(to bottom,transparent,#000 20vw)}
-  .prop #adicionais .dica{margin-bottom:14px;padding:5px 12px}
-  .prop #adicionais h2{font-size:24px;margin-bottom:4px}
-  .prop #adicionais .linha{padding:9px 10px;gap:10px}
-  .prop #adicionais .linha .nome{font-size:13.5px;line-height:1.4}
-  .prop #adicionais .linha .valor{font-size:15px}
-  .prop #prewedding{background:#D7E0E1;overflow:hidden}
-  .prop #prewedding .secao-conteudo{position:relative;z-index:1;padding:44px 16px 0}
-  .prop #prewedding .secao-bg{position:relative;z-index:0;margin-top:-32vw;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 20vw);mask-image:linear-gradient(to bottom,transparent,#000 20vw)}
-  .prop #prewedding .dica{margin-bottom:14px;padding:5px 12px}
-  .prop #prewedding h2{font-size:24px;margin-bottom:4px}
-  .prop #prewedding .linha{padding:9px 10px;gap:10px}
-  .prop #prewedding .linha .nome{font-size:13.5px;line-height:1.4}
-  .prop #prewedding .linha .nome small{font-size:12px}
-  .prop #prewedding .linha .valor{font-size:15px}
-  .prop .prewed-legenda{z-index:1}
+     da cor do céu e a foto sobe por trás do fim da lista, com fade no topo.
+     A cor do céu e quanto a foto sobe são do bloco (--ceu, --subida), porque
+     dependem da foto e do tamanho da lista */
+  .prop .sobre-foto{background:var(--ceu,#FEFEFE);overflow:hidden}
+  .prop .sobre-foto .secao-conteudo{position:relative;z-index:1;padding:44px 16px 0}
+  .prop .sobre-foto .secao-bg{position:relative;z-index:0;margin-top:calc(var(--subida,40) * -1vw);-webkit-mask-image:linear-gradient(to bottom,transparent,#000 20vw);mask-image:linear-gradient(to bottom,transparent,#000 20vw)}
+  .prop .sobre-foto .dica{margin-bottom:14px;padding:5px 12px}
+  .prop .sobre-foto h2{font-size:24px;margin-bottom:4px}
+  .prop .sobre-foto .linha{padding:9px 10px;gap:10px}
+  .prop .sobre-foto .linha .nome{font-size:13.5px;line-height:1.4}
+  .prop .sobre-foto .linha .nome small{font-size:12px}
+  .prop .sobre-foto .linha .valor{font-size:15px}
+  .prop .legenda-sobre-foto{z-index:1}
 }
 
 /* álbum / pré-wedding */
@@ -103,8 +92,8 @@ html{scroll-behavior:smooth}
 .prop .card-centro .card-cabecalho{justify-content:flex-end;margin-bottom:14px}
 .prop .card-centro + .card-centro{margin-top:26px}
 .prop .card-desc{font-size:16px}
-.prop .prewed-legenda{position:absolute;left:0;right:0;bottom:0;padding:220px 24px 170px;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;text-align:center;font-size:19px;font-weight:500;letter-spacing:.03em;line-height:1.8}
-@media (max-width:640px){.prop .prewed-legenda{padding:70px 20px 64px;font-size:14px;line-height:1.7}}
+.prop .legenda-sobre-foto{position:absolute;left:0;right:0;bottom:0;padding:220px 24px 170px;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;text-align:center;font-size:19px;font-weight:500;letter-spacing:.03em;line-height:1.8}
+@media (max-width:640px){.prop .legenda-sobre-foto{padding:70px 20px 64px;font-size:14px;line-height:1.7}}
 
 /* entrega */
 .prop .entrega-texto p{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;line-height:2.1;color:var(--ink);margin-bottom:22px}
@@ -146,7 +135,7 @@ html{scroll-behavior:smooth}
 @media (max-width:640px){
   .prop .pagina{padding:76px 20px}
   .prop .card{padding:28px 24px}
-  .prop .pacote-heritage{margin-top:34px}
+  .prop .pacote-dir{margin-top:34px}
   .prop .entrega-fotos{grid-template-columns:1fr}
   .prop .quote-full blockquote{left:20px;right:20px;top:7%}
   .prop .foto-banner{margin:0 -20px 56px}
