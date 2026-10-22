@@ -28,6 +28,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, LayoutTemplate, Package, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
+import { ModalConfiguracoes } from "@/components/ModalConfiguracoes";
+import { abrirConfiguracoes } from "@/lib/configuracoes-modal";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
 import { Selo } from "@/components/ui";
@@ -606,11 +608,12 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                     <Package size={15} className="opacity-85" /> Pacotes e adicionais
                     <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
                   </Link>
-                  <Link href="/painel/configuracoes" onClick={() => setMenuAberto(false)}
-                    className={itemMenuConta}>
+                  {/* modal, não página (22/10/2026): ver ModalConfiguracoes */}
+                  <button type="button" onClick={() => { setMenuAberto(false); abrirConfiguracoes(); }}
+                    className={itemMenuConta + " cursor-pointer text-left"}>
                     <Settings size={15} className="opacity-85" /> Configurações
                     <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
-                  </Link>
+                  </button>
                   <button type="button" onClick={sair}
                     className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] text-erro hover:bg-erro-tint`}>
                     <LogOut size={15} className="opacity-85" /> Sair
@@ -641,6 +644,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           e a saída deslizarem, em vez de piscarem. */}
       <TelaAvisosMobile avisos={avisos} aberta={tela === "avisos"} daEsquerda={!!ladoPorTela.avisos} aoFechar={() => setTela(null)} />
       <TelaBuscaMobile aberta={tela === "busca"} aoFechar={() => setTela(null)} />
+      <ModalConfiguracoes />
       <TelaContaMobile
         nome={nome}
         aberta={tela === "conta"}
@@ -823,11 +827,11 @@ function TelaContaMobile({
           Pacotes e adicionais
           <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
         </Link>
-        <Link href="/painel/configuracoes" tabIndex={aba} onClick={aoFechar} className={item}>
+        <button type="button" tabIndex={aba} onClick={() => { aoFechar(); abrirConfiguracoes(); }} className={item + " cursor-pointer text-left"}>
           <Settings size={19} className="shrink-0 text-ink-soft" />
           Configurações
           <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
-        </Link>
+        </button>
         <button type="button" tabIndex={aba} onClick={aoSair} className={item + " text-erro"}>
           <LogOut size={19} className="shrink-0 text-erro" />
           Sair

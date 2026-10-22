@@ -151,7 +151,7 @@ export default function ContratoIndice() {
     <div className="mx-auto max-w-[880px]">
       {/* no celular isto vive no cabeçalho (ver cabecalho-mobile.tsx) */}
       <div className="hidden md:block">
-        <BotaoVoltar href="/painel/configuracoes" rotulo="Configurações" />
+        <BotaoVoltar href="/painel" rotulo="Home" />
         <h1 className="m-0 mb-2 text-[26px] font-bold text-ink">Modelos de contrato</h1>
       </div>
       <div className="mb-5">

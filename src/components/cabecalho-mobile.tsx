@@ -57,7 +57,7 @@ const TELAS: { rota: RegExp; titulo: string; voltar: string | null; selo?: strin
   { rota: /^\/painel\/clientes\/[^/]+\/?$/, titulo: "Cliente", voltar: "/painel/clientes" },
   { rota: /^\/painel\/clientes\/?$/, titulo: "Clientes", voltar: null },
   { rota: /^\/painel\/atelie\/?$/, titulo: "Ateliê", voltar: null },
-  { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Modelos de contrato", voltar: "/painel/configuracoes" },
+  { rota: /^\/painel\/configuracoes\/contrato\/?$/, titulo: "Modelos de contrato", voltar: "/painel" },
   { rota: /^\/painel\/configuracoes\/?$/, titulo: "Configurações", voltar: "/painel" },
   { rota: /^\/painel\/produtos\/?$/, titulo: "Pacotes e adicionais", voltar: "/painel" },
   /* formulário virou modelo do Ateliê (22/10/2026); o título real (nome do

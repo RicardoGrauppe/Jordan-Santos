@@ -12,7 +12,7 @@
 */
 "use client";
 
-import Link from "next/link";
+import { abrirConfiguracoes } from "@/lib/configuracoes-modal";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
@@ -554,9 +554,9 @@ function Vazio() {
       Você ainda não definiu sua cidade.
       <br />
       Defina em{" "}
-      <Link href="/painel/configuracoes" className={`font-semibold text-accent no-underline hover:underline`}>
+      <button type="button" onClick={() => abrirConfiguracoes("localizacao")} className="cursor-pointer bg-transparent p-0 font-semibold text-accent hover:underline">
         Configurações, em Localização
-      </Link>
+      </button>
       {" "}pra ver a previsão aqui.
     </Caixa>
   );
