@@ -56,6 +56,8 @@ const GRUPOS_CAMPO: { titulo: string; icone: LucideIcon; campos: string[] }[] = 
 const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 type ModeloResumo = { id: string; nome: string | null; ativo: boolean };
+/** de onde o modelo novo parte: o texto deste contrato ou uma folha em branco */
+type BaseModelo = "contrato" | "branco";
 
 type LateralProps = {
   editor: Editor;
@@ -64,7 +66,7 @@ type LateralProps = {
   modeloId: string | null;
   ocupado: boolean;
   aoEscolher: (id: string) => void;
-  aoCriar: (nome: string) => Promise<boolean>;
+  aoCriar: (nome: string, base: BaseModelo) => Promise<boolean>;
 };
 
 /* Cartão flutuante da lateral: mesmo cabeçalho da ficha (ícone em quadrado
@@ -93,6 +95,11 @@ function CartaoLateral({ icone: Icone, titulo, texto, children }: {
    os blocos. */
 function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolher, aoCriar }: LateralProps) {
   const [criando, setCriando] = useState(false);
+  const [base, setBase] = useState<BaseModelo>("contrato");
+  /* foco no nome quando o "Novo modelo" abre (só na abertura: o rádio de
+     baixo não pode devolver o foco pro campo a cada clique) */
+  const inputNome = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (criando) inputNome.current?.focus({ preventScroll: true }); }, [criando]);
   const [nome, setNome] = useState("");
   const [busca, setBusca] = useState("");
   /* o chip que acabou de entrar no texto fica verde por um instante */
@@ -111,7 +118,7 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
   async function criar() {
     const n = nome.trim();
     if (!n || ocupado) return;
-    if (await aoCriar(n)) { setCriando(false); setNome(""); setAberto(false); }
+    if (await aoCriar(n, base)) { setCriando(false); setNome(""); setBase("contrato"); setAberto(false); }
   }
 
   const [aberto, setAberto] = useState(false);
@@ -164,27 +171,57 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
                 );
               })}
 
-              {criando ? (
-                <form className="mt-1 rounded-xl bg-soft p-2.5" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
-                  <input autoFocus value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
-                    className="h-9 w-full rounded-[10px] bg-paper px-3 text-[13px] text-ink outline-none placeholder:text-ink-soft/70" />
-                  <p className="m-0 mt-1.5 px-0.5 text-[11.5px] leading-snug text-ink-soft">Nasce com o texto deste contrato.</p>
-                  <div className="mt-2.5 flex gap-1.5">
-                    <button type="submit" disabled={!nome.trim() || ocupado}
-                      className="h-8 flex-1 cursor-pointer rounded-[10px] bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
-                      Criar modelo
-                    </button>
-                    <button type="button" onClick={() => { setCriando(false); setNome(""); }}
-                      className="h-8 cursor-pointer rounded-[10px] px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-line hover:text-ink">
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <button type="button" disabled={ocupado} onClick={() => setCriando(true)} className={linha + " text-ink-soft hover:bg-soft hover:text-ink"}>
-                  <Plus size={18} className="shrink-0" /> Novo modelo
-                </button>
-              )}
+              {/* "Novo modelo" também é dropdown: abre no lugar, com o nome e de
+                  onde o modelo parte */}
+              <button type="button" disabled={ocupado} aria-expanded={criando} onClick={() => setCriando((v) => !v)}
+                className={linha + " " + (criando ? "bg-soft text-ink" : "text-ink-soft hover:bg-soft hover:text-ink")}>
+                <Plus size={18} className={"shrink-0 transition-[rotate] duration-300 " + (criando ? "rotate-45" : "")} />
+                <span className="flex-1">Novo modelo</span>
+                <ChevronDown size={16} className={"shrink-0 text-ink-soft transition-[rotate] duration-300 " + (criando ? "rotate-180" : "")} />
+              </button>
+              <div inert={!criando}
+                className={"grid transition-[grid-template-rows,opacity] duration-300 ease-[var(--ease-desliza)] " +
+                  (criando ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
+                <div className="min-h-0 overflow-hidden">
+                  <form className="mt-1 rounded-xl bg-soft p-2.5" onSubmit={(e) => { e.preventDefault(); void criar(); }}>
+                    <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Contrato de ensaio" aria-label="Nome do modelo novo"
+                      ref={inputNome}
+                      className="h-9 w-full rounded-[10px] bg-paper px-3 text-[13px] text-ink outline-none placeholder:text-ink-soft/70" />
+                    <div role="radiogroup" aria-label="Começar com" className="mt-2 grid gap-1">
+                      {([
+                        ["contrato", "Texto deste contrato", "Vira o modelo deste contrato"],
+                        ["branco", "Em branco", "Abre no editor de modelos"],
+                      ] as const).map(([v, titulo, dica]) => {
+                        const marcado = base === v;
+                        return (
+                          <button key={v} type="button" role="radio" aria-checked={marcado} onClick={() => setBase(v)}
+                            className={"flex cursor-pointer items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left transition-colors " +
+                              (marcado ? "bg-paper" : "hover:bg-line")}>
+                            <span className={"inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors " +
+                              (marcado ? "bg-accent" : "bg-line")}>
+                              {marcado ? <span className="h-1.5 w-1.5 rounded-full bg-white" /> : null}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-[12.5px] font-semibold text-ink">{titulo}</span>
+                              <span className="block text-[11.5px] leading-snug text-ink-soft">{dica}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2.5 flex gap-1.5">
+                      <button type="submit" disabled={!nome.trim() || ocupado}
+                        className="h-8 flex-1 cursor-pointer rounded-[10px] bg-accent text-[12.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
+                        Criar modelo
+                      </button>
+                      <button type="button" onClick={() => { setCriando(false); setNome(""); }}
+                        className="h-8 cursor-pointer rounded-[10px] px-3 text-[12.5px] text-ink-soft transition-colors hover:bg-line hover:text-ink">
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -432,18 +469,30 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
     }
   }
 
-  /* modelo novo com o texto deste contrato, que passa a ser o modelo dele */
-  async function criarModelo(editor: Editor, nome: string): Promise<boolean> {
+  /* Modelo novo. Com o texto deste contrato: passa a ser o modelo dele. Em
+     branco: este contrato não muda (trocar apagaria o texto) e o modelo abre
+     no editor de modelos, numa guia nova pra este editor seguir aberto. */
+  async function criarModelo(editor: Editor, nome: string, base: BaseModelo): Promise<boolean> {
+    /* a guia abre AGORA, ainda no clique: depois do await o navegador trata
+       como pop-up e bloqueia */
+    const guia = base === "branco" ? window.open("", "_blank") : null;
     setTrocando(true);
     try {
-      const json = editor.getJSON();
+      const json: JSONContent = base === "branco" ? { type: "doc", content: [{ type: "paragraph" }] } : editor.getJSON();
       const criado = await api<{ modelo: { id: string } }>("/api/templates", { acao: "criar", nome });
-      await api("/api/templates", { acao: "salvar", id: criado.modelo.id, conteudo_json: json, conteudo_html: jsonParaHtml(json) });
+      await api("/api/templates", { acao: "salvar", id: criado.modelo.id, conteudo_json: json, conteudo_html: jsonParaHtml(json) || "<p></p>" });
       await carregarModelos();
+      if (base === "branco") {
+        const rota = "/painel/configuracoes/contrato/" + encodeURIComponent(criado.modelo.id);
+        if (guia) guia.location.href = rota; else window.open(rota, "_blank");
+        setEstado({ texto: "Modelo \"" + nome + "\" criado e aberto no editor de modelos", tom: "ok" });
+        return true;
+      }
       const ok = await trocarModelo(editor, criado.modelo.id, false);
       if (ok) setEstado({ texto: "Modelo \"" + nome + "\" criado", tom: "ok" });
       return ok;
     } catch (e) {
+      guia?.close();
       if ((e as Error).message === ERRO_SESSAO) { router.replace("/entrar"); return false; }
       setEstado({ texto: (e as Error).message || "Não consegui criar o modelo.", tom: "erro" });
       return false;
@@ -557,7 +606,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       lateral={(editor, fechar) => (
         <LateralContrato editor={editor} fechar={fechar} modelos={modelos} modeloId={modeloId} ocupado={trocando || enviando}
           aoEscolher={(m) => { void trocarModelo(editor, m, true).then((ok) => { if (ok) fechar(); }); }}
-          aoCriar={(nome) => criarModelo(editor, nome)} />
+          aoCriar={(nome, base) => criarModelo(editor, nome, base)} />
       )}
     />
   );
