@@ -29,15 +29,15 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen, Mail, Pencil } from "lucide-react";
+import { CalendarHeart, ChevronDown, Heart, MapPin, NotebookPen, Mail, Package, Pencil } from "lucide-react";
 import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
-import { SecaoFicha, AcaoSecao } from "@/components/SecaoFicha";
+import { SecaoFicha } from "@/components/SecaoFicha";
 import { CampoCopiavel } from "@/components/CampoCopiavel";
 import { HeroCliente } from "@/components/HeroCliente";
 import { TituloMobile } from "@/components/cabecalho-mobile";
-import { TimelineContrato } from "@/components/TimelineContrato";
+import { ContratoVazio, TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
 import { ModalContratoEnviado, type DadosEnviado } from "@/components/ModalContratoEnviado";
 import { ModalTrocarEmail } from "@/components/ModalTrocarEmail";
@@ -666,19 +666,6 @@ export default function PaginaCliente() {
     try { el.showPicker(); } catch { /* Firefox exige gesto; clique é gesto, mas fica de rede */ }
   }
 
-  /* O rótulo deste botão segue o ESTADO DO CONTRATO, e não o cadeado da ficha.
-     Antes ele dizia "rascunho" pra tudo que não estivesse assinado, então um
-     contrato já enviado (que abre na Autentique) se anunciava como rascunho.
-     Também avisa quando o destino é fora do app: clicar e cair num site de
-     terceiro sem esperar é o tipo de surpresa que faz voltar. */
-  const noAutentique = !!contrato?.autentique_id;
-  const iconeContrato = !contratoGerado ? <File size={14} /> : travado ? <FileCheck size={14} /> : <FileText size={14} />;
-  const rotuloContrato = !contratoGerado
-    ? "Criar rascunho do contrato"
-    : noAutentique
-      ? (travado ? "Abrir contrato assinado na Autentique" : "Abrir contrato na Autentique")
-      : (travado ? "Abrir contrato assinado" : "Abrir rascunho do contrato");
-
   if (erroCarga) {
     return (
       <div className="mx-auto max-w-[1100px]">
@@ -701,7 +688,14 @@ export default function PaginaCliente() {
        lista (1100), então a cada clique a coluna crescia. */
     <div className="mx-auto max-w-[1100px]">
       <TituloMobile titulo={nomeDoCasal} />
-      <Voltar />
+      <div className="flex items-center justify-between gap-4">
+        <Voltar />
+        {/* "Digitou, salvou": o recado fica no topo, à vista enquanto se
+            digita, e não num rodapé que ninguém rola até ver */}
+        {statusSalvo.texto && !(ehNovo && !clienteId) ? (
+          <div className="ml-auto text-right"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
+        ) : null}
+      </div>
 
       {carregando ? (
         <Esqueleto />
@@ -709,47 +703,121 @@ export default function PaginaCliente() {
         <form autoComplete="off" onSubmit={salvarPeloBotao}>
           <HeroCliente cliente={cliente} contratoAssinado={travado} onArquivar={arquivar} onExcluir={excluir} />
 
-          <div className="grid grid-cols-1 items-start gap-5 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
-            {/* ---------- coluna esquerda: o casal ---------- */}
-            <div className="min-w-0">
-              <SecaoFicha icone={<Heart size={15} />} titulo="O casal" abertaInicial={ehNovo || campoAlvo === "email"}>
-                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
-                  <CampoCopiavel id="f-noivo" rotulo="Noivo" value={ficha.noivo} avisar={avisar}
-                    onChange={(e) => mudarCampo("noivo", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-cpf-noivo" rotulo="CPF do noivo" value={ficha.cpf_noivo} avisar={avisar}
-                    inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                    onChange={(e) => mudarCampo("cpf_noivo", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-tel-noivo" rotulo="Telefone do noivo" value={ficha.tel_noivo} avisar={avisar}
-                    copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
-                    onChange={(e) => mudarCampo("tel_noivo", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-noiva" rotulo="Noiva" value={ficha.noiva} avisar={avisar}
-                    onChange={(e) => mudarCampo("noiva", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-cpf-noiva" rotulo="CPF da noiva" value={ficha.cpf_noiva} avisar={avisar}
-                    inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                    onChange={(e) => mudarCampo("cpf_noiva", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-tel-noiva" rotulo="Telefone da noiva" value={ficha.tel_noiva} avisar={avisar}
-                    copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
-                    onChange={(e) => mudarCampo("tel_noiva", e.target.value)} onBlur={salvarLogo} />
-                  <div className="col-span-full">
-                    <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
-                      readOnly={emailNaAutentique}
-                      acao={emailNaAutentique ? (
-                        <button type="button" onClick={() => setTrocaEmail({ ocupado: false, erro: "" })}
-                          className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-soft px-3.5 text-[13px] font-semibold text-accent transition-colors hover:bg-line">
-                          <Mail size={15} /> Trocar e reenviar
-                        </button>
-                      ) : undefined}
-                      onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
-                    {emailNaAutentique ? (
-                      <p className="m-0 -mt-2 mb-3.5 text-[11.5px] leading-[1.5] text-ink-soft/85">
-                        O contrato já foi pra esse e-mail. Se estiver errado, troque e reenvie pro casal.
-                      </p>
-                    ) : null}
+          {/* HIERARQUIA (refeita em 22/10/2026, pedido do Ricardo):
+              1. quem é e quando (herói);
+              2. em que pé está o contrato e o que fazer agora (coluna da
+                 direita, no topo; no celular vem ANTES dos dados, porque é
+                 o motivo de quase toda visita à ficha);
+              3. quanto (pacote e valores, logo embaixo do contrato);
+              4. os dados do casal, abertos e agrupados por pessoa, pra
+                 consultar e copiar.
+              Antes os dados ficavam em quatro tiras fechadas e o status do
+              contrato era o segundo cartão da direita. */}
+          <div className="grid grid-cols-1 items-start gap-x-5 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
+            {/* ---------- coluna direita: contrato e valores ---------- */}
+            <div className="min-w-0 min-[1080px]:sticky min-[1080px]:top-[78px] min-[1080px]:order-2">
+              {contrato && contratoGerado ? (
+                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onTrocarEmail={() => setTrocaEmail({ ocupado: false, erro: "" })} onReenviarEmail={() => void reenviarEmail()} onCopiarLink={() => void copiarLink()} avisar={avisar} />
+              ) : (
+                <ContratoVazio podeCriar={!!clienteId && !ocupado} onCriar={() => void acaoDoContrato()} />
+              )}
+
+              {/* resumo só leitura: a escolha mora no editor do contrato.
+                  Ficha nova ainda sem cliente não tem o que resumir. */}
+              {clienteId ? (
+              <section className="mb-4 rounded-[22px] bg-paper p-5 md:px-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
+                    <Package size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14.5px] font-semibold leading-[1.3] text-ink">Pacote e valores</span>
+                    <span className="block truncate text-[12.5px] leading-[1.4] text-ink-soft">O que o casal contratou</span>
+                  </span>
+                </div>
+                {/* o total é o número que se procura: grande, primeiro */}
+                <div className="flex items-end justify-between gap-3 rounded-2xl bg-soft px-4 py-3.5">
+                  <div className="min-w-0">
+                    <span className="block text-[12px] font-medium text-ink-soft">Total</span>
+                    <span className="block text-[22px] font-semibold leading-[1.2] tabular-nums text-ink">R$ {ficha.total || "0,00"}</span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="block text-[12px] font-medium text-ink-soft">Entrada</span>
+                    <span className="block text-[15px] font-semibold tabular-nums text-accent">R$ {ficha.entrada || "0,00"}</span>
                   </div>
                 </div>
+                {itens.length ? (
+                  <ul className="m-0 mt-2 list-none p-0">
+                    {itens.map((i) => (
+                      <li key={i.id} className="flex items-center gap-3 px-1 py-2 text-[13.5px]">
+                        <span className="min-w-0 flex-1 truncate text-ink">{i.nome}</span>
+                        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-ink-soft">R$ {formatarMoeda(i.valor)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="m-0 mt-3 px-1 text-[13.5px] text-ink-soft">Nenhum pacote escolhido ainda.</p>
+                )}
+                {travado ? (
+                  <p className="m-0 mt-3 px-1 text-[12.5px] leading-[1.5] text-ink-soft">
+                    O casal já assinou: pacote, adicionais e valores ficam como estão no contrato.
+                  </p>
+                ) : (
+                  <Botao type="button" variante="secundario" className="mt-3 w-full" disabled={!clienteId || ocupado}
+                    onClick={() => { if (contratoGerado) void editarContrato(); else void acaoDoContrato(); }}>
+                    <Pencil size={15} /> {itens.length ? "Editar pacote e valores" : "Escolher pacote e valores"}
+                  </Botao>
+                )}
+              </section>
+              ) : null}
+            </div>
+
+            {/* ---------- coluna esquerda: o casal ---------- */}
+            <div className="min-w-0 min-[1080px]:order-1">
+              <SecaoFicha icone={<Heart size={16} />} titulo="O casal" descricao="Contratantes e contato" chave="casal"
+                forcarAberta={ehNovo || campoAlvo === "email"}>
+                {/* uma coluna por pessoa: o olho lê "o noivo" de cima a baixo,
+                    em vez de pular entre noivo e noiva a cada campo */}
+                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <CampoCopiavel id="f-noivo" rotulo="Noivo" value={ficha.noivo} avisar={avisar}
+                      onChange={(e) => mudarCampo("noivo", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-cpf-noivo" rotulo="CPF do noivo" value={ficha.cpf_noivo} avisar={avisar}
+                      inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
+                      onChange={(e) => mudarCampo("cpf_noivo", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-tel-noivo" rotulo="Telefone do noivo" value={ficha.tel_noivo} avisar={avisar}
+                      copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
+                      onChange={(e) => mudarCampo("tel_noivo", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="min-w-0">
+                    <CampoCopiavel id="f-noiva" rotulo="Noiva" value={ficha.noiva} avisar={avisar}
+                      onChange={(e) => mudarCampo("noiva", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-cpf-noiva" rotulo="CPF da noiva" value={ficha.cpf_noiva} avisar={avisar}
+                      inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
+                      onChange={(e) => mudarCampo("cpf_noiva", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-tel-noiva" rotulo="Telefone da noiva" value={ficha.tel_noiva} avisar={avisar}
+                      copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
+                      onChange={(e) => mudarCampo("tel_noiva", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                </div>
+                <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
+                  readOnly={emailNaAutentique}
+                  acao={emailNaAutentique ? (
+                    <button type="button" onClick={() => setTrocaEmail({ ocupado: false, erro: "" })}
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-soft px-3.5 text-[13px] font-semibold text-accent transition-colors hover:bg-line">
+                      {/* no celular só "Trocar": o campo do e-mail ficava com 9 letras à vista */}
+                      <Mail size={15} /> Trocar<span className="hidden sm:inline"> e reenviar</span>
+                    </button>
+                  ) : undefined}
+                  onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
+                {emailNaAutentique ? (
+                  <p className="m-0 -mt-2 text-[11.5px] leading-[1.5] text-ink-soft/85">
+                    O contrato já foi pra esse e-mail. Se estiver errado, troque e reenvie pro casal.
+                  </p>
+                ) : null}
               </SecaoFicha>
 
-              <SecaoFicha icone={<CalendarHeart size={15} />} titulo="O evento">
+              <SecaoFicha icone={<CalendarHeart size={16} />} titulo="O evento" descricao="Data, horário e local" chave="evento">
                 <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
                   <Campo id="f-data" rotulo="Data do casamento" type="date" autoComplete="off" className="h-11 py-0"
                     value={ficha.data_evento} onChange={(e) => mudarCampo("data_evento", e.target.value)} onBlur={salvarLogo} onClick={abrirPicker} />
@@ -762,113 +830,76 @@ export default function PaginaCliente() {
                 </div>
               </SecaoFicha>
 
-              <SecaoFicha icone={<MapPin size={15} />} titulo="Endereço">
-                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
-                  <CampoCopiavel id="f-cep" rotulo="CEP" value={ficha.cep} avisar={avisar}
-                    inputMode="numeric" placeholder="00000-000" maxLength={9}
-                    onChange={(e) => mudarCampo("cep", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-endereco" rotulo="Endereço" value={ficha.endereco} avisar={avisar}
-                    onChange={(e) => mudarCampo("endereco", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-numero" rotulo="Número" value={ficha.numero} avisar={avisar}
-                    onChange={(e) => mudarCampo("numero", e.target.value)} onBlur={salvarLogo} />
-                  <Campo id="f-complemento" rotulo="Complemento" autoComplete="off" className="h-11 py-0"
-                    value={ficha.complemento} onChange={(e) => mudarCampo("complemento", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-bairro" rotulo="Bairro" value={ficha.bairro} avisar={avisar}
-                    onChange={(e) => mudarCampo("bairro", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-cidade" rotulo="Cidade" value={ficha.cidade} avisar={avisar}
-                    onChange={(e) => mudarCampo("cidade", e.target.value)} onBlur={salvarLogo} />
-                  <Campo id="f-estado" rotulo="Estado" autoComplete="off" placeholder="UF" maxLength={2} className="h-11 py-0 uppercase"
-                    value={ficha.estado} onChange={(e) => mudarCampo("estado", e.target.value.toUpperCase())} onBlur={salvarLogo} />
-                </div>
-              </SecaoFicha>
-
-              <SecaoFicha icone={<NotebookPen size={15} />} titulo="Outras informações">
-                <div className="grid grid-cols-1 gap-x-6 lg:grid-cols-3">
-                  <div className="mb-3.5">
-                    <label htmlFor="f-origem" className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">Como conheceu</label>
-                    <div className="relative">
-                      <select
-                        id="f-origem"
-                        autoComplete="off"
-                        value={ficha.origem}
-                        onChange={(e) => { mudarCampo("origem", e.target.value); salvarLogo(); }}
-                        className="h-11 w-full cursor-pointer appearance-none rounded-[10px] bg-soft pl-3.5 pr-9 text-sm text-ink outline-none transition-colors focus:bg-[#EEF0F3]"
-                      >
-                        <option value="">Selecione</option>
-                        {ORIGENS.map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                      <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden />
-                    </div>
+              <SecaoFicha icone={<MapPin size={16} />} titulo="Endereço" descricao="Vai no contrato" chave="endereco">
+                {/* grade de 6: cada campo com a largura do que cabe nele (UF
+                    não precisa de um terço da linha, endereço precisa de mais) */}
+                <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-6 [&>*]:min-w-0">
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-cep" rotulo="CEP" value={ficha.cep} avisar={avisar}
+                      inputMode="numeric" placeholder="00000-000" maxLength={9}
+                      onChange={(e) => mudarCampo("cep", e.target.value)} onBlur={salvarLogo} />
                   </div>
-                  <div className="col-span-full">
-                    <Area id="f-observacoes" rotulo="Observações (internas)" autoComplete="off" placeholder="Anotações internas, só você vê."
-                      className="min-h-[72px]" value={ficha.observacoes}
-                      onChange={(e) => mudarCampo("observacoes", e.target.value)} onBlur={salvarLogo} />
+                  <div className="sm:col-span-4">
+                    <CampoCopiavel id="f-endereco" rotulo="Endereço" value={ficha.endereco} avisar={avisar}
+                      onChange={(e) => mudarCampo("endereco", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-numero" rotulo="Número" value={ficha.numero} avisar={avisar}
+                      onChange={(e) => mudarCampo("numero", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <Campo id="f-complemento" rotulo="Complemento" autoComplete="off" className="h-11 py-0"
+                      value={ficha.complemento} onChange={(e) => mudarCampo("complemento", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-bairro" rotulo="Bairro" value={ficha.bairro} avisar={avisar}
+                      onChange={(e) => mudarCampo("bairro", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <CampoCopiavel id="f-cidade" rotulo="Cidade" value={ficha.cidade} avisar={avisar}
+                      onChange={(e) => mudarCampo("cidade", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <Campo id="f-estado" rotulo="UF" autoComplete="off" placeholder="UF" maxLength={2} className="h-11 py-0 uppercase"
+                      value={ficha.estado} onChange={(e) => mudarCampo("estado", e.target.value.toUpperCase())} onBlur={salvarLogo} />
                   </div>
                 </div>
               </SecaoFicha>
-            </div>
 
-            {/* ---------- coluna direita: contrato ---------- */}
-            <div className="min-w-0 min-[1080px]:sticky min-[1080px]:top-[78px]">
-              <SecaoFicha
-                icone={<FileText size={15} />}
-                titulo="Contrato"
-                abertaInicial
-                acao={
-                  <AcaoSecao rotulo={rotuloContrato} onClick={() => void acaoDoContrato()} disabled={!clienteId || ocupado}>
-                    {iconeContrato}
-                  </AcaoSecao>
-                }
-              >
-                {/* resumo só leitura: a escolha mora no editor do contrato */}
-                {itens.length ? (
-                  <div className="flex flex-col gap-0.5">
-                    {itens.map((i) => (
-                      <div key={i.id} className="flex items-center gap-3 rounded-[10px] px-2 py-2 text-sm">
-                        <span className="min-w-0 flex-1 truncate text-ink">{i.nome}</span>
-                        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-ink-soft">R$ {formatarMoeda(i.valor)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="m-0 px-2 py-1 text-[13.5px] text-ink-soft">Nenhum pacote escolhido ainda.</p>
-                )}
-                <div className="mt-3 grid grid-cols-2 gap-2.5">
-                  <div className="rounded-[10px] bg-soft px-3.5 py-2.5">
-                    <span className="block text-[12px] font-medium text-ink-soft">Total</span>
-                    <span className="block text-base font-semibold tabular-nums text-accent-deep">R$ {ficha.total || "0,00"}</span>
-                  </div>
-                  <div className="rounded-[10px] bg-soft px-3.5 py-2.5">
-                    <span className="block text-[12px] font-medium text-ink-soft">Entrada</span>
-                    <span className="block text-base font-semibold tabular-nums text-accent-deep">R$ {ficha.entrada || "0,00"}</span>
+              <SecaoFicha icone={<NotebookPen size={16} />} titulo="Anotações" descricao="Só você vê" chave="anotacoes">
+                <div className="mb-3.5 sm:max-w-[50%]">
+                  <label htmlFor="f-origem" className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">Como conheceu</label>
+                  <div className="relative">
+                    <select
+                      id="f-origem"
+                      autoComplete="off"
+                      value={ficha.origem}
+                      onChange={(e) => { mudarCampo("origem", e.target.value); salvarLogo(); }}
+                      className="h-11 w-full cursor-pointer appearance-none rounded-[10px] bg-soft pl-3.5 pr-9 text-sm text-ink outline-none transition-colors focus:bg-[#EEF0F3]"
+                    >
+                      <option value="">Selecione</option>
+                      {ORIGENS.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden />
                   </div>
                 </div>
-                {travado ? (
-                  <p className="m-0 mt-3 text-[12.5px] leading-[1.5] text-ink-soft">
-                    O casal já assinou: pacote, adicionais e valores ficam como estão no contrato.
-                  </p>
-                ) : (
-                  <Botao type="button" variante="secundario" className="mt-3 w-full" disabled={!clienteId || ocupado}
-                    onClick={() => { if (contratoGerado) void editarContrato(); else void acaoDoContrato(); }}>
-                    <Pencil size={15} /> {itens.length ? "Editar pacote e valores" : "Escolher pacote e valores"}
-                  </Botao>
-                )}
+                <Area id="f-observacoes" rotulo="Observações" autoComplete="off" placeholder="Anotações internas, só você vê."
+                  className="min-h-[72px]" value={ficha.observacoes}
+                  onChange={(e) => mudarCampo("observacoes", e.target.value)} onBlur={salvarLogo} />
               </SecaoFicha>
-
-              {/* só aparece quando existe mesmo um contrato pra este cliente */}
-              {contrato ? (
-                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onTrocarEmail={() => setTrocaEmail({ ocupado: false, erro: "" })} onReenviarEmail={() => void reenviarEmail()} onCopiarLink={() => void copiarLink()} avisar={avisar} />
-              ) : null}
             </div>
           </div>
 
-          <div className="mb-16 mt-8 flex flex-wrap flex-col items-stretch justify-end gap-3 md:flex-row md:items-center">
-            <div className="text-center md:text-left"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
-            <Botao type="submit" className="w-full md:w-auto">
-              {ehNovo && !clienteId ? "Criar cliente" : "Salvar alterações"}
-            </Botao>
-          </div>
+          {/* Ficha que já existe se salva sozinha (o estado mora no topo, ao
+              lado do Voltar); botão só pra criar a ficha nova, que é o único
+              momento em que salvar é uma decisão. Enter num campo continua
+              salvando (submit do form). */}
+          {ehNovo && !clienteId ? (
+            <div className="mb-16 mt-4 flex flex-col items-stretch justify-end gap-3 md:flex-row md:items-center">
+              <div className="text-center md:text-left"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
+              <Botao type="submit" className="w-full md:w-auto">Criar cliente</Botao>
+            </div>
+          ) : <div className="mb-16" />}
         </form>
       )}
 
@@ -895,18 +926,20 @@ function Voltar() {
 }
 
 function Esqueleto() {
-  const bloco = "animate-pulse rounded-[22px] bg-paper shadow-card";
+  /* mesma ordem da ficha: no celular o contrato vem antes dos dados */
+  const bloco = "animate-pulse rounded-[22px] bg-paper";
   return (
     <div aria-busy="true" aria-label="Carregando">
-      <div className="mb-10 mt-3 h-[150px] animate-pulse rounded-3xl bg-line" />
-      <div className="grid grid-cols-1 items-start gap-5 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
-        <div className="flex flex-col gap-4">
-          <div className={bloco + " h-16"} />
-          <div className={bloco + " h-16"} />
-          <div className={bloco + " h-16"} />
-          <div className={bloco + " h-16"} />
+      <div className="mb-5 mt-3 h-[150px] animate-pulse rounded-3xl bg-line md:mb-8" />
+      <div className="grid grid-cols-1 items-start gap-x-5 gap-y-4 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
+        <div className="flex flex-col gap-4 min-[1080px]:order-2">
+          <div className={bloco + " h-[260px]"} />
+          <div className={bloco + " h-[220px]"} />
         </div>
-        <div className={bloco + " h-[360px]"} />
+        <div className="flex flex-col gap-4 min-[1080px]:order-1">
+          <div className={bloco + " h-[330px]"} />
+          <div className={bloco + " h-[240px]"} />
+        </div>
       </div>
     </div>
   );
