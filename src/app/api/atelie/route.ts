@@ -4,6 +4,9 @@
   GET → { modelos: ResumoModelo[], ativo: id | null }
         Na primeira chamada, com o banco vazio, cria o modelo da proposta já
         publicado e no ar (garantirModeloInicial).
+  GET ?id=<uuid> → { modelo: ModeloParaEditar }  o que o editor abre
+
+  POST {acao:"salvar", id, rascunho} → { ok }  o salvamento automático do editor
 
   POST {acao:"criar", nome}        → { id }  modelo em branco, com o contato do site no ar
   POST {acao:"duplicar", id}       → { id }  cópia do rascunho, fora do ar
@@ -15,7 +18,7 @@ import { NextResponse } from "next/server";
 import { sessaoAtual } from "@/lib/sessao";
 import {
   apagarModelo, criarModeloEmBranco, duplicarModelo, garantirModeloInicial, idDoSiteAtivo,
-  listarModelos, nomeValido, porNoAr, renomearModelo,
+  listarModelos, modeloParaEditar, nomeValido, porNoAr, rascunhoValido, renomearModelo, salvarRascunho,
 } from "@/lib/atelie/modelos";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -24,9 +27,22 @@ function erro(mensagem: string, status: number) {
   return NextResponse.json({ erro: mensagem }, { status });
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const sessao = await sessaoAtual("admin");
   if (!sessao) return erro("sessão inválida", 401);
+
+  const pedido = new URL(req.url).searchParams.get("id");
+  if (pedido !== null) {
+    if (!UUID.test(pedido)) return erro("modelo inválido", 400);
+    try {
+      const modelo = await modeloParaEditar(pedido);
+      if (!modelo) return erro("Esse modelo não existe mais.", 404);
+      return NextResponse.json({ modelo });
+    } catch (e) {
+      console.error("atelie falhou:", (e as Error).message);
+      return erro("Não consegui abrir este modelo, tente de novo.", 502);
+    }
+  }
 
   try {
     await garantirModeloInicial();
@@ -53,6 +69,13 @@ export async function POST(req: Request) {
     }
 
     if (!id) return erro("modelo inválido", 400);
+
+    if (acao === "salvar") {
+      const rascunho = rascunhoValido(corpo.rascunho);
+      if (!rascunho) return erro("Não consegui salvar: o conteúdo veio incompleto.", 400);
+      if (!(await salvarRascunho(id, rascunho))) return erro("Esse modelo não existe mais.", 404);
+      return NextResponse.json({ ok: true });
+    }
 
     if (acao === "duplicar") {
       const novo = await duplicarModelo(id);

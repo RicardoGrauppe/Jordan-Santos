@@ -8,14 +8,13 @@
 
   Cada cartão mostra a PRÓPRIA página encolhida (a prévia do rascunho num
   iframe de 1440px reduzido), porque é a cara do site que identifica o
-  modelo. Até a tela de edição existir, abrir o cartão mostra essa prévia em
-  outra aba.
+  modelo. Abrir o cartão leva pro editor; "Novo modelo" cria e já abre.
 */
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, EllipsisVertical, ExternalLink, Eye, Globe, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, EllipsisVertical, ExternalLink, Eye, Globe, Pencil, PenLine, Plus, Trash2 } from "lucide-react";
 import { Botao, CartaoAviso, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
@@ -42,6 +41,7 @@ const NOME_NOVO = "Modelo sem título";
 const LARGURA_SITE = 1440;
 
 const rotaPrevia = (id: string) => "/atelie/previa/" + id;
+const rotaEditor = (id: string) => "/painel/atelie/" + id;
 
 /* ---------- miniatura ---------- */
 
@@ -268,11 +268,9 @@ export default function Atelie() {
   async function novo() {
     setCriando(true);
     try {
-      await api(URL_API, { acao: "criar", nome: NOME_NOVO });
-      await carregar();
-      mostrar("Modelo criado ✓", { ok: true });
-    } catch (e) { falhou(e, "Não consegui criar o modelo, tente de novo."); }
-    finally { setCriando(false); }
+      const { id } = await api<{ id: string }>(URL_API, { acao: "criar", nome: NOME_NOVO });
+      router.push(rotaEditor(id));
+    } catch (e) { falhou(e, "Não consegui criar o modelo, tente de novo."); setCriando(false); }
   }
 
   function menuDe(m: Modelo, noAr: boolean): ItemMenu[] {
@@ -286,6 +284,7 @@ export default function Atelie() {
         titulo: semBlocos ? "Coloque pelo menos um bloco antes" : nadaAPublicar ? "O site já está igual a este modelo" : undefined,
         acao: () => porNoAr(m, noAr),
       },
+      { rotulo: "Editar", icone: <PenLine size={15} />, acao: () => router.push(rotaEditor(m.id)) },
       { rotulo: "Ver como fica", icone: <Eye size={15} />, acao: () => verComoFica(m) },
       { rotulo: "Duplicar", icone: <Copy size={15} />, acao: () => duplicar(m) },
       { rotulo: "Renomear", icone: <Pencil size={15} />, acao: () => renomear(m) },
@@ -324,7 +323,7 @@ export default function Atelie() {
             {modelos.map((m) => {
               const noAr = m.id === dados.ativo;
               return (
-                <CartaoModelo key={m.id} modelo={m} noAr={noAr} aoAbrir={() => verComoFica(m)} menu={menuDe(m, noAr)} />
+                <CartaoModelo key={m.id} modelo={m} noAr={noAr} aoAbrir={() => router.push(rotaEditor(m.id))} menu={menuDe(m, noAr)} />
               );
             })}
             <CartaoNovo aoClicar={novo} ocupado={criando} />

@@ -24,16 +24,16 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
   clientes/                  lista, [id] (ficha), [id]/contrato (revisão e confirmação)
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
-  atelie/                    galeria dos modelos de site (pôr no ar, duplicar, renomear, apagar)
+  atelie/                    galeria dos modelos de site (pôr no ar, duplicar, renomear, apagar); [id] (editor, tela cheia)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             mesmo site da raiz, mantido pra não quebrar link já enviado
 src/app/atelie/previa/[id]   prévia do RASCUNHO de um modelo, só pra quem está logado (404 pros outros)
 src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), atelie
-src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
+src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
-                             atelie/ (blocos.tsx, proposta-css.ts, modelo-inicial.ts, modelos.ts, PaginaDoSite.tsx)
+                             atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelos.ts, PaginaDoSite.tsx, editor-tema.css)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos)
 ```
 
@@ -132,6 +132,16 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   (cliente) e no `<Render>` (servidor).
 - No editor a página fica num iframe, então a animação de entrada é
   desligada lá (`.editando`).
+- **Editor = peças do Puck numa moldura nossa** (`components/EditorAtelie.tsx`):
+  Puck.Preview, Puck.Fields, Puck.Outline e o Drawer dos blocos, com
+  cabeçalho e colunas do kit. A pele das peças do Puck vem de trocar os
+  tokens `--puck-*` em `editor-tema.css` (borda e foco zero, campo --soft);
+  o resto, por prefixo de classe, que é estável porque a versão está fixada.
+  Textos do Puck em português pelo `dictionary`. Importe sempre
+  `no-external.css`: o CSS padrão puxa a Inter de um servidor de fora.
+- Bloco novo entra em três lugares: `tipos.ts` (a API valida contra ela),
+  `configAtelie` e a lista do editor (ícone e uma linha). Se `tipos.ts` e o
+  config divergirem, o build quebra.
 - **"Pôr no ar" publica o modelo do jeito que ele está** (rascunho vira
   publicado) e troca o site na hora, por isso confirma. Modelo sem bloco não
   vai pro ar e o modelo no ar não se apaga: as duas coisas deixariam o site

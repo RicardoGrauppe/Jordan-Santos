@@ -11,6 +11,7 @@ import { cache } from "react";
 import { rest } from "@/lib/supabase";
 import type { DadosSite, RaizProps } from "./blocos";
 import { MODELO_INICIAL, NOME_MODELO_INICIAL } from "./modelo-inicial";
+import { TIPOS_DE_BLOCO } from "./tipos";
 
 export const CHAVE_SITE_ATIVO = "site_ativo";
 
@@ -182,4 +183,63 @@ export async function rascunhoDe(id: string): Promise<{ nome: string; rascunho: 
     "site_modelos?id=eq." + encodeURIComponent(id) + "&select=nome,rascunho&limit=1",
   );
   return linhas?.[0] ?? null;
+}
+
+/* ---------- editor ---------- */
+
+export type ModeloParaEditar = {
+  id: string;
+  nome: string;
+  rascunho: DadosSite;
+  publicado_em: string | null;
+  noAr: boolean;
+  pendente: boolean;
+};
+
+/** Tudo que o editor precisa pra abrir um modelo. null quando não existe. */
+export async function modeloParaEditar(id: string): Promise<ModeloParaEditar | null> {
+  const [modelo, ativo] = await Promise.all([lerModelo(id), idDoSiteAtivo()]);
+  if (!modelo) return null;
+  return {
+    id: modelo.id,
+    nome: modelo.nome,
+    rascunho: modelo.rascunho,
+    publicado_em: modelo.publicado_em,
+    noAr: ativo === modelo.id,
+    pendente: !modelo.publicado || JSON.stringify(modelo.rascunho) !== JSON.stringify(modelo.publicado),
+  };
+}
+
+/* Teto do rascunho: o conteúdo é texto e endereço de foto (a foto em si mora
+   no Storage), então 1 MB é folga de sobra e barra lixo. */
+const RASCUNHO_MAX = 1_000_000;
+
+/**
+ * Confere a forma do que o editor manda antes de gravar: raiz com props,
+ * lista de blocos de tipos conhecidos, cada um com id. Não confere campo por
+ * campo: quem desenha é o bloco, e campo faltando cai no valor padrão dele.
+ */
+export function rascunhoValido(dados: unknown): DadosSite | null {
+  if (!dados || typeof dados !== "object") return null;
+  const d = dados as { root?: unknown; content?: unknown; zones?: unknown };
+  if (JSON.stringify(d).length > RASCUNHO_MAX) return null;
+  const raiz = d.root as { props?: unknown } | undefined;
+  if (!raiz || typeof raiz !== "object" || (raiz.props !== undefined && typeof raiz.props !== "object")) return null;
+  if (!Array.isArray(d.content)) return null;
+  const tipos: readonly string[] = TIPOS_DE_BLOCO;
+  for (const bloco of d.content) {
+    const b = bloco as { type?: unknown; props?: { id?: unknown } } | null;
+    if (!b || typeof b.type !== "string" || !tipos.includes(b.type)) return null;
+    if (!b.props || typeof b.props !== "object" || typeof b.props.id !== "string") return null;
+  }
+  return { root: raiz as DadosSite["root"], content: d.content as DadosSite["content"], zones: {} };
+}
+
+export async function salvarRascunho(id: string, rascunho: DadosSite): Promise<boolean> {
+  const linhas = await rest<{ id: string }[]>("site_modelos?id=eq." + encodeURIComponent(id), {
+    method: "PATCH",
+    body: { rascunho, atualizado_em: new Date().toISOString() },
+    prefer: "return=representation",
+  });
+  return Boolean(linhas?.length);
 }

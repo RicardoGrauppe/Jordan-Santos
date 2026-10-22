@@ -293,8 +293,10 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
      deveria estar colado. */
   /* O editor do contrato DE UM CLIENTE (22/10/2026) é a mesma tela, só que
      editando a cópia do texto daquele contrato: herda a página cheia. */
+  /* O editor do Ateliê também: ele traz cabeçalho e colunas próprios. */
   const telaEditor = /^\/painel\/configuracoes\/contrato\/[^/]+$/.test(caminho) ||
-    /^\/painel\/clientes\/[^/]+\/contrato\/editar\/?$/.test(caminho);
+    /^\/painel\/clientes\/[^/]+\/contrato\/editar\/?$/.test(caminho) ||
+    /^\/painel\/atelie\/[^/]+\/?$/.test(caminho);
 
   /* No celular a Home não leva cabeçalho: ali ele só carregaria a logo (busca,
      sino e conta já vivem na barra de baixo), e uma faixa de 56px só com a

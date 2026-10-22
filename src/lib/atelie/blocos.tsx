@@ -26,6 +26,7 @@ import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import { RevealAoRolar } from "@/app/proposta/RevealAoRolar";
 import { CSS_PROPOSTA } from "./proposta-css";
+import type { TipoDeBloco } from "./tipos";
 
 /* ---------- tipos ---------- */
 
@@ -87,6 +88,12 @@ export type Blocos = {
   Chamada: ChamadaProps;
   Rodape: RodapeProps;
 };
+/* As chaves de Blocos têm de ser exatamente a lista de `tipos.ts`, que é a que
+   a API usa pra validar o que o editor manda: se um lado ganhar bloco e o
+   outro não, isto deixa de compilar. */
+type MesmasChaves = [TipoDeBloco] extends [keyof Blocos] ? ([keyof Blocos] extends [TipoDeBloco] ? true : false) : false;
+const blocosBatemComTipos: MesmasChaves = true;
+void blocosBatemComTipos;
 
 export type DadosSite = Data<Blocos, RaizProps>;
 
