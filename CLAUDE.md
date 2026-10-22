@@ -34,7 +34,7 @@ src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirma
 src/lib/                     supabase.ts, storage.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
-                             atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelo-guiado.ts, modelos.ts, midias.ts, PaginaDoSite.tsx, editor-tema.css)
+                             atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelo-guiado.ts, modelos.ts, midias.ts, PaginaDoSite.tsx, dicionario.ts)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos) + atelie_midias (site_midias) + atelie_versoes (site_versoes)
 ```
 
@@ -137,13 +137,14 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   (cliente) e no `<Render>` (servidor).
 - No editor a página fica num iframe, então a animação de entrada é
   desligada lá (`.editando`).
-- **Editor = peças do Puck numa moldura nossa** (`components/EditorAtelie.tsx`):
-  Puck.Preview, Puck.Fields, Puck.Outline e o Drawer dos blocos, com
-  cabeçalho e colunas do kit. A pele das peças do Puck vem de trocar os
-  tokens `--puck-*` em `editor-tema.css` (borda e foco zero, campo --soft);
-  o resto, por prefixo de classe, que é estável porque a versão está fixada.
-  Textos do Puck em português pelo `dictionary`. Importe sempre
-  `no-external.css`: o CSS padrão puxa a Inter de um servidor de fora.
+- **Editor = a tela original do Puck, do jeito que ele vem** (decisão do
+  Ricardo Grauppe, 22/10/2026, depois de comparar com uma moldura própria
+  que deixava coisa do Puck de fora): `components/EditorAtelie.tsx` é só o
+  `<Puck>` com o config, os textos em português (`lib/atelie/dicionario.ts`)
+  e o Publicar dele ligado à nossa publicação. Sem override, pele da casa,
+  tamanhos de tela nem permissões próprias; estilo fica pra depois. Nome,
+  prévia, versões e descartar moram no menu do cartão, na galeria. Importe
+  sempre `no-external.css`: o CSS padrão puxa a Inter de um servidor de fora.
 - **Blocos genéricos** (Título e texto, Foto com texto, Galeria, Espaço)
   falam a língua da proposta, não a do painel (brandbook, seção 22), com CSS
   próprio (`bl-*`, `fundo-*`) no fim de `proposta-css.ts`, mobile-first.
@@ -151,10 +152,8 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
 - **Link que vem de campo passa por `linkSeguro`**: só http(s), mailto, tel,
   # ou caminho do site. A página é pública, e um `javascript:` colado num
   campo viraria script rodando no celular do casal.
-- Bloco novo entra em quatro lugares: `tipos.ts` (a API valida contra ela),
-  `configAtelie`, a lista do editor (ícone e uma linha) e um grupo da lista
-  (`GRUPOS_FIXOS`, pelo que o bloco faz; sem grupo ele cai em "Outros"). Se
-  `tipos.ts` e o config divergirem, o build quebra. Todo bloco entra pronto:
+- Bloco novo entra em dois lugares: `tipos.ts` (a API valida contra ela) e
+  `configAtelie`. Se os dois divergirem, o build quebra. Todo bloco entra pronto:
   o `defaultProps` usa o conteúdo de exemplo de `EXEMPLO` (modelo-guiado.ts),
   nunca entra vazio nem com conteúdo de um estúdio de verdade.
 - **Foto nunca é endereço digitado.** Campo de foto abre a biblioteca
@@ -168,11 +167,6 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   nada.
 - **Beta:** a galeria mostra selo "Beta" e um aviso âmbar enquanto o Ateliê
   está em teste (decisão do Ricardo, 22/10/2026). Saem juntos.
-- **No celular o editor só ajusta** (decisão do Ricardo, 22/10/2026): edita
-  campo, troca foto, publica, versões; não insere, arrasta, duplica nem
-  apaga bloco. É pelas `permissions` do Puck (que ele MESCLA, então passe o
-  conjunto inteiro) e a barra de baixo não tem Blocos. Montar a página é no
-  computador.
 - **Modelo novo nasce guiado** (`modelo-guiado.ts`): blocos que explicam, no
   próprio texto, como o Ateliê funciona. Texto de exemplo novo entra no
   objeto `T` de lá, que é a lista que a confirmação de publicar confere
@@ -180,14 +174,10 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   usam as fotos de exemplo desenhadas (`public/img/atelie/exemplo-*.svg`,
   `FOTO_DE_EXEMPLO`), nunca foto de um estúdio de verdade; elas também
   contam como exemplo no aviso.
-- **A página do editor é desenhada com 1280px e encolhida** no modo
-  Computador (`transform: scale`, como o layout padrão do Puck). Na largura
-  da coluna do meio (uns 750px) o site cairia nas regras de celular e
-  tablet, e a prévia do computador mostraria outro layout.
 - **Toda publicação vira uma versão** (`site_versoes`, as 30 últimas por
   modelo). Restaurar leva a versão pro RASCUNHO e nunca publica sozinho;
-  descartar faz o rascunho voltar ao publicado. Os dois recarregam o editor
-  e remontam o Puck (`key`), porque ele não aceita trocar os dados por fora.
+  descartar faz o rascunho voltar ao publicado. Os dois ficam na galeria,
+  porque o Puck não aceita trocar os dados por fora com o editor aberto.
 - **"Pôr no ar" publica o modelo do jeito que ele está** (rascunho vira
   publicado) e troca o site na hora, por isso confirma. Modelo sem bloco não
   vai pro ar e o modelo no ar não se apaga: as duas coisas deixariam o site
@@ -226,9 +216,8 @@ Vieram do estúdio original e cada uma custou tempo pra descobrir:
 1. **Nenhuma borda pra separar ou marcar estado.** Nunca. Separação é fundo
    diferente mais sombra (`shadow-card`) ou diferença de tom entre `paper`,
    `soft` e `line`. Antes de escrever `border`, resolva com tom ou sombra.
-   Única exceção (decisão do Ricardo, 22/10/2026): o contorno azul do bloco
-   em edição no canvas do Ateliê, que é ferramenta por cima do site e não
-   borda de interface (`editor-tema.css`, tokens `--puck-slot-component-*`).
+   O editor do Ateliê fica fora destas regras por enquanto: é a tela
+   original do Puck, sem pele da casa (decisão do Ricardo, 22/10/2026).
 2. **Nenhum anel de foco colorido.** Foco muda o fundo, sutil.
 3. **Hover só onde existe mouse.** Sempre `[@media(hover:hover)]:hover:…`. Sem
    isso, no celular o estado fica preso depois do toque e não volta.

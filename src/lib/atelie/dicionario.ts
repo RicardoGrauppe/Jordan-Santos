@@ -1,6 +1,5 @@
 /*
-  Os textos do editor do Puck em português. Fica num arquivo só dele pra
-  servir às duas telas do Ateliê sem que uma arraste o CSS da outra.
+  Os textos do editor do Puck em português.
 */
 import type { Dictionary } from "@puckeditor/core";
 

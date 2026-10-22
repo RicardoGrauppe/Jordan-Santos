@@ -9,17 +9,22 @@
   Cada cartão mostra a PRÓPRIA página encolhida (a prévia do rascunho num
   iframe de 1440px reduzido), porque é a cara do site que identifica o
   modelo. Abrir o cartão leva pro editor; "Novo modelo" cria e já abre.
+
+  O editor é a tela original do Puck, só com o Publicar dele, então o resto
+  do que se faz com um modelo mora no menu do cartão, inclusive as versões
+  publicadas (ver e restaurar no rascunho).
 */
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, EllipsisVertical, ExternalLink, Eye, Globe, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Copy, EllipsisVertical, ExternalLink, Eye, Globe, History, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Botao, CartaoAviso, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
 import { Sk, SkLinha } from "@/components/Skeleton";
 import { TituloMobile } from "@/components/cabecalho-mobile";
+import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { api, esperaMin, ERRO_SESSAO } from "@/lib/painel";
 import { fmtData } from "@/lib/util";
 import { AVISO_DE_EXEMPLO } from "@/lib/atelie/modelo-guiado";
@@ -193,6 +198,8 @@ export default function Atelie() {
   const { mostrar, elemento: toast } = useToast();
   const [dados, setDados] = useState<Resposta | null>(null);
   const [criando, setCriando] = useState(false);
+  const [versoesDe, setVersoesDe] = useState<{ modelo: Modelo; noAr: boolean } | null>(null);
+  const fecharVersoes = useCallback(() => setVersoesDe(null), []);
 
   const falhou = useCallback((e: unknown, texto: string) => {
     const msg = (e as Error).message;
@@ -252,6 +259,21 @@ export default function Atelie() {
     catch (e) { falhou(e, "Não consegui descartar, tente de novo."); }
   }
 
+  async function restaurar(m: Modelo, versao: { id: string; quando: string }) {
+    const ok = await confirmar({
+      titulo: "Restaurar esta versão?",
+      texto: `O rascunho de "${m.nome}" passa a ser a versão publicada em ${versao.quando}. O que está no rascunho agora é substituído. O site não muda até você publicar.`,
+      rotuloOk: "Restaurar",
+    });
+    if (!ok) return;
+    try {
+      await api(URL_API, { acao: "restaurar-versao", id: m.id, versao: versao.id });
+      setVersoesDe(null);
+      await carregar();
+      mostrar("Versão restaurada no rascunho ✓", { ok: true });
+    } catch (e) { falhou(e, "Não consegui restaurar, tente de novo."); }
+  }
+
   async function duplicar(m: Modelo) {
     try {
       await api(URL_API, { acao: "duplicar", id: m.id });
@@ -301,6 +323,9 @@ export default function Atelie() {
       { rotulo: "Editar", icone: <PenLine size={15} />, acao: () => router.push(rotaEditor(m.id)) },
       { rotulo: "Ver como fica", icone: <Eye size={15} />, acao: () => verComoFica(m) },
       { rotulo: "Duplicar", icone: <Copy size={15} />, acao: () => duplicar(m) },
+      ...(m.publicado_em
+        ? [{ rotulo: "Versões publicadas", icone: <History size={15} />, acao: () => setVersoesDe({ modelo: m, noAr }) }]
+        : []),
       ...(m.publicado_em && m.pendente
         ? [{ rotulo: "Descartar mudanças", icone: <RotateCcw size={15} />, perigo: true, acao: () => descartar(m) }]
         : []),
@@ -360,6 +385,10 @@ export default function Atelie() {
         )}
       </div>
 
+      {versoesDe ? (
+        <VersoesAtelie idModelo={versoesDe.modelo.id} noAr={versoesDe.noAr}
+          aoRestaurar={(v) => { void restaurar(versoesDe.modelo, v); }} aoFechar={fecharVersoes} />
+      ) : null}
       {toast}
     </div>
   );

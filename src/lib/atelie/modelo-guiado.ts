@@ -2,7 +2,7 @@
   O modelo com que todo "Novo modelo" do Ateliê nasce: uma estrutura curta e
   centralizada em que cada bloco explica como ele mesmo funciona. Quem abre
   entende o que está vendo (a página é feita de blocos, clica e edita do
-  lado, a lista da esquerda põe mais) e vai trocando o texto de exemplo pelo
+  lado, arrasta mais da lista da esquerda) e vai trocando o texto de exemplo pelo
   seu. Página vazia não ensinava nada.
 
   Os textos de exemplo ficam numa lista, e as fotos de exemplo numa pasta só,
@@ -30,7 +30,7 @@ const T = {
   inicioTitulo: "Seu novo site",
   inicioTexto:
     "Este é um bloco de Título e texto. Clique duas vezes em qualquer texto aqui na página pra escrever direto nele, ou use os campos da direita.\n\n" +
-    "Cada parte da página é um bloco. Os blocos ficam na lista da esquerda: clique num deles pra colocar logo abaixo do bloco selecionado, ou arraste até onde quiser.",
+    "Cada parte da página é um bloco. Os blocos ficam na lista da esquerda: arraste um deles até o ponto da página onde ele deve entrar.",
   fotoSelo: "Exemplo",
   fotoTitulo: "Foto e texto",
   fotoTexto:
@@ -39,8 +39,8 @@ const T = {
   publicarSelo: "Antes de publicar",
   publicarTitulo: "Confira e ponha no ar",
   publicarTexto:
-    "Use \"Ver como fica\" pra ver a página no computador e no celular. Nada disso aparece pra ninguém até você clicar em \"Pôr no ar\".\n\n" +
-    "Bloco que não vai usar: selecione e toque na lixeira. O título da página e o contato do estúdio ficam em \"Campos da página\".",
+    "Os botões acima da página mostram como ela fica no celular, no tablet e no computador. Nada disso aparece pra ninguém até você clicar em \"Publicar\".\n\n" +
+    "Bloco que não vai usar: selecione e toque na lixeira. O título da página e o contato do estúdio aparecem à direita quando nenhum bloco está selecionado.",
   chamadaTexto: "Este botão abre o WhatsApp do estúdio, com o número e a mensagem que estão nos campos da página.",
 };
 
@@ -68,6 +68,10 @@ export const EXEMPLO = {
 /* Versões antigas dos textos acima, de modelos criados antes da troca: seguem
    contando como exemplo pro aviso de publicar. */
 const ANTIGOS = [
+  "Este é um bloco de Título e texto. Clique duas vezes em qualquer texto aqui na página pra escrever direto nele, ou use os campos da direita.\n\n" +
+    "Cada parte da página é um bloco. Os blocos ficam na lista da esquerda: clique num deles pra colocar logo abaixo do bloco selecionado, ou arraste até onde quiser.",
+  "Use \"Ver como fica\" pra ver a página no computador e no celular. Nada disso aparece pra ninguém até você clicar em \"Pôr no ar\".\n\n" +
+    "Bloco que não vai usar: selecione e toque na lixeira. O título da página e o contato do estúdio ficam em \"Campos da página\".",
   "Este é um bloco de Título e texto. Clique nele aqui na página e troque este texto pelo seu nos campos da direita.\n\n" +
     "Cada parte da página é um bloco. Os blocos ficam na lista da esquerda: clique num deles pra colocar logo abaixo do bloco selecionado, ou arraste até onde quiser.",
 ];
