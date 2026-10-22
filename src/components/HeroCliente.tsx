@@ -98,7 +98,9 @@ export function HeroCliente({
     <div className={fundo}>
       <Esferas />
 
-      <div className="relative z-[1] flex items-start gap-3">
+      {/* z acima dos quadros: o menu do ⋮ abre por cima deles (o blur dos
+          quadros cria camada própria e cobria o menu) */}
+      <div className="relative z-[5] flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="m-0 text-[22px] font-semibold leading-[1.15] md:text-[28px]">{nomes}</h1>
           {/* estado da ficha inteira: só aparece quando é exceção */}
