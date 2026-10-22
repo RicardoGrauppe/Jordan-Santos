@@ -36,7 +36,7 @@ export function SeletorItens({
   aoTotal: (valor: number | null) => void;
   aoEntrada: (valor: number | null) => void;
 }) {
-  if (produtos === null) return <p className="m-0 mt-3 text-[13px] text-ink-soft">Carregando produtos…</p>;
+  if (produtos === null) return <p className="m-0 mt-3 text-[13px] text-ink-soft">Carregando pacotes…</p>;
 
   const fora = incluidosPelaEscolha(itens, produtos);
   const escolhido = (id: string) => itens.find((i) => i.id === id);
@@ -57,8 +57,8 @@ export function SeletorItens({
   if (!produtos.length && !itens.length) {
     return (
       <p className="m-0 mt-3 text-[13px] leading-[1.5] text-ink-soft">
-        Nenhum produto cadastrado. Crie os seus em{" "}
-        <a href="/painel/produtos" target="_blank" rel="noreferrer" className="font-semibold text-accent">Produtos e serviços</a>.
+        Nenhum pacote cadastrado. Crie os seus em{" "}
+        <a href="/painel/produtos" target="_blank" rel="noreferrer" className="font-semibold text-accent">Pacotes e adicionais</a>.
       </p>
     );
   }

@@ -1,5 +1,6 @@
 /*
-  Produtos e serviços (22/10/2026). O fotógrafo decide aqui o que vende e o
+  Pacotes e adicionais (22/10/2026; chamava "Produtos e serviços" até o
+  mesmo dia, nome trocado pelo Ricardo pra falar a língua do fotógrafo). O fotógrafo decide aqui o que vende e o
   preço de tabela; é daqui que saem as opções do cartão "Pacote e adicionais"
   do editor do contrato. Antes isto era fixo no código (lib/catalogo.ts).
 
@@ -35,7 +36,7 @@ export default function PaginaProdutos() {
       .then((r) => setProdutos(r.produtos))
       .catch((e: Error) => {
         if (e.message === ERRO_SESSAO) router.replace("/entrar");
-        else setErro("Não consegui carregar os produtos.");
+        else setErro("Não consegui carregar os pacotes e adicionais.");
       }), [router]);
 
   useEffect(() => {
@@ -45,23 +46,23 @@ export default function PaginaProdutos() {
       .catch((e: Error) => {
         if (!vivo) return;
         if (e.message === ERRO_SESSAO) router.replace("/entrar");
-        else setErro("Não consegui carregar os produtos.");
+        else setErro("Não consegui carregar os pacotes e adicionais.");
       });
     return () => { vivo = false; };
   }, [router]);
 
-  const acaoNovo = useMemo(() => ({ rotulo: "Novo produto", Icone: Plus, aoAcionar: () => setEditando("novo") }), []);
+  const acaoNovo = useMemo(() => ({ rotulo: "Novo item", Icone: Plus, aoAcionar: () => setEditando("novo") }), []);
 
   const pacotes = (produtos || []).filter((p) => p.tipo === "pacote");
   const adicionais = (produtos || []).filter((p) => p.tipo === "adicional");
 
   return (
     <div className="mx-auto max-w-[860px]">
-      <TituloMobile titulo="Produtos e serviços" acao={acaoNovo} />
+      <TituloMobile titulo="Pacotes e adicionais" acao={acaoNovo} />
       <div className="mb-2 hidden items-center justify-between gap-4 md:flex">
-        <h1 className="m-0 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px]">Produtos e serviços</h1>
+        <h1 className="m-0 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px]">Pacotes e adicionais</h1>
         <Botao className="h-10 whitespace-nowrap px-4 text-[13.5px]" onClick={() => setEditando("novo")}>
-          <Plus size={16} /> Novo produto
+          <Plus size={16} /> Novo item
         </Botao>
       </div>
       <p className="m-0 mb-6 text-[14px] leading-[1.6] text-ink-soft">
@@ -134,7 +135,7 @@ function Grupo({ icone, titulo, texto, itens, catalogo, aoAbrir }: {
           })}
         </div>
       ) : (
-        <p className="m-0 px-2.5 py-3 text-[13px] text-ink-soft">Nenhum ainda. Crie pelo &quot;Novo produto&quot;.</p>
+        <p className="m-0 px-2.5 py-3 text-[13px] text-ink-soft">Nenhum ainda. Crie pelo &quot;Novo item&quot;.</p>
       )}
     </section>
   );
@@ -200,7 +201,7 @@ function ModalProduto({ produto, catalogo, aoFechar, aoSalvar }: {
     if (!produto) return;
     const ok = await confirmar({
       titulo: "Excluir " + produto.curto + "?",
-      texto: "Some da lista de produtos. Contratos já feitos não mudam.",
+      texto: "Sai da lista. Contratos já feitos não mudam.",
       rotuloOk: "Excluir",
       perigo: true,
     });
@@ -213,7 +214,7 @@ function ModalProduto({ produto, catalogo, aoFechar, aoSalvar }: {
     } catch (e) {
       if (/desative/.test((e as Error).message)) {
         setAtivo(false);
-        setErro("Algum casal já escolheu este produto, então ele não pode ser excluído. Deixei como desativado: salve pra tirar das opções do contrato.");
+        setErro("Algum casal já escolheu este item, então ele não pode ser excluído. Deixei como desativado: salve pra tirar das opções do contrato.");
       } else falhou(e);
     } finally {
       setOcupado(false);
@@ -222,7 +223,7 @@ function ModalProduto({ produto, catalogo, aoFechar, aoSalvar }: {
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-5" role="dialog" aria-modal="true"
-      aria-label={produto ? "Editar produto" : "Novo produto"}>
+      aria-label={produto ? "Editar item" : "Novo item"}>
       <div className="absolute inset-0 bg-[rgba(29,29,27,.5)] backdrop-blur-[2px]" onClick={() => { if (!ocupado) aoFechar(); }} />
       <form className="relative z-[1] max-h-[calc(100dvh-40px)] w-full max-w-[480px] overflow-y-auto rounded-[18px] bg-paper p-7 pb-6 shadow-alta [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:p-8"
         onSubmit={(e) => { e.preventDefault(); void salvar(); }}>
@@ -234,7 +235,7 @@ function ModalProduto({ produto, catalogo, aoFechar, aoSalvar }: {
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-accent-tint text-accent">
             {tipo === "pacote" ? <Package size={16} /> : <Sparkles size={16} />}
           </span>
-          {produto ? "Editar produto" : "Novo produto"}
+          {produto ? "Editar item" : "Novo item"}
         </h3>
 
         <div className="mb-1.5 text-[12.5px] font-medium text-ink-soft">Tipo</div>

@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
     if (acao === "criar") {
       const nome = texto(body.nome, 120);
-      if (!nome) return NextResponse.json({ erro: "dê um nome ao produto" }, { status: 400 });
+      if (!nome) return NextResponse.json({ erro: "dê um nome ao item" }, { status: 400 });
       const valor = preco(body.preco);
       if (valor === null) return NextResponse.json({ erro: "preço inválido" }, { status: 400 });
       const atuais = await lista();
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
       );
       if (usado && usado.length) {
         return NextResponse.json(
-          { erro: "este produto já foi escolhido por algum cliente; desative em vez de excluir", emUso: true },
+          { erro: "este item já foi escolhido por algum cliente; desative em vez de excluir", emUso: true },
           { status: 409 },
         );
       }

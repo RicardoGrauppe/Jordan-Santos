@@ -26,7 +26,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, Package, Palette, Search, Settings, Users } from "lucide-react";
+import { ArrowLeft, Bell, ChevronRight, Crown, FileText, House, LogOut, Menu, LayoutTemplate, Package, Search, Settings, Users } from "lucide-react";
 import { BuscaTopo, TelaBuscaMobile } from "@/components/Busca";
 import { DropdownAvisos, TelaAvisosMobile, useAvisos } from "@/components/Notificacoes";
 import { TelaMobile, TopoTelaMobile, CorpoTelaMobile } from "@/components/TelaMobile";
@@ -58,7 +58,7 @@ const itemMenuConta =
 const ITENS: { href: string; rotulo: string; Icone: typeof House; soLateral?: boolean }[] = [
   { href: "/painel", rotulo: "Home", Icone: House },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: Users },
-  { href: "/painel/atelie", rotulo: "Ateliê", Icone: Palette },
+  { href: "/painel/atelie", rotulo: "Ateliê", Icone: LayoutTemplate },
   /* O Formulário saiu daqui em 22/10/2026: virou um tipo de modelo dentro
      do Ateliê (seção Formulários), pra não ter duas páginas de modelo. */
 ];
@@ -603,7 +603,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
                   </Link>
                   <Link href="/painel/produtos" onClick={() => setMenuAberto(false)}
                     className={itemMenuConta}>
-                    <Package size={15} className="opacity-85" /> Produtos e serviços
+                    <Package size={15} className="opacity-85" /> Pacotes e adicionais
                     <ChevronRight size={16} className="ml-auto shrink-0 text-line" />
                   </Link>
                   <Link href="/painel/configuracoes" onClick={() => setMenuAberto(false)}
@@ -820,7 +820,7 @@ function TelaContaMobile({
         </Link>
         <Link href="/painel/produtos" tabIndex={aba} onClick={aoFechar} className={item}>
           <Package size={19} className="shrink-0 text-ink-soft" />
-          Produtos e serviços
+          Pacotes e adicionais
           <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
         </Link>
         <Link href="/painel/configuracoes" tabIndex={aba} onClick={aoFechar} className={item}>
