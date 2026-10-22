@@ -153,6 +153,7 @@ html{scroll-behavior:smooth}
 
 .prop .bl-texto{max-width:620px;margin:0 auto}
 .prop .bl-texto p{font-size:16px;line-height:1.8;margin-top:16px}
+.prop .bl-corrido{white-space:pre-wrap}
 .prop .fundo-escuro .bl-texto p,.prop .fundo-escuro .bl-fototexto p{color:#D8D4CE}
 
 .prop .bl-galeria{max-width:1080px;margin:0 auto}

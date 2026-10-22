@@ -18,7 +18,7 @@ const T = {
   inicioSelo: "Comece por aqui",
   inicioTitulo: "Seu novo site",
   inicioTexto:
-    "Este é um bloco de Título e texto. Clique nele aqui na página e troque este texto pelo seu nos campos da direita.\n\n" +
+    "Este é um bloco de Título e texto. Clique duas vezes em qualquer texto aqui na página pra escrever direto nele, ou use os campos da direita.\n\n" +
     "Cada parte da página é um bloco. Os blocos ficam na lista da esquerda: clique num deles pra colocar logo abaixo do bloco selecionado, ou arraste até onde quiser.",
   fotoSelo: "Exemplo",
   fotoTitulo: "Foto e texto",
@@ -33,8 +33,15 @@ const T = {
   chamadaTexto: "Este botão abre o WhatsApp do estúdio, com o número e a mensagem que estão nos campos da página.",
 };
 
+/* Versões antigas dos textos acima, de modelos criados antes da troca: seguem
+   contando como exemplo pro aviso de publicar. */
+const ANTIGOS = [
+  "Este é um bloco de Título e texto. Clique nele aqui na página e troque este texto pelo seu nos campos da direita.\n\n" +
+    "Cada parte da página é um bloco. Os blocos ficam na lista da esquerda: clique num deles pra colocar logo abaixo do bloco selecionado, ou arraste até onde quiser.",
+];
+
 /** Os textos de exemplo, pra saber se algum ainda está na página. */
-export const TEXTOS_DE_EXEMPLO: readonly string[] = Object.values(T);
+export const TEXTOS_DE_EXEMPLO: readonly string[] = [...Object.values(T), ...ANTIGOS];
 
 /** O aviso da confirmação de publicar quando sobrou texto de exemplo: publicar
     com ele ainda lá é quase sempre esquecimento. */

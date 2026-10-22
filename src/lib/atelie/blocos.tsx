@@ -169,10 +169,12 @@ function comQuebras(texto: string): ReactNode {
   ));
 }
 
-/** Texto corrido: linha em branco separa parágrafos, quebra simples vira <br>. */
-function paragrafos(texto: string): ReactNode {
-  return texto.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean).map((t, i) => <p key={i}>{comQuebras(t)}</p>);
-}
+/* Texto corrido dos blocos genéricos: um parágrafo só, com as quebras do
+   campo respeitadas (`.bl-corrido`, white-space: pre-wrap), então a linha em
+   branco continua separando parágrafos. É um elemento só de propósito: no
+   editor o Puck entrega o texto como o campo editável na própria página
+   (contentEditable), e um texto que precisasse ser quebrado em vários <p>
+   não teria como ser editado ali. Site e editor ficam com o mesmo desenho. */
 
 /* Link de botão vindo do campo: só web, WhatsApp, e-mail, telefone, âncora ou
    caminho do site. Qualquer outra coisa (um "javascript:" colado, por
@@ -562,7 +564,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         },
         selo: campoSelo,
         titulo: campoTitulo,
-        texto: { type: "textarea", label: "Texto (linha em branco separa parágrafos)" },
+        texto: { type: "textarea", label: "Texto (linha em branco separa parágrafos)", contentEditable: true },
       },
       defaultProps: {
         ancora: "", fundo: "branco", alinhamento: "centro", selo: "", titulo: "Nossa história",
@@ -573,7 +575,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
           <div className={"bl-texto reveal" + (alinhamento === "centro" ? " centro" : "")}>
             {selo && <span className="dica">{selo}</span>}
             {titulo && <h2>{titulo}</h2>}
-            {paragrafos(texto)}
+            {texto ? <p className="bl-corrido">{texto}</p> : null}
           </div>
         </section>
       ),
@@ -643,7 +645,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
         foco: campoFoco,
         selo: campoSelo,
         titulo: campoTitulo,
-        texto: { type: "textarea", label: "Texto (linha em branco separa parágrafos)" },
+        texto: { type: "textarea", label: "Texto (linha em branco separa parágrafos)", contentEditable: true },
         botao: { type: "text", label: "Texto do botão (opcional)" },
         link: { type: "text", label: "Link do botão (site, wa.me, e-mail ou #âncora)" },
       },
@@ -665,7 +667,7 @@ export const configAtelie: Config<Blocos, RaizProps> = {
               <div className="bl-lado-texto reveal">
                 {selo && <span className="dica">{selo}</span>}
                 {titulo && <h2>{titulo}</h2>}
-                {paragrafos(texto)}
+                {texto ? <p className="bl-corrido">{texto}</p> : null}
                 {botao.trim() && href ? (
                   <a className="cta cta-accent" href={href} {...(externo ? { target: "_blank", rel: "noopener" } : {})}>{botao}</a>
                 ) : null}
