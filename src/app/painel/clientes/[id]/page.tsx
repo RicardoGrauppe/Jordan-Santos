@@ -667,6 +667,12 @@ export default function PaginaCliente() {
     try { el.showPicker(); } catch { /* Firefox exige gesto; clique é gesto, mas fica de rede */ }
   }
 
+  /* o quarto número do herói: a mesma situação do cartão Contrato, curta */
+  const situacaoCurta = !contratoGerado ? "Sem contrato"
+    : contrato?.status === "visualizado" ? "Aberto pelo casal"
+    : contrato?.status === "enviado" ? (contrato.alterado_desde_envio ? "Editado, falta reenviar" : "Esperando assinatura")
+    : "Rascunho";
+
   if (erroCarga) {
     return (
       <div className="mx-auto max-w-[1100px]">
@@ -702,7 +708,7 @@ export default function PaginaCliente() {
         <Esqueleto />
       ) : (
         <form autoComplete="off" onSubmit={salvarPeloBotao}>
-          <HeroCliente cliente={cliente} contratoAssinado={travado} onArquivar={arquivar} onExcluir={excluir} />
+          <HeroCliente cliente={cliente} contratoAssinado={travado} situacaoContrato={situacaoCurta} onArquivar={arquivar} onExcluir={excluir} />
 
           {/* HIERARQUIA (refeita em 22/10/2026, pedido do Ricardo):
               1. quem é e quando (herói);
