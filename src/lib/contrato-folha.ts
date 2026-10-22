@@ -103,7 +103,10 @@ export const TabelaItensFolha = TabelaItens.extend({
         raiz.replaceChildren();
         const manuais = Array.isArray(atual.attrs.linhas) ? (atual.attrs.linhas as LinhaTabela[]) : null;
         const linhas = manuais ?? linhasAutomaticas(dadosAtuais);
-        const editavel = editor.isEditable;
+        /* no contrato do cliente a tabela é sempre digitável: mexer numa
+           célula fixa as linhas (até ali vinham do pacote da lateral). No
+           editor de MODELOS não, pra não gravar linhas fixas no modelo. */
+        const editavel = editor.isEditable && dadosAtuais != null;
 
         const tabela = el("table");
         const cab = el("tr");
@@ -115,7 +118,7 @@ export const TabelaItensFolha = TabelaItens.extend({
           const tr = el("tr");
           const celula = (campo: "qtd" | "descricao" | "valor") => {
             const td = el("td");
-            if (!manuais || !editavel) {
+            if (!editavel) {
               td.textContent = campo === "valor" ? (l.valor != null ? moeda(l.valor) : "") : String(l[campo] ?? "");
               return td;
             }
@@ -126,7 +129,7 @@ export const TabelaItensFolha = TabelaItens.extend({
             inp.placeholder = campo === "valor" ? "R$" : campo === "qtd" ? "1" : "Descrição";
             inp.setAttribute("aria-label", (campo === "qtd" ? "Quantidade" : campo === "valor" ? "Valor" : "Descrição") + " da linha " + (i + 1));
             inp.addEventListener("change", () => {
-              const novas = manuais.map((x) => ({ ...x }));
+              const novas = linhas.map((x) => ({ ...x }));
               if (campo === "valor") {
                 const n = parseFloat(inp.value.replace(/\./g, "").replace(",", "."));
                 novas[i].valor = inp.value.trim() && isFinite(n) ? n : null;
@@ -137,12 +140,12 @@ export const TabelaItensFolha = TabelaItens.extend({
             return td;
           };
           tr.append(celula("qtd"), celula("descricao"), celula("valor"));
-          if (manuais && editavel) {
+          if (editavel) {
             const x = el("button", "tabela-folha-remover", "×");
             x.type = "button";
             x.title = "Tirar a linha";
             x.setAttribute("aria-label", "Tirar a linha " + (i + 1));
-            x.addEventListener("click", () => salvar(manuais.filter((_, j) => j !== i)));
+            x.addEventListener("click", () => salvar(linhas.filter((_, j) => j !== i)));
             tr.lastElementChild!.append(x);
           }
           tbody.append(tr);
@@ -154,9 +157,7 @@ export const TabelaItensFolha = TabelaItens.extend({
         tabela.append(thead, tbody);
         raiz.append(tabela);
 
-        /* só no contrato de um cliente: num MODELO, linhas fixas iriam pra
-           todo contrato gerado dele, e não é isso que se quer */
-        if (editavel && dadosAtuais) {
+        if (editavel) {
           /* comandos de edição FORA do fluxo (absolutos): não podem ocupar
              altura, senão a quebra de página daqui não bate com o PDF */
           const barra = el("div", "tabela-folha-barra");
@@ -164,12 +165,9 @@ export const TabelaItensFolha = TabelaItens.extend({
             const b = el("button", undefined, rotulo); b.type = "button";
             b.addEventListener("click", f); barra.append(b); return b;
           };
-          if (manuais) {
-            botao("+ Linha", () => salvar([...manuais, { qtd: "1", descricao: "", valor: null }]));
-            botao("Voltar pro automático", () => salvar(null));
-          } else {
-            botao("Editar à mão", () => salvar(linhasAutomaticas(dadosAtuais)));
-          }
+          botao("+ Linha", () => salvar([...linhas, { qtd: "1", descricao: "", valor: null }]));
+          /* digitou e quer voltar a seguir o pacote da lateral */
+          if (manuais) botao("Voltar pro pacote", () => salvar(null));
           raiz.append(barra);
         }
       }

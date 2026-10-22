@@ -75,8 +75,8 @@ margem 56 pt): a quebra de página é simulada como o pdfmake faz (bloco que nã
 cabe desce, parágrafo é partido na linha) e bateu linha a linha com o PDF
 gerado. Mudou medida, fonte ou margem no `gerar-pdfmake.ts`? Mude nos dois
 lugares. A tabela de itens e o bloco de assinaturas são desenhados de verdade;
-a tabela pode ser digitada à mão no contrato do cliente (`attrs.linhas` do nó,
-que o PDF respeita).
+no contrato do cliente a tabela é sempre digitável: mexer numa célula fixa as
+linhas em `attrs.linhas` do nó (o PDF respeita); "Voltar pro pacote" desfaz.
 
 Pacote, adicionais, total e entrada se escolhem no cartão "Pacote e valores"
 do editor do contrato, com as opções de `produtos`; a ficha só mostra o
