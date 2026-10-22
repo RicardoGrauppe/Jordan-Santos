@@ -152,7 +152,6 @@ function ModalProduto({ produto, catalogo, aoFechar, aoSalvar }: {
   const confirmar = useConfirmar();
   const [tipo, setTipo] = useState<TipoProduto>(produto?.tipo ?? "adicional");
   const [nome, setNome] = useState(produto?.nome ?? "");
-  const [curto, setCurto] = useState(produto && produto.curto !== produto.nome ? produto.curto : "");
   const [preco, setPreco] = useState(produto ? formatarMoeda(produto.preco) : "");
   const [inclui, setInclui] = useState<string[]>(produto?.inclui ?? []);
   const [ativo, setAtivo] = useState(produto?.ativo ?? true);
@@ -179,7 +178,8 @@ function ModalProduto({ produto, catalogo, aoFechar, aoSalvar }: {
     setOcupado(true);
     setErro("");
     try {
-      const campos = { tipo, nome: nome.trim(), curto: curto.trim(), preco: valor, inclui: tipo === "pacote" ? inclui : [], ativo };
+      /* um nome só: o mesmo vai pro contrato e pras listas */
+      const campos = { tipo, nome: nome.trim(), curto: nome.trim(), preco: valor, inclui: tipo === "pacote" ? inclui : [], ativo };
       if (produto) await api("/api/produtos", { acao: "salvar", id: produto.id, ...campos });
       else {
         const r = await api<{ produto: Produto }>("/api/produtos", { acao: "criar", ...campos });
@@ -257,10 +257,8 @@ function ModalProduto({ produto, catalogo, aoFechar, aoSalvar }: {
           })}
         </div>
 
-        <Campo id="produto-nome" rotulo="Nome no contrato" placeholder="Álbum 30x60 (50 páginas, 100 imagens)" autoFocus={!produto}
-          value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="off" />
-        <Campo id="produto-curto" rotulo="Nome curto" placeholder={nome.trim() ? nome.trim().slice(0, 60) : "Álbum 30x60"}
-          dica="Aparece nas listas. Em branco, usa o nome do contrato." value={curto} onChange={(e) => setCurto(e.target.value)} autoComplete="off" />
+        <Campo id="produto-nome" rotulo="Nome" placeholder="Álbum 30x60 (50 páginas, 100 imagens)" autoFocus={!produto}
+          dica="É o que aparece no contrato e nas listas." value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="off" />
         <Campo id="produto-preco" rotulo="Preço de tabela (R$)" placeholder="0,00" inputMode="decimal"
           value={preco} onChange={(e) => setPreco(e.target.value)} onBlur={() => { if (valor !== null) setPreco(formatarMoeda(valor)); }} autoComplete="off" />
 
