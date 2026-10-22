@@ -576,8 +576,18 @@ export default function PaginaCliente() {
     try { el.showPicker(); } catch { /* Firefox exige gesto; clique é gesto, mas fica de rede */ }
   }
 
+  /* O rótulo deste botão segue o ESTADO DO CONTRATO, e não o cadeado da ficha.
+     Antes ele dizia "rascunho" pra tudo que não estivesse assinado, então um
+     contrato já enviado (que abre na Autentique) se anunciava como rascunho.
+     Também avisa quando o destino é fora do app: clicar e cair num site de
+     terceiro sem esperar é o tipo de surpresa que faz voltar. */
+  const noAutentique = !!contrato?.autentique_id;
   const iconeContrato = !contratoGerado ? <File size={14} /> : travado ? <FileCheck size={14} /> : <FileText size={14} />;
-  const rotuloContrato = !contratoGerado ? "Criar rascunho do contrato" : travado ? "Abrir contrato assinado" : "Abrir rascunho do contrato";
+  const rotuloContrato = !contratoGerado
+    ? "Criar rascunho do contrato"
+    : noAutentique
+      ? (travado ? "Abrir contrato assinado na Autentique" : "Abrir contrato na Autentique")
+      : (travado ? "Abrir contrato assinado" : "Abrir rascunho do contrato");
 
   if (erroCarga) {
     return (
