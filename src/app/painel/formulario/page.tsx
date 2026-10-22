@@ -122,7 +122,8 @@ function ChavesCampo({
   );
 }
 
-/* Legenda dos ícones, uma vez só, logo abaixo da explicação da página */
+/* Legenda dos ícones, uma vez só, entre as fotos e o primeiro bloco de
+   campos: é onde os botões começam */
 function LegendaBotoes() {
   const item = "inline-flex items-center gap-1.5";
   return (
@@ -481,17 +482,17 @@ export default function PaginaFormulario() {
         </div>
       </div>
 
-      <CartaoAviso className="mb-3">
+      <CartaoAviso className="mb-4">
         É o formulário que o casal preenche pra confirmar a data. Mude o texto das perguntas, esconda o que você não usa e
         crie perguntas suas. Ligue o cadeado no que não pode mudar sem querer.
       </CartaoAviso>
-      <LegendaBotoes />
 
       {erroCarga ? <p className="text-[13px] text-erro">{erroCarga}</p> : null}
 
       {form ? (
         <>
           <EditorFotos fotos={form.fotos} aoMudar={mudarFotos} />
+          <LegendaBotoes />
           {SECOES.map((secao) => {
             const Icone = ICONE_SECAO[secao.id];
             const fixos = CAMPOS_FIXOS.filter((c) => c.secao === secao.id);
