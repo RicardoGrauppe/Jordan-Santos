@@ -657,7 +657,7 @@ export async function POST(req: Request) {
           link + "\n\n" +
           "É só abrir e baixar o PDF. Ele fica sempre disponível nesse link."
         : saudacao +
-          "Segue o contrato do casamento pra " + voces + " revisar" + (nomes.length > 1 ? "em" : "") + " e assinar online:\n" +
+          "Segue o contrato do casamento pra " + voces + " revisar" + (nomes.length > 1 ? "em" : "") + " e assinar" + (nomes.length > 1 ? "em" : "") + " online:\n" +
           link + "\n\n" +
           "Leva uns 2 minutinhos e dá pra fazer pelo celular: abre o link, confere os dados e assina." +
           (nomes.length > 1 ? " Basta um de vocês assinar." : "") +

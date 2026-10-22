@@ -102,9 +102,22 @@ export async function enviarParaAssinatura(
     semComprovante: true,
   });
 
-  const titulo = "Contrato de Fotografia" + (casal.nome ? " - " + casal.nome : "");
+  /* O título vira o assunto e o cabeçalho do e-mail da Autentique; a
+     mensagem é o texto que o casal lê no corpo dele, no lugar do texto
+     padrão dela (22/10/2026, pedido do Ricardo). Primeiros nomes, sem
+     travessão (TOM-DE-VOZ.md), e assinado com o nome completo do fotógrafo. */
+  const primeiros = (casal.nome || "").split(" e ").map((n) => n.trim().split(/\s+/)[0]).filter(Boolean);
+  const titulo = "Contrato de fotografia" + (primeiros.length ? " (" + primeiros.join(" e ") + ")" : "");
+  const dois = primeiros.length > 1;
+  const mensagem =
+    "Oi" + (primeiros.length ? ", " + primeiros.join(" e ") : "") + "! Aqui é o " + dono.nome + ". " +
+    "Este é o contrato da cobertura fotográfica do casamento" + (dois ? " de vocês" : "") + ". " +
+    "É só abrir, conferir os dados e assinar: leva uns 2 minutinhos e dá pra fazer pelo celular." +
+    (dois ? " Basta um de vocês assinar." : "") +
+    " Qualquer dúvida, é só me chamar.";
   const documento = await criarDocumento({
     titulo,
+    mensagem,
     pdf,
     /* ordem importa: o fotógrafo é o primeiro e assina na linha abaixo, então
        o casal só é chamado com o documento já assinado por ele */
