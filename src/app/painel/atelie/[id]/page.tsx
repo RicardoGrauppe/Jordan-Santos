@@ -6,8 +6,9 @@
   espera parar de mexer, e se uma gravação já está no ar marca pra repetir
   depois em vez de disparar duas em cima da outra (a segunda poderia chegar
   antes e gravar conteúdo velho por cima do novo). O que vai pro banco é lido
-  de ref, nunca do estado via closure. Sair da tela (voltar do navegador ou
-  fechar a aba) manda o pendente com `keepalive`.
+  de ref, nunca do estado via closure. O Voltar do cabeçalho grava o
+  pendente antes de sair; sair por fora (voltar do navegador ou fechar a
+  aba) manda o pendente com `keepalive`.
 
   O Publicar do cabeçalho do Puck é a única ação: no modelo que está no ar
   ele publica as mudanças; nos outros, põe o modelo no ar. Os dois confirmam,
@@ -25,6 +26,7 @@ import { useToast } from "@/components/Toast";
 import { contatoDaPagina, type DadosSite } from "@/lib/atelie/blocos";
 import { AVISO_DE_EXEMPLO, temExemplo } from "@/lib/atelie/modelo-guiado";
 import { api, ERRO_SESSAO } from "@/lib/painel";
+import { useVoltar } from "@/lib/voltar";
 
 const ESPERA_MS = 800;
 const URL_API = "/api/atelie";
@@ -134,6 +136,8 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
     return () => { window.removeEventListener("pagehide", aoSair); aoSair(); };
   }, [id]);
 
+  const voltar = useVoltar("/painel/atelie", descarregar);
+
   async function publicar() {
     if (publicando) return;
     /* página vazia não vai pro ar (a API também barra): o site ficaria em branco */
@@ -179,7 +183,7 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   return (
     <>
       <EditorAtelie dados={modelo.rascunho} contato={contatoDaPagina(raiz)} aoMudar={aoMudar}
-        titulo={modelo.nome} aoPublicar={() => { void publicar(); }} />
+        titulo={modelo.nome} aoPublicar={() => { void publicar(); }} aoVoltar={() => { void voltar(); }} />
       {toast}
     </>
   );
