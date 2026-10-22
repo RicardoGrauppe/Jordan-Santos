@@ -27,6 +27,7 @@ import { Sk, SkCartaoModelo, SkCartaoNovo } from "@/components/Skeleton";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { FormulariosAtelie } from "@/components/FormulariosAtelie";
+import { BannerPainel, BOTAO_BANNER, BOTAO_BANNER_2 } from "@/components/BannerPainel";
 import { api, esperaMin, ERRO_SESSAO } from "@/lib/painel";
 import { fmtData } from "@/lib/util";
 import { AVISO_DE_EXEMPLO } from "@/lib/atelie/modelo-guiado";
@@ -373,10 +374,7 @@ export default function Atelie() {
           site e um formulário, feito em CSS (sem imagem). O aviso de beta
           virou uma linha dentro do banner: sai junto com o selo quando o
           Ateliê sair do teste (brandbook, seção 19). */}
-      <section className="relative isolate mb-2 overflow-hidden rounded-[18px] px-5 py-6 text-white shadow-[0_14px_34px_rgba(0,54,70,.22),inset_0_1px_0_rgba(255,255,255,.07)] md:rounded-3xl md:px-8 md:py-8 bg-[radial-gradient(130%_150%_at_12%_-10%,rgba(255,255,255,.12),transparent_46%),linear-gradient(135deg,#013243_0%,#003646_46%,#0b4d61_100%)]">
-        <span aria-hidden className="pointer-events-none absolute -right-[70px] -top-20 -z-[1] h-[250px] w-[250px] rounded-full bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,.14),rgba(255,255,255,.03)_60%,transparent_72%)]" />
-        <span aria-hidden className="pointer-events-none absolute -bottom-[140px] right-[24%] -z-[1] h-[230px] w-[230px] rounded-full bg-[radial-gradient(circle,rgba(15,90,113,.55),transparent_70%)]" />
-
+      <BannerPainel className="mb-2">
         <div className="relative flex items-center gap-8">
           <div className="min-w-0 flex-1">
             {/* no celular o título já está no cabeçalho do app */}
@@ -389,11 +387,11 @@ export default function Atelie() {
             </p>
             <div className="mt-5 flex flex-wrap gap-2.5">
               <button type="button" onClick={abrirSite}
-                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-paper px-4 text-[13.5px] font-semibold text-accent transition-transform hover:-translate-y-px active:scale-[.96]">
+                className={BOTAO_BANNER}>
                 <ExternalLink size={15} /> Abrir o site
               </button>
               <button type="button" onClick={() => window.open("/cadastro", "_blank", "noopener")}
-                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-white/[.14] px-4 text-[13.5px] font-semibold text-white transition-colors hover:bg-white/25">
+                className={BOTAO_BANNER_2}>
                 <ClipboardList size={15} /> Ver formulário
               </button>
             </div>
@@ -419,7 +417,7 @@ export default function Atelie() {
             </div>
           </div>
         </div>
-      </section>
+      </BannerPainel>
 
       {/* Duas prateleiras de modelos (22/10/2026): sites e formulários. Cada
           uma diz o que o modelo "ativo" dela faz, porque não é a mesma coisa:

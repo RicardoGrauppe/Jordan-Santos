@@ -24,7 +24,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Minus, Plus, Trash2, User } from "lucide-react";
 import { TituloMobile } from "@/components/cabecalho-mobile";
-import { Botao, Selo } from "@/components/ui";
+import { Selo } from "@/components/ui";
+import { BannerPainel, BOTAO_BANNER } from "@/components/BannerPainel";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { PuxarPraAtualizar } from "@/components/PuxarPraAtualizar";
 import { SkLinha } from "@/components/Skeleton";
@@ -33,6 +34,34 @@ import {
   api, dataCurta, esperaMin, nomeCasal, ERRO_SESSAO, ROTULO_STATUS,
   type ClienteLista, type RespostaLista,
 } from "@/lib/painel";
+
+/* Os três números do banner. Arquivado não conta em nada: arquivar existe
+   pra tirar da frente. Contrato "esperando" é o que está na Autentique com
+   o casal (o do sistema antigo não tem link vivo, ver lib/painel). */
+function numerosDaCarteira(clientes: ClienteLista[] | null): { rotulo: string; valor: string; detalhe?: string }[] {
+  if (!clientes) return [{ rotulo: "Ativos", valor: "—" }, { rotulo: "Próximo casamento", valor: "—" }, { rotulo: "Pra assinar", valor: "—" }];
+  const vivos = clientes.filter((c) => c.status !== "arquivado");
+  const hoje = new Date().toISOString().slice(0, 10);
+  const proximo = vivos
+    .filter((c) => c.data_evento && c.data_evento.slice(0, 10) >= hoje)
+    .sort((a, b) => String(a.data_evento).localeCompare(String(b.data_evento)))[0];
+  /* ativo = ainda vai casar (realizado já passou) */
+  const ativos = vivos.filter((c) => c.status !== "realizado").length;
+  const esperando = vivos.filter((c) =>
+    (c.contrato_status === "enviado" || c.contrato_status === "visualizado") && c.contrato_autentique_id).length;
+  return [
+    { rotulo: "Ativos", valor: String(ativos), detalhe: ativos === 1 ? "casal" : "casais" },
+    { rotulo: "Próximo casamento", valor: proximo ? dataSemAnoSeEsteAno(proximo.data_evento) : "—", detalhe: proximo ? nomeCasal(proximo) : "nenhum marcado" },
+    { rotulo: "Pra assinar", valor: String(esperando), detalhe: esperando === 1 ? "contrato" : "contratos" },
+  ];
+}
+
+/* "31 out" este ano, "3 abr 2027" depois: o ano só ocupa espaço quando diz algo */
+function dataSemAnoSeEsteAno(iso?: string | null): string {
+  const d = dataCurta(iso);
+  const ano = String(new Date().getFullYear());
+  return d.endsWith(" " + ano) ? d.slice(0, -5) : d;
+}
 
 /* mínimo pra o skeleton do puxar aparecer de verdade em vez de piscar */
 const MIN_ATUALIZAR_MS = 900;
@@ -184,12 +213,38 @@ export default function ListaClientes() {
           "Novo cliente" vira o botão redondo do canto dele, no formato do
           "marcar todas como lidas" das Notificações. */}
       <TituloMobile titulo="Clientes" acao={acaoNovoCliente} />
-      <div className="mb-[18px] hidden items-center justify-between gap-4 md:flex">
-        <h1 className="m-0 text-[22px] font-semibold tracking-tight text-ink sm:text-[26px]">Clientes</h1>
-        <Botao className="h-10 whitespace-nowrap px-4 text-[13.5px]" onClick={() => router.push("/painel/clientes/novo")}>
-          <Plus size={16} /> Novo cliente
-        </Botao>
-      </div>
+      {/* BANNER (22/10/2026, pedido do Ricardo), irmão do do Ateliê: no lugar
+          do título solto. Três números que respondem "como está a carteira"
+          sem abrir ninguém: quantos casais estão ativos, qual o próximo
+          casamento e quantos contratos esperam a assinatura do casal. */}
+      <BannerPainel className="mb-[18px]">
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:gap-8">
+          <div className="min-w-0 flex-1">
+            {/* no celular o título já está no cabeçalho do app */}
+            <h1 className="m-0 hidden text-[32px] font-semibold leading-[1.1] md:block">Clientes</h1>
+            <p className="m-0 max-w-[420px] text-[14.5px] leading-[1.55] text-white/75 md:mt-2.5">
+              Cada casal, do primeiro contato ao dia do casamento: dados, pacote e contrato num lugar só.
+            </p>
+            <div className="mt-5 hidden md:block">
+              <button type="button" onClick={() => router.push("/painel/clientes/novo")} className={BOTAO_BANNER}>
+                <Plus size={16} /> Novo cliente
+              </button>
+            </div>
+          </div>
+          <dl className="m-0 grid grid-cols-3 gap-2 md:w-[500px] md:shrink-0 md:gap-2.5">
+            {numerosDaCarteira(clientes).map((n) => (
+              <div key={n.rotulo} className="min-w-0 rounded-[14px] bg-white/[.09] px-3 py-2.5 backdrop-blur-[6px] md:px-3.5 md:py-3">
+                <dt className="truncate text-[11px] font-medium text-white/65 md:text-[11.5px]">
+                  {/* no celular o quadro é estreito: "Próximo casamento" vira "Próximo" */}
+                  <span className="md:hidden">{n.rotulo.replace(" casamento", "")}</span><span className="hidden md:inline">{n.rotulo}</span>
+                </dt>
+                <dd className="m-0 mt-0.5 truncate text-[17px] font-semibold leading-[1.3] tabular-nums md:text-[20px]">{n.valor}</dd>
+                <dd className="m-0 truncate text-[11.5px] text-white/60">{n.detalhe || "\u00a0"}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </BannerPainel>
 
       {/* Sem campo de busca aqui: quem procura casal já tem a barra do topo no
           computador e a lupa da barra de baixo no celular, e as duas levam
