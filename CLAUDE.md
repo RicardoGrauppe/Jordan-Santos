@@ -77,7 +77,7 @@ folha de comprovante**, sobe pra Autentique com dois signatários em ordem
 (`sortable`), assina pelo dono da chave (`signDocument`, que não gera e-mail
 pra ele) e devolve o link curto do casal, que o fotógrafo manda por WhatsApp.
 Não existe mais assinatura do fotógrafo dentro do app: o clique é a assinatura.
-Enquanto a Autentique responde, o editor mostra uma tela de carregamento; deu certo, volta pra ficha com `?enviado=1` (ou `=atualizado`), e a ficha abre o pop-up de compartilhar (`ModalContratoEnviado`: a mensagem pronta com o link à vista, um botão de copiar e "Ver contrato" no painel da Autentique; o link é um por pessoa e serve em qualquer canal). Esse pop-up só lê o link (`apenasLink`). Depois de enviado, o botão principal é sempre "Abrir na Autentique".
+Enquanto a Autentique responde, o editor mostra uma tela de carregamento; deu certo, volta pra ficha com `?enviado=1` (ou `=atualizado`), e a ficha abre o pop-up de compartilhar (`ModalContratoEnviado`: duas caixas com "Copiar", o link sozinho e a mensagem pronta com o link, e "Ver contrato" no painel da Autentique; o link é um por pessoa e serve em qualquer canal). Esse pop-up só lê o link (`apenasLink`). Depois de enviado, o botão principal é sempre "Abrir na Autentique".
 
 **Editar depois de enviado = documento novo.** A Autentique não troca o
 arquivo de um documento (`updateDocument` só mexe em nome/mensagem), então

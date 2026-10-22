@@ -3,9 +3,9 @@
   cliente logo depois do "Assinar e enviar" (ou do "Atualizar na Autentique")
   do editor do contrato, que volta pra cá com `?enviado=`.
 
-  Um botão só: copiar a mensagem pronta, que já leva o link. O link da
-  Autentique é um por pessoa e serve em qualquer canal, então o fotógrafo cola
-  onde quiser (WhatsApp, e-mail, direct). "Ver contrato" leva pro documento no
+  Duas caixas com o "Copiar" do lado: o link sozinho e a mensagem pronta (que
+  já leva o link). O link da Autentique é um por pessoa e serve em qualquer
+  canal, então o fotógrafo cola onde quiser (WhatsApp, e-mail, direct). "Ver contrato" leva pro documento no
   painel da Autentique, que é a fonte da verdade da assinatura.
 
   A Autentique está em entrega POR LINK (ver lib/autentique.ts): ela não manda
@@ -32,7 +32,7 @@ export type DadosEnviado = {
 };
 
 export function ModalContratoEnviado({ dados, onFechar }: { dados: DadosEnviado; onFechar: () => void }) {
-  const [copiado, setCopiado] = useState<"ok" | "erro" | null>(null);
+  const [copiado, setCopiado] = useState<"link" | "mensagem" | "erro" | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -41,9 +41,9 @@ export function ModalContratoEnviado({ dados, onFechar }: { dados: DadosEnviado;
     return () => { document.removeEventListener("keydown", esc); if (timer.current) clearTimeout(timer.current); };
   }, [onFechar]);
 
-  async function copiar() {
-    const ok = await copiarTexto(dados.mensagem);
-    setCopiado(ok ? "ok" : "erro");
+  async function copiar(oque: "link" | "mensagem") {
+    const ok = await copiarTexto(oque === "link" ? dados.link : dados.mensagem);
+    setCopiado(ok ? oque : "erro");
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopiado(null), 2200);
   }
@@ -79,18 +79,23 @@ export function ModalContratoEnviado({ dados, onFechar }: { dados: DadosEnviado;
           </p>
         ) : null}
 
-        {/* a mensagem que vai ser copiada, à vista, e o botão de copiar */}
-        <div className="mt-4 rounded-[12px] bg-soft p-3.5">
-          <p className="m-0 whitespace-pre-line break-words text-[13px] leading-[1.55] text-ink">{dados.mensagem}</p>
+        {/* o link sozinho, com o Copiar do lado */}
+        <div className="mt-4 flex items-center gap-2 rounded-[10px] bg-soft py-1 pl-3.5 pr-1">
+          <input type="text" readOnly value={dados.link} aria-label="Link pro casal assinar"
+            className="min-w-0 flex-1 bg-transparent py-2 text-[13px] text-ink outline-none" onFocus={(e) => e.target.select()} />
+          <BotaoCopiar copiado={copiado === "link"} rotulo="Copiar link" onClick={() => void copiar("link")} />
         </div>
-        <button type="button" onClick={() => void copiar()}
-          className={"mt-2.5 inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-[background-color,color,scale] duration-150 active:scale-[.98] " +
-            (copiado === "ok" ? "bg-ok-tint text-ok" : "bg-accent-tint text-accent hover:bg-[#dfe9ec]")}>
-          {copiado === "ok" ? <Check size={16} /> : <Copy size={16} />}
-          {copiado === "ok" ? "Mensagem copiada" : "Copiar mensagem com o link"}
-        </button>
+
+        {/* a mensagem pronta (já com o link), com o Copiar no canto */}
+        <div className="relative mt-2.5 rounded-[10px] bg-soft py-3 pl-3.5 pr-[104px]">
+          <p className="m-0 whitespace-pre-line break-words text-[13px] leading-[1.55] text-ink">{dados.mensagem}</p>
+          <div className="absolute right-1 top-1">
+            <BotaoCopiar copiado={copiado === "mensagem"} rotulo="Copiar mensagem" onClick={() => void copiar("mensagem")} />
+          </div>
+        </div>
+
         {copiado === "erro" ? (
-          <p className="m-0 mt-2 text-[12.5px] text-erro">Não consegui copiar. Selecione o texto acima e copie à mão.</p>
+          <p className="m-0 mt-2 text-[12.5px] text-erro">Não consegui copiar. Selecione o texto e copie à mão.</p>
         ) : null}
 
         <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row">
@@ -106,5 +111,17 @@ export function ModalContratoEnviado({ dados, onFechar }: { dados: DadosEnviado;
       </div>
     </div>,
     document.body,
+  );
+}
+
+/* "Copiar" com ícone e texto, que vira "Copiado" em verde por um instante */
+function BotaoCopiar({ copiado, rotulo, onClick }: { copiado: boolean; rotulo: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={rotulo} title={rotulo}
+      className={"inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-[9px] px-2.5 text-[12.5px] font-medium transition-colors " +
+        (copiado ? "text-ok" : "text-ink-soft hover:bg-line hover:text-accent")}>
+      {copiado ? <Check size={15} /> : <Copy size={15} />}
+      {copiado ? "Copiado" : "Copiar"}
+    </button>
   );
 }
