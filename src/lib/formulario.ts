@@ -148,6 +148,8 @@ export function urlFoto(f: Pick<FotoAbertura, "id" | "origem">, largura: 750 | 1
 }
 
 export type Formulario = {
+  /** títulos das etapas, editáveis; vazio volta o de SECOES */
+  titulos: Record<SecaoFormulario, string>;
   campos: Record<CampoFixoId, AjusteCampo>;
   perguntas: Pergunta[];
   fotos: FotoAbertura[];
@@ -158,6 +160,7 @@ export type RespostaFormulario = { id: string; rotulo: string; tipo: TipoPergunt
 
 export const LIMITES = {
   rotulo: 120,
+  titulo: 60,
   placeholder: 120,
   perguntas: 20,
   opcoes: 12,
@@ -185,6 +188,7 @@ export function ajustePadrao(def: DefinicaoCampo): AjusteCampo {
 
 export function formularioPadrao(): Formulario {
   return {
+    titulos: { ...TITULO_SECAO },
     campos: Object.fromEntries(CAMPOS_FIXOS.map((d) => [d.id, ajustePadrao(d)])) as Record<CampoFixoId, AjusteCampo>,
     perguntas: [],
     fotos: FOTOS_PADRAO.map((f) => ({ ...f })),
@@ -239,6 +243,10 @@ export function normalizarFormulario(bruto: unknown): Formulario {
   const b = obj(bruto);
   const campos = obj(b.campos);
   const saida = formularioPadrao();
+  const titulos = obj(b.titulos);
+  for (const sec of SECOES) {
+    saida.titulos[sec.id] = texto(titulos[sec.id], LIMITES.titulo) || sec.titulo;
+  }
 
   for (const def of CAMPOS_FIXOS) {
     const c = obj(campos[def.id]);

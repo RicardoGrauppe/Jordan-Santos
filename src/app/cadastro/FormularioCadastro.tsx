@@ -49,7 +49,7 @@ import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import {
-  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, regraDoPar, urlFoto, DEFINICAO, SECOES, TITULO_SECAO,
+  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, regraDoPar, urlFoto, DEFINICAO, SECOES,
   type CampoFixoId, type FotoAbertura, type Formulario, type Pergunta, type SecaoFormulario,
 } from "@/lib/formulario";
 
@@ -1175,7 +1175,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                           <span className="icone"><Icone size={18} strokeWidth={1.8} aria-hidden /></span>
                           <span className="texto-passo">
                             <span className="rotulo-passo">Etapa {i + 1}</span>
-                            <strong>{TITULO_SECAO[id]}</strong>
+                            <strong>{formulario.titulos[id]}</strong>
                             <small>{SOBRE_ETAPA[id].resumo}</small>
                           </span>
                         </li>
@@ -1198,7 +1198,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
             {secoes.map((secao) => (
               <section key={secao} className="etapa" {...atributosEtapa(secao)}>
                 <div className="etapa-corpo">
-                  <h1>{TITULO_SECAO[secao]}</h1>
+                  <h1>{formulario.titulos[secao]}</h1>
                   <div className="dica-card explica">
                     <span className="dica-icone"><Info size={18} strokeWidth={1.8} aria-hidden /></span>
                     <p>{secao === "assinar" && !par ? "Dados de quem vai assinar o contrato." : SOBRE_ETAPA[secao].explica}</p>
@@ -1230,9 +1230,9 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                         <div key={secao} className="revisao-bloco">
                           <div className="revisao-topo">
                             <span className="revisao-icone"><Icone size={17} strokeWidth={1.8} aria-hidden /></span>
-                            <span className="revisao-titulo">{TITULO_SECAO[secao]}</span>
+                            <span className="revisao-titulo">{formulario.titulos[secao]}</span>
                             <button type="button" className="editar" onClick={() => editar(secao)}
-                              aria-label={"Editar " + TITULO_SECAO[secao]}>
+                              aria-label={"Editar " + formulario.titulos[secao]}>
                               <Pencil size={13} strokeWidth={1.8} aria-hidden /> Editar
                             </button>
                           </div>

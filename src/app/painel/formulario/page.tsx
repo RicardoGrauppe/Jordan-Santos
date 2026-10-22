@@ -208,7 +208,7 @@ const SELECT =
   "h-11 w-full cursor-pointer appearance-none rounded-[10px] bg-white px-3.5 text-sm text-ink outline-none transition-colors";
 
 function LinhaPergunta({
-  pergunta, abertaInicial, primeira, ultima, aoMudar, aoMover, aoApagar,
+  pergunta, titulos, abertaInicial, primeira, ultima, aoMudar, aoMover, aoApagar,
 }: {
   pergunta: Pergunta;
   abertaInicial: boolean;
@@ -217,6 +217,7 @@ function LinhaPergunta({
   aoMudar: (p: Pergunta) => void;
   aoMover: (passo: -1 | 1) => void;
   aoApagar: () => void;
+  titulos: Formulario["titulos"];
 }) {
   const [aberta, setAberta] = useState(abertaInicial);
   const tipo = TIPOS_PERGUNTA.find((t) => t.id === pergunta.tipo)?.rotulo ?? "";
@@ -270,7 +271,7 @@ function LinhaPergunta({
               <label htmlFor={"f-" + pergunta.id + "-secao"} className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">Seção</label>
               <select id={"f-" + pergunta.id + "-secao"} className={SELECT} value={pergunta.secao}
                 onChange={(e) => aoMudar({ ...pergunta, secao: e.target.value as SecaoFormulario })}>
-                {SECOES.map((s) => <option key={s.id} value={s.id}>{s.titulo}</option>)}
+                {SECOES.map((s) => <option key={s.id} value={s.id}>{titulos[s.id] || s.titulo}</option>)}
               </select>
             </div>
           </div>
@@ -503,7 +504,22 @@ export default function PaginaFormulario() {
                   <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
                     <Icone size={16} />
                   </span>
-                  {secao.titulo}
+                  {/* título editável ali mesmo (brandbook 18): campo sem fundo
+                      que ganha o bege no hover e no foco; o lápis só indica.
+                      Vazio, o servidor devolve o título original. */}
+                  <label className="group inline-flex min-w-0 max-w-full cursor-text items-center gap-1.5 rounded-lg px-2 py-1 -ml-1 transition-colors hover:bg-soft focus-within:bg-soft">
+                    <input
+                      aria-label={"Título da etapa " + secao.titulo}
+                      value={form.titulos[secao.id]}
+                      placeholder={secao.titulo}
+                      maxLength={LIMITES.titulo}
+                      /* largura do próprio texto, pra o lápis ficar colado nele */
+                      size={Math.max(6, (form.titulos[secao.id] || secao.titulo).length + 1)}
+                      onChange={(e) => mudar({ ...form, titulos: { ...form.titulos, [secao.id]: e.target.value } })}
+                      className="min-w-0 bg-transparent text-[13px] font-semibold tracking-[.02em] text-ink outline-none placeholder:text-ink-soft"
+                    />
+                    <Pencil size={13} className="shrink-0 text-ink-soft opacity-70 transition-opacity group-hover:opacity-100" aria-hidden />
+                  </label>
                 </h2>
                 {AJUDA_SECAO[secao.id] ? (
                   <p className="m-0 mt-2 text-[12.5px] text-ink-soft">{AJUDA_SECAO[secao.id]}</p>
@@ -515,7 +531,7 @@ export default function PaginaFormulario() {
                       aoMudar={(a) => mudarCampo(def.id, a)} />
                   ))}
                   {perguntas.map((p, i) => (
-                    <LinhaPergunta key={p.id} pergunta={p} abertaInicial={p.id === novaId}
+                    <LinhaPergunta key={p.id} pergunta={p} titulos={form.titulos} abertaInicial={p.id === novaId}
                       primeira={i === 0} ultima={i === perguntas.length - 1}
                       aoMudar={mudarPergunta} aoMover={(passo) => moverPergunta(p, passo)}
                       aoApagar={() => void apagarPergunta(p)} />
