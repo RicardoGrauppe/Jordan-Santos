@@ -28,7 +28,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen } from "lucide-react";
 import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
@@ -164,6 +164,10 @@ export default function PaginaCliente() {
   const { id: idRota } = useParams<{ id: string }>();
   const ehNovo = idRota === "novo";
   const router = useRouter();
+  /* `?campo=email`: quem chega mandado pra preencher um campo (hoje, o
+     editor do contrato quando falta o e-mail pra Autentique) cai com a seção
+     aberta e o cursor no campo */
+  const campoAlvo = useSearchParams().get("campo");
   const confirmar = useConfirmar();
   const { mostrar: avisar, elemento: toast } = useToast();
 
@@ -274,6 +278,16 @@ export default function PaginaCliente() {
       .catch((e: unknown) => falhou(e, () => setErroCarga("Não encontrei este cliente.")))
       .finally(() => setCarregando(false));
   }, [idRota, ehNovo, carregar, falhou]);
+
+  useEffect(() => {
+    if (carregando || campoAlvo !== "email") return;
+    const el = document.getElementById("f-email");
+    if (!el) return;
+    el.scrollIntoView({ block: "center" });
+    (el as HTMLInputElement).focus({ preventScroll: true });
+    /* tira o ?campo da URL: recarregar a ficha não deve puxar o foco de novo */
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [carregando, campoAlvo]);
 
   /* ---------- salvamento ---------- */
 
@@ -629,7 +643,7 @@ export default function PaginaCliente() {
           <div className="grid grid-cols-1 items-start gap-5 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
             {/* ---------- coluna esquerda: o casal ---------- */}
             <div className="min-w-0">
-              <SecaoFicha icone={<Heart size={15} />} titulo="O casal" abertaInicial={ehNovo}>
+              <SecaoFicha icone={<Heart size={15} />} titulo="O casal" abertaInicial={ehNovo || campoAlvo === "email"}>
                 <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
                   <CampoCopiavel id="f-noivo" rotulo="Noivo" value={ficha.noivo} avisar={avisar}
                     onChange={(e) => mudarCampo("noivo", e.target.value)} onBlur={salvarLogo} />

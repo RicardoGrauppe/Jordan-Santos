@@ -340,8 +340,25 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
 
   const voltar = useVoltar("/painel/clientes/" + encodeURIComponent(id), descarregar);
 
+  /* Sem e-mail do casal a Autentique não tem a quem amarrar o link. Pop-up
+     com o caminho pronto: salva o que estiver pendente e leva pra ficha com
+     o campo do e-mail aberto e focado. */
+  async function pedirEmail() {
+    const ok = await confirmar({
+      titulo: "Falta o e-mail do casal",
+      texto:
+        "A Autentique amarra o link de assinatura ao e-mail de quem assina. Cadastre o e-mail na ficha " +
+        "e volte aqui pra enviar. O texto do contrato fica salvo.",
+      rotuloOk: "Cadastrar e-mail",
+    });
+    if (!ok) return;
+    await descarregar();
+    router.push("/painel/clientes/" + encodeURIComponent(id) + "?campo=email");
+  }
+
   /* ---------- enviar / atualizar ---------- */
   async function enviar(atualizar: boolean) {
+    if (!carga?.cliente.email?.trim()) { await pedirEmail(); return; }
     if (atualizar) {
       const ok = await confirmar({
         titulo: "Atualizar na Autentique?",
@@ -372,6 +389,8 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       if (r) setCarga(r);
     } catch (e) {
       if ((e as Error).message === ERRO_SESSAO) { router.replace("/entrar"); return; }
+      /* o e-mail sumiu da ficha em outra aba depois que esta abriu */
+      if (/e-mail do casal/.test((e as Error).message)) { setEstado({ texto: "" }); await pedirEmail(); return; }
       setEstado({ texto: (e as Error).message || "Não deu pra falar com a Autentique.", tom: "erro" });
     } finally {
       setEnviando(false);
