@@ -28,7 +28,7 @@ import { RevealAoRolar } from "@/app/proposta/RevealAoRolar";
 import { CampoFoco, CampoFoto, CampoFotoOpcional } from "@/components/CamposAtelie";
 import { CSS_PROPOSTA } from "./proposta-css";
 import { EXEMPLO, FOTO_DE_EXEMPLO } from "./modelo-guiado";
-import { TIPOS_DE_BLOCO, TIPOS_DE_SECAO, type TipoDeBloco, type TipoDeSecao } from "./tipos";
+import { TIPOS_DE_BLOCO, type TipoDeBloco, type TipoDeSecao } from "./tipos";
 
 /* ---------- tipos ---------- */
 
@@ -798,13 +798,19 @@ export function secaoComIds(tipo: TipoDeSecao): DadosSite["content"][number] {
   } as DadosSite["content"][number];
 }
 
-/* Na lista do editor, as seções vêm antes: quem começa do zero monta a
-   página mais rápido com elas, e os blocos soltos ficam pra ajustar. */
+/* Na lista do editor, as seções vêm antes, separadas pelo pedaço da página
+   que montam (na ordem em que aparecem num site), cada uma num cartão com a
+   prévia (EditorAtelie.tsx): quem começa do zero monta mais rápido com elas.
+   Os blocos soltos ficam no fim, recolhidos, pra ajustar. Seção nova entra
+   numa destas categorias, senão o Puck a joga em "Outros". */
 export const configAtelie = {
   root: configBase.root,
   categories: {
-    secoes: { title: "Seções prontas", components: [...TIPOS_DE_SECAO], defaultExpanded: true },
-    blocos: { title: "Blocos", components: [...TIPOS_DE_BLOCO], defaultExpanded: true },
-  },
+    abertura: { title: "Abertura", components: ["SecaoAbertura"], defaultExpanded: true },
+    apresentacao: { title: "Sobre e portfólio", components: ["SecaoSobre", "SecaoPortfolio"], defaultExpanded: true },
+    precos: { title: "Pacotes e entrega", components: ["SecaoPacotes", "SecaoEntrega"], defaultExpanded: true },
+    contato: { title: "Contato", components: ["SecaoContato"], defaultExpanded: true },
+    blocos: { title: "Blocos soltos", components: [...TIPOS_DE_BLOCO], defaultExpanded: false },
+  } satisfies Record<string, { title: string; components: (TipoDeBloco | TipoDeSecao)[]; defaultExpanded: boolean }>,
   components: { ...configBase.components, ...SECOES },
 } as Config<Blocos & Secoes, RaizProps>;

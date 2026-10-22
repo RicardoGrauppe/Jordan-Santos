@@ -28,10 +28,10 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             mesmo site da raiz, mantido pra não quebrar link já enviado
 src/app/atelie/previa/[id]   prévia do RASCUNHO (ou ?versao=) de um modelo, só logado (404 pros outros); ?barra=1 põe a barra da prévia
-src/app/atelie/secao/[tipo]  uma seção pronta sozinha, com conteúdo de exemplo: a prévia dos cartões da biblioteca de seções; só logado
+src/app/atelie/secao/[tipo]  uma seção pronta sozinha, com conteúdo de exemplo: a prévia dos cartões de seção na lista do editor; só logado
 src/app/midia/[caminho]      entrega as fotos do Ateliê (do Storage) pro site; pública, nome sorteado
 src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), atelie
-src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, SecoesProntas, CamposAtelie (foto, biblioteca, foco), VersoesAtelie, BarraDaPrevia, Skeleton
+src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, PreviaSecao, CamposAtelie (foto, biblioteca, foco), VersoesAtelie, BarraDaPrevia, Skeleton
 src/lib/                     supabase.ts, storage.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
@@ -144,8 +144,8 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   `<Puck>` com o config, os textos em português (`lib/atelie/dicionario.ts`)
   e o Publicar dele ligado à nossa publicação, mais dois acréscimos: a seta
   de voltar no quadrado vazio do canto esquerdo do cabeçalho (override
-  `header`) e o botão "Seções prontas" antes do Publicar (`headerActions`),
-  ambos com o `Button`/`IconButton` do Puck. Sem pele da
+  `header`, com o `IconButton` do Puck) e o cartão com prévia das seções
+  prontas na lista da esquerda (`drawerItem`). Sem pele da
   casa, tamanhos de tela nem permissões próprias, então no celular também se
   monta a página (decisão do Ricardo, 22/10/2026); estilo fica pra depois. Nome,
   prévia, versões e descartar moram no menu do cartão, na galeria. Importe
@@ -164,14 +164,17 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   entra preenchido, no desenho do bloco "Template" da demo do Puck. Os
   blocos de dentro usam o `defaultProps` de cada um e vão sem id (o Puck dá
   na hora de inserir). Dentro de seção não entra outra seção, e a API
-  confere os dois níveis. Na lista do editor elas vêm antes dos blocos
-  (`categories`), mas o caminho principal é o botão "Seções prontas" do
-  cabeçalho (`SecoesProntas.tsx`, override `headerActions`): biblioteca no
-  desenho da do Elementor, com prévia de verdade de cada seção e clique pra
-  inserir logo depois do bloco selecionado. Arrastar da lista sozinho não
-  dizia o que aqueles nomes eram (Ricardo, 22/10/2026). Seção nova precisa
-  de uma linha em `DESCRICAO_SECAO`. Texto de exemplo novo de seção entra em
-  `EXEMPLO`. Todo bloco entra pronto:
+  confere os dois níveis. Na lista do editor elas vêm antes dos blocos,
+  separadas por categoria (Abertura, Sobre e portfólio, Pacotes e entrega,
+  Contato; os blocos soltos ficam no fim, recolhidos), e cada uma é um
+  cartão com a prévia de verdade (`PreviaSecao.tsx`, iframe de
+  `/atelie/secao/[tipo]`), nome e uma linha: só o nome não dizia o que era
+  nem que era pra arrastar (Ricardo, 22/10/2026). Clicar no cartão insere
+  logo depois do bloco selecionado; arrastar segue com o Puck. O Puck
+  desenha cada item da lista duas vezes, e a cópia de baixo não carrega
+  iframe. Seção nova precisa de uma categoria em `configAtelie.categories`
+  e de uma linha em `DESCRICAO_SECAO`. Texto de exemplo novo de seção entra
+  em `EXEMPLO`. Todo bloco entra pronto:
   o `defaultProps` usa o conteúdo de exemplo de `EXEMPLO` (modelo-guiado.ts),
   nunca entra vazio nem com conteúdo de um estúdio de verdade.
 - **Foto nunca é endereço digitado.** Campo de foto abre a biblioteca

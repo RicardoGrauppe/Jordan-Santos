@@ -10,46 +10,49 @@
     do PuckHeader a partir de 638px). No celular, onde esse quadrado não
     existe, ela fica na ponta esquerda, que lá está vazia porque o Puck
     esconde os botões das laterais;
-  - headerActions: "Seções prontas", antes do Publicar, que abre a
-    biblioteca de seções com prévia (SecoesProntas.tsx). Arrastar da lista
-    da esquerda não dizia sozinho o que aqueles nomes eram.
+  - drawerItem: na lista da esquerda, cada seção pronta vira um cartão com
+    a prévia de verdade dela (PreviaSecao.tsx), nome e uma linha do que vem,
+    no lugar do nome solto: só o nome não dizia o que era aquilo nem que
+    era pra arrastar. Clicar no cartão põe a seção logo depois do bloco
+    selecionado; arrastar continua com o Puck. Os blocos soltos seguem com
+    o item padrão.
 
-  Os botões são o Button e o IconButton do próprio Puck, pra ficar com a
-  cara dele.
+  A seta é o IconButton do próprio Puck, pra ficar com a cara dele.
 */
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { ArrowLeft, LayoutTemplate } from "lucide-react";
-import { Button, createUsePuck, IconButton, Puck, type Config } from "@puckeditor/core";
+import type { ReactNode } from "react";
+import { ArrowLeft } from "lucide-react";
+import { createUsePuck, IconButton, Puck, type Config } from "@puckeditor/core";
 import "@puckeditor/core/no-external.css";
-import { configAtelie, type DadosSite } from "@/lib/atelie/blocos";
+import { configAtelie, DESCRICAO_SECAO, type DadosSite } from "@/lib/atelie/blocos";
 import { DICIONARIO } from "@/lib/atelie/dicionario";
-import type { TipoDeSecao } from "@/lib/atelie/tipos";
-import { SecoesProntas } from "./SecoesProntas";
+import { TIPOS_DE_SECAO, type TipoDeSecao } from "@/lib/atelie/tipos";
+import { PreviaSecao } from "./PreviaSecao";
 
 const usePuck = createUsePuck<typeof configAtelie>();
 
 /* zona raiz do Puck: onde moram os blocos da página */
 const ZONA_RAIZ = "root:default-zone";
 
-/* Abre a biblioteca e põe a seção escolhida logo depois do bloco
-   selecionado (se ele está dentro de uma seção, depois da seção), ou no fim
-   da página. A seção entra selecionada, e a página rola até ela. */
-function BotaoSecoes() {
+const ehSecao = (nome: string): nome is TipoDeSecao => (TIPOS_DE_SECAO as readonly string[]).includes(nome);
+
+/* Cartão de uma seção pronta na lista da esquerda. Clicar põe a seção logo
+   depois do bloco selecionado (se ele está dentro de uma seção, depois da
+   seção), ou no fim da página; ela entra selecionada e a página rola até
+   ela. Arrastar é com o Puck, que envolve este cartão. */
+function CartaoSecao({ tipo }: { tipo: TipoDeSecao }) {
   const dispatch = usePuck((s) => s.dispatch);
   const seletor = usePuck((s) => s.appState.ui.itemSelector);
   const conteudo = usePuck((s) => s.appState.data.content);
-  const [aberto, setAberto] = useState(false);
 
-  function inserir(tipo: TipoDeSecao) {
+  function inserir() {
     const zona = seletor?.zone ?? ZONA_RAIZ;
     const indiceDoPai = zona === ZONA_RAIZ ? -1 : conteudo.findIndex((b) => b.props.id === zona.split(":")[0]);
     const indice = !seletor ? conteudo.length : zona === ZONA_RAIZ ? seletor.index + 1 : indiceDoPai >= 0 ? indiceDoPai + 1 : conteudo.length;
     const id = tipo + "-" + crypto.randomUUID();
     dispatch({ type: "insert", componentType: tipo, destinationIndex: indice, destinationZone: ZONA_RAIZ, id });
     dispatch({ type: "setUi", ui: { itemSelector: { index: indice, zone: ZONA_RAIZ } } });
-    setAberto(false);
     /* a página do editor mora no iframe do Puck; espera ele desenhar */
     setTimeout(() => {
       const quadro = document.getElementById("preview-frame") as HTMLIFrameElement | null;
@@ -58,10 +61,14 @@ function BotaoSecoes() {
   }
 
   return (
-    <>
-      <Button variant="secondary" icon={<LayoutTemplate size={14} />} onClick={() => setAberto(true)}>Seções prontas</Button>
-      {aberto ? <SecoesProntas aoEscolher={inserir} aoFechar={() => setAberto(false)} /> : null}
-    </>
+    <div onClick={inserir} title="Clique pra pôr na página, ou arraste até onde quiser"
+      className="mb-2 cursor-grab overflow-hidden rounded-[10px] bg-white shadow-[0_1px_2px_rgba(0,0,0,.08),0_2px_8px_rgba(0,0,0,.06)] transition-shadow [@media(hover:hover)]:hover:shadow-[0_2px_4px_rgba(0,0,0,.1),0_6px_16px_rgba(0,0,0,.1)]">
+      <PreviaSecao tipo={tipo} />
+      <div className="px-3 pb-2.5 pt-2">
+        <div className="text-[13px] font-semibold leading-tight text-[#1f2329]">{configAtelie.components[tipo].label}</div>
+        <div className="mt-0.5 text-[11.5px] leading-snug text-[#6b7280]">{DESCRICAO_SECAO[tipo]}</div>
+      </div>
+    </div>
   );
 }
 
@@ -95,12 +102,8 @@ export function EditorAtelie({ dados, contato, aoMudar, titulo, aoPublicar, aoVo
             </div>
           </div>
         ),
-        headerActions: ({ children }: { children: ReactNode }) => (
-          <>
-            <BotaoSecoes />
-            {children}
-          </>
-        ),
+        drawerItem: ({ children, name }: { children: ReactNode; name: string }) =>
+          ehSecao(name) ? <CartaoSecao tipo={name} /> : <>{children}</>,
       }}
     />
   );
