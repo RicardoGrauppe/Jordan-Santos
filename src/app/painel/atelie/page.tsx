@@ -93,6 +93,7 @@ function Miniatura({ id, versao, aoPintar }: { id: string; versao: string; aoPin
           aria-hidden="true"
           tabIndex={-1}
           loading="lazy"
+          scrolling="no"
           onLoad={() => { setPronta(versao); aoPintar?.(id); }}
           className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
           style={{ width: LARGURA_SITE, height: LARGURA_SITE / 1.6, transform: `scale(${escala})` }}
@@ -102,7 +103,13 @@ function Miniatura({ id, versao, aoPintar }: { id: string; versao: string; aoPin
           lista chega, o cartão aparece e a capa continua igual até a prévia
           pintar. Um desenho diferente aqui (era um "site falso") parecia um
           segundo skeleton trocando por cima do primeiro. */}
-      <Sk className={"pointer-events-none absolute inset-0 rounded-none transition-opacity duration-500 " + (pronta === versao ? "opacity-0" : "opacity-100")} />
+      {/* Película por cima da prévia: é ELA que recebe o toque. No celular o
+          dedo passando pela miniatura rolava o site lá dentro mesmo com o
+          iframe sem eventos (o iOS entrega o gesto de rolagem pro documento
+          de dentro). Com a película, a miniatura é uma imagem parada e o
+          arrastar rola a página do Ateliê. */}
+      <span aria-hidden className="absolute inset-0 z-[1]" />
+      <Sk className={"pointer-events-none absolute inset-0 z-[2] rounded-none transition-opacity duration-500 " + (pronta === versao ? "opacity-0" : "opacity-100")} />
     </div>
   );
 }
