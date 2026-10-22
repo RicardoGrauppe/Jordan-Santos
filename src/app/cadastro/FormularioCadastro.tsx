@@ -203,7 +203,11 @@ const CSS = `
 .cad .cta:focus-visible{outline:none;background:#333331}
 .cad .cta:disabled{opacity:.5;pointer-events:none}
 .cad .erro{color:var(--erro);font-size:13.5px;text-align:center;margin-top:14px;min-height:18px}
-.cad .sucesso{text-align:center;padding:60px 0}
+/* Recebido: no meio da tela, na altura e na largura, em qualquer tamanho.
+   A página vira uma coluna da altura da tela com o conteúdo centrado. */
+.cad .pagina.centro{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;
+  padding-top:calc(43px + var(--sat));padding-bottom:calc(43px + var(--sab))}
+.cad .sucesso{text-align:center;padding:0}
 .cad .sucesso h1{font-size:32px}
 .cad .sucesso .cta{margin-top:34px}
 
@@ -1105,7 +1109,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
       <style>{CSS}</style>
-      <div className={"pagina" + (etapa === "inicio" && !enviado ? " larga" : "") + (enviado ? "" : " com-barra") +
+      <div className={"pagina" + (etapa === "inicio" && !enviado ? " larga" : "") + (enviado ? " centro" : " com-barra") +
         (etapa !== "inicio" && !enviado ? " com-topo" : "")}>
         {enviado ? (
           <div className="sucesso">
