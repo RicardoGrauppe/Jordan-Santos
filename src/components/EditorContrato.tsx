@@ -113,6 +113,30 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
     return () => ro.disconnect();
   }, [temLateral, editor]);
 
+  /* folha A4 reduzida pra caber (celular), como um leitor de PDF: mede a
+     área e grava o fator em --zoom-folha (globals.css). Nunca aumenta. */
+  const areaFolha = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = areaFolha.current;
+    if (!el) return;
+    const medir = () => {
+      const cs = getComputedStyle(el);
+      const livre = el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      const k = Math.min(1, livre / 793.71);
+      const folha = el.querySelector<HTMLElement>(".ProseMirror");
+      el.style.setProperty("--zoom-folha", String(k));
+      el.style.setProperty("--altura-folha", (folha?.offsetHeight ?? 0) + "px");
+      el.classList.toggle("folha-reduzida", k < 0.999);
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    /* a folha cresce com o texto e com as quebras: a altura recolhida acompanha */
+    const folha = el.querySelector(".ProseMirror");
+    if (folha) ro.observe(folha);
+    return () => ro.disconnect();
+  }, [editor]);
+
   /* celular: a lateral vira gaveta, aberta pelo botão da barra */
   const [gavetaAberta, setGavetaAberta] = useState(false);
   useEffect(() => {
@@ -239,7 +263,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
               {lateral(editor, fecharGaveta)}
             </div>
           </aside>
-          <EditorContent editor={editor} className={"documento-editor folha-a4 min-w-0 flex-1 " + (rodapeMobile ? "com-rodape" : "")} />
+          <EditorContent ref={areaFolha} editor={editor} className={"documento-editor folha-a4 min-w-0 flex-1 " + (rodapeMobile ? "com-rodape" : "")} />
           {rodapeMobile ? (
             <div className="fixed inset-x-0 bottom-0 z-20 bg-paper px-4 pb-[calc(10px+var(--sab))] pt-2.5 shadow-[0_-6px_20px_rgba(29,29,27,.08)] md:hidden">
               {rodapeMobile(() => setGavetaAberta(true))}
@@ -262,7 +286,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
           </div>
         </div>
       ) : (
-        <EditorContent editor={editor} className="documento-editor folha-a4 flex-1" />
+        <EditorContent ref={areaFolha} editor={editor} className="documento-editor folha-a4 flex-1" />
       )}
     </div>
   );

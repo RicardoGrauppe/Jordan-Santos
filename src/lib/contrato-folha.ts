@@ -262,14 +262,20 @@ function montar(doc: NoPM, quebras: Quebra[], sobra: number): DecorationSet {
 
 function calcular(view: EditorView): { quebras: Quebra[]; sobra: number } {
   const raiz = view.dom as HTMLElement;
-  /* celular: o texto se ajusta à tela (globals.css) e não há página pra
-     quebrar; a folha A4 com as quebras é a do computador */
-  if (raiz.offsetWidth < FOLHA.largura - 2) return { quebras: [], sobra: 0 };
-  const topo = raiz.getBoundingClientRect().top + FOLHA.margem;
+  /* Medidas em px da FOLHA, fracionárias. No celular a folha é encolhida por
+     `transform: scale` (layout intacto, só o desenho diminui): a escala vem da
+     largura desenhada sobre a de layout e desfaz a redução. offsetTop seria
+     imune à escala, mas arredonda cada bloco pro pixel e o erro somado chegou
+     a 3px, o bastante pra um título "não caber". */
+  const caixaFolha = raiz.getBoundingClientRect();
+  const k = caixaFolha.width > 0 ? caixaFolha.width / FOLHA.largura : 1;
+  const yDe = (telaY: number) => (telaY - caixaFolha.top) / k;
+  const topoNaFolha = (el: HTMLElement) => yDe(el.getBoundingClientRect().top);
   const espacos = Array.from(raiz.querySelectorAll<HTMLElement>("[data-quebra]"))
-    .map((e) => ({ y: e.getBoundingClientRect().top, h: Number(e.getAttribute("data-quebra")) || 0 }));
-  /* posição "natural": onde estaria sem os espaçadores que já estão na tela */
-  const natural = (y: number) => y - topo - espacos.reduce((s, e) => (e.y < y - 0.5 ? s + e.h : s), 0);
+    .map((e) => ({ y: topoNaFolha(e), h: Number(e.getAttribute("data-quebra")) || 0 }));
+  /* posição "natural": no fluxo do texto, sem a margem de cima da folha e sem
+     os espaçadores que já estão na tela */
+  const natural = (y: number) => y - FOLHA.margem - espacos.reduce((s, e) => (e.y < y - 0.5 ? s + e.h : s), 0);
 
   const quebras: Quebra[] = [];
   let desloc = 0;
@@ -295,20 +301,24 @@ function calcular(view: EditorView): { quebras: Quebra[]; sobra: number } {
   for (const u of unidades) {
     const cs = getComputedStyle(u.el);
     const r = u.el.getBoundingClientRect();
-    const t = natural(r.top) - (parseFloat(cs.marginTop) || 0);
-    const b = natural(r.bottom) + (parseFloat(cs.marginBottom) || 0);
+    const t = natural(yDe(r.top)) - (parseFloat(cs.marginTop) || 0);
+    const b = natural(yDe(r.bottom)) + (parseFloat(cs.marginBottom) || 0);
     if (b + desloc <= limite(t + desloc) + 0.5) continue;
 
     if (u.partivel) {
-      /* parágrafo: parte na primeira linha que passa do fim da página */
+      /* parágrafo: parte na primeira linha que passa do fim da página. As
+         linhas vêm do navegador em px de tela; `escala` desfaz o zoom */
+      const el = u.partivel;
       const range = document.createRange();
-      range.selectNodeContents(u.partivel);
-      const linhas: { top: number; bottom: number; left: number }[] = [];
+      range.selectNodeContents(el);
+      const linhas: { top: number; bottom: number; left: number; topTela: number; bottomTela: number }[] = [];
       for (const rr of Array.from(range.getClientRects())) {
         if (rr.height === 0 || rr.width === 0) continue;
+        const top = yDe(rr.top);
+        const bottom = yDe(rr.bottom);
         const ult = linhas[linhas.length - 1];
-        if (ult && Math.abs(ult.top - rr.top) < 2) { ult.bottom = Math.max(ult.bottom, rr.bottom); ult.left = Math.min(ult.left, rr.left); }
-        else linhas.push({ top: rr.top, bottom: rr.bottom, left: rr.left });
+        if (ult && Math.abs(ult.top - top) < 2) { ult.bottom = Math.max(ult.bottom, bottom); ult.left = Math.min(ult.left, rr.left); ult.bottomTela = Math.max(ult.bottomTela, rr.bottom); }
+        else linhas.push({ top, bottom, left: rr.left, topTela: rr.top, bottomTela: rr.bottom });
       }
       let partiu = false;
       for (let i = 0; i < linhas.length; i++) {
@@ -321,7 +331,7 @@ function calcular(view: EditorView): { quebras: Quebra[]; sobra: number } {
           quebras.push({ pos: u.pos, dentro: false, preencher: Math.max(0, lim - (t + desloc)) });
           desloc += Math.max(0, lim - (t + desloc));
         } else {
-          const alvo = view.posAtCoords({ left: linhas[i].left + 1, top: (linhas[i].top + linhas[i].bottom) / 2 });
+          const alvo = view.posAtCoords({ left: linhas[i].left + 1, top: (linhas[i].topTela + linhas[i].bottomTela) / 2 });
           if (!alvo) continue;
           quebras.push({ pos: alvo.pos, dentro: true, preencher });
           desloc += preencher;
@@ -340,7 +350,7 @@ function calcular(view: EditorView): { quebras: Quebra[]; sobra: number } {
   }
 
   const ultima = unidades[unidades.length - 1];
-  const fim = ultima ? natural(ultima.el.getBoundingClientRect().bottom) + desloc : 0;
+  const fim = ultima ? natural(yDe(ultima.el.getBoundingClientRect().bottom)) + desloc : 0;
   const sobra = limite(Math.max(0, fim - 0.5)) - fim;
   return { quebras, sobra };
 }
