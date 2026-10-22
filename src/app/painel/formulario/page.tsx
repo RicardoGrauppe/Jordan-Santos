@@ -19,7 +19,7 @@ import {
   ArrowDown, ArrowUp, Asterisk, CalendarHeart, ExternalLink, Eye, EyeOff, Info, Lock, LockOpen, MapPin, Pencil, Plus,
   Sparkles, Trash2, TriangleAlert, UserRound, X,
 } from "lucide-react";
-import { Botao, BotaoVoltar, Campo, CartaoAviso, Estado, Selo } from "@/components/ui";
+import { Botao, BotaoVoltar, Campo, CartaoAviso, Chave, Estado, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { EditorFotos } from "./EditorFotos";
@@ -514,8 +514,12 @@ export default function PaginaFormulario() {
     if (!form || form.perguntas.length >= LIMITES.perguntas) return;
     const id = novoIdPergunta();
     setNovaId(id);
+    /* primeira pergunta de "Conta pra gente" já liga a etapa: senão seria
+       uma pergunta que ninguém vê */
+    const ligaExtra = secao === "extra" && !form.perguntas.some((p) => p.secao === "extra");
     mudar({
       ...form,
+      extraAtiva: ligaExtra ? true : form.extraAtiva,
       perguntas: [...form.perguntas, {
         id, secao, tipo: "texto", rotulo: "", placeholder: "", obrigatorio: false, visivel: true, travado: false, opcoes: [],
       }],
@@ -587,6 +591,15 @@ export default function PaginaFormulario() {
             const Icone = ICONE_SECAO[secao.id];
             const fixos = CAMPOS_FIXOS.filter((c) => c.secao === secao.id);
             const perguntas = form.perguntas.filter((p) => p.secao === secao.id);
+            /* "Conta pra gente" é a única etapa que se liga e desliga inteira
+               (brandbook 18); as outras têm campos que o contrato usa */
+            const ligavel = secao.id === "extra";
+            const desligada = ligavel && !form.extraAtiva;
+            const temPergunta = perguntas.some((p) => p.visivel && p.rotulo.trim());
+            const estadoEtapa = !ligavel ? null
+              : desligada ? "O casal não vê esta etapa."
+              : temPergunta ? "Aparece pro casal no fim do formulário."
+              : "Ainda sem perguntas: não aparece pro casal.";
             return (
               <section key={secao.id} className="mb-4 rounded-[22px] bg-paper px-4 pb-5 pt-[20px] shadow-card md:px-6 md:pb-6">
                 <h2 className="m-0 flex items-center gap-[9px] text-[13px] font-semibold tracking-[.02em] text-ink">
@@ -596,24 +609,40 @@ export default function PaginaFormulario() {
                   <TituloEtapa valor={form.titulos[secao.id]} padrao={secao.titulo}
                     aoMudar={(v) => mudar({ ...form, titulos: { ...form.titulos, [secao.id]: v } })} />
                 </h2>
+                {/* liga/desliga numa linha própria, embaixo do título: no
+                    cabeçalho a chave cortava o título no celular */}
+                {estadoEtapa ? (
+                  <div className="mt-2 flex items-center gap-3 rounded-[12px] bg-soft py-1.5 pl-3 pr-2">
+                    <p className={"m-0 min-w-0 flex-1 text-[12.5px] font-medium " +
+                      (desligada ? "text-ink-soft" : temPergunta ? "text-ok" : "text-[#7A5A11]")}>
+                      {estadoEtapa}
+                    </p>
+                    <Chave rotulo={form.extraAtiva ? "Ativa" : "Desativada"} ligada={form.extraAtiva}
+                      aoMudar={(v) => mudar({ ...form, extraAtiva: v })} />
+                  </div>
+                ) : null}
                 {AJUDA_SECAO[secao.id] ? (
-                  <p className="m-0 mt-2 text-[12.5px] text-ink-soft">{AJUDA_SECAO[secao.id]}</p>
+                  <p className={"m-0 text-[12.5px] text-ink-soft " + (estadoEtapa ? "mt-1" : "mt-2")}>{AJUDA_SECAO[secao.id]}</p>
                 ) : null}
 
-                <ExplicacaoEtapa id={"explica-" + secao.id} valor={form.explicacoes[secao.id]} padrao={EXPLICACAO_PADRAO[secao.id]}
-                  aoMudar={(v) => mudar({ ...form, explicacoes: { ...form.explicacoes, [secao.id]: v } })} />
+                {/* desligada, o conteúdo esmaece mas continua editável: dá pra
+                    preparar as perguntas antes de ligar */}
+                <div className={desligada ? "opacity-60" : ""}>
+                  <ExplicacaoEtapa id={"explica-" + secao.id} valor={form.explicacoes[secao.id]} padrao={EXPLICACAO_PADRAO[secao.id]}
+                    aoMudar={(v) => mudar({ ...form, explicacoes: { ...form.explicacoes, [secao.id]: v } })} />
 
-                <div className="mt-4 flex flex-col gap-2">
-                  {fixos.map((def) => (
-                    <LinhaCampoFixo key={def.id} def={def} ajuste={form.campos[def.id]} parNomes={regraDoPar(form)}
-                      aoMudar={(a) => mudarCampo(def.id, a)} />
-                  ))}
-                  {perguntas.map((p, i) => (
-                    <LinhaPergunta key={p.id} pergunta={p} titulos={form.titulos} abertaInicial={p.id === novaId}
-                      primeira={i === 0} ultima={i === perguntas.length - 1}
-                      aoMudar={mudarPergunta} aoMover={(passo) => moverPergunta(p, passo)}
-                      aoApagar={() => void apagarPergunta(p)} />
-                  ))}
+                  <div className="mt-4 flex flex-col gap-2">
+                    {fixos.map((def) => (
+                      <LinhaCampoFixo key={def.id} def={def} ajuste={form.campos[def.id]} parNomes={regraDoPar(form)}
+                        aoMudar={(a) => mudarCampo(def.id, a)} />
+                    ))}
+                    {perguntas.map((p, i) => (
+                      <LinhaPergunta key={p.id} pergunta={p} titulos={form.titulos} abertaInicial={p.id === novaId}
+                        primeira={i === 0} ultima={i === perguntas.length - 1}
+                        aoMudar={mudarPergunta} aoMover={(passo) => moverPergunta(p, passo)}
+                        aoApagar={() => void apagarPergunta(p)} />
+                    ))}
+                  </div>
                 </div>
 
                 <button

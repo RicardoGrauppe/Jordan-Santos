@@ -164,6 +164,10 @@ export type Formulario = {
   titulos: Record<SecaoFormulario, string>;
   /** explicação de cada etapa (card azul do /cadastro); vazio volta o padrão */
   explicacoes: Record<SecaoFormulario, string>;
+  /** "Conta pra gente" ligada: a única etapa que se desliga inteira (as
+      outras têm campos que o contrato usa). Desligada, as perguntas dela
+      não aparecem nem são cobradas. */
+  extraAtiva: boolean;
   campos: Record<CampoFixoId, AjusteCampo>;
   perguntas: Pergunta[];
   fotos: FotoAbertura[];
@@ -205,6 +209,7 @@ export function formularioPadrao(): Formulario {
   return {
     titulos: { ...TITULO_SECAO },
     explicacoes: { ...EXPLICACAO_PADRAO },
+    extraAtiva: false,
     campos: Object.fromEntries(CAMPOS_FIXOS.map((d) => [d.id, ajustePadrao(d)])) as Record<CampoFixoId, AjusteCampo>,
     perguntas: [],
     fotos: FOTOS_PADRAO.map((f) => ({ ...f })),
@@ -286,6 +291,12 @@ export function normalizarFormulario(bruto: unknown): Formulario {
     .filter((p): p is Pergunta => !!p && !vistos.has(p.id) && !!vistos.add(p.id))
     .slice(0, LIMITES.perguntas);
 
+  /* config de antes da chave: fica ligada se já tinha pergunta ali, que é
+     como ela se comportava (aparecia quando tinha pergunta) */
+  saida.extraAtiva = typeof b.extraAtiva === "boolean"
+    ? b.extraAtiva
+    : saida.perguntas.some((p) => p.secao === "extra");
+
   /* sem a chave (config antiga) ou com a lista vazia, valem as do portfólio:
      a abertura nunca fica sem foto */
   if (Array.isArray(b.fotos)) {
@@ -327,7 +338,9 @@ export function regraDoPar(f: Formulario): boolean {
 
 /** Perguntas que o casal vê: as que têm texto e, se forem de escolha, opções. */
 export function perguntasVisiveis(f: Formulario): Pergunta[] {
-  return f.perguntas.filter((p) => p.visivel && p.rotulo && (p.tipo !== "escolha" || p.opcoes.some(Boolean)));
+  return f.perguntas.filter((p) =>
+    p.visivel && p.rotulo && (p.tipo !== "escolha" || p.opcoes.some(Boolean)) &&
+    (p.secao !== "extra" || f.extraAtiva));
 }
 
 /**
