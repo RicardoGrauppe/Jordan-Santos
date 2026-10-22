@@ -740,10 +740,22 @@ function item<T extends TipoDeBloco>(type: T, mudancas: Partial<Blocos[T]> = {})
   return { type, props: { ...configBase.components[type].defaultProps, ...mudancas } } as ItemDaSecao;
 }
 
+function AjudaDaSecao() {
+  return (
+    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "var(--puck-color-text-muted, #6b7280)" }}>
+      Esta seção é um grupo de blocos. Clique num bloco dela, na página, pra editar o texto e as fotos. Pra tirar a seção inteira, use a lixeira acima dela.
+    </p>
+  );
+}
+
 function secao(label: string, blocos: ItemDaSecao[]) {
   return {
     label,
-    fields: { blocos: { type: "slot" as const, allow: [...TIPOS_DE_BLOCO] } },
+    fields: {
+      /* seção não tem campo próprio, e o painel da direita ficaria em branco */
+      ajuda: { type: "custom" as const, label: "", render: AjudaDaSecao },
+      blocos: { type: "slot" as const, allow: [...TIPOS_DE_BLOCO] },
+    },
     defaultProps: { blocos: blocos as unknown as Slot },
     render: ({ blocos: Conteudo }: { blocos: () => ReactNode }) => <Conteudo />,
   };
@@ -762,6 +774,29 @@ const SECOES: Record<TipoDeSecao, ReturnType<typeof secao>> = {
   SecaoEntrega: secao("Entrega e álbum", [item("TextoComFotos"), item("Cartoes")]),
   SecaoContato: secao("Contato e rodapé", [item("Chamada"), item("Rodape")]),
 };
+
+/* Uma linha do que vem em cada seção, pro cartão da biblioteca de seções. */
+export const DESCRICAO_SECAO: Record<TipoDeSecao, string> = {
+  SecaoAbertura: "Capa com o logo e um texto de apresentação",
+  SecaoSobre: "Foto sua com texto e uma frase sobre foto",
+  SecaoPortfolio: "Título e uma galeria com 6 fotos",
+  SecaoPacotes: "Pacotes com preço e a lista de adicionais",
+  SecaoEntrega: "Como você entrega, com fotos, e as opções de álbum",
+  SecaoContato: "Botão do WhatsApp e o rodapé com os contatos",
+};
+
+/** Uma seção pronta com ids, do jeito que o Puck a deixaria ao inserir: é o
+    que a prévia da biblioteca de seções desenha sozinho numa página. */
+export function secaoComIds(tipo: TipoDeSecao): DadosSite["content"][number] {
+  const filhos = SECOES[tipo].defaultProps.blocos as unknown as ItemDaSecao[];
+  return {
+    type: tipo,
+    props: {
+      id: tipo + "-previa",
+      blocos: filhos.map((b, i) => ({ ...b, props: { ...b.props, id: b.type + "-previa-" + i } })) as unknown as Slot,
+    },
+  } as DadosSite["content"][number];
+}
 
 /* Na lista do editor, as seções vêm antes: quem começa do zero monta a
    página mais rápido com elas, e os blocos soltos ficam pra ajustar. */
