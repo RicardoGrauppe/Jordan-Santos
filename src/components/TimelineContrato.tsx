@@ -120,7 +120,7 @@ export function TimelineContrato({
             ) : null}
             <Botao variante="secundario" className="text-accent" onClick={onAbrirContrato}>
               {jaAssinado ? <FileCheck size={16} /> : <FileText size={16} />}
-              {contrato.autentique_id ? "Abrir na Autentique" : jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
+              {contrato.autentique_id || jaAssinado ? "Abrir contrato" : "Abrir rascunho"}
               <ExternalLink size={14} className="opacity-60" />
             </Botao>
             {/* Já foi pra Autentique e o casal ainda não assinou: dá pra voltar
