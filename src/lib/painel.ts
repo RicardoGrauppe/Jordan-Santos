@@ -280,3 +280,29 @@ export async function buscarClima(loc: Localizacao | null | undefined): Promise<
     };
   } catch { return null; }
 }
+
+/* ---------- cota da Autentique ---------- */
+
+type RespostaCota = {
+  cota: { total: number; usados: number; restantes: number; renovaEm: string | null } | null;
+  sandbox: boolean;
+};
+
+/**
+ * Frase pros pop-ups que avisam que reenviar pra Autentique gasta um
+ * documento, com quantos ainda sobram no mês. Nunca falha: sem resposta da
+ * Autentique, avisa sem o número.
+ */
+export async function avisoDeCota(clienteId: string): Promise<string> {
+  const r = await api<RespostaCota>("/api/estudio", { acao: "cota-autentique", id: clienteId }).catch(() => null);
+  const c = r?.cota;
+  const renova = c?.renovaEm
+    ? " (renova em " + new Date(c.renovaEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + ")"
+    : "";
+  const saldo = c && c.total ? "Restam " + c.restantes + " de " + c.total + " documentos neste mês" + renova + "." : "";
+  /* modo de teste: o reenvio não gasta, mas o saldo de verdade continua útil */
+  if (r?.sandbox) return "Modo de teste ligado: este reenvio não gasta documento da Autentique." + (saldo ? " " + saldo : "");
+  if (!saldo) return "Reenviar usa 1 documento da Autentique do mês.";
+  if (c!.restantes <= 0) return "Não sobrou documento da Autentique neste mês" + renova + ". O reenvio só vai passar quando a cota renovar.";
+  return "Reenviar usa 1 documento da Autentique. " + saldo;
+}

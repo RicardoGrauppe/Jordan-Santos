@@ -19,6 +19,7 @@ import { rest } from "@/lib/supabase";
 import { montarPdfDoContrato, type LinhaParaPdf } from "@/lib/contrato-pdf/montar";
 import {
   apagarDocumento, assinarComoDono, baixarAssinado, buscarDocumento, conta, criarDocumento, ehSandbox,
+  linkDoSignatario, recriarSignatario, reenviarEmail, trocarSignatario,
   type DocumentoAutentique,
 } from "@/lib/autentique";
 
@@ -32,6 +33,7 @@ export type LinhaContratoAutentique = LinhaParaPdf & {
   assinado_em?: string | null;
   pdf_base64?: string | null;
   autentique_hash?: string | null;
+  autentique_email?: unknown;
   snapshot?: unknown;
 };
 
@@ -97,9 +99,12 @@ export async function enviarParaAssinatura(
 
   await assinarComoDono(documento.id);
 
-  /* relê depois de assinar: é aí que o link do casal passa a valer */
+  /* relê depois de assinar: é aí que o casal passa a ser a vez. No modo
+     e-mail o link não vem junto; pede à parte pra o painel ter o que copiar */
   const atualizado = await buscarDocumento(documento.id).catch(() => documento);
-  const link = assinaturaDoCasal(atualizado, dono.email)?.link?.short_link ?? null;
+  const sigCasal = assinaturaDoCasal(atualizado, dono.email);
+  const link = sigCasal?.link?.short_link
+    ?? (sigCasal ? await linkDoSignatario(sigCasal.public_id).catch(() => null) : null);
 
   const agora = new Date().toISOString();
   await rest("contratos?id=eq." + c.id, {
@@ -109,6 +114,8 @@ export async function enviarParaAssinatura(
       autentique_link: link,
       autentique_sandbox: ehSandbox(),
       autentique_hash: await hashDoConteudo(c),
+      /* documento novo: o e-mail do anterior não vale pra este */
+      autentique_email: null,
       status: "enviado",
       enviado_em: agora,
       /* documento novo começa do zero: o "visto" do documento anterior não
@@ -141,6 +148,45 @@ export async function substituirNaAutentique(
 }
 
 /**
+ * O e-mail do casal estava errado: troca o signatário NO MESMO documento
+ * (ver trocarSignatario). Sem documento novo, então sem gastar cota e sem
+ * mexer na assinatura do fotógrafo. Devolve o link novo do casal.
+ */
+export async function trocarEmailDoCasal(
+  c: LinhaContratoAutentique,
+  casal: ContatoCasal,
+): Promise<{ link: string | null }> {
+  if (!c.autentique_id) throw new Error("este contrato ainda não foi pra Autentique");
+  const dono = await conta();
+  if (casal.email.toLowerCase() === dono.email.toLowerCase()) {
+    throw new Error("esse é o e-mail da sua conta na Autentique; use o e-mail do casal");
+  }
+  const doc = await buscarDocumento(c.autentique_id);
+  const antiga = assinaturaDoCasal(doc, dono.email);
+  if (!antiga) throw new Error("não achei a assinatura do casal no documento da Autentique");
+  if (antiga.signed?.created_at) throw new Error("o casal já assinou, não dá mais pra trocar o e-mail");
+  /* mesmo e-mail: é reenvio. Em modo e-mail, a Autentique manda de novo; em
+     modo link (contratos de antes de a entrega voltar a ser por e-mail),
+     recria o signatário em modo e-mail pra ela mandar. */
+  if ((antiga.email || "").toLowerCase() === casal.email.toLowerCase()) {
+    if (antiga.delivery_method === "DELIVERY_METHOD_EMAIL") {
+      await reenviarEmail(antiga.public_id);
+      const link = antiga.link?.short_link ?? await linkDoSignatario(antiga.public_id).catch(() => null);
+      return { link };
+    }
+    const recriada = await recriarSignatario(doc.id, antiga.public_id, { nome: casal.nome || "Contratante", email: casal.email });
+    return { link: recriada.link?.short_link ?? await linkDoSignatario(recriada.public_id).catch(() => null) };
+  }
+  const nova = await trocarSignatario(doc.id, antiga.public_id, { nome: casal.nome || "Contratante", email: casal.email });
+  let link = nova.link?.short_link ?? await linkDoSignatario(nova.public_id).catch(() => null);
+  if (!link) {
+    const atual = await buscarDocumento(doc.id).catch(() => null);
+    link = (atual && assinaturaDoCasal(atual, dono.email)?.link?.short_link) ?? null;
+  }
+  return { link };
+}
+
+/**
  * Pergunta o estado à Autentique e escreve nas colunas de sempre. Devolve o
  * contrato como ficou (ou null quando não há o que sincronizar), pra quem
  * chamou responder sem uma segunda consulta.
@@ -158,6 +204,10 @@ export async function sincronizarContrato(
   const mudanca: Record<string, unknown> = {};
   const link = casal.link?.short_link ?? null;
   if (link && link !== c.autentique_link) mudanca.autentique_link = link;
+  /* status do e-mail que a Autentique mandou pro casal (entregue, aberto,
+     recusado e por quê): vira a linha embaixo de "Enviado ao casal" */
+  const ev = casal.email_events;
+  if (ev && JSON.stringify(ev) !== JSON.stringify(c.autentique_email ?? null)) mudanca.autentique_email = ev;
 
   if (casal.rejected?.created_at && c.status !== "cancelado") {
     mudanca.status = "cancelado";
@@ -204,7 +254,7 @@ export async function sincronizarContrato(
 export async function sincronizarPorDocumento(autentiqueId: string): Promise<boolean> {
   const linhas = await rest<LinhaContratoAutentique[]>(
     "contratos?autentique_id=eq." + encodeURIComponent(autentiqueId) +
-    "&select=id,status,autentique_id,autentique_link,visualizado_em,assinado_em,snapshot,template_id,template_json_snapshot,jordan_assinatura_dataurl&limit=1",
+    "&select=id,status,autentique_id,autentique_link,autentique_email,visualizado_em,assinado_em,snapshot,template_id,template_json_snapshot,jordan_assinatura_dataurl&limit=1",
   );
   const c = linhas && linhas[0];
   if (!c) return false;

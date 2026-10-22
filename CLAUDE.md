@@ -20,16 +20,17 @@ Tiptap (editor de contrato) · jose (cookie de sessão).
 src/app/entrar               login
 src/app/painel/              área logada; layout.tsx checa a sessão: tela nova nasce protegida
   page.tsx                   home (saudação, clima, KPIs, próximos eventos, links)
-  clientes/                  lista, [id] (ficha), [id]/contrato (revisão e confirmação)
+  clientes/                  lista, [id] (ficha), [id]/contrato/editar (editor do contrato do cliente), [id]/contrato (revisão antiga, texto fixo)
+  produtos/                  produtos e serviços (catálogo de pacotes e adicionais, tabela `produtos`)
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
   formulario/                editor do /cadastro (fotos da abertura, texto, aparece, obrigatório, perguntas novas)
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             proposta comercial que o casal lê
-src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), formulario (+ fotos)
+src/app/api/                 sessao, config, templates, produtos, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), formulario (+ fotos)
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
-                             catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
+                             produtos.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              formulario.ts (regras e travas), formulario-servidor.ts (config no banco),
                              formulario-fotos.ts (fotos da abertura no Storage),
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes)
@@ -65,6 +66,30 @@ não a que você digitou. Deixe só `hidden` + `md:inline-flex`.
 Sempre o Supabase local em Docker (`supabase start`, portas 553xx), nunca o
 banco do Jordan. `supabase/migrations/` é a verdade do schema: coluna nova
 entra como migração, nunca por `alter table` solto no psql.
+O banco local é compartilhado com as worktrees de outras sessões: se o
+`migration up` recusar por versões que só existem noutra branch, aplique o
+SQL da sua migração com `psql` e registre a versão em
+`supabase_migrations.schema_migrations`, sem `repair` (apagaria o histórico
+delas).
+
+O editor de contrato (cliente e modelos) é uma **folha A4 com as medidas do
+PDF** (`lib/contrato-folha.ts` + `.folha-a4` no globals.css, Roboto 10 pt,
+margem 56 pt): a quebra de página é simulada como o pdfmake faz (bloco que não
+cabe desce, parágrafo é partido na linha) e bateu linha a linha com o PDF
+gerado. Mudou medida, fonte ou margem no `gerar-pdfmake.ts`? Mude nos dois
+lugares. O documento NUNCA é responsivo: no celular é a mesma A4 encolhida por
+`transform: scale` (como um leitor de PDF; `zoom` refazia a quebra de linha e
+mudava as páginas), e a paginação mede em px fracionários desfazendo a escala.
+Campo dentro da folha usa a fonte do PDF (a regra global de 16px no celular
+cresce a tabela e muda a quebra). A ação principal e o "Painel" ficam numa
+barra fixa embaixo no celular. A tabela de itens e o bloco de assinaturas são desenhados de verdade;
+no contrato do cliente a tabela é sempre digitável: mexer numa célula fixa as
+linhas em `attrs.linhas` do nó (o PDF respeita); "Voltar pro pacote" desfaz.
+
+Pacote, adicionais, total e entrada se escolhem no cartão "Pacote e valores"
+do editor do contrato, com as opções de `produtos`; a ficha só mostra o
+resumo e não manda esses campos no salvamento. O item guarda o valor do
+momento da escolha (o catálogo pode mudar depois).
 
 ## Assinatura: Autentique (desde 21/10/2026)
 
@@ -80,24 +105,27 @@ folha de comprovante**, sobe pra Autentique com dois signatários em ordem
 (`sortable`), assina pelo dono da chave (`signDocument`, que não gera e-mail
 pra ele) e devolve o link curto do casal, que o fotógrafo manda por WhatsApp.
 Não existe mais assinatura do fotógrafo dentro do app: o clique é a assinatura.
-Depois de enviado, o botão principal é sempre "Abrir na Autentique".
+Enquanto a Autentique responde, o editor mostra uma tela de carregamento; deu certo, volta pra ficha com `?enviado=1` (ou `=atualizado`), e a ficha abre o pop-up de compartilhar (`ModalContratoEnviado`: duas caixas com "Copiar", o link sozinho e a mensagem pronta com o link, e "Ver contrato" no painel da Autentique; o link é um por pessoa e serve em qualquer canal). Esse pop-up só lê o link (`apenasLink`). Depois de enviado, o botão principal é sempre "Abrir na Autentique".
 
 **Editar depois de enviado = documento novo.** A Autentique não troca o
 arquivo de um documento (`updateDocument` só mexe em nome/mensagem), então
 "Atualizar na Autentique" apaga o documento de lá e cria outro: o link do casal
-muda e gasta 1 da cota de 10/mês. Por isso a tela pede confirmação. Quem diz se
+muda e gasta 1 da cota do mês (o plano gratuito do Jordan dá **20**/mês; `cotaDocumentos()` em `lib/autentique.ts` conta quanto sobra e os pop-ups mostram). Por isso a tela pede confirmação, e a ficha também pede antes de abrir o editor de um contrato já enviado. Quem diz se
 houve mudança é `autentique_hash` (sha256 do texto + dados do casal no envio),
 calculado só no servidor. Contrato de texto fixo antigo (sem
 `template_json_snapshot`) não é editável e cai na revisão antiga
 (`rotaDaRevisaoAntiga`).
 
-**Entrega é por LINK (`DELIVERY_METHOD_LINK`), e isso não é detalhe.** Medido
-em 22/10/2026, no primeiro envio real: no modo e-mail (o padrão) a Autentique
-não manda link nenhum na resposta (`link: null` pros dois) e o painel fica sem
-nada pra copiar, que foi o erro "a Autentique ainda não devolveu o link". No
-modo link ela devolve o `short_link` e **não manda e-mail**: quem entrega o
-contrato é o fotógrafo. O link segue amarrado ao e-mail do signatário, que
-confirma identidade pra assinar, então mandar por WhatsApp não afrouxa nada.
+**Entrega é por E-MAIL, e o link vem à parte.** No modo e-mail
+(`DELIVERY_METHOD_EMAIL`) a Autentique manda o pedido de assinatura pro casal,
+mas a criação devolve `link: null`; o link pra copiar/WhatsApp sai de
+`createLinkToSignature(public_id)` (`linkDoSignatario`). Medido em 22/10/2026:
+o sandbox manda e-mail de verdade, e `signatures.email_events` diz enviado,
+entregue, aberto e recusado com o motivo (copiado pra `contratos.autentique_email`
+na sincronização e mostrado embaixo de "Enviado ao casal"; o primeiro teste
+voltou com "caixa cheia"). Contratos criados antes, em modo link
+(`DELIVERY_METHOD_LINK`, que não manda e-mail), passam pro modo e-mail no
+"Reenviar" (mesmo e-mail), que recria o signatário.
 
 O estado continua nas colunas de sempre (`status`, `visualizado_em`,
 `assinado_em`, `pdf_base64`): `lib/contrato-autentique.ts` traduz o que vem de
@@ -106,6 +134,15 @@ lá. Dois caminhos trazem a novidade, e os dois terminam na mesma função:
 webhook em `/api/autentique`, que só entra em serviço quando houver endereço
 público. Recusa cai em `status: cancelado` + `recusado_em`, porque o CHECK da
 tabela não tem "recusado".
+
+**E-mail do casal errado não recria documento.** "Trocar e-mail e reenviar"
+(cartão do contrato na ficha) troca o signatário NO MESMO documento
+(`createSigner` + `deleteSigner`, nessa ordem): a assinatura do fotógrafo
+fica, não gasta cota, só o link do casal muda. Com o MESMO e-mail vira
+"Reenviar": `resendSignatures` se o signatário já é de e-mail; senão recria
+(a Autentique recusa dois iguais, `signer_already_exists`). Enquanto o contrato espera o
+casal, o campo de e-mail da ficha fica só leitura e aponta pra esse botão. A
+Autentique recusa e-mail com "+" (`format_is_invalid`).
 
 Cancelar no painel **apaga o documento na Autentique**, senão o link curto
 seguiria de pé e um contrato cancelado aqui voltaria assinado de lá.

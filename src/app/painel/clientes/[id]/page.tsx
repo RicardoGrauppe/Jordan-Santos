@@ -14,11 +14,11 @@
     o último salvamento).
   - CPF e CEP: máscara ao digitar, formatado ao exibir, só dígitos ao salvar.
     Não é cosmético: o índice único do banco é (cpf_noivo, data_evento).
-  - Total = soma dos itens, entrada = 30%. Total editado à mão recalcula a
-    entrada; editar a entrada não mexe no total.
-  - A ÚNICA trava de edição é o casal já ter assinado: aí pacote, adicionais,
-    total e entrada ficam só leitura, e nem entram no payload (o servidor os
-    descartaria e a comparação de "já salvo" acusaria mudança pra sempre).
+  - Pacote, adicionais, total e entrada NÃO se editam aqui desde 22/10/2026:
+    a escolha mora no cartão "Pacote e valores" do editor do contrato, com as
+    opções de Produtos e serviços. A ficha só mostra o resumo e nunca manda
+    esses três campos no payload (senão uma ficha aberta noutra aba
+    sobrescreveria o que foi escolhido no contrato).
   - Gerar contrato não exige ficha completa: a lista do que falta vai como
     aviso na confirmação, sem impedir.
   - autoComplete="off" em tudo: o navegador lia os rótulos (E-mail, CEP...),
@@ -28,24 +28,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { CalendarHeart, ChevronDown, ClipboardList, File, FileCheck, FileText, Heart, MapPin, NotebookPen } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { CalendarHeart, ChevronDown, ClipboardList, Heart, MapPin, NotebookPen, Mail, Package } from "lucide-react";
 import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
-import { SecaoFicha, AcaoSecao } from "@/components/SecaoFicha";
+import { SecaoFicha } from "@/components/SecaoFicha";
 import { CampoCopiavel } from "@/components/CampoCopiavel";
 import { HeroCliente } from "@/components/HeroCliente";
 import { TituloMobile } from "@/components/cabecalho-mobile";
-import { PillsPacote, ResumoItens } from "@/components/PillsPacote";
-import { TimelineContrato } from "@/components/TimelineContrato";
+import { ContratoVazio, TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
-import { CATALOGO, PACOTES } from "@/lib/catalogo";
-import { abrirContratoEmNovaGuia, rotaDoContrato } from "@/lib/painel";
+import { ModalContratoEnviado, type DadosEnviado } from "@/components/ModalContratoEnviado";
+import { ModalTrocarEmail } from "@/components/ModalTrocarEmail";
+import { abrirContratoEmNovaGuia, avisoDeCota, rotaDoContrato, urlNoAutentique } from "@/lib/painel";
 import { exibirResposta, respostasDoCliente } from "@/lib/formulario";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
-  formatarMoeda, parseMoeda, soDigitos, copiarTexto,
+  formatarMoeda, soDigitos, copiarTexto,
   type CampoFicha, type Cliente, type Contrato, type Ficha, type ItemContrato,
 } from "@/lib/ficha";
 
@@ -109,27 +109,19 @@ function fichaDe(cliente: Cliente | null): Ficha {
 function itensDe(cliente: Cliente | null): ItemContrato[] {
   if (!cliente || !Array.isArray(cliente.itens)) return [];
   return cliente.itens.map((i) => {
-    const cat = CATALOGO[i.id];
-    return { id: i.id, nome: cat ? cat.nome : i.nome, valor: Number(i.valor) };
+    return { id: i.id, nome: i.nome, valor: Number(i.valor) };
   });
 }
 
-/** Lê a ficha como o backend espera (números crus, só dígitos, itens). */
-function montarCliente(ficha: Ficha, itens: ItemContrato[], travado: boolean): Record<string, unknown> {
+/** Lê a ficha como o backend espera (só dígitos onde precisa). */
+function montarCliente(ficha: Ficha): Record<string, unknown> {
   const cliente: Record<string, unknown> = { ...ficha };
-  (["total", "entrada"] as const).forEach((k) => {
-    if (ficha[k]) cliente[k] = ficha[k].replace(/\./g, "").replace(",", ".");
-  });
   SO_DIGITOS_AO_SALVAR.forEach((k) => {
     if (ficha[k]) cliente[k] = soDigitos(ficha[k]);
   });
-  cliente.itens = itens;
-  /* casal já assinou: nem manda os valores. O servidor descarta esses três
-     campos nesse caso, então enviá-los faria a tela dizer "Salvo" sobre algo
-     que foi jogado fora, e a comparação acusaria mudança pra sempre. */
-  if (travado) {
-    delete cliente.itens; delete cliente.total; delete cliente.entrada;
-  }
+  /* pacote e valores são do editor do contrato (ver o cabeçalho) */
+  delete cliente.total;
+  delete cliente.entrada;
   return cliente;
 }
 
@@ -165,6 +157,14 @@ export default function PaginaCliente() {
   const { id: idRota } = useParams<{ id: string }>();
   const ehNovo = idRota === "novo";
   const router = useRouter();
+  /* `?campo=email`: quem chega mandado pra preencher um campo (hoje, o
+     editor do contrato quando falta o e-mail pra Autentique) cai com a seção
+     aberta e o cursor no campo */
+  const parametros = useSearchParams();
+  const campoAlvo = parametros.get("campo");
+  /* `?enviado=1|atualizado`: o editor do contrato acabou de mandar pra
+     Autentique e voltou pra cá; a ficha abre o pop-up de compartilhar */
+  const enviadoAgora = parametros.get("enviado");
   const confirmar = useConfirmar();
   const { mostrar: avisar, elemento: toast } = useToast();
 
@@ -177,9 +177,15 @@ export default function PaginaCliente() {
   const [erroCarga, setErroCarga] = useState("");
   const [statusSalvo, setStatusSalvo] = useState<Msg>({ texto: "" });
   const [modalLink, setModalLink] = useState<DadosLink | null>(null);
+  const [modalEnviado, setModalEnviado] = useState<DadosEnviado | null>(null);
+  const [trocaEmail, setTrocaEmail] = useState<{ ocupado: boolean; erro: string } | null>(null);
+  const enviadoTratado = useRef(false);
   const [ocupado, setOcupado] = useState(false);
 
   const travado = contrato?.status === "assinado";
+  /* contrato na Autentique esperando o casal: o e-mail é o de quem assina lá,
+     e muda pelo "Trocar e-mail e reenviar" (que troca lá também) */
+  const emailNaAutentique = !!contrato?.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado");
   const contratoGerado = !!(contrato && contrato.status && contrato.status !== "cancelado");
 
   /* espelhos pra o autosave ler o estado mais recente de dentro de timers e
@@ -234,7 +240,7 @@ export default function PaginaCliente() {
     clienteIdRef.current = r.cliente.id;
     setClienteId(r.cliente.id);
     /* marco zero do autosave: "o que está na tela é o que está no banco" */
-    ultimoSalvo.current = JSON.stringify(montarCliente(f, its, r.contrato?.status === "assinado"));
+    ultimoSalvo.current = JSON.stringify(montarCliente(f));
     setStatusSalvo({ texto: "" });
   }, [definirContrato]);
 
@@ -262,7 +268,7 @@ export default function PaginaCliente() {
   useEffect(() => {
     if (ehNovo) {
       carregadoId.current = null;
-      ultimoSalvo.current = JSON.stringify(montarCliente(FICHA_VAZIA, [], false));
+      ultimoSalvo.current = JSON.stringify(montarCliente(FICHA_VAZIA));
       return;
     }
     /* a ficha nova que acabou de ser criada troca a URL pelo id real; nesse
@@ -275,6 +281,58 @@ export default function PaginaCliente() {
       .catch((e: unknown) => falhou(e, () => setErroCarga("Não encontrei este cliente.")))
       .finally(() => setCarregando(false));
   }, [idRota, ehNovo, carregar, falhou]);
+
+  useEffect(() => {
+    if (carregando || campoAlvo !== "email") return;
+    const el = document.getElementById("f-email");
+    if (!el) return;
+    el.scrollIntoView({ block: "center" });
+    (el as HTMLInputElement).focus({ preventScroll: true });
+    /* tira o ?campo da URL: recarregar a ficha não deve puxar o foco de novo */
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [carregando, campoAlvo]);
+
+  useEffect(() => {
+    if (carregando || !enviadoAgora || enviadoTratado.current) return;
+    const id = clienteIdRef.current;
+    const autentiqueId = contrato?.autentique_id;
+    if (!id || !autentiqueId) return;
+    enviadoTratado.current = true;
+    window.history.replaceState(null, "", window.location.pathname);
+    /* apenasLink: só lê o link de um documento que já existe, nunca envia */
+    api<{ link: string | null; mensagem?: string }>(
+      "/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true },
+    ).then((r) => {
+      if (!r.link) return;
+      setModalEnviado({
+        link: r.link,
+        mensagem: r.mensagem || r.link,
+        urlContrato: urlNoAutentique(autentiqueId),
+        atualizado: enviadoAgora === "atualizado",
+      });
+    }).catch((e: unknown) => falhou(e, (msg) => avisar(msg)));
+  }, [carregando, enviadoAgora, contrato, falhou, avisar]);
+
+  /* O pacote e os valores mudam no editor do contrato, que abre noutra
+     guia. Voltando pra cá, relê só esses três do banco, sem mexer no que
+     está sendo digitado na ficha. */
+  useEffect(() => {
+    if (ehNovo) return;
+    function aoVoltar() {
+      const id = clienteIdRef.current;
+      if (document.visibilityState !== "visible" || !id) return;
+      api<Resposta>("/api/estudio?id=" + encodeURIComponent(id)).then((r) => {
+        const its = itensDe(r.cliente);
+        setItens(its);
+        itensRef.current = its;
+        const f = fichaDe(r.cliente);
+        atualizarFicha((atual) => ({ ...atual, total: f.total, entrada: f.entrada }));
+        definirContrato(r.contrato ?? null);
+      }).catch(() => { /* rede fora: fica o resumo de antes */ });
+    }
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => document.removeEventListener("visibilitychange", aoVoltar);
+  }, [ehNovo, definirContrato]);
 
   /* ---------- salvamento ---------- */
 
@@ -306,7 +364,7 @@ export default function PaginaCliente() {
     /* ficha nova ainda sem dono: espera um nome antes de existir no banco */
     if (!clienteIdRef.current && !(f.noivo.trim() || f.noiva.trim())) return;
     if (salvando.current) { refazerDepois.current = true; return; }
-    const payload = montarCliente(f, itensRef.current, travadoRef.current);
+    const payload = montarCliente(f);
     const agora = JSON.stringify(payload);
     if (agora === ultimoSalvo.current) return;
     salvando.current = true;
@@ -382,59 +440,6 @@ export default function PaginaCliente() {
     } catch { /* sem rede ou CEP fora do ar: o fotógrafo digita à mão */ }
   }
 
-  /* Total editado à mão recalcula a entrada nos mesmos 30% dos itens. Só nesse
-     sentido: editar a entrada não mexe no total. */
-  function mudarTotal(valor: string) {
-    if (travado) return;
-    const n = parseMoeda(valor);
-    atualizarFicha((f) => ({ ...f, total: valor, entrada: n != null ? formatarMoeda(n * 0.3) : f.entrada }));
-    agendarSalvamento();
-  }
-
-  /** reformata o que foi digitado à mão, ao sair do campo */
-  function sairDeMoeda(campo: "total" | "entrada") {
-    atualizarFicha((f) => {
-      const n = parseMoeda(f[campo]);
-      return { ...f, [campo]: n != null ? formatarMoeda(n) : "" };
-    });
-    salvarLogo();
-  }
-
-  /* ---------- itens do contrato ---------- */
-
-  function aplicarItens(novos: ItemContrato[]) {
-    setItens(novos);
-    itensRef.current = novos;
-    if (!novos.length) return;
-    const total = novos.reduce((s, i) => s + (Number(i.valor) || 0), 0);
-    atualizarFicha((f) => ({ ...f, total: formatarMoeda(total), entrada: formatarMoeda(total * 0.3) }));
-  }
-
-  function alternarItem(id: string) {
-    if (travadoRef.current) return;
-    let novos = [...itensRef.current];
-    const tem = (x: string) => novos.some((i) => i.id === x);
-    if (PACOTES.includes(id)) {
-      const jaEra = tem(id);
-      novos = novos.filter((i) => !PACOTES.includes(i.id));
-      if (!jaEra) novos.unshift({ id, nome: CATALOGO[id].nome, valor: CATALOGO[id].preco });
-    } else if (tem(id)) {
-      novos = novos.filter((i) => i.id !== id);
-    } else {
-      novos.push({ id, nome: CATALOGO[id].nome, valor: CATALOGO[id].preco });
-    }
-    /* o Eternal já inclui o pré-wedding */
-    if (tem("eternal")) novos = novos.filter((i) => i.id !== "prewedding");
-    aplicarItens(novos);
-    salvarLogo(); /* marcar/desmarcar item é ação pronta: grava na hora */
-  }
-
-  function editarValorItem(id: string, valor: number) {
-    if (travadoRef.current) return;
-    aplicarItens(itensRef.current.map((i) => (i.id === id ? { ...i, valor } : i)));
-    agendarSalvamento();
-  }
-
   /* ---------- contrato ---------- */
 
   /* guia nova: o contrato é documento, e quem abre quase sempre quer conferir
@@ -448,9 +453,29 @@ export default function PaginaCliente() {
 
   /* o editor do contrato, mesmo com ele já na Autentique (é por lá que se
      edita e se manda a versão nova) */
-  function editarContrato() {
-    if (!clienteIdRef.current) return;
-    window.open(rotaDoContrato(clienteIdRef.current), "_blank");
+  /* Contrato que já foi pra Autentique já tem a assinatura do fotógrafo.
+     Editar pode, mas o casal só vê a versão nova depois de reenviar, e
+     reenviar é documento novo (gasta cota): o pop-up diz isso e quanto
+     sobra, antes de abrir o editor. O editor abre o texto DESTE contrato,
+     com o modelo que ele usou, nunca o padrão. */
+  async function editarContrato() {
+    const id = clienteIdRef.current;
+    if (!id) return;
+    if (contrato?.autentique_id && contrato.status !== "assinado") {
+      const aviso = await avisoDeCota(id);
+      const ok = await confirmar({
+        titulo: "Já assinado por você",
+        texto:
+          "Este contrato já está na Autentique com a sua assinatura" +
+          (contrato.visualizado_em ? ", e o casal já abriu" : "") + ". " +
+          "Dá pra editar, mas o casal só vê a versão nova depois que você reenviar: a Autentique cria um " +
+          "documento novo e o link muda.",
+        aviso,
+        rotuloOk: "Editar mesmo assim",
+      });
+      if (!ok) return;
+    }
+    window.open(rotaDoContrato(id), "_blank");
   }
 
   async function acaoDoContrato() {
@@ -467,7 +492,7 @@ export default function PaginaCliente() {
 
     setOcupado(true);
     try {
-      const payload = montarCliente(fichaRef.current, itensRef.current, travadoRef.current);
+      const payload = montarCliente(fichaRef.current);
       await salvarCliente(payload);
       ultimoSalvo.current = JSON.stringify(payload);
       await api("/api/estudio", { acao: "gerar-contrato", id: clienteIdRef.current });
@@ -518,6 +543,64 @@ export default function PaginaCliente() {
     }
   }
 
+  /* E-mail do casal errado num contrato já enviado: troca quem assina no
+     mesmo documento da Autentique e abre o pop-up do link novo. */
+  /* troca (ou reenvia, com o mesmo e-mail) e abre o pop-up do link; lança
+     o erro pra quem chamou decidir onde mostrar */
+  async function executarTrocaEmail(email: string) {
+    const id = clienteIdRef.current;
+    const autentiqueId = contrato?.autentique_id;
+    if (!id || !autentiqueId) return;
+    const mesmoEmail = email.trim().toLowerCase() === (fichaRef.current.email || "").trim().toLowerCase();
+    await api("/api/estudio", { acao: "trocar-email-casal", id, email });
+    const r = await api<{ link: string | null; mensagem?: string }>(
+      "/api/estudio", { acao: "liberar-contrato-cliente", id, apenasLink: true },
+    );
+    await carregar(id);
+    if (r.link) {
+      setModalEnviado({
+        link: r.link,
+        mensagem: r.mensagem || r.link,
+        urlContrato: urlNoAutentique(autentiqueId),
+        /* reenvio pro mesmo e-mail não troca o link: sem o aviso âmbar */
+        atualizado: !mesmoEmail,
+        titulo: mesmoEmail ? "E-mail reenviado" : "E-mail trocado",
+        texto: (mesmoEmail ? "A Autentique mandou de novo o pedido de assinatura pra " : "O casal agora assina com ") + email +
+          ". É o mesmo contrato, com a sua assinatura, e não gastou documento da Autentique.",
+      });
+    }
+  }
+
+  async function trocarEmail(email: string) {
+    setTrocaEmail({ ocupado: true, erro: "" });
+    try {
+      await executarTrocaEmail(email);
+      setTrocaEmail(null);
+    } catch (e) {
+      falhou(e, (msg) => setTrocaEmail({ ocupado: false, erro: msg || "Não deu pra trocar o e-mail." }));
+    }
+  }
+
+  /* menu do cartão do contrato: mesmo e-mail, sem formulário */
+  async function reenviarEmail() {
+    const email = (fichaRef.current.email || "").trim();
+    if (!email) { setTrocaEmail({ ocupado: false, erro: "" }); return; }
+    const ok = await confirmar({
+      titulo: "Reenviar pro casal?",
+      texto: "A Autentique manda de novo o pedido de assinatura pra " + email + ". É o mesmo contrato e não gasta documento.",
+      rotuloOk: "Reenviar",
+    });
+    if (!ok) return;
+    setOcupado(true);
+    try {
+      await executarTrocaEmail(email);
+    } catch (e) {
+      falhou(e, (msg) => avisar(msg || "Não deu pra reenviar."));
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   /* ---------- arquivar / excluir ---------- */
 
   async function arquivar() {
@@ -561,7 +644,7 @@ export default function PaginaCliente() {
     e.preventDefault();
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
     const eraNovo = !clienteIdRef.current;
-    const payload = montarCliente(fichaRef.current, itensRef.current, travadoRef.current);
+    const payload = montarCliente(fichaRef.current);
     const enviado = JSON.stringify(payload);
     setStatusSalvo({ texto: "Salvando…" });
     try {
@@ -583,19 +666,6 @@ export default function PaginaCliente() {
     if (typeof el.showPicker !== "function") return;
     try { el.showPicker(); } catch { /* Firefox exige gesto; clique é gesto, mas fica de rede */ }
   }
-
-  /* O rótulo deste botão segue o ESTADO DO CONTRATO, e não o cadeado da ficha.
-     Antes ele dizia "rascunho" pra tudo que não estivesse assinado, então um
-     contrato já enviado (que abre na Autentique) se anunciava como rascunho.
-     Também avisa quando o destino é fora do app: clicar e cair num site de
-     terceiro sem esperar é o tipo de surpresa que faz voltar. */
-  const noAutentique = !!contrato?.autentique_id;
-  const iconeContrato = !contratoGerado ? <File size={14} /> : travado ? <FileCheck size={14} /> : <FileText size={14} />;
-  const rotuloContrato = !contratoGerado
-    ? "Criar rascunho do contrato"
-    : noAutentique
-      ? (travado ? "Abrir contrato assinado na Autentique" : "Abrir contrato na Autentique")
-      : (travado ? "Abrir contrato assinado" : "Abrir rascunho do contrato");
 
   if (erroCarga) {
     return (
@@ -619,7 +689,14 @@ export default function PaginaCliente() {
        lista (1100), então a cada clique a coluna crescia. */
     <div className="mx-auto max-w-[1100px]">
       <TituloMobile titulo={nomeDoCasal} />
-      <Voltar />
+      <div className="flex items-center justify-between gap-4">
+        <Voltar />
+        {/* "Digitou, salvou": o recado fica no topo, à vista enquanto se
+            digita, e não num rodapé que ninguém rola até ver */}
+        {statusSalvo.texto && !(ehNovo && !clienteId) ? (
+          <div className="ml-auto text-right"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
+        ) : null}
+      </div>
 
       {carregando ? (
         <Esqueleto />
@@ -627,35 +704,118 @@ export default function PaginaCliente() {
         <form autoComplete="off" onSubmit={salvarPeloBotao}>
           <HeroCliente cliente={cliente} contratoAssinado={travado} onArquivar={arquivar} onExcluir={excluir} />
 
-          <div className="grid grid-cols-1 items-start gap-5 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
-            {/* ---------- coluna esquerda: o casal ---------- */}
-            <div className="min-w-0">
-              <SecaoFicha icone={<Heart size={15} />} titulo="O casal" abertaInicial={ehNovo}>
-                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
-                  <CampoCopiavel id="f-noivo" rotulo="Noivo" value={ficha.noivo} avisar={avisar}
-                    onChange={(e) => mudarCampo("noivo", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-cpf-noivo" rotulo="CPF do noivo" value={ficha.cpf_noivo} avisar={avisar}
-                    inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                    onChange={(e) => mudarCampo("cpf_noivo", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-tel-noivo" rotulo="Telefone do noivo" value={ficha.tel_noivo} avisar={avisar}
-                    copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
-                    onChange={(e) => mudarCampo("tel_noivo", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-noiva" rotulo="Noiva" value={ficha.noiva} avisar={avisar}
-                    onChange={(e) => mudarCampo("noiva", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-cpf-noiva" rotulo="CPF da noiva" value={ficha.cpf_noiva} avisar={avisar}
-                    inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                    onChange={(e) => mudarCampo("cpf_noiva", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-tel-noiva" rotulo="Telefone da noiva" value={ficha.tel_noiva} avisar={avisar}
-                    copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
-                    onChange={(e) => mudarCampo("tel_noiva", e.target.value)} onBlur={salvarLogo} />
-                  <div className="col-span-full">
-                    <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
-                      onChange={(e) => mudarCampo("email", e.target.value)} onBlur={salvarLogo} />
+          {/* HIERARQUIA (refeita em 22/10/2026, pedido do Ricardo):
+              1. quem é e quando (herói);
+              2. em que pé está o contrato e o que fazer agora (coluna da
+                 direita, no topo; no celular vem ANTES dos dados, porque é
+                 o motivo de quase toda visita à ficha);
+              3. quanto (pacote e valores, logo embaixo do contrato);
+              4. os dados do casal, abertos e agrupados por pessoa, pra
+                 consultar e copiar.
+              Antes os dados ficavam em quatro tiras fechadas e o status do
+              contrato era o segundo cartão da direita. */}
+          <div className="grid grid-cols-1 items-start gap-x-5 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
+            {/* ---------- coluna direita: contrato e valores ---------- */}
+            <div className="min-w-0 min-[1080px]:sticky min-[1080px]:top-[78px] min-[1080px]:order-2">
+              {contrato && contratoGerado ? (
+                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={() => void editarContrato()} onTrocarEmail={() => setTrocaEmail({ ocupado: false, erro: "" })} onReenviarEmail={() => void reenviarEmail()} onCopiarLink={() => void copiarLink()} avisar={avisar} />
+              ) : (
+                <ContratoVazio podeCriar={!!clienteId && !ocupado} onCriar={() => void acaoDoContrato()} />
+              )}
+
+              {/* resumo só leitura: a escolha mora no editor do contrato.
+                  Ficha nova ainda sem cliente não tem o que resumir. */}
+              {clienteId ? (
+              <section className="mb-4 rounded-[22px] bg-paper p-5 md:px-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
+                    <Package size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14.5px] font-semibold leading-[1.3] text-ink">Pacote e valores</span>
+                    <span className="block truncate text-[12.5px] leading-[1.4] text-ink-soft">O que o casal contratou</span>
+                  </span>
+                </div>
+                {/* o total é o número que se procura: grande, primeiro */}
+                <div className="flex items-end justify-between gap-3 rounded-2xl bg-soft px-4 py-3.5">
+                  <div className="min-w-0">
+                    <span className="block text-[12px] font-medium text-ink-soft">Total</span>
+                    <span className="block text-[22px] font-semibold leading-[1.2] tabular-nums text-ink">R$ {ficha.total || "0,00"}</span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span className="block text-[12px] font-medium text-ink-soft">Entrada</span>
+                    <span className="block text-[15px] font-semibold tabular-nums text-accent">R$ {ficha.entrada || "0,00"}</span>
                   </div>
                 </div>
+                {itens.length ? (
+                  <ul className="m-0 mt-2 list-none p-0">
+                    {itens.map((i) => (
+                      <li key={i.id} className="flex items-center gap-3 px-1 py-2 text-[13.5px]">
+                        <span className="min-w-0 flex-1 truncate text-ink">{i.nome}</span>
+                        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-ink-soft">R$ {formatarMoeda(i.valor)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="m-0 mt-3 px-1 text-[13.5px] text-ink-soft">Nenhum pacote escolhido ainda.</p>
+                )}
+                {/* sem botão de editar (pedido do Ricardo): pacote e valores se
+                    mexem no editor do contrato, aberto pelo cartão de cima */}
+                {travado ? (
+                  <p className="m-0 mt-3 px-1 text-[12.5px] leading-[1.5] text-ink-soft">
+                    O casal já assinou: pacote, adicionais e valores ficam como estão no contrato.
+                  </p>
+                ) : null}
+              </section>
+              ) : null}
+            </div>
+
+            {/* ---------- coluna esquerda: o casal ---------- */}
+            <div className="min-w-0 min-[1080px]:order-1">
+              <SecaoFicha icone={<Heart size={16} />} titulo="O casal" descricao="Contratantes e contato" chave="casal"
+                forcarAberta={ehNovo || campoAlvo === "email"}>
+                {/* uma coluna por pessoa: o olho lê "o noivo" de cima a baixo,
+                    em vez de pular entre noivo e noiva a cada campo */}
+                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <CampoCopiavel id="f-noivo" rotulo="Noivo" value={ficha.noivo} avisar={avisar}
+                      onChange={(e) => mudarCampo("noivo", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-cpf-noivo" rotulo="CPF do noivo" value={ficha.cpf_noivo} avisar={avisar}
+                      inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
+                      onChange={(e) => mudarCampo("cpf_noivo", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-tel-noivo" rotulo="Telefone do noivo" value={ficha.tel_noivo} avisar={avisar}
+                      copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
+                      onChange={(e) => mudarCampo("tel_noivo", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="min-w-0">
+                    <CampoCopiavel id="f-noiva" rotulo="Noiva" value={ficha.noiva} avisar={avisar}
+                      onChange={(e) => mudarCampo("noiva", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-cpf-noiva" rotulo="CPF da noiva" value={ficha.cpf_noiva} avisar={avisar}
+                      inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
+                      onChange={(e) => mudarCampo("cpf_noiva", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-tel-noiva" rotulo="Telefone da noiva" value={ficha.tel_noiva} avisar={avisar}
+                      copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
+                      onChange={(e) => mudarCampo("tel_noiva", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                </div>
+                <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
+                  readOnly={emailNaAutentique}
+                  acao={emailNaAutentique ? (
+                    <button type="button" onClick={() => setTrocaEmail({ ocupado: false, erro: "" })}
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-soft px-3.5 text-[13px] font-semibold text-accent transition-colors hover:bg-line">
+                      {/* no celular só "Trocar": o campo do e-mail ficava com 9 letras à vista */}
+                      <Mail size={15} /> <span>Trocar<span className="hidden sm:inline"> e reenviar</span></span>
+                    </button>
+                  ) : undefined}
+                  onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
+                {emailNaAutentique ? (
+                  <p className="m-0 -mt-2 text-[11.5px] leading-[1.5] text-ink-soft/85">
+                    O contrato já foi pra esse e-mail. Se estiver errado, troque e reenvie pro casal.
+                  </p>
+                ) : null}
               </SecaoFicha>
 
-              <SecaoFicha icone={<CalendarHeart size={15} />} titulo="O evento">
+              <SecaoFicha icone={<CalendarHeart size={16} />} titulo="O evento" descricao="Data, horário e local" chave="evento">
                 <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
                   <Campo id="f-data" rotulo="Data do casamento" type="date" autoComplete="off" className="h-11 py-0"
                     value={ficha.data_evento} onChange={(e) => mudarCampo("data_evento", e.target.value)} onBlur={salvarLogo} onClick={abrirPicker} />
@@ -673,58 +833,47 @@ export default function PaginaCliente() {
                 </div>
               </SecaoFicha>
 
-              <SecaoFicha icone={<MapPin size={15} />} titulo="Endereço">
-                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
-                  <CampoCopiavel id="f-cep" rotulo="CEP" value={ficha.cep} avisar={avisar}
-                    inputMode="numeric" placeholder="00000-000" maxLength={9}
-                    onChange={(e) => mudarCampo("cep", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-endereco" rotulo="Endereço" value={ficha.endereco} avisar={avisar}
-                    onChange={(e) => mudarCampo("endereco", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-numero" rotulo="Número" value={ficha.numero} avisar={avisar}
-                    onChange={(e) => mudarCampo("numero", e.target.value)} onBlur={salvarLogo} />
-                  <Campo id="f-complemento" rotulo="Complemento" autoComplete="off" className="h-11 py-0"
-                    value={ficha.complemento} onChange={(e) => mudarCampo("complemento", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-bairro" rotulo="Bairro" value={ficha.bairro} avisar={avisar}
-                    onChange={(e) => mudarCampo("bairro", e.target.value)} onBlur={salvarLogo} />
-                  <CampoCopiavel id="f-cidade" rotulo="Cidade" value={ficha.cidade} avisar={avisar}
-                    onChange={(e) => mudarCampo("cidade", e.target.value)} onBlur={salvarLogo} />
-                  <Campo id="f-estado" rotulo="Estado" autoComplete="off" placeholder="UF" maxLength={2} className="h-11 py-0 uppercase"
-                    value={ficha.estado} onChange={(e) => mudarCampo("estado", e.target.value.toUpperCase())} onBlur={salvarLogo} />
-                </div>
-              </SecaoFicha>
-
-              <SecaoFicha icone={<NotebookPen size={15} />} titulo="Outras informações">
-                <div className="grid grid-cols-1 gap-x-6 lg:grid-cols-3">
-                  <div className="mb-3.5">
-                    <label htmlFor="f-origem" className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">Como conheceu</label>
-                    <div className="relative">
-                      <select
-                        id="f-origem"
-                        autoComplete="off"
-                        value={ficha.origem}
-                        onChange={(e) => { mudarCampo("origem", e.target.value); salvarLogo(); }}
-                        className="h-11 w-full cursor-pointer appearance-none rounded-[10px] bg-soft pl-3.5 pr-9 text-sm text-ink outline-none transition-colors focus:bg-[#EEF0F3]"
-                      >
-                        <option value="">Selecione</option>
-                        {ORIGENS.map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                      <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden />
-                    </div>
+              <SecaoFicha icone={<MapPin size={16} />} titulo="Endereço" descricao="Vai no contrato" chave="endereco">
+                {/* grade de 6: cada campo com a largura do que cabe nele (UF
+                    não precisa de um terço da linha, endereço precisa de mais) */}
+                <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-6 [&>*]:min-w-0">
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-cep" rotulo="CEP" value={ficha.cep} avisar={avisar}
+                      inputMode="numeric" placeholder="00000-000" maxLength={9}
+                      onChange={(e) => mudarCampo("cep", e.target.value)} onBlur={salvarLogo} />
                   </div>
-                  <div className="col-span-full">
-                    <Area id="f-observacoes" rotulo="Observações (internas)" autoComplete="off" placeholder="Anotações internas, só você vê."
-                      className="min-h-[72px]" value={ficha.observacoes}
-                      onChange={(e) => mudarCampo("observacoes", e.target.value)} onBlur={salvarLogo} />
+                  <div className="sm:col-span-4">
+                    <CampoCopiavel id="f-endereco" rotulo="Endereço" value={ficha.endereco} avisar={avisar}
+                      onChange={(e) => mudarCampo("endereco", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-numero" rotulo="Número" value={ficha.numero} avisar={avisar}
+                      onChange={(e) => mudarCampo("numero", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <Campo id="f-complemento" rotulo="Complemento" autoComplete="off" className="h-11 py-0"
+                      value={ficha.complemento} onChange={(e) => mudarCampo("complemento", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-bairro" rotulo="Bairro" value={ficha.bairro} avisar={avisar}
+                      onChange={(e) => mudarCampo("bairro", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <CampoCopiavel id="f-cidade" rotulo="Cidade" value={ficha.cidade} avisar={avisar}
+                      onChange={(e) => mudarCampo("cidade", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <Campo id="f-estado" rotulo="UF" autoComplete="off" placeholder="UF" maxLength={2} className="h-11 py-0 uppercase"
+                      value={ficha.estado} onChange={(e) => mudarCampo("estado", e.target.value.toUpperCase())} onBlur={salvarLogo} />
                   </div>
                 </div>
               </SecaoFicha>
-
               {/* Perguntas que o fotógrafo criou em /painel/formulario. Só
                   leitura: é o que o casal escreveu, com a pergunta do jeito
                   que estava quando ele respondeu. Só aparece se houver. */}
               {respostasDoCliente(cliente?.respostas_formulario).length ? (
-                <SecaoFicha icone={<ClipboardList size={15} />} titulo="Respostas do formulário">
-                  <dl className="m-0 grid grid-cols-1 gap-x-6 gap-y-3.5 lg:grid-cols-2">
+                <SecaoFicha icone={<ClipboardList size={16} />} titulo="Respostas do formulário" descricao="O que o casal escreveu" chave="respostas">
+                  <dl className="m-0 grid grid-cols-1 gap-x-6 gap-y-3.5 sm:grid-cols-2">
                     {respostasDoCliente(cliente?.respostas_formulario).map((r, i) => (
                       <div key={r.id + i} className={"min-w-0 " + (r.tipo === "paragrafo" ? "col-span-full" : "")}>
                         <dt className="mb-1 text-[12.5px] font-medium text-ink-soft">{r.rotulo}</dt>
@@ -734,54 +883,50 @@ export default function PaginaCliente() {
                   </dl>
                 </SecaoFicha>
               ) : null}
-            </div>
 
-            {/* ---------- coluna direita: contrato ---------- */}
-            <div className="min-w-0 min-[1080px]:sticky min-[1080px]:top-[78px]">
-              <SecaoFicha
-                icone={<FileText size={15} />}
-                titulo="Contrato"
-                abertaInicial
-                acao={
-                  <AcaoSecao rotulo={rotuloContrato} onClick={() => void acaoDoContrato()} disabled={!clienteId || ocupado}>
-                    {iconeContrato}
-                  </AcaoSecao>
-                }
-              >
-                <PillsPacote itens={itens} travado={travado} onAlternar={alternarItem} onEditarValor={editarValorItem} />
-                <ResumoItens itens={itens} />
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3.5">
-                  <Campo id="f-total" rotulo="Total (R$)" autoComplete="off" inputMode="decimal" readOnly={travado}
-                    className={"h-11 py-0 text-base font-semibold tabular-nums " + (travado ? "text-ink-soft" : "text-accent-deep")}
-                    value={ficha.total} onChange={(e) => mudarTotal(e.target.value)} onBlur={() => sairDeMoeda("total")} />
-                  <Campo id="f-entrada" rotulo="Entrada (R$)" autoComplete="off" inputMode="decimal" readOnly={travado}
-                    className={"h-11 py-0 text-base font-semibold tabular-nums " + (travado ? "text-ink-soft" : "text-accent-deep")}
-                    value={ficha.entrada} onChange={(e) => { if (!travado) mudarCampo("entrada", e.target.value); }} onBlur={() => sairDeMoeda("entrada")} />
+              <SecaoFicha icone={<NotebookPen size={16} />} titulo="Anotações" descricao="Só você vê" chave="anotacoes">
+                <div className="mb-3.5 sm:max-w-[50%]">
+                  <label htmlFor="f-origem" className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">Como conheceu</label>
+                  <div className="relative">
+                    <select
+                      id="f-origem"
+                      autoComplete="off"
+                      value={ficha.origem}
+                      onChange={(e) => { mudarCampo("origem", e.target.value); salvarLogo(); }}
+                      className="h-11 w-full cursor-pointer appearance-none rounded-[10px] bg-soft pl-3.5 pr-9 text-sm text-ink outline-none transition-colors focus:bg-[#EEF0F3]"
+                    >
+                      <option value="">Selecione</option>
+                      {ORIGENS.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden />
+                  </div>
                 </div>
-                {travado ? (
-                  <p className="m-0 mt-1 text-[12.5px] leading-[1.5] text-ink-soft">
-                    O casal já assinou: pacote, adicionais e valores ficam como estão no contrato.
-                  </p>
-                ) : null}
+                <Area id="f-observacoes" rotulo="Observações" autoComplete="off" placeholder="Anotações internas, só você vê."
+                  className="min-h-[72px]" value={ficha.observacoes}
+                  onChange={(e) => mudarCampo("observacoes", e.target.value)} onBlur={salvarLogo} />
               </SecaoFicha>
-
-              {/* só aparece quando existe mesmo um contrato pra este cliente */}
-              {contrato ? (
-                <TimelineContrato contrato={contrato} onAbrirContrato={abrirContrato} onEditarContrato={editarContrato} onCopiarLink={() => void copiarLink()} avisar={avisar} />
-              ) : null}
             </div>
           </div>
 
-          <div className="mb-16 mt-8 flex flex-wrap flex-col items-stretch justify-end gap-3 md:flex-row md:items-center">
-            <div className="text-center md:text-left"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
-            <Botao type="submit" className="w-full md:w-auto">
-              {ehNovo && !clienteId ? "Criar cliente" : "Salvar alterações"}
-            </Botao>
-          </div>
+          {/* Ficha que já existe se salva sozinha (o estado mora no topo, ao
+              lado do Voltar); botão só pra criar a ficha nova, que é o único
+              momento em que salvar é uma decisão. Enter num campo continua
+              salvando (submit do form). */}
+          {ehNovo && !clienteId ? (
+            <div className="mb-16 mt-4 flex flex-col items-stretch justify-end gap-3 md:flex-row md:items-center">
+              <div className="text-center md:text-left"><Estado texto={statusSalvo.texto} tom={statusSalvo.tom} /></div>
+              <Botao type="submit" className="w-full md:w-auto">Criar cliente</Botao>
+            </div>
+          ) : <div className="mb-16" />}
         </form>
       )}
 
       {modalLink ? <ModalLink dados={modalLink} onFechar={() => setModalLink(null)} /> : null}
+      {modalEnviado ? <ModalContratoEnviado dados={modalEnviado} onFechar={() => setModalEnviado(null)} /> : null}
+      {trocaEmail ? (
+        <ModalTrocarEmail emailAtual={ficha.email || ""} ocupado={trocaEmail.ocupado} erro={trocaEmail.erro}
+          aoFechar={() => setTrocaEmail(null)} aoTrocar={(email) => void trocarEmail(email)} />
+      ) : null}
       {toast}
     </div>
   );
@@ -793,24 +938,26 @@ export default function PaginaCliente() {
 function Voltar() {
   return (
     <div className="hidden md:block">
-      <BotaoVoltar href="/painel" rotulo="Início" />
+      <BotaoVoltar href="/painel/clientes" rotulo="Clientes" />
     </div>
   );
 }
 
 function Esqueleto() {
-  const bloco = "animate-pulse rounded-[22px] bg-paper shadow-card";
+  /* mesma ordem da ficha: no celular o contrato vem antes dos dados */
+  const bloco = "animate-pulse rounded-[22px] bg-paper";
   return (
     <div aria-busy="true" aria-label="Carregando">
-      <div className="mb-10 mt-3 h-[150px] animate-pulse rounded-3xl bg-line" />
-      <div className="grid grid-cols-1 items-start gap-5 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
-        <div className="flex flex-col gap-4">
-          <div className={bloco + " h-16"} />
-          <div className={bloco + " h-16"} />
-          <div className={bloco + " h-16"} />
-          <div className={bloco + " h-16"} />
+      <div className="mb-5 mt-3 h-[150px] animate-pulse rounded-3xl bg-line md:mb-8" />
+      <div className="grid grid-cols-1 items-start gap-x-5 gap-y-4 min-[1080px]:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
+        <div className="flex flex-col gap-4 min-[1080px]:order-2">
+          <div className={bloco + " h-[260px]"} />
+          <div className={bloco + " h-[220px]"} />
         </div>
-        <div className={bloco + " h-[360px]"} />
+        <div className="flex flex-col gap-4 min-[1080px]:order-1">
+          <div className={bloco + " h-[330px]"} />
+          <div className={bloco + " h-[240px]"} />
+        </div>
       </div>
     </div>
   );
