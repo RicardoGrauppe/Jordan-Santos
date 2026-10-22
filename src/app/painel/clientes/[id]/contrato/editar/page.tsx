@@ -74,21 +74,38 @@ type LateralProps = {
 
 /* Cartão flutuante da lateral: mesmo cabeçalho da ficha (ícone em quadrado
    accent-tint + título + uma linha), ver brandbook "Painel lateral do editor". */
-function CartaoLateral({ icone: Icone, titulo, texto, children }: {
-  icone: LucideIcon; titulo: string; texto: string; children: ReactNode;
+function CartaoLateral({ chave, icone: Icone, titulo, texto, children }: {
+  chave: string; icone: LucideIcon; titulo: string; texto: string; children: ReactNode;
 }) {
+  /* colapsável; quem fechou o quê fica lembrado neste navegador (preferência
+     de quem usa, não dado do contrato) */
+  const [aberto, setAberto] = useState(() => {
+    try { return localStorage.getItem("lateral-contrato:" + chave) !== "0"; } catch { return true; }
+  });
+  function alternar() {
+    setAberto((v) => {
+      try { localStorage.setItem("lateral-contrato:" + chave, v ? "0" : "1"); } catch { /* sem storage: só não lembra */ }
+      return !v;
+    });
+  }
   return (
     <section className="rounded-[20px] bg-paper p-4 shadow-card">
-      <div className="flex items-center gap-2.5">
+      <button type="button" onClick={alternar} aria-expanded={aberto}
+        className="flex w-full cursor-pointer items-center gap-2.5 text-left">
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-accent-tint text-accent">
           <Icone size={17} />
         </span>
-        <div className="min-w-0">
-          <h2 className="m-0 text-[14px] font-semibold leading-tight text-ink">{titulo}</h2>
-          <p className="m-0 mt-0.5 text-[12px] leading-snug text-ink-soft">{texto}</p>
-        </div>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14px] font-semibold leading-tight text-ink">{titulo}</span>
+          <span className="mt-0.5 block truncate text-[12px] leading-snug text-ink-soft">{texto}</span>
+        </span>
+        <ChevronDown size={16} className={"shrink-0 text-ink-soft transition-[rotate] duration-300 " + (aberto ? "rotate-180" : "")} />
+      </button>
+      <div inert={!aberto}
+        className={"grid transition-[grid-template-rows,opacity] duration-300 ease-[var(--ease-desliza)] " +
+          (aberto ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
+        <div className="min-h-0 overflow-hidden">{children}</div>
       </div>
-      {children}
     </section>
   );
 }
@@ -124,7 +141,7 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
 
   return (
     <div className="grid gap-3">
-      <CartaoLateral icone={FileText} titulo="Modelo do contrato" texto="Trocar substitui o texto deste contrato.">
+      <CartaoLateral chave="modelo" icone={FileText} titulo="Modelo do contrato" texto="Qual texto este contrato usa">
         {/* dropdown que abre DENTRO do cartão: o gatilho mostra o modelo atual
             e a lista expande empurrando o resto da lateral pra baixo */}
         <button type="button" aria-expanded={aberto} disabled={modelos === null} onClick={() => setAberto((v) => !v)}
@@ -174,11 +191,11 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
           aoCriar={async (n, b) => { const ok = await aoCriar(n, b); if (ok) setAberto(false); return ok; }} />
       </CartaoLateral>
 
-      <CartaoLateral icone={Package} titulo="Pacote e valores" texto="O que o casal contratou. Vai pra tabela de itens e pros valores.">
+      <CartaoLateral chave="pacote" icone={Package} titulo="Pacote e valores" texto="O que o casal contratou">
         <SeletorItens {...valores} />
       </CartaoLateral>
 
-      <CartaoLateral icone={Braces} titulo="Campos" texto="Clique pra pôr no cursor. O valor vem da ficha.">
+      <CartaoLateral chave="campos" icone={Braces} titulo="Campos" texto="Clique pra inserir no texto">
         <label className="mt-3 flex h-9 items-center gap-2 rounded-[10px] bg-soft px-3 text-ink-soft">
           <Search size={15} className="shrink-0" />
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar campo" aria-label="Buscar campo"
@@ -207,7 +224,7 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
         )}
       </CartaoLateral>
 
-      <CartaoLateral icone={LayoutTemplate} titulo="Blocos" texto="Partes prontas do contrato.">
+      <CartaoLateral chave="blocos" icone={LayoutTemplate} titulo="Blocos" texto="Partes prontas">
         <div className="mt-3 grid grid-cols-2 gap-2">
           {([
             ["tabelaItens", Table, "Tabela de itens", "Pacote, adicionais e total"],
