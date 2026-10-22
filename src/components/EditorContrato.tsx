@@ -225,7 +225,9 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
       {lateral ? (
         <div className="flex flex-1">
           {/* computador: coluna fixa à esquerda, grudada abaixo do cabeçalho, rolando sozinha */}
-          <aside className="hidden w-[320px] shrink-0 bg-soft md:block" aria-label="Painel do contrato">
+          {/* fundo um tom abaixo do da folha (#ECEEF1 x --soft), pra lateral e mesa
+              não virarem uma coisa só */}
+          <aside className="hidden w-[320px] shrink-0 bg-[#ECEEF1] md:block" aria-label="Painel do contrato">
             <div className="sticky overflow-y-auto p-4 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               style={{ top: alturaCabecalho, maxHeight: `calc(100dvh - ${alturaCabecalho}px)` }}>
               {lateral(editor, fecharGaveta)}
@@ -237,7 +239,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
             <div onClick={fecharGaveta}
               className={"absolute inset-0 bg-ink/30 transition-opacity duration-300 " + (gavetaAberta ? "opacity-100" : "opacity-0")} />
             <aside aria-label="Painel do contrato"
-              className={"absolute inset-y-0 left-0 flex w-[min(320px,86vw)] flex-col bg-soft shadow-alta transition-[translate] duration-300 ease-[var(--ease-desliza)] " +
+              className={"absolute inset-y-0 left-0 flex w-[min(320px,86vw)] flex-col bg-[#ECEEF1] shadow-alta transition-[translate] duration-300 ease-[var(--ease-desliza)] " +
                 (gavetaAberta ? "translate-x-0" : "-translate-x-full")}>
               <div className="flex shrink-0 items-center justify-end px-2 pt-[calc(var(--sat)+8px)]">
                 <button type="button" aria-label="Fechar painel" onClick={fecharGaveta} className={icone(false)}><X size={18} /></button>
