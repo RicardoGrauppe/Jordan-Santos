@@ -214,6 +214,9 @@ export async function sincronizarContrato(
     mudanca.recusado_em = casal.rejected.created_at;
     mudanca.recusa_motivo = "recusado pelo contratante na Autentique";
   } else if (casal.signed?.created_at) {
+    /* quem assinou abriu antes: quando a sincronização só chega depois da
+       assinatura, o "aberto" ficava vazio na linha do tempo */
+    if (!c.visualizado_em) mudanca.visualizado_em = casal.viewed?.created_at || casal.signed.created_at;
     if (c.status !== "assinado") {
       mudanca.status = "assinado";
       mudanca.assinado_em = casal.signed.created_at;

@@ -136,7 +136,9 @@ export function TimelineContrato({
     { titulo: "Criado", data: contrato.criado_em },
     /* no legado, envio e visto foram do link antigo: não valem mais */
     { titulo: "Enviado", data: legado ? null : contrato.enviado_em },
-    { titulo: "Aberto", data: legado ? null : contrato.visualizado_em },
+    /* assinado sem data de abertura (sincronizado antes da correção):
+       quem assinou abriu; usa a data da assinatura */
+    { titulo: "Aberto", data: legado ? null : (contrato.visualizado_em || contrato.assinado_em) },
     { titulo: "Assinado", data: contrato.assinado_em, ok: true },
   ];
   const curta = (d: string) => new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
@@ -188,7 +190,10 @@ export function TimelineContrato({
         </ol>
       ) : null}
 
-      {contrato.assinado_em ? <TrilhaAuditoria contrato={contrato} avisar={avisar} /> : null}
+      {/* o comprovante só existe pro contrato assinado no sistema ANTIGO:
+          no da Autentique a trilha de auditoria fica lá dentro (é o "Abrir
+          contrato"), e repetir aqui era meio comprovante sem valor */}
+      {contrato.assinado_em && !contrato.autentique_id ? <TrilhaAuditoria contrato={contrato} avisar={avisar} /> : null}
 
       {!cancelado ? (
         <div className="mt-5 flex flex-wrap gap-2.5 [&>*]:min-h-[44px] [&>*]:flex-[1_1_100%] [&>*]:whitespace-nowrap min-[520px]:[&>*]:flex-[1_1_150px]">

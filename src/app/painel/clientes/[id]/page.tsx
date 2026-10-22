@@ -254,8 +254,8 @@ export default function PaginaCliente() {
        ida até lá custa uma rede inteira, e segurar a tela por causa dela faria
        toda ficha abrir devagar por um estado que quase sempre é o mesmo.
        Sem chave configurada o servidor responde `sincronizado: false` e isto
-       não faz nada. Enquanto o app não tiver endereço público pra receber
-       webhook, este é o caminho por onde a novidade chega. */
+       não faz nada. Junto com o webhook (/api/autentique) e a consulta de
+       30s mais abaixo, é por onde a novidade chega na tela. */
     void api<{ sincronizado?: boolean; status?: string }>(
       "/api/estudio", { acao: "sincronizar-contrato", id },
     ).then((sinc) => {
@@ -321,7 +321,10 @@ export default function PaginaCliente() {
     function aoVoltar() {
       const id = clienteIdRef.current;
       if (document.visibilityState !== "visible" || !id) return;
-      api<Resposta>("/api/estudio?id=" + encodeURIComponent(id)).then((r) => {
+      /* sincroniza com a Autentique antes de reler: voltar pra aba depois
+         que o casal assinou já mostra assinado */
+      api("/api/estudio", { acao: "sincronizar-contrato", id }).catch(() => null)
+        .then(() => api<Resposta>("/api/estudio?id=" + encodeURIComponent(id))).then((r) => {
         const its = itensDe(r.cliente);
         setItens(its);
         itensRef.current = its;
@@ -333,6 +336,24 @@ export default function PaginaCliente() {
     document.addEventListener("visibilitychange", aoVoltar);
     return () => document.removeEventListener("visibilitychange", aoVoltar);
   }, [ehNovo, definirContrato]);
+
+  /* Contrato esperando o casal: pergunta à Autentique a cada 30s enquanto a
+     ficha está à vista (aberto, assinado, e-mail entregue) e atualiza SÓ o
+     cartão do contrato, sem tocar no que está sendo digitado. O webhook
+     (/api/autentique) grava no banco na hora; isto é o que faz a tela ver. */
+  const aguardandoAutentique = !!contrato?.autentique_id && (contrato.status === "enviado" || contrato.status === "visualizado");
+  useEffect(() => {
+    if (ehNovo || !aguardandoAutentique) return;
+    const tique = setInterval(() => {
+      const id = clienteIdRef.current;
+      if (!id || document.visibilityState !== "visible") return;
+      void api("/api/estudio", { acao: "sincronizar-contrato", id })
+        .then(() => api<Resposta>("/api/estudio?id=" + encodeURIComponent(id)))
+        .then((r) => definirContrato(r.contrato ?? null))
+        .catch(() => { /* rede fora: tenta no próximo */ });
+    }, 30000);
+    return () => clearInterval(tique);
+  }, [ehNovo, aguardandoAutentique, definirContrato]);
 
   /* ---------- salvamento ---------- */
 
