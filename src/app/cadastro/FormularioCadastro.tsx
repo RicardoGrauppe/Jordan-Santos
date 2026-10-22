@@ -648,6 +648,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
 
   const camposRef = useRef<Partial<Record<string, ElementoCampo | null>>>({});
   const etapasRef = useRef<Partial<Record<Etapa, HTMLElement | null>>>({});
+  const topoRef = useRef<HTMLDivElement | null>(null);
   const itiRef = useRef<Iti | null>(null);
   const ultimoCepRef = useRef("");
 
@@ -770,6 +771,30 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   }
 
   /* ---------- navegação entre etapas ---------- */
+
+  /* Topo fixo com o teclado aberto no iPhone. O Safari do iOS não encolhe a
+     página quando o teclado sobe: ele DESLOCA a área visível pra cima, e o
+     que é fixed fica preso à página inteira, então o topo saía da tela. A
+     visualViewport diz quanto a área visível desceu (offsetTop), e o topo
+     desce junto. No computador e no Android o offsetTop fica 0 e nada muda. */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const topo = topoRef.current;
+    if (!vv || !topo || etapa === "inicio" || enviado) return;
+    function acompanhar() {
+      if (!vv || !topo) return;
+      const desce = Math.max(0, Math.round(vv.offsetTop));
+      topo.style.transform = desce ? "translateY(" + desce + "px)" : "";
+    }
+    acompanhar();
+    vv.addEventListener("resize", acompanhar);
+    vv.addEventListener("scroll", acompanhar);
+    return () => {
+      vv.removeEventListener("resize", acompanhar);
+      vv.removeEventListener("scroll", acompanhar);
+      topo.style.transform = "";
+    };
+  }, [etapa, enviado]);
 
   /* Entrou numa etapa: volta pro topo (a etapa nova começa lá) e, onde há
      mouse, põe o foco no primeiro campo. No toque, não: abrir o teclado
@@ -1091,7 +1116,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
         ) : (
           <form onSubmit={aoEnviar} noValidate>
             {etapa !== "inicio" ? (
-              <div className="topo-etapa">
+              <div className="topo-etapa" ref={topoRef}>
                 <button type="button" className="voltar-etapa" onClick={voltar} aria-label="Voltar pra etapa anterior">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="m12 19-7-7 7-7" /><path d="M19 12H5" />
