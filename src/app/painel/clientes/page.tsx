@@ -354,8 +354,12 @@ export default function ListaClientes() {
                     className={
                       "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-[58px] pr-[46px] no-underline " +
                       "md:items-center md:rounded-none md:py-[17px] md:pl-[62px] md:pr-[18px] " +
-                      `transition-colors hover:bg-soft ` +
-                      (marcados.includes(c.id) ? "!bg-accent-tint " : "") + COLUNAS
+                      /* hover em accent-tint, e não soft: soft é a cor da
+                         PÁGINA, e a linha sob o mouse parecia um buraco no
+                         cartão. A linha marcada vai um passo além (petróleo a
+                         12%), pra marcado e só-apontado não se confundirem. */
+                      `transition-colors hover:bg-accent-tint ` +
+                      (marcados.includes(c.id) ? "!bg-accent/12 " : "") + COLUNAS
                     }
                   >
                     <span className="col-span-2 flex items-center md:col-span-1">
