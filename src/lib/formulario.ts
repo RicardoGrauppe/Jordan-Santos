@@ -38,6 +38,18 @@ export const SECOES: readonly { id: SecaoFormulario; titulo: string }[] = [
   { id: "extra", titulo: "Conta pra gente" },
 ];
 
+/* Explicação de cada etapa no /cadastro (o card informativo azul), editável
+   no painel. Na voz do estúdio, primeira pessoa do plural (TOM-DE-VOZ.md). */
+export const EXPLICACAO_PADRAO: Record<SecaoFormulario, string> = {
+  assinar: "Dados de quem vai assinar o contrato. Se só uma pessoa for assinar, basta preencher os dados dela.",
+  endereco: "O contrato pede um endereço pra ficar completo. Digitem o CEP que a gente preenche o resto.",
+  evento: "Com a data, o horário e o local a gente reserva a agenda e começa a planejar a cobertura.",
+  extra: "Algumas perguntas pra gente conhecer vocês um pouco melhor antes do grande dia.",
+};
+/* O padrão de "Sobre vocês" fala de "basta uma pessoa", que só vale com a
+   regra do par; fora dela, e sem texto do fotógrafo, vale este. */
+export const EXPLICACAO_ASSINAR_SEM_PAR = "Dados de quem vai assinar o contrato.";
+
 export const TITULO_SECAO = Object.fromEntries(SECOES.map((x) => [x.id, x.titulo])) as Record<SecaoFormulario, string>;
 
 export type CampoFixoId =
@@ -150,6 +162,8 @@ export function urlFoto(f: Pick<FotoAbertura, "id" | "origem">, largura: 750 | 1
 export type Formulario = {
   /** títulos das etapas, editáveis; vazio volta o de SECOES */
   titulos: Record<SecaoFormulario, string>;
+  /** explicação de cada etapa (card azul do /cadastro); vazio volta o padrão */
+  explicacoes: Record<SecaoFormulario, string>;
   campos: Record<CampoFixoId, AjusteCampo>;
   perguntas: Pergunta[];
   fotos: FotoAbertura[];
@@ -161,6 +175,7 @@ export type RespostaFormulario = { id: string; rotulo: string; tipo: TipoPergunt
 export const LIMITES = {
   rotulo: 120,
   titulo: 60,
+  explicacao: 300,
   placeholder: 120,
   perguntas: 20,
   opcoes: 12,
@@ -189,6 +204,7 @@ export function ajustePadrao(def: DefinicaoCampo): AjusteCampo {
 export function formularioPadrao(): Formulario {
   return {
     titulos: { ...TITULO_SECAO },
+    explicacoes: { ...EXPLICACAO_PADRAO },
     campos: Object.fromEntries(CAMPOS_FIXOS.map((d) => [d.id, ajustePadrao(d)])) as Record<CampoFixoId, AjusteCampo>,
     perguntas: [],
     fotos: FOTOS_PADRAO.map((f) => ({ ...f })),
@@ -244,8 +260,10 @@ export function normalizarFormulario(bruto: unknown): Formulario {
   const campos = obj(b.campos);
   const saida = formularioPadrao();
   const titulos = obj(b.titulos);
+  const explicacoes = obj(b.explicacoes);
   for (const sec of SECOES) {
     saida.titulos[sec.id] = texto(titulos[sec.id], LIMITES.titulo) || sec.titulo;
+    saida.explicacoes[sec.id] = texto(explicacoes[sec.id], LIMITES.explicacao) || EXPLICACAO_PADRAO[sec.id];
   }
 
   for (const def of CAMPOS_FIXOS) {
@@ -288,6 +306,13 @@ export function normalizarFormulario(bruto: unknown): Formulario {
 export function campoExigido(f: Formulario, id: CampoFixoId): boolean {
   const c = f.campos[id];
   return c.visivel && c.obrigatorio;
+}
+
+/** O que o card azul da etapa diz pro casal. */
+export function explicacaoDaEtapa(f: Formulario, secao: SecaoFormulario): string {
+  const t = f.explicacoes[secao];
+  if (secao === "assinar" && t === EXPLICACAO_PADRAO.assinar && !regraDoPar(f)) return EXPLICACAO_ASSINAR_SEM_PAR;
+  return t;
 }
 
 /**

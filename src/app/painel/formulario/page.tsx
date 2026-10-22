@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowDown, ArrowUp, Asterisk, CalendarHeart, ExternalLink, Eye, EyeOff, Lock, LockOpen, MapPin, Pencil, Plus,
+  ArrowDown, ArrowUp, Asterisk, CalendarHeart, ExternalLink, Eye, EyeOff, Info, Lock, LockOpen, MapPin, Pencil, Plus,
   Sparkles, Trash2, TriangleAlert, UserRound, X,
 } from "lucide-react";
 import { Botao, BotaoVoltar, Campo, CartaoAviso, Estado } from "@/components/ui";
@@ -24,7 +24,7 @@ import { useConfirmar } from "@/components/ModalConfirmar";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { EditorFotos } from "./EditorFotos";
 import {
-  CAMPOS_FIXOS, SECOES, SEM_PLACEHOLDER, TIPOS_PERGUNTA, LIMITES, novoIdPergunta, regraDoPar,
+  CAMPOS_FIXOS, EXPLICACAO_PADRAO, SECOES, SEM_PLACEHOLDER, TIPOS_PERGUNTA, LIMITES, novoIdPergunta, regraDoPar,
   type AjusteCampo, type DefinicaoCampo, type Formulario, type Pergunta, type SecaoFormulario, type TipoPergunta,
 } from "@/lib/formulario";
 
@@ -524,6 +524,29 @@ export default function PaginaFormulario() {
                 {AJUDA_SECAO[secao.id] ? (
                   <p className="m-0 mt-2 text-[12.5px] text-ink-soft">{AJUDA_SECAO[secao.id]}</p>
                 ) : null}
+
+                {/* explicação da etapa, editável ali mesmo no mesmo card azul que
+                    o casal vê (brandbook 18); vazio, volta o padrão */}
+                <div className="mt-3">
+                  <label htmlFor={"explica-" + secao.id} className="mb-1.5 block text-[11.5px] font-medium text-ink-soft">
+                    Explicação pro casal
+                  </label>
+                  <div className="flex items-start gap-3 rounded-[14px] bg-accent-tint px-3 py-2.5 transition-colors focus-within:bg-[#DFEAEE] hover:bg-[#E3EDF0]">
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] bg-white text-accent">
+                      <Info size={16} strokeWidth={1.8} />
+                    </span>
+                    <textarea
+                      id={"explica-" + secao.id}
+                      value={form.explicacoes[secao.id]}
+                      placeholder={EXPLICACAO_PADRAO[secao.id]}
+                      maxLength={LIMITES.explicacao}
+                      /* cresce com o texto (field-sizing onde existe; rows aproxima no Safari) */
+                      rows={Math.max(1, Math.ceil((form.explicacoes[secao.id] || EXPLICACAO_PADRAO[secao.id]).length / 48))}
+                      onChange={(e) => mudar({ ...form, explicacoes: { ...form.explicacoes, [secao.id]: e.target.value } })}
+                      className="min-w-0 flex-1 resize-none self-center bg-transparent py-1 text-[13.5px] leading-[1.5] text-accent outline-none [field-sizing:content] placeholder:text-accent/50"
+                    />
+                  </div>
+                </div>
 
                 <div className="mt-4 flex flex-col gap-2">
                   {fixos.map((def) => (

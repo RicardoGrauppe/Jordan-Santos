@@ -49,7 +49,7 @@ import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import {
-  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, regraDoPar, urlFoto, DEFINICAO, SECOES,
+  campoExigido, erroDaResposta, exibirResposta, explicacaoDaEtapa, perguntasVisiveis, regraDoPar, urlFoto, DEFINICAO, SECOES,
   type CampoFixoId, type FotoAbertura, type Formulario, type Pergunta, type SecaoFormulario,
 } from "@/lib/formulario";
 
@@ -584,25 +584,14 @@ function CartaoConvite({ nomes, data, horario, local, hoje }: {
 
 type Etapa = "inicio" | SecaoFormulario | "revisar";
 
-/* O que cada etapa explica e o resumo dela na tela de boas-vindas. Texto do
-   casal: voz do estúdio, primeira pessoa do plural (TOM-DE-VOZ.md). */
-const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> = {
-  assinar: {
-    explica: "Dados de quem vai assinar o contrato. Se só uma pessoa for assinar, basta preencher os dados dela.",
-    resumo: "Quem assina o contrato e como falamos com vocês",
-  },
-  endereco: {
-    explica: "O contrato pede um endereço pra ficar completo. Digitem o CEP que a gente preenche o resto.",
-    resumo: "Só o que o documento pede",
-  },
-  evento: {
-    explica: "Com a data, o horário e o local a gente reserva a agenda e começa a planejar a cobertura.",
-    resumo: "Data, horário e local do casamento",
-  },
-  extra: {
-    explica: "Algumas perguntas pra gente conhecer vocês um pouco melhor antes do grande dia.",
-    resumo: "Algumas perguntas pra conhecer vocês melhor",
-  },
+/* Resumo de cada etapa no caminho da tela de boas-vindas. Texto do casal:
+   voz do estúdio, primeira pessoa do plural (TOM-DE-VOZ.md). A explicação
+   de dentro da etapa é editável e mora na config (explicacaoDaEtapa). */
+const SOBRE_ETAPA: Record<SecaoFormulario, { resumo: string }> = {
+  assinar: { resumo: "Quem assina o contrato e como falamos com vocês" },
+  endereco: { resumo: "Só o que o documento pede" },
+  evento: { resumo: "Data, horário e local do casamento" },
+  extra: { resumo: "Algumas perguntas pra conhecer vocês melhor" },
 };
 
 /* ícone de cada etapa no caminho da abertura (brandbook 18) */
@@ -1201,7 +1190,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                   <h1>{formulario.titulos[secao]}</h1>
                   <div className="dica-card explica">
                     <span className="dica-icone"><Info size={18} strokeWidth={1.8} aria-hidden /></span>
-                    <p>{secao === "assinar" && !par ? "Dados de quem vai assinar o contrato." : SOBRE_ETAPA[secao].explica}</p>
+                    <p>{explicacaoDaEtapa(formulario, secao)}</p>
                   </div>
                   {corpoDaSecao(secao)}
                   <button className="cta brilho" type="submit">{conteudoDoBotao}</button>
