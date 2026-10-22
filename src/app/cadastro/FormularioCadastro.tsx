@@ -45,7 +45,7 @@ import {
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
 import Image from "next/image";
-import { CalendarHeart, Heart, Info, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
+import { ArrowRight, CalendarHeart, Heart, Info, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
@@ -317,6 +317,18 @@ const CSS = `
   .cad .barra-cta{display:none}
 }
 
+/* seta e brilho do botão (brandbook 18): a seta vai em todo botão de
+   avançar; o brilho e o vaivém da seta só no "Vamos começar", que é o
+   convite pra entrar no fluxo */
+.cad .cta .seta{display:inline-block;vertical-align:-3px;margin-left:10px}
+.cad .cta.brilho{position:relative;overflow:hidden;isolation:isolate}
+.cad .cta.brilho::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;pointer-events:none;
+  background:linear-gradient(105deg,rgba(255,255,255,0),rgba(255,255,255,.28),rgba(255,255,255,0));
+  transform:skewX(-20deg);animation:cad-brilho 3.2s ease-in-out 1.2s infinite}
+@keyframes cad-brilho{0%{left:-60%}45%,100%{left:130%}}
+.cad .cta.brilho .seta{animation:cad-vaivem 1.6s ease-in-out infinite}
+@keyframes cad-vaivem{0%,100%{transform:none}50%{transform:translateX(4px)}}
+
 /* recado prático da abertura: card petróleo claro com lâmpada, sem borda */
 .cad .dica-card{display:flex;gap:12px;align-items:center;background:#EAF1F3;border-radius:16px;padding:14px 16px;margin-top:18px}
 .cad .dica-icone{flex-shrink:0;width:36px;height:36px;border-radius:12px;background:var(--paper);color:var(--accent);display:flex;align-items:center;justify-content:center}
@@ -355,6 +367,8 @@ const CSS = `
   .cad .etapa,.cad .etapa-corpo > *,.cad .sucesso,.cad .foto-abertura{animation:none}
   .cad .slide,.cad .slide img{transition:none}
   .cad .passos .icone,.cad .passos li::before{animation:none}
+  .cad .cta.brilho::after{display:none}
+  .cad .cta.brilho .seta{animation:none}
   .cad .check path{animation:none;stroke-dashoffset:0}
   .cad .progresso span{transition:none}
 }
@@ -899,6 +913,12 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
     : daRevisao ? "Salvar e revisar"
     : "Continuar";
 
+  /* seta em todo botão que leva pra frente; o de confirmar não leva, porque
+     é o fim e não um próximo passo (brandbook 18) */
+  const conteudoDoBotao = etapa === "revisar" ? textoDoBotao : (
+    <>{textoDoBotao}<ArrowRight className="seta" size={16} strokeWidth={1.6} aria-hidden /></>
+  );
+
   const atributosEtapa = (qual: Etapa) => ({
     hidden: etapa !== qual,
     "data-dir": direcao,
@@ -1044,7 +1064,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                       </span>
                     </li>
                   </ol>
-                  <button className="cta" type="submit">{textoDoBotao}</button>
+                  <button className="cta brilho" type="submit">{conteudoDoBotao}</button>
                 </div>
               </div>
             </section>
@@ -1059,7 +1079,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                     <p>{SOBRE_ETAPA[secao].explica}</p>
                   </div>
                   {corpoDaSecao(secao)}
-                  <button className="cta" type="submit">{textoDoBotao}</button>
+                  <button className="cta" type="submit">{conteudoDoBotao}</button>
                 </div>
               </section>
             ))}
@@ -1098,7 +1118,8 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                 repete aqui porque no celular é aqui que o olho está */}
             <div className="barra-cta">
               {etapa === "revisar" && erroGeral ? <p className="erro" aria-hidden>{erroGeral}</p> : null}
-              <button className="cta" type="submit" disabled={etapa === "revisar" && enviando}>{textoDoBotao}</button>
+              <button className={"cta" + (etapa === "inicio" ? " brilho" : "")} type="submit"
+                disabled={etapa === "revisar" && enviando}>{conteudoDoBotao}</button>
             </div>
           </form>
         )}
