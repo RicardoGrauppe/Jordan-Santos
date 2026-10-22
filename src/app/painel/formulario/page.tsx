@@ -17,14 +17,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowDown, ArrowUp, CalendarHeart, ExternalLink, Lock, MapPin, Pencil, Plus,
-  Sparkles, Trash2, UserRound, X,
+  Sparkles, Trash2, TriangleAlert, UserRound, X,
 } from "lucide-react";
 import { Botao, BotaoVoltar, Campo, CartaoAviso, Chave, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { EditorFotos } from "./EditorFotos";
 import {
-  CAMPOS_FIXOS, SECOES, SEM_PLACEHOLDER, TIPOS_PERGUNTA, LIMITES, novoIdPergunta,
+  CAMPOS_FIXOS, SECOES, SEM_PLACEHOLDER, TIPOS_PERGUNTA, LIMITES, novoIdPergunta, regraDoPar,
   type AjusteCampo, type DefinicaoCampo, type Formulario, type Pergunta, type SecaoFormulario, type TipoPergunta,
 } from "@/lib/formulario";
 
@@ -68,15 +68,59 @@ function BotaoEditar({ aberto, aoAlternar, rotulo }: { aberto: boolean; aoAltern
   );
 }
 
+/* As três chaves de todo campo (brandbook 18): Obrigatório, Aparece e
+   Cadeado. O cadeado trava as outras duas; obrigatório também trava quando o
+   campo está escondido (não dá pra exigir o que o casal não vê). */
+function ChavesCampo({
+  rotuloObrigatorio = "Obrigatório", visivel, obrigatorio, travado, aoMudar,
+}: {
+  rotuloObrigatorio?: string;
+  visivel: boolean;
+  obrigatorio: boolean;
+  travado: boolean;
+  aoMudar: (m: { visivel?: boolean; obrigatorio?: boolean; travado?: boolean }) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      <Chave rotulo={rotuloObrigatorio} ligada={obrigatorio} desligada={travado || !visivel}
+        aoMudar={(v) => aoMudar({ obrigatorio: v })} />
+      <Chave rotulo="Aparece" ligada={visivel} desligada={travado} aoMudar={(v) => aoMudar({ visivel: v })} />
+      <Chave rotulo="Cadeado" ligada={travado} aoMudar={(v) => aoMudar({ travado: v })} />
+    </div>
+  );
+}
+
+/* Linha de baixo do nome: o estado (com o cadeado na frente quando travado)
+   ou, quando o campo deixa de cumprir o que o contrato precisa, o aviso. */
+function EstadoCampo({ travado, texto, aviso }: { travado: boolean; texto: string; aviso?: string | null }) {
+  if (aviso) {
+    return (
+      <div className="mt-0.5 flex items-start gap-1 text-[11.5px] leading-[1.4] text-[#7A5A11]">
+        <TriangleAlert size={12} className="mt-px shrink-0" /> {aviso}
+      </div>
+    );
+  }
+  return (
+    <div className="mt-0.5 flex items-center gap-1 text-[11.5px] text-ink-soft">
+      {travado ? <Lock size={11} className="shrink-0" aria-label="Com cadeado" /> : null}
+      {texto}
+    </div>
+  );
+}
+
 function LinhaCampoFixo({
-  def, ajuste, aoMudar,
-}: { def: DefinicaoCampo; ajuste: AjusteCampo; aoMudar: (a: AjusteCampo) => void }) {
+  def, ajuste, parNomes, aoMudar,
+}: { def: DefinicaoCampo; ajuste: AjusteCampo; parNomes: boolean; aoMudar: (a: AjusteCampo) => void }) {
   const [aberto, setAberto] = useState(false);
-  const pedido = ajuste.visivel && ajuste.obrigatorio;
-  const sub = def.regra === "travado"
-    ? null
-    : !ajuste.visivel ? (def.foraDoContrato ? "Escondido" : "Escondido, fica em branco no contrato")
-    : pedido ? "Obrigatório" : "Opcional";
+  const ehNome = def.id === "noivo" || def.id === "noiva";
+  const estado = !ajuste.visivel
+    ? (def.foraDoContrato || def.aviso ? "Escondido" : "Escondido, fica em branco no contrato")
+    : ajuste.obrigatorio ? "Obrigatório"
+    : ehNome && parNomes ? "Basta um dos dois nomes"
+    : "Opcional";
+  /* aviso só pra quem o contrato usa e quando ele pode chegar vazio */
+  const podeFaltar = !ajuste.visivel || (!ajuste.obrigatorio && !(ehNome && parNomes));
+  const aviso = def.aviso && podeFaltar ? estado + ". " + def.aviso : null;
 
   return (
     <div className={LINHA + (ajuste.visivel ? "" : " opacity-60")}>
@@ -84,23 +128,10 @@ function LinhaCampoFixo({
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:flex-row md:items-center md:gap-4">
           <div className="min-w-0 md:flex-1">
             <div className="truncate text-[13.5px] font-semibold text-ink">{ajuste.rotulo}</div>
-            {def.regra === "travado" ? (
-              <div className="mt-0.5 flex items-center gap-1 text-[11.5px] text-ink-soft">
-                <Lock size={11} className="shrink-0" /> {def.porque}
-              </div>
-            ) : (
-              <div className="mt-0.5 text-[11.5px] text-ink-soft">{sub}</div>
-            )}
+            <EstadoCampo travado={ajuste.travado} texto={estado} aviso={aviso} />
           </div>
-          {def.regra !== "travado" ? (
-            <div className="flex items-center gap-4">
-              {def.regra === "livre" ? (
-                <Chave rotulo="Obrigatório" ligada={ajuste.obrigatorio} desligada={!ajuste.visivel}
-                  aoMudar={(v) => aoMudar({ ...ajuste, obrigatorio: v })} />
-              ) : null}
-              <Chave rotulo="Aparece" ligada={ajuste.visivel} aoMudar={(v) => aoMudar({ ...ajuste, visivel: v })} />
-            </div>
-          ) : null}
+          <ChavesCampo visivel={ajuste.visivel} obrigatorio={ajuste.obrigatorio} travado={ajuste.travado}
+            aoMudar={(m) => aoMudar({ ...ajuste, ...m })} />
         </div>
         <BotaoEditar aberto={aberto} aoAlternar={() => setAberto((v) => !v)} rotulo={ajuste.rotulo} />
       </div>
@@ -155,20 +186,18 @@ function LinhaPergunta({
   }
 
   return (
-    <div className={LINHA}>
+    <div className={LINHA + (pergunta.visivel ? "" : " opacity-60")}>
       <div className="flex items-start gap-3 md:items-center">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:flex-row md:items-center md:gap-4">
           <div className="min-w-0 md:flex-1">
             <div className={"truncate text-[13.5px] font-semibold " + (pergunta.rotulo.trim() ? "text-ink" : "text-ink-soft")}>
               {pergunta.rotulo.trim() || "Pergunta nova"}
             </div>
-            <div className={"mt-0.5 text-[11.5px] " + (aviso ? "text-[#7A5A11]" : "text-ink-soft")}>
-              {aviso ?? tipo + (pergunta.obrigatorio ? ", obrigatória" : ", opcional")}
-            </div>
+            <EstadoCampo travado={pergunta.travado} aviso={aviso}
+              texto={tipo + (!pergunta.visivel ? ", escondida" : pergunta.obrigatorio ? ", obrigatória" : ", opcional")} />
           </div>
-          <div className="flex items-center gap-4">
-            <Chave rotulo="Obrigatória" ligada={pergunta.obrigatorio} aoMudar={(v) => aoMudar({ ...pergunta, obrigatorio: v })} />
-          </div>
+          <ChavesCampo rotuloObrigatorio="Obrigatória" visivel={pergunta.visivel} obrigatorio={pergunta.obrigatorio}
+            travado={pergunta.travado} aoMudar={(m) => aoMudar({ ...pergunta, ...m })} />
         </div>
         <BotaoEditar aberto={aberta} aoAlternar={() => setAberta((v) => !v)} rotulo={pergunta.rotulo || "pergunta"} />
       </div>
@@ -358,7 +387,9 @@ export default function PaginaFormulario() {
     setNovaId(id);
     mudar({
       ...form,
-      perguntas: [...form.perguntas, { id, secao, tipo: "texto", rotulo: "", placeholder: "", obrigatorio: false, opcoes: [] }],
+      perguntas: [...form.perguntas, {
+        id, secao, tipo: "texto", rotulo: "", placeholder: "", obrigatorio: false, visivel: true, travado: false, opcoes: [],
+      }],
     });
   }
 
@@ -412,7 +443,7 @@ export default function PaginaFormulario() {
 
       <CartaoAviso className="mb-4">
         É o formulário que o casal preenche pra confirmar a data. Mude o texto das perguntas, esconda o que você não usa e
-        crie perguntas suas. Os campos com cadeado o contrato precisa, por isso ficam sempre.
+        crie perguntas suas. Ligue o cadeado no que não pode mudar sem querer.
       </CartaoAviso>
 
       {erroCarga ? <p className="text-[13px] text-erro">{erroCarga}</p> : null}
@@ -438,7 +469,7 @@ export default function PaginaFormulario() {
 
                 <div className="mt-4 flex flex-col gap-2">
                   {fixos.map((def) => (
-                    <LinhaCampoFixo key={def.id} def={def} ajuste={form.campos[def.id]}
+                    <LinhaCampoFixo key={def.id} def={def} ajuste={form.campos[def.id]} parNomes={regraDoPar(form)}
                       aoMudar={(a) => mudarCampo(def.id, a)} />
                   ))}
                   {perguntas.map((p, i) => (

@@ -49,7 +49,7 @@ import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
 import {
-  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, urlFoto, DEFINICAO, SECOES, TITULO_SECAO,
+  campoExigido, erroDaResposta, exibirResposta, perguntasVisiveis, regraDoPar, urlFoto, DEFINICAO, SECOES, TITULO_SECAO,
   type CampoFixoId, type FotoAbertura, type Formulario, type Pergunta, type SecaoFormulario,
 } from "@/lib/formulario";
 
@@ -661,10 +661,12 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
 
   const cfg = formulario.campos;
   const aparece = (id: CampoId) => cfg[id].visivel;
-  /* "(opcional)" em todo campo que não é exigido, CPF incluído. Os nomes
-     ficam sem: um dos dois é obrigatório (regra do par, explicada no card
-     da etapa), e marcar os dois como opcionais diria o contrário. */
-  const opcional = (id: CampoId) => cfg[id].visivel && !cfg[id].obrigatorio && id !== "noivo" && id !== "noiva";
+  /* "(opcional)" em todo campo que aparece e não é exigido. Os nomes ficam
+     sem quando vale a regra do par (os dois aparecem e nenhum é obrigatório):
+     um dos dois é exigido, e o card da etapa explica. */
+  const par = regraDoPar(formulario);
+  const opcional = (id: CampoId) => cfg[id].visivel && !cfg[id].obrigatorio &&
+    !(par && (id === "noivo" || id === "noiva"));
   const perguntas = perguntasVisiveis(formulario);
   const perguntasDa = (secao: SecaoFormulario) => perguntas.filter((p) => p.secao === secao);
 
@@ -861,16 +863,26 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
       { rotulo: "da noiva", nome: "noiva", cpf: "cpfNoiva" },
     ] as const).map((p) => ({ p, nome: valores[p.nome].trim(), cpf: soDigitos(valores[p.cpf]) }));
 
-    if (pessoas.every((x) => !x.nome)) {
+    if (par && pessoas.every((x) => !x.nome)) {
       marcarErro("noivo", "Preencha o nome de ao menos um contratante.");
       return false;
     }
     for (const x of pessoas) {
-      if (x.cpf && x.cpf.length !== 11) {
-        marcarErro(x.p.cpf, "Confira o CPF " + x.p.rotulo + " (11 dígitos) ou deixe em branco.");
+      /* o que o fotógrafo marcou como obrigatório (e aparece) vale sozinho */
+      if (campoExigido(formulario, x.p.nome) && !x.nome) {
+        marcarErro(x.p.nome, "Preencha o nome " + x.p.rotulo + ".");
         return false;
       }
-      if (x.cpf && !x.nome) {
+      if (campoExigido(formulario, x.p.cpf) && !x.cpf) {
+        marcarErro(x.p.cpf, "Preencha o CPF " + x.p.rotulo + ".");
+        return false;
+      }
+      if (x.cpf && x.cpf.length !== 11) {
+        marcarErro(x.p.cpf, "Confira o CPF " + x.p.rotulo + " (11 dígitos)" +
+          (campoExigido(formulario, x.p.cpf) ? "." : " ou deixe em branco."));
+        return false;
+      }
+      if (x.cpf && !x.nome && aparece(x.p.nome)) {
         marcarErro(x.p.nome, "Preencha o nome " + x.p.rotulo + " ou apague o CPF.");
         return false;
       }
@@ -1044,6 +1056,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
           {/* o input do WhatsApp fica num <div> próprio: o intl-tel-input
               embrulha o input num .iti, e o React nunca precisa mexer nos
               filhos desse div */}
+          {aparece("contato") ? (
           <label className={"campo" + (contatoInvalido ? " campo-invalido" : "")}>
             {cfg.contato.rotulo}
             <div>
@@ -1059,6 +1072,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
             </div>
             {contatoInvalido ? <span className="campo-erro-msg">{erro.msg}</span> : null}
           </label>
+          ) : null}
           {fixo("email", { type: "email", autoComplete: "email" })}
           {extras("assinar")}
         </>
@@ -1187,7 +1201,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                   <h1>{TITULO_SECAO[secao]}</h1>
                   <div className="dica-card explica">
                     <span className="dica-icone"><Info size={18} strokeWidth={1.8} aria-hidden /></span>
-                    <p>{SOBRE_ETAPA[secao].explica}</p>
+                    <p>{secao === "assinar" && !par ? "Dados de quem vai assinar o contrato." : SOBRE_ETAPA[secao].explica}</p>
                   </div>
                   {corpoDaSecao(secao)}
                   <button className="cta brilho" type="submit">{conteudoDoBotao}</button>
@@ -1203,7 +1217,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                 {etapa === "revisar" ? (
                   <div className="revisao">
                     <CartaoConvite
-                      nomes={[valores.noivo.trim(), valores.noiva.trim()].filter(Boolean).join(" & ")}
+                      nomes={[valores.noivo.trim(), valores.noiva.trim()].filter(Boolean).join(" & ") || "vocês"}
                       data={valores.data}
                       horario={aparece("horario") ? valores.horario : ""}
                       local={aparece("local") ? valores.local.trim() : ""}

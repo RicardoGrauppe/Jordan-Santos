@@ -5,23 +5,22 @@
   Duas coisas diferentes moram aqui:
 
   1. Os CAMPOS FIXOS, que já existiam e gravam cada um numa coluna do cliente
-     (nome, CPF, endereço, data...). O contrato usa essas colunas, então o
-     fotógrafo só muda o texto deles e, quando dá, esconde ou deixa opcional.
-     Quem pode o quê é a `regra` de cada um:
-       travado  → sempre aparece e sempre é pedido. Nomes (a regra é "ao menos
-                  um dos dois"), WhatsApp, e-mail (a Autentique manda o pedido
-                  de assinatura amarrado a ele) e data (é a chave que evita
-                  ficha duplicada no reenvio).
-       opcional → pode esconder, nunca vira obrigatório. É o CPF, opcional
-                  desde 2026-08-11 porque o Jordan atende quem não tem.
-       livre    → esconde e liga/desliga obrigatório. Escondido = fica em
-                  branco no contrato, e o editor avisa.
+     (nome, CPF, endereço, data...). O fotógrafo muda o texto e escolhe três
+     coisas em cada um: aparece, obrigatório e CADEADO. O cadeado trava as
+     outras duas, pra ninguém mudar sem querer; não é regra do sistema
+     (pedido do Ricardo Grauppe em 22/10/2026: tudo escolhível). Os campos
+     que o contrato e a assinatura usam (nomes, WhatsApp, e-mail, data) vêm
+     com cadeado ligado. Destravado e escondido, o campo leva um `aviso` do
+     que deixa de funcionar, e o /api/orcamento aceita qualquer combinação
+     (sem data ou sem nome, não procura ficha repetida; só cria).
+     Nomes têm uma regra à parte, a do PAR: se os dois aparecem e nenhum é
+     obrigatório, basta um dos dois (ver regraDoPar).
   2. As PERGUNTAS NOVAS, criadas pelo fotógrafo. Não têm coluna: a resposta vai
      pra `clientes.respostas_formulario` junto com o texto da pergunta na hora
      do envio, pra continuar legível depois que a pergunta mudar ou sumir.
 
   `normalizarFormulario` é a única porta de entrada: roda ao ler do banco e ao
-  salvar, e é ela que garante as travas. O cliente nunca é confiável aqui (a
+  salvar, e é ela que garante os limites. O cliente nunca é confiável aqui (a
   rota pública de cadastro lê a mesma config pra decidir o que exigir).
 
   Sem React e sem "server-only": o editor, o formulário e as rotas usam.
@@ -46,42 +45,42 @@ export type CampoFixoId =
   | "cep" | "numero" | "endereco" | "complemento" | "bairro" | "cidade" | "estado"
   | "data" | "horario" | "local" | "enderecoEvento";
 
-export type RegraCampo = "travado" | "opcional" | "livre";
-
 export type DefinicaoCampo = {
   id: CampoFixoId;
   secao: SecaoFormulario;
   rotulo: string;
   placeholder: string;
-  regra: RegraCampo;
   obrigatorio: boolean;
-  /** por que está travado, na voz do painel */
-  porque?: string;
+  /** vem com cadeado ligado (os campos que o contrato e a assinatura usam) */
+  travado: boolean;
+  /** o que deixa de funcionar se o campo for escondido ou ficar opcional, na voz do painel */
+  aviso?: string;
   /** não vai pro contrato: escondido, não deixa nada em branco lá */
   foraDoContrato?: boolean;
 };
 
 /* Na ordem em que aparecem no /cadastro. */
 export const CAMPOS_FIXOS: readonly DefinicaoCampo[] = [
-  { id: "noivo", secao: "assinar", rotulo: "Nome do noivo", placeholder: "", regra: "travado", obrigatorio: false, porque: "Basta um dos dois nomes, o contrato precisa dele" },
-  { id: "noiva", secao: "assinar", rotulo: "Nome da noiva", placeholder: "", regra: "travado", obrigatorio: false, porque: "Basta um dos dois nomes, o contrato precisa dele" },
-  { id: "cpfNoivo", secao: "assinar", rotulo: "CPF do noivo", placeholder: "000.000.000-00", regra: "opcional", obrigatorio: false },
-  { id: "cpfNoiva", secao: "assinar", rotulo: "CPF da noiva", placeholder: "000.000.000-00", regra: "opcional", obrigatorio: false },
-  { id: "contato", secao: "assinar", rotulo: "WhatsApp", placeholder: "", regra: "travado", obrigatorio: true, porque: "Sempre pedido, é por onde você manda o contrato" },
-  { id: "email", secao: "assinar", rotulo: "E-mail", placeholder: "", regra: "travado", obrigatorio: true, porque: "Sempre pedido, a assinatura do contrato usa" },
-  { id: "cep", secao: "endereco", rotulo: "CEP", placeholder: "00000-000", regra: "livre", obrigatorio: true },
-  { id: "numero", secao: "endereco", rotulo: "Número", placeholder: "", regra: "livre", obrigatorio: true },
-  { id: "endereco", secao: "endereco", rotulo: "Endereço", placeholder: "Rua, avenida...", regra: "livre", obrigatorio: true },
-  { id: "complemento", secao: "endereco", rotulo: "Complemento", placeholder: "", regra: "livre", obrigatorio: false },
-  { id: "bairro", secao: "endereco", rotulo: "Bairro", placeholder: "", regra: "livre", obrigatorio: true },
-  { id: "cidade", secao: "endereco", rotulo: "Cidade", placeholder: "", regra: "livre", obrigatorio: true },
-  { id: "estado", secao: "endereco", rotulo: "Estado", placeholder: "UF", regra: "livre", obrigatorio: true },
-  { id: "data", secao: "evento", rotulo: "Data do casamento", placeholder: "", regra: "travado", obrigatorio: true, porque: "Sempre pedida, é ela que separa um casal do outro" },
-  { id: "horario", secao: "evento", rotulo: "Horário", placeholder: "", regra: "livre", obrigatorio: true },
-  { id: "local", secao: "evento", rotulo: "Local do evento", placeholder: "Nome do espaço", regra: "livre", obrigatorio: true },
+  { id: "noivo", secao: "assinar", rotulo: "Nome do noivo", placeholder: "", obrigatorio: false, travado: true, aviso: "O contrato precisa do nome de quem assina" },
+  { id: "noiva", secao: "assinar", rotulo: "Nome da noiva", placeholder: "", obrigatorio: false, travado: true, aviso: "O contrato precisa do nome de quem assina" },
+  /* CPF opcional desde 2026-08-11: o Jordan atende quem não tem */
+  { id: "cpfNoivo", secao: "assinar", rotulo: "CPF do noivo", placeholder: "000.000.000-00", obrigatorio: false, travado: false },
+  { id: "cpfNoiva", secao: "assinar", rotulo: "CPF da noiva", placeholder: "000.000.000-00", obrigatorio: false, travado: false },
+  { id: "contato", secao: "assinar", rotulo: "WhatsApp", placeholder: "", obrigatorio: true, travado: true, aviso: "É por onde você manda o contrato" },
+  { id: "email", secao: "assinar", rotulo: "E-mail", placeholder: "", obrigatorio: true, travado: true, aviso: "Sem e-mail, o contrato não vai pra assinatura" },
+  { id: "cep", secao: "endereco", rotulo: "CEP", placeholder: "00000-000", obrigatorio: true, travado: false },
+  { id: "numero", secao: "endereco", rotulo: "Número", placeholder: "", obrigatorio: true, travado: false },
+  { id: "endereco", secao: "endereco", rotulo: "Endereço", placeholder: "Rua, avenida...", obrigatorio: true, travado: false },
+  { id: "complemento", secao: "endereco", rotulo: "Complemento", placeholder: "", obrigatorio: false, travado: false },
+  { id: "bairro", secao: "endereco", rotulo: "Bairro", placeholder: "", obrigatorio: true, travado: false },
+  { id: "cidade", secao: "endereco", rotulo: "Cidade", placeholder: "", obrigatorio: true, travado: false },
+  { id: "estado", secao: "endereco", rotulo: "Estado", placeholder: "UF", obrigatorio: true, travado: false },
+  { id: "data", secao: "evento", rotulo: "Data do casamento", placeholder: "", obrigatorio: true, travado: true, aviso: "O contrato precisa da data, e é ela que separa um casal do outro" },
+  { id: "horario", secao: "evento", rotulo: "Horário", placeholder: "", obrigatorio: true, travado: false },
+  { id: "local", secao: "evento", rotulo: "Local do evento", placeholder: "Nome do espaço", obrigatorio: true, travado: false },
   /* onde o espaço fica, pra quem vai fotografar chegar (22/10/2026). Não
      entra no contrato, que cita só o local. */
-  { id: "enderecoEvento", secao: "evento", rotulo: "Endereço do evento", placeholder: "Rua, número, cidade", regra: "livre", obrigatorio: false, foraDoContrato: true },
+  { id: "enderecoEvento", secao: "evento", rotulo: "Endereço do evento", placeholder: "Rua, número, cidade", obrigatorio: false, travado: false, foraDoContrato: true },
 ];
 
 export const DEFINICAO: Record<CampoFixoId, DefinicaoCampo> = Object.fromEntries(
@@ -92,7 +91,7 @@ export const DEFINICAO: Record<CampoFixoId, DefinicaoCampo> = Object.fromEntries
    próprio controle), e o WhatsApp é formatado pelo plugin de DDI */
 export const SEM_PLACEHOLDER: readonly CampoFixoId[] = ["data", "horario", "contato"];
 
-export type AjusteCampo = { rotulo: string; placeholder: string; visivel: boolean; obrigatorio: boolean };
+export type AjusteCampo = { rotulo: string; placeholder: string; visivel: boolean; obrigatorio: boolean; travado: boolean };
 
 export type TipoPergunta = "texto" | "paragrafo" | "numero" | "data" | "escolha";
 
@@ -111,6 +110,8 @@ export type Pergunta = {
   rotulo: string;
   placeholder: string;
   obrigatorio: boolean;
+  visivel: boolean;
+  travado: boolean;
   /** só pro tipo "escolha" */
   opcoes: string[];
 };
@@ -179,7 +180,7 @@ const IDS_SECAO = new Set(SECOES.map((s) => s.id));
 const IDS_TIPO = new Set(TIPOS_PERGUNTA.map((t) => t.id));
 
 export function ajustePadrao(def: DefinicaoCampo): AjusteCampo {
-  return { rotulo: def.rotulo, placeholder: def.placeholder, visivel: true, obrigatorio: def.obrigatorio };
+  return { rotulo: def.rotulo, placeholder: def.placeholder, visivel: true, obrigatorio: def.obrigatorio, travado: def.travado };
 }
 
 export function formularioPadrao(): Formulario {
@@ -226,6 +227,8 @@ function normalizarPergunta(v: unknown): Pergunta | null {
     rotulo: texto(p.rotulo, LIMITES.rotulo),
     placeholder: tipo === "data" || tipo === "escolha" ? "" : texto(p.placeholder, LIMITES.placeholder),
     obrigatorio: p.obrigatorio === true,
+    visivel: p.visivel !== false,
+    travado: p.travado === true,
     /* opção vazia fica enquanto é digitada (é a linha nova do editor) */
     opcoes,
   };
@@ -245,11 +248,9 @@ export function normalizarFormulario(bruto: unknown): Formulario {
          como ser preenchido */
       rotulo: rotulo || def.rotulo,
       placeholder: SEM_PLACEHOLDER.includes(def.id) ? "" : (typeof c.placeholder === "string" ? texto(c.placeholder, LIMITES.placeholder) : def.placeholder),
-      visivel: def.regra === "travado" ? true : c.visivel !== false,
-      obrigatorio:
-        def.regra === "travado" ? def.obrigatorio
-        : def.regra === "opcional" ? false
-        : typeof c.obrigatorio === "boolean" ? c.obrigatorio : def.obrigatorio,
+      visivel: c.visivel !== false,
+      obrigatorio: typeof c.obrigatorio === "boolean" ? c.obrigatorio : def.obrigatorio,
+      travado: typeof c.travado === "boolean" ? c.travado : def.travado,
     };
   }
 
@@ -275,15 +276,25 @@ export function normalizarFormulario(bruto: unknown): Formulario {
 
 /* ---------- uso no /cadastro e na rota ---------- */
 
-/** O campo fixo é exigido no envio? (nomes seguem a regra do par, à parte) */
+/** O campo fixo é exigido no envio? (nomes também seguem a regra do par) */
 export function campoExigido(f: Formulario, id: CampoFixoId): boolean {
   const c = f.campos[id];
   return c.visivel && c.obrigatorio;
 }
 
+/**
+ * Regra do par dos nomes: quando os dois aparecem e nenhum foi marcado como
+ * obrigatório, basta um dos dois (o contrato pode ter uma pessoa só,
+ * 2026-08-08). Marcado como obrigatório, o nome vale sozinho.
+ */
+export function regraDoPar(f: Formulario): boolean {
+  const { noivo, noiva } = f.campos;
+  return noivo.visivel && noiva.visivel && !noivo.obrigatorio && !noiva.obrigatorio;
+}
+
 /** Perguntas que o casal vê: as que têm texto e, se forem de escolha, opções. */
 export function perguntasVisiveis(f: Formulario): Pergunta[] {
-  return f.perguntas.filter((p) => p.rotulo && (p.tipo !== "escolha" || p.opcoes.some(Boolean)));
+  return f.perguntas.filter((p) => p.visivel && p.rotulo && (p.tipo !== "escolha" || p.opcoes.some(Boolean)));
 }
 
 /**

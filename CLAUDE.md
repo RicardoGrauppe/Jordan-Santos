@@ -117,12 +117,15 @@ depende da Autentique estar no ar pra entregar a via.
 
 O `/cadastro` lê a config que o fotógrafo edita em `/painel/formulario`
 (tabela `config`, chave `formulario_cadastro`; sem chave = formulário padrão).
-`lib/formulario.ts` é a fonte das regras: cada campo fixo tem uma `regra`
-(`travado`, `opcional`, `livre`) e `normalizarFormulario` aplica as travas ao
-ler e ao salvar. Nomes, WhatsApp, e-mail e data nunca saem nem viram
-opcionais: o contrato, a Autentique e a busca de ficha duplicada dependem
-deles. `/api/orcamento` confere de novo com a mesma config, porque o navegador
-do casal não é confiável. Pergunta nova não ganha coluna: a resposta vai pra
+`lib/formulario.ts` é a fonte das regras: todo campo (fixo ou pergunta nova)
+tem três escolhas livres, aparece, obrigatório e cadeado; o cadeado só trava
+as outras duas contra mudança sem querer, não é regra do sistema. Nomes,
+WhatsApp, e-mail e data vêm com cadeado ligado e, destravados e escondidos,
+mostram no editor o que deixa de funcionar. `normalizarFormulario` aplica os
+limites ao ler e ao salvar. `/api/orcamento` confere de novo com a mesma
+config (o navegador do casal não é confiável) e aceita qualquer combinação:
+sem data, ou sem CPF e sem nome, não procura ficha repetida, só cria. Nomes
+seguem a regra do par (`regraDoPar`). Pergunta nova não ganha coluna: a resposta vai pra
 `clientes.respostas_formulario` com o texto da pergunta, e a ficha mostra só
 leitura.
 

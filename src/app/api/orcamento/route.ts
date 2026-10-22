@@ -25,7 +25,7 @@ import { NextResponse } from "next/server";
 import { rest, supabaseConfigurado } from "@/lib/supabase";
 import { textoCurto, criarLimite, ipDe, normalizarCpf } from "@/lib/util";
 import { enviarEmail, DESTINO_JORDAN } from "@/lib/email";
-import { campoExigido, exibirResposta, validarRespostas, type CampoFixoId, type RespostaFormulario } from "@/lib/formulario";
+import { campoExigido, exibirResposta, regraDoPar, validarRespostas, type CampoFixoId, type RespostaFormulario } from "@/lib/formulario";
 import { lerFormulario } from "@/lib/formulario-servidor";
 
 const estourou = criarLimite(15 * 60_000, 20);
@@ -40,8 +40,8 @@ type DadosEmail = {
   noiva: string | null;
   cpfNoivoFmt: string;
   cpfNoivaFmt: string;
-  contato: string;
-  email: string;
+  contato: string | null;
+  email: string | null;
   endereco: string | null;
   numero: string | null;
   complemento: string | null;
@@ -158,11 +158,11 @@ function templateNovoCliente(c: DadosEmail, link: string): { html: string; texto
 
   const texto =
     "Novo cliente: " + nomes + "\n" +
-    "WhatsApp: " + c.contato + "\n" +
-    "E-mail: " + c.email + "\n" +
+    (c.contato ? "WhatsApp: " + c.contato + "\n" : "") +
+    (c.email ? "E-mail: " + c.email + "\n" : "") +
     rotuloCpf + ": " + cpfs + "\n" +
     "Endereço: " + endereco + "\n" +
-    "Data do evento: " + c.dataBr + "\n" +
+    "Data do evento: " + (c.dataBr ?? "") + "\n" +
     "Horário: " + (c.horario ?? "") + "\n" +
     "Local: " + (c.local ?? "") + "\n" +
     (c.enderecoEvento ? "Endereço do evento: " + c.enderecoEvento + "\n" : "") +
@@ -198,19 +198,11 @@ export async function POST(req: Request) {
   const dataIso = typeof dados.dataEvento === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(dados.dataEvento) ? dados.dataEvento : null;
 
-  /* Basta o NOME de UMA das duas pessoas: dá pra contratar só com o noivo, só
-     com a noiva, ou com os dois (2026-08-08). O CPF é opcional desde
-     2026-08-11 — o fotógrafo atende clientes que não têm CPF, e exigir travaria
-     o cadastro deles. Quando vier, tem que estar completo: meio CPF no
-     contrato é pior do que nenhum. */
-  if (!noivo && !noiva) {
-    return NextResponse.json({ erro: "informe o nome de pelo menos um dos contratantes" }, { status: 400 });
-  }
+  /* CPF, quando vier, tem que estar completo: meio CPF no contrato é pior do
+     que nenhum. O resto do que é exigido (nomes inclusive) vem da config,
+     mais abaixo. */
   if ((cpfNoivo && cpfNoivo.length !== 11) || (cpfNoiva && cpfNoiva.length !== 11)) {
     return NextResponse.json({ erro: "CPF precisa ter 11 dígitos, ou pode ficar em branco" }, { status: 400 });
-  }
-  if ((cpfNoivo && !noivo) || (cpfNoiva && !noiva)) {
-    return NextResponse.json({ erro: "informe o nome de quem tem o CPF preenchido" }, { status: 400 });
   }
 
   if (!supabaseConfigurado()) {
@@ -220,16 +212,26 @@ export async function POST(req: Request) {
   /* lido depois do teste do Supabase: sem banco, a leitura cairia no padrão e
      a resposta seria a mesma 503 de qualquer jeito */
   const formulario = await lerFormulario();
-  const preenchido: Record<Exclude<CampoFixoId, "noivo" | "noiva" | "cpfNoivo" | "cpfNoiva">, unknown> = {
+  /* Todo campo é escolhível no editor (22/10/2026): o que é exigido é o que
+     aparece e está marcado como obrigatório, nada mais. Nomes têm ainda a
+     regra do par: aparecendo os dois e nenhum obrigatório, basta um (dá pra
+     contratar só com o noivo, só com a noiva, ou com os dois, 2026-08-08). */
+  const preenchido: Record<CampoFixoId, unknown> = {
+    noivo, noiva, cpfNoivo, cpfNoiva,
     contato, email, cep, endereco, numero, complemento, bairro, cidade, estado,
     data: dataIso, horario, local, enderecoEvento,
   };
-  const faltando = (Object.keys(preenchido) as (keyof typeof preenchido)[])
+  const faltando = (Object.keys(preenchido) as CampoFixoId[])
     .some((id) => campoExigido(formulario, id) && !preenchido[id]);
-  /* contato, e-mail e data são travados na config e já estão em `faltando`;
-     repetidos aqui pro TypeScript saber que não chegam vazios lá embaixo */
-  if (faltando || !contato || !email || !dataIso) {
+  if (faltando) {
     return NextResponse.json({ erro: "preencha todos os campos obrigatórios" }, { status: 400 });
+  }
+  if (regraDoPar(formulario) && !noivo && !noiva) {
+    return NextResponse.json({ erro: "informe o nome de pelo menos um dos contratantes" }, { status: 400 });
+  }
+  /* CPF sem nome só quando o nome aparece: escondido, o casal nem teria como */
+  if ((cpfNoivo && !noivo && formulario.campos.noivo.visivel) || (cpfNoiva && !noiva && formulario.campos.noiva.visivel)) {
+    return NextResponse.json({ erro: "informe o nome de quem tem o CPF preenchido" }, { status: 400 });
   }
 
   const conferencia = validarRespostas(formulario, dados.respostas);
@@ -298,11 +300,17 @@ export async function POST(req: Request) {
   const chaveCpf = cpfNoivo || cpfNoiva;
   const filtro = chaveCpf
     ? "&or=(cpf_noivo.eq." + chaveCpf + ",cpf_noiva.eq." + chaveCpf + ")"
-    : (noivo ? "&noivo=eq." : "&noiva=eq.") + encodeURIComponent(noivo || noiva || "");
+    : noivo || noiva ? (noivo ? "&noivo=eq." : "&noiva=eq.") + encodeURIComponent(noivo || noiva || "")
+    : null;
   try {
-    const achados = await rest<{ id: string }[]>(
-      "clientes?data_evento=eq." + encodeURIComponent(dataIso) + filtro + "&select=id&limit=1",
-    );
+    /* sem data, ou sem CPF e sem nome (o fotógrafo pode ter tirado esses
+       campos do formulário), não há como saber se é o mesmo casal: cria
+       ficha nova, que é o modo de falhar seguro */
+    const achados = dataIso && filtro
+      ? await rest<{ id: string }[]>(
+          "clientes?data_evento=eq." + encodeURIComponent(dataIso) + filtro + "&select=id&limit=1",
+        )
+      : null;
     const existente = achados && achados[0];
     if (existente) {
       await rest("clientes?id=eq." + existente.id, { method: "PATCH", body: linha });
