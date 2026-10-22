@@ -19,10 +19,13 @@ import "server-only";
   a própria plataforma assina por ele no envio (`signDocument`, que não manda
   e-mail pro dono da chave); o casal é o segundo e só então é chamado.
 
-  Entrega POR LINK (`DELIVERY_METHOD_LINK`): a Autentique não manda e-mail, e
-  devolve o `short_link` do signatário. É o que o painel precisa, porque quem
-  entrega o contrato aqui é o fotógrafo, pelo WhatsApp. No modo e-mail (padrão)
-  o `link` volta nulo e não sobra nada pra copiar.
+  Entrega POR E-MAIL + link (desde 22/10/2026, no fim do dia): a Autentique
+  manda o e-mail de assinatura pro casal E o painel pega o link com
+  `createLinkToSignature`, pra o fotógrafo também mandar no WhatsApp. No modo
+  e-mail a criação devolve `link: null`; foi isso que levou ao modo só-link de
+  manhã, até achar essa mutation. Medido em sandbox: o e-mail sai de verdade
+  (enviado e entregue em 2s), e `email_events` diz enviado/entregue/aberto/
+  recusado com o motivo (o primeiro teste voltou com "caixa cheia").
 
   Cota: o plano gratuito dá 20 documentos por mês (lido da própria conta em
   22/10/2026: `me.subscription.documents`), renovando no dia do `ends_at`.
@@ -33,8 +36,18 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const ENDPOINT = "https://api.autentique.com.br/v2/graphql";
 
+export type EventosEmail = {
+  sent: string | null;
+  delivered: string | null;
+  opened: string | null;
+  refused: string | null;
+  reason: string | null;
+};
+
 export type AssinaturaAutentique = {
   public_id: string;
+  email_events?: EventosEmail | null;
+  delivery_method?: string | null;
   name: string | null;
   email: string | null;
   action: { name: string } | null;
@@ -120,6 +133,8 @@ const CAMPOS_ASSINATURA = `
   viewed { created_at }
   signed { created_at }
   rejected { created_at }
+  delivery_method
+  email_events { sent delivered opened refused reason }
 `;
 
 /**
@@ -163,18 +178,13 @@ export async function criarDocumento(entrada: {
         date_format: "DD_MM_YYYY",
       },
     },
-    /* ENTREGA POR LINK, não por e-mail da Autentique. Medido em 22/10/2026,
-       depois do primeiro envio real: no modo e-mail (o padrão) a resposta vem
-       com `link: null` pros dois signatários, e o painel inteiro aqui é feito
-       em cima de "copiar o link e mandar no WhatsApp", que é como o fotógrafo
-       trabalha. No modo link a Autentique devolve o `short_link` e não manda
-       e-mail; o link continua amarrado ao e-mail do signatário, que precisa
-       confirmar a identidade pra assinar. Por isso `name` é obrigatório aqui. */
+    /* ENTREGA POR E-MAIL: a Autentique avisa o casal. O link pra copiar vem
+       depois, de `linkDoSignatario` (aqui ele volta nulo). */
     signers: entrada.signatarios.map((s) => ({
       name: s.nome,
       email: s.email,
       action: "SIGN",
-      delivery_method: "DELIVERY_METHOD_LINK",
+      delivery_method: "DELIVERY_METHOD_EMAIL",
     })),
     file: null,
   };
@@ -225,6 +235,52 @@ export async function assinarComoDono(id: string): Promise<boolean> {
 }
 
 /**
+ * Link de assinatura de um signatário no modo e-mail, onde a criação não
+ * devolve link. A Autentique gera (ou devolve o mesmo) `short_link`.
+ */
+export async function linkDoSignatario(publicId: string): Promise<string | null> {
+  const d = await gql<{ createLinkToSignature: { short_link: string | null } | null }>(
+    "mutation ($p: UUID!) { createLinkToSignature(public_id: $p) { short_link } }",
+    { p: publicId },
+  );
+  return d.createLinkToSignature?.short_link ?? null;
+}
+
+/** Manda de novo o e-mail de assinatura (signatário em modo e-mail). */
+export async function reenviarEmail(publicId: string): Promise<boolean> {
+  const d = await gql<{ resendSignatures: boolean | null }>(
+    "mutation ($ids: [UUID]) { resendSignatures(public_ids: $ids) }",
+    { ids: [publicId] },
+  );
+  return Boolean(d.resendSignatures);
+}
+
+/**
+ * Recria o signatário com o MESMO e-mail (a Autentique recusa dois iguais,
+ * "signer_already_exists"): aqui não dá pra criar antes de apagar. Serve pra
+ * tirar do modo link quem foi criado antes de a entrega voltar a ser por
+ * e-mail. Se a criação falhar, tenta de novo uma vez antes de desistir.
+ */
+export async function recriarSignatario(
+  documentoId: string,
+  publicIdAntigo: string,
+  pessoa: { nome: string; email: string },
+): Promise<AssinaturaAutentique> {
+  await gql<{ deleteSigner: boolean | null }>(
+    "mutation ($pid: UUID!, $doc: UUID!) { deleteSigner(public_id: $pid, document_id: $doc) }",
+    { pid: publicIdAntigo, doc: documentoId },
+  );
+  const criar = () => gql<{ createSigner: AssinaturaAutentique }>(
+    `mutation ($doc: UUID!, $signer: SignerInput!) {
+      createSigner(document_id: $doc, signer: $signer) { ${CAMPOS_ASSINATURA} }
+    }`,
+    { doc: documentoId, signer: { name: pessoa.nome, email: pessoa.email, action: "SIGN", delivery_method: "DELIVERY_METHOD_EMAIL" } },
+  );
+  const d = await criar().catch(() => criar());
+  return d.createSigner;
+}
+
+/**
  * Troca quem assina sem trocar o documento (22/10/2026): tira o signatário
  * antigo e põe um novo, com o e-mail certo, no mesmo documento. A assinatura
  * de quem já assinou (o fotógrafo) fica, o PDF é o mesmo e não gasta cota,
@@ -245,7 +301,7 @@ export async function trocarSignatario(
     }`,
     {
       doc: documentoId,
-      signer: { name: novo.nome, email: novo.email, action: "SIGN", delivery_method: "DELIVERY_METHOD_LINK" },
+      signer: { name: novo.nome, email: novo.email, action: "SIGN", delivery_method: "DELIVERY_METHOD_EMAIL" },
     },
   );
   await gql<{ deleteSigner: boolean | null }>(

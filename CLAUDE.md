@@ -99,13 +99,16 @@ calculado só no servidor. Contrato de texto fixo antigo (sem
 `template_json_snapshot`) não é editável e cai na revisão antiga
 (`rotaDaRevisaoAntiga`).
 
-**Entrega é por LINK (`DELIVERY_METHOD_LINK`), e isso não é detalhe.** Medido
-em 22/10/2026, no primeiro envio real: no modo e-mail (o padrão) a Autentique
-não manda link nenhum na resposta (`link: null` pros dois) e o painel fica sem
-nada pra copiar, que foi o erro "a Autentique ainda não devolveu o link". No
-modo link ela devolve o `short_link` e **não manda e-mail**: quem entrega o
-contrato é o fotógrafo. O link segue amarrado ao e-mail do signatário, que
-confirma identidade pra assinar, então mandar por WhatsApp não afrouxa nada.
+**Entrega é por E-MAIL, e o link vem à parte.** No modo e-mail
+(`DELIVERY_METHOD_EMAIL`) a Autentique manda o pedido de assinatura pro casal,
+mas a criação devolve `link: null`; o link pra copiar/WhatsApp sai de
+`createLinkToSignature(public_id)` (`linkDoSignatario`). Medido em 22/10/2026:
+o sandbox manda e-mail de verdade, e `signatures.email_events` diz enviado,
+entregue, aberto e recusado com o motivo (copiado pra `contratos.autentique_email`
+na sincronização e mostrado embaixo de "Enviado ao casal"; o primeiro teste
+voltou com "caixa cheia"). Contratos criados antes, em modo link
+(`DELIVERY_METHOD_LINK`, que não manda e-mail), passam pro modo e-mail no
+"Reenviar" (mesmo e-mail), que recria o signatário.
 
 O estado continua nas colunas de sempre (`status`, `visualizado_em`,
 `assinado_em`, `pdf_base64`): `lib/contrato-autentique.ts` traduz o que vem de
@@ -118,7 +121,9 @@ tabela não tem "recusado".
 **E-mail do casal errado não recria documento.** "Trocar e-mail e reenviar"
 (cartão do contrato na ficha) troca o signatário NO MESMO documento
 (`createSigner` + `deleteSigner`, nessa ordem): a assinatura do fotógrafo
-fica, não gasta cota, só o link do casal muda. Enquanto o contrato espera o
+fica, não gasta cota, só o link do casal muda. Com o MESMO e-mail vira
+"Reenviar": `resendSignatures` se o signatário já é de e-mail; senão recria
+(a Autentique recusa dois iguais, `signer_already_exists`). Enquanto o contrato espera o
 casal, o campo de e-mail da ficha fica só leitura e aponta pra esse botão. A
 Autentique recusa e-mail com "+" (`format_is_invalid`).
 

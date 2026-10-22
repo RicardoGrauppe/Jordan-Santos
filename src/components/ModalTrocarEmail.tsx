@@ -35,7 +35,7 @@ export function ModalTrocarEmail({ emailAtual, ocupado, erro, aoFechar, aoTrocar
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-5" role="dialog" aria-modal="true" aria-label="Trocar e-mail e reenviar">
       <div className="absolute inset-0 bg-[rgba(29,29,27,.5)] backdrop-blur-[2px]" onClick={() => { if (!ocupado) aoFechar(); }} />
       <form className="relative z-[1] w-full max-w-[440px] rounded-[18px] bg-paper p-8 pb-6 shadow-alta"
-        onSubmit={(e) => { e.preventDefault(); if (valido && !igual && !ocupado) aoTrocar(email.trim()); }}>
+        onSubmit={(e) => { e.preventDefault(); if (valido && !ocupado) aoTrocar(email.trim()); }}>
         <button type="button" onClick={aoFechar} aria-label="Fechar" disabled={ocupado}
           className="absolute right-4 top-4 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[10px] text-ink-soft hover:bg-soft hover:text-ink">
           <X size={16} />
@@ -47,7 +47,8 @@ export function ModalTrocarEmail({ emailAtual, ocupado, erro, aoFechar, aoTrocar
           Trocar e-mail e reenviar
         </h3>
         <p className="m-0 mb-4 text-[14.5px] leading-[1.6] text-ink-soft">
-          O casal assina com o e-mail cadastrado. Se ele estava errado, corrija aqui e mande o link novo pra eles.
+          A Autentique manda o pedido de assinatura pra esse e-mail. Se ele estava errado, corrija aqui; se está
+          certo e o casal não recebeu, é só reenviar.
         </p>
 
         <Campo id="email-novo-casal" type="email" rotulo="E-mail do casal" autoFocus autoComplete="off"
@@ -57,7 +58,7 @@ export function ModalTrocarEmail({ emailAtual, ocupado, erro, aoFechar, aoTrocar
           {[
             "É o mesmo contrato: sua assinatura continua valendo.",
             "Não gasta documento da Autentique.",
-            "O link do casal muda; o antigo para de funcionar.",
+            igual ? "A Autentique manda o e-mail de novo." : "O link do casal muda; o antigo para de funcionar.",
           ].map((t) => (
             <li key={t} className="flex items-start gap-2">
               <Check size={15} className="mt-0.5 shrink-0 text-ok" /> {t}
@@ -69,8 +70,8 @@ export function ModalTrocarEmail({ emailAtual, ocupado, erro, aoFechar, aoTrocar
 
         <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row">
           <Botao type="button" variante="secundario" className="sm:flex-1" onClick={aoFechar} disabled={ocupado}>Cancelar</Botao>
-          <Botao type="submit" className="sm:flex-1" disabled={!valido || igual || ocupado}>
-            {ocupado ? "Trocando…" : "Trocar e reenviar"}
+          <Botao type="submit" className="sm:flex-1" disabled={!valido || ocupado}>
+            {ocupado ? (igual ? "Reenviando…" : "Trocando…") : (igual ? "Reenviar" : "Trocar e reenviar")}
           </Botao>
         </div>
       </form>

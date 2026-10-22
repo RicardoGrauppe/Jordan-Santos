@@ -59,6 +59,8 @@ export type Contrato = {
   autentique_id?: string | null;
   autentique_link?: string | null;
   recusado_em?: string | null;
+  /* o e-mail que a Autentique mandou pro casal (sincronizado de lá) */
+  autentique_email?: { sent: string | null; delivered: string | null; opened: string | null; refused: string | null; reason: string | null } | null;
   /* calculados no servidor (22/10/2026): tem texto editável e não foi
      assinado; e o que está na Autentique é anterior à última edição */
   editavel?: boolean;

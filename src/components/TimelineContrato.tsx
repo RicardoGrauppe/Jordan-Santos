@@ -44,6 +44,8 @@ export function TimelineContrato({
   const cancelado = contrato.status === "cancelado";
   const precisaReconfirmar = jaLiberado && !assinadoFotografo && !jaAssinado;
 
+  const email = statusDoEmail(contrato.autentique_email);
+
   const passos: { titulo: string; data: string | null | undefined; ok?: boolean }[] = [
     { titulo: "Contrato criado", data: contrato.criado_em },
     { titulo: "Confirmado", data: contrato.jordan_confirmado_em },
@@ -92,6 +94,12 @@ export function TimelineContrato({
               <div className="min-w-0 pt-[3px]">
                 <div className={"font-medium leading-[1.35] " + (concluido ? "text-ink" : "text-ink-soft")}>{p.titulo}</div>
                 <div className="mt-0.5 text-[12.5px] text-ink-soft">{p.data ? fmtDataHora(p.data) : "Pendente"}</div>
+                {/* o que aconteceu com o e-mail que a Autentique mandou */}
+                {p.titulo === "Enviado ao casal" && email ? (
+                  <div className={"mt-1 text-[12.5px] leading-[1.45] " + (email.erro ? "font-medium text-erro" : "text-ink-soft")}>
+                    {email.texto}
+                  </div>
+                ) : null}
               </div>
             </li>
           );
@@ -238,4 +246,33 @@ function Linha({ rotulo, tecnico, children }: { rotulo: string; tecnico?: boolea
       </dd>
     </>
   );
+}
+
+/* ---------- e-mail da Autentique ----------
+   A Autentique manda o e-mail de assinatura e conta o que houve com ele
+   (signatures.email_events, sincronizado em contratos.autentique_email). As
+   datas vêm sem fuso, no horário do documento, que é o de Brasília. */
+
+type EventosEmail = NonNullable<Contrato["autentique_email"]>;
+
+function dataDaAutentique(v: string): string {
+  return v.includes("T") ? v : v.replace(" ", "T") + "-03:00";
+}
+
+/** motivo técnico do provedor → o que o fotógrafo precisa saber */
+function motivoLegivel(motivo: string | null): string {
+  const m = (motivo || "").toLowerCase();
+  if (/storage|quota|full|cheia/.test(m)) return "a caixa de entrada do casal está cheia";
+  if (/does not exist|unknown|no such user|5\.1\.1|not found|invalid/.test(m)) return "esse e-mail não existe";
+  if (/spam|blocked|block/.test(m)) return "o provedor do casal bloqueou o e-mail";
+  return "o provedor do casal recusou o e-mail";
+}
+
+function statusDoEmail(ev: EventosEmail | null | undefined): { texto: string; erro?: boolean } | null {
+  if (!ev) return null;
+  if (ev.refused) return { texto: "E-mail voltou: " + motivoLegivel(ev.reason) + ". Confira o e-mail ou mande o link pelo WhatsApp.", erro: true };
+  if (ev.opened) return { texto: "E-mail aberto em " + fmtDataHora(dataDaAutentique(ev.opened)) };
+  if (ev.delivered) return { texto: "E-mail entregue em " + fmtDataHora(dataDaAutentique(ev.delivered)) };
+  if (ev.sent) return { texto: "E-mail enviado, esperando a entrega" };
+  return null;
 }

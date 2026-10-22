@@ -548,6 +548,7 @@ export default function PaginaCliente() {
     const id = clienteIdRef.current;
     const autentiqueId = contrato?.autentique_id;
     if (!id || !autentiqueId) return;
+    const mesmoEmail = email.trim().toLowerCase() === (fichaRef.current.email || "").trim().toLowerCase();
     setTrocaEmail({ ocupado: true, erro: "" });
     try {
       await api("/api/estudio", { acao: "trocar-email-casal", id, email });
@@ -562,8 +563,9 @@ export default function PaginaCliente() {
           mensagem: r.mensagem || r.link,
           urlContrato: urlNoAutentique(autentiqueId),
           atualizado: true,
-          titulo: "E-mail trocado",
-          texto: "O casal agora assina com " + email + ". É o mesmo contrato, com a sua assinatura, e não gastou documento da Autentique.",
+          titulo: mesmoEmail ? "E-mail reenviado" : "E-mail trocado",
+          texto: (mesmoEmail ? "A Autentique mandou de novo o pedido de assinatura pra " : "O casal agora assina com ") + email +
+            ". É o mesmo contrato, com a sua assinatura, e não gastou documento da Autentique.",
         });
       }
     } catch (e) {

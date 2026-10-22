@@ -189,7 +189,7 @@ async function ultimoContrato(clienteId: string): Promise<ContratoComTemplate | 
       "doc_sha256,aceite_texto,aceite_em,verificado_em,verificacao_metodo," +
       "template_id,template_nome,template_html_snapshot," +
       /* vínculo com o documento lá: é o que acende o "Abrir na Autentique" */
-      "autentique_id,autentique_link,recusado_em,autentique_hash,template_json_snapshot" +
+      "autentique_id,autentique_link,autentique_email,recusado_em,autentique_hash,template_json_snapshot" +
       "&order=criado_em.desc&limit=1",
     );
     const linha = (linhas && linhas[0]) || null;
@@ -769,6 +769,7 @@ export async function POST(req: Request) {
           /* signatário novo: o "visto" era do e-mail antigo */
           status: "enviado",
           visualizado_em: null,
+          autentique_email: null,
         },
       });
       /* o e-mail mudou no snapshot, mas o documento lá também mudou junto:
@@ -806,7 +807,7 @@ export async function POST(req: Request) {
       const ativos = await rest<LinhaContratoLiberar[]>(
         "contratos?cliente_id=eq." + id +
         "&autentique_id=not.is.null&status=in.(enviado,visualizado)" +
-        "&select=id,token,status,jordan_confirmado_em,autentique_id,autentique_link,visualizado_em,assinado_em," +
+        "&select=id,token,status,jordan_confirmado_em,autentique_id,autentique_link,autentique_email,visualizado_em,assinado_em," +
         "snapshot,template_id,template_json_snapshot,jordan_assinatura_dataurl&order=criado_em.desc&limit=1",
       );
       const contrato = ativos && ativos[0];
