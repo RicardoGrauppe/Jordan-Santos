@@ -625,7 +625,6 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
           valores={{
             produtos, itens, total, entrada, travado: !!enviando,
             aoAlternar: (p) => comItens(alternarItem(itens, p, produtos || [])),
-            aoValorItem: (pid, valor) => comItens(itens.map((i) => (i.id === pid ? { ...i, valor } : i))),
             aoTotal: (t) => mudarValores({ itens, total: t, entrada: t != null ? Math.round(t * 30) / 100 : entrada }),
             aoEntrada: (e) => mudarValores({ itens, total, entrada: e }),
           }} />

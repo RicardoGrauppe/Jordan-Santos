@@ -8,8 +8,9 @@
   - pacote é escolha única; adicional soma;
   - o que o pacote escolhido já inclui sai da lista (era o "Eternal já traz o
     pré-wedding", agora configurável no produto);
-  - item escolhido tem o valor editável: é o fotógrafo quem negocia o preço
-    de cada casal, e o valor fica gravado no cliente, nunca relido do catálogo;
+  - o valor de cada item é o do momento da escolha, gravado no cliente (nunca
+    relido do catálogo); quem negocia o preço do casal mexe no Total e na
+    Entrada (desde 22/10/2026 o item não é mais editável aqui);
   - total = soma dos itens e entrada = 30%; total editado à mão recalcula a
     entrada, e editar a entrada não mexe no total.
 
@@ -24,7 +25,7 @@ import { formatarMoeda, parseMoeda } from "@/lib/ficha";
 import { incluidosPelaEscolha, type ItemEscolhido, type Produto } from "@/lib/produtos";
 
 export function SeletorItens({
-  produtos, itens, total, entrada, travado, aoAlternar, aoValorItem, aoTotal, aoEntrada,
+  produtos, itens, total, entrada, travado, aoAlternar, aoTotal, aoEntrada,
 }: {
   produtos: Produto[] | null;
   itens: ItemEscolhido[];
@@ -32,7 +33,6 @@ export function SeletorItens({
   entrada: number | null;
   travado: boolean;
   aoAlternar: (p: Produto) => void;
-  aoValorItem: (id: string, valor: number) => void;
   aoTotal: (valor: number | null) => void;
   aoEntrada: (valor: number | null) => void;
 }) {
@@ -76,7 +76,7 @@ export function SeletorItens({
             <div className="grid gap-0.5">
               {lista.map((p) => (
                 <Linha key={p.id} produto={p} item={escolhido(p.id)} travado={travado}
-                  aoAlternar={() => aoAlternar(p)} aoValor={(v) => aoValorItem(p.id, v)} />
+                  aoAlternar={() => aoAlternar(p)} />
               ))}
             </div>
           </div>
@@ -91,9 +91,9 @@ export function SeletorItens({
   );
 }
 
-function Linha({ produto, item, travado, aoAlternar, aoValor }: {
+function Linha({ produto, item, travado, aoAlternar }: {
   produto: Produto; item: ItemEscolhido | undefined; travado: boolean;
-  aoAlternar: () => void; aoValor: (v: number) => void;
+  aoAlternar: () => void;
 }) {
   const ativo = !!item;
   return (
@@ -111,42 +111,12 @@ function Linha({ produto, item, travado, aoAlternar, aoValor }: {
         {ativo ? <Check size={12} strokeWidth={3} /> : null}
       </span>
       <span className="min-w-0 flex-1 truncate" title={produto.nome}>{produto.curto}</span>
-      {ativo ? (
-        <ValorDoItem valor={item!.valor} travado={travado} aoMudar={aoValor} rotulo={"Valor de " + produto.curto} />
-      ) : (
-        <span className="shrink-0 whitespace-nowrap text-[12.5px] tabular-nums text-ink-soft">R$ {formatarMoeda(produto.preco)}</span>
-      )}
+      {/* preço só leitura: quem acerta o valor do casal é o Total/Entrada
+          embaixo (ou a tabela na folha), não item a item */}
+      <span className={"shrink-0 whitespace-nowrap text-[12.5px] tabular-nums " + (ativo ? "" : "text-ink-soft")}>
+        R$ {formatarMoeda(ativo ? item!.valor : produto.preco)}
+      </span>
     </div>
-  );
-}
-
-/* Valor do item escolhido: texto que vira campo no clique (o fotógrafo
-   negocia o preço por casal). O clique não marca/desmarca a linha. */
-function ValorDoItem({ valor, travado, aoMudar, rotulo }: {
-  valor: number; travado: boolean; aoMudar: (v: number) => void; rotulo: string;
-}) {
-  const [texto, setTexto] = useState<string | null>(null);
-  if (texto === null) {
-    return (
-      <button type="button" disabled={travado} aria-label={rotulo} title="Editar valor"
-        onClick={(e) => { e.stopPropagation(); setTexto(formatarMoeda(valor)); }}
-        className="shrink-0 cursor-pointer whitespace-nowrap rounded-[7px] px-1.5 py-0.5 text-[12.5px] tabular-nums transition-colors hover:bg-paper disabled:cursor-default">
-        R$ {formatarMoeda(valor)}
-      </button>
-    );
-  }
-  const fechar = () => {
-    const n = parseMoeda(texto);
-    if (n !== null && n >= 0) aoMudar(n);
-    setTexto(null);
-  };
-  return (
-    <input autoFocus value={texto} inputMode="decimal" aria-label={rotulo}
-      onClick={(e) => e.stopPropagation()}
-      onChange={(e) => setTexto(e.target.value)}
-      onBlur={fechar}
-      onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") fechar(); if (e.key === "Escape") setTexto(null); }}
-      className="h-7 w-[96px] shrink-0 rounded-[7px] bg-paper px-2 text-right text-[12.5px] font-semibold tabular-nums text-ink outline-none" />
   );
 }
 
