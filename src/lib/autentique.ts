@@ -19,6 +19,11 @@ import "server-only";
   a própria plataforma assina por ele no envio (`signDocument`, que não manda
   e-mail pro dono da chave); o casal é o segundo e só então é chamado.
 
+  Entrega POR LINK (`DELIVERY_METHOD_LINK`): a Autentique não manda e-mail, e
+  devolve o `short_link` do signatário. É o que o painel precisa, porque quem
+  entrega o contrato aqui é o fotógrafo, pelo WhatsApp. No modo e-mail (padrão)
+  o `link` volta nulo e não sobra nada pra copiar.
+
   Plano gratuito: 10 documentos por mês. `AUTENTIQUE_SANDBOX=true` cria
   documento de teste, que não gasta cota e some em alguns dias.
 */
@@ -146,7 +151,19 @@ export async function criarDocumento(entrada: {
         date_format: "DD_MM_YYYY",
       },
     },
-    signers: entrada.signatarios.map((s) => ({ name: s.nome, email: s.email, action: "SIGN" })),
+    /* ENTREGA POR LINK, não por e-mail da Autentique. Medido em 22/10/2026,
+       depois do primeiro envio real: no modo e-mail (o padrão) a resposta vem
+       com `link: null` pros dois signatários, e o painel inteiro aqui é feito
+       em cima de "copiar o link e mandar no WhatsApp", que é como o fotógrafo
+       trabalha. No modo link a Autentique devolve o `short_link` e não manda
+       e-mail; o link continua amarrado ao e-mail do signatário, que precisa
+       confirmar a identidade pra assinar. Por isso `name` é obrigatório aqui. */
+    signers: entrada.signatarios.map((s) => ({
+      name: s.nome,
+      email: s.email,
+      action: "SIGN",
+      delivery_method: "DELIVERY_METHOD_LINK",
+    })),
     file: null,
   };
 

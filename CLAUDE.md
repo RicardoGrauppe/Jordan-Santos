@@ -70,11 +70,19 @@ Autentique, pela API GraphQL v2, com a chave da conta do **próprio fotógrafo**
 (é o nome dela que o casal vê no pedido).
 
 Caminho: o painel confirma o contrato (o fotógrafo assina a cursiva dele, que
-vai carimbada no PDF) → "enviar pro casal" monta o PDF **sem a nossa folha de
-comprovante**, sobe pra Autentique com dois signatários em ordem
+vai carimbada no PDF) → "enviar pra assinatura" monta o PDF **sem a nossa
+folha de comprovante**, sobe pra Autentique com dois signatários em ordem
 (`sortable`), assina pelo dono da chave (`signDocument`, que não gera e-mail
 pra ele) e devolve o link curto do casal, que o fotógrafo manda por WhatsApp
-como sempre fez. A Autentique também avisa o casal por e-mail.
+como sempre fez.
+
+**Entrega é por LINK (`DELIVERY_METHOD_LINK`), e isso não é detalhe.** Medido
+em 22/10/2026, no primeiro envio real: no modo e-mail (o padrão) a Autentique
+não manda link nenhum na resposta (`link: null` pros dois) e o painel fica sem
+nada pra copiar, que foi o erro "a Autentique ainda não devolveu o link". No
+modo link ela devolve o `short_link` e **não manda e-mail**: quem entrega o
+contrato é o fotógrafo. O link segue amarrado ao e-mail do signatário, que
+confirma identidade pra assinar, então mandar por WhatsApp não afrouxa nada.
 
 O estado continua nas colunas de sempre (`status`, `visualizado_em`,
 `assinado_em`, `pdf_base64`): `lib/contrato-autentique.ts` traduz o que vem de
