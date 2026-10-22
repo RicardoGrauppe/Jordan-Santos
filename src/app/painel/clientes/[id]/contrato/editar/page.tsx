@@ -28,7 +28,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Info, PanelLeft, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
+  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Info, PanelBottomOpen, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
   PenTool, Plus, Search, Send, Table, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
@@ -690,7 +690,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
         <div className="flex items-center gap-2">
           <button type="button" onClick={abrirPainel} aria-label="Abrir painel do contrato"
             className="inline-flex h-12 shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-soft px-4 text-[13.5px] font-semibold text-accent transition-colors active:bg-line">
-            <PanelLeft size={17} /> Painel
+            <PanelBottomOpen size={17} /> Painel
           </button>
           {botao("rodape")}
         </div>
