@@ -153,7 +153,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
         {topo}
         {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
             ao desktop, onde tudo cabe numa só */}
-        <div className="flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap">
+        <div className="flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap md:justify-center">
         <select
           aria-label="Estilo do texto"
           value={estiloAtual}

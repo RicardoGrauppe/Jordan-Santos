@@ -25,7 +25,7 @@
 */
 "use client";
 
-import { use, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Info, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
@@ -111,6 +111,101 @@ function CartaoLateral({ chave, icone: Icone, titulo, texto, children }: {
   );
 }
 
+/* Seletor de modelo (22/10/2026, pedido do Ricardo): o próprio bloco cinza
+   cresce mostrando os outros modelos embaixo do atual, sem repetir o nome. O
+   atual fica sempre em cima; escolher outro troca os dois de lugar com
+   animação (FLIP: guarda onde cada linha estava, deixa o React reordenar e
+   anima cada uma do lugar antigo pro novo) e o bloco fecha em seguida. */
+function SeletorModelo({ modelos, modeloId, ocupado, aberto, setAberto, aoEscolher, aoNovo }: {
+  modelos: ModeloResumo[] | null; modeloId: string | null; ocupado: boolean;
+  aberto: boolean; setAberto: (v: boolean | ((x: boolean) => boolean)) => void;
+  aoEscolher: (id: string) => void; aoNovo: () => void;
+}) {
+  const ALTURA_LINHA = 44;
+  const listaRef = useRef<HTMLDivElement>(null);
+  const linhas = useRef(new Map<string, HTMLElement>());
+  const posicoes = useRef(new Map<string, number>());
+  const [alturaAberta, setAlturaAberta] = useState(ALTURA_LINHA);
+
+  const lista = modelos ?? [];
+  const atual = lista.find((m) => m.id === modeloId) ?? null;
+  const ordem = [...(atual ? [atual] : []), ...lista.filter((m) => m.id !== modeloId)];
+  const chaveOrdem = ordem.map((m) => m.id).join("|");
+
+  /* FLIP: cada linha anima do lugar de antes pro de agora. Posição pelo
+     offsetTop (layout puro): o getBoundingClientRect inclui o transform da
+     animação em curso e, medido no meio dela, empilhava deslocamentos. */
+  const ordemAnterior = useRef(chaveOrdem);
+  useLayoutEffect(() => {
+    const mudouOrdem = ordemAnterior.current !== chaveOrdem;
+    ordemAnterior.current = chaveOrdem;
+    linhas.current.forEach((el, id) => {
+      const agora = el.offsetTop;
+      const antes = posicoes.current.get(id);
+      if (mudouOrdem && antes != null && Math.abs(antes - agora) > 1) {
+        el.getAnimations().forEach((an) => an.cancel());
+        el.animate([{ transform: `translateY(${antes - agora}px)` }, { transform: "translateY(0)" }],
+          { duration: 420, easing: "cubic-bezier(0.16, 1, 0.3, 1)" });
+      }
+      posicoes.current.set(id, agora);
+    });
+    if (listaRef.current) setAlturaAberta(listaRef.current.scrollHeight);
+  }, [chaveOrdem, aberto]);
+
+  /* trocou de modelo: deixa a troca de lugar aparecer e fecha o bloco */
+  const anterior = useRef(modeloId);
+  useEffect(() => {
+    if (anterior.current === modeloId) return;
+    anterior.current = modeloId;
+    const t = setTimeout(() => setAberto(false), 520);
+    return () => clearTimeout(t);
+  }, [modeloId, setAberto]);
+
+  const selo = (m: ModeloResumo) => m.ativo
+    ? <span className="shrink-0 rounded-[6px] bg-paper px-2 py-[3px] text-[10.5px] font-semibold tracking-[.03em] text-ink-soft">Padrão</span>
+    : null;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-xl bg-soft transition-[height] duration-300 ease-[var(--ease-desliza)]"
+      style={{ height: aberto ? alturaAberta : ALTURA_LINHA }}>
+      <div ref={listaRef} className="relative grid">
+        {modelos === null ? (
+          <div className="flex h-11 items-center px-3 text-[13px] text-ink-soft">Carregando modelos…</div>
+        ) : null}
+        {ordem.map((m) => {
+          const ehAtual = m.id === modeloId;
+          return (
+            <button key={m.id} type="button" disabled={ocupado} aria-expanded={ehAtual ? aberto : undefined}
+              ref={(el) => { if (el) linhas.current.set(m.id, el); else linhas.current.delete(m.id); }}
+              onClick={() => { if (ehAtual) setAberto((v) => !v); else aoEscolher(m.id); }}
+              tabIndex={ehAtual || aberto ? 0 : -1}
+              className={"relative flex h-11 w-full shrink-0 cursor-pointer items-center gap-2.5 px-3 text-left text-[13px] transition-colors disabled:cursor-default " +
+                (ehAtual ? "z-[1] bg-soft font-semibold text-ink hover:bg-line" : "text-ink hover:bg-line")}>
+              <span className="min-w-0 flex-1 truncate">{m.nome || "Sem nome"}</span>
+              {selo(m)}
+              {ehAtual
+                ? <ChevronDown size={16} className={"shrink-0 text-ink-soft transition-[rotate] duration-300 " + (aberto ? "rotate-180" : "")} />
+                : <span className="w-4 shrink-0" aria-hidden />}
+            </button>
+          );
+        })}
+        {modelos !== null && !atual ? (
+          <button type="button" onClick={() => setAberto((v) => !v)}
+            className="flex h-11 w-full cursor-pointer items-center gap-2.5 px-3 text-left text-[13px] text-ink-soft hover:bg-line">
+            <span className="flex-1">{modeloId ? "Modelo apagado" : "Sem modelo"}</span>
+            <ChevronDown size={16} className={"shrink-0 transition-[rotate] duration-300 " + (aberto ? "rotate-180" : "")} />
+          </button>
+        ) : null}
+        {/* "Novo modelo" abre um pop-up (nome + de onde parte) */}
+        <button type="button" disabled={ocupado} onClick={aoNovo} tabIndex={aberto ? 0 : -1}
+          className="flex h-11 w-full cursor-pointer items-center gap-2.5 px-3 text-left text-[13px] text-ink-soft transition-colors hover:bg-line hover:text-ink disabled:cursor-default">
+          <Plus size={16} className="shrink-0" /> Novo modelo
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* Lateral exclusiva do contrato de um cliente (o editor de modelos não tem).
    Três cartões: o modelo do contrato (trocar ou criar), os campos do casal e
    os blocos. */
@@ -131,14 +226,11 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
   }
 
   const [aberto, setAberto] = useState(false);
-  const modeloAtual = modelos?.find((m) => m.id === modeloId) ?? null;
 
   const termo = semAcento(busca.trim());
   const grupos = GRUPOS_CAMPO
     .map((g) => ({ ...g, campos: termo ? g.campos.filter((c) => semAcento(ROTULOS_CAMPO[c]).includes(termo)) : g.campos }))
     .filter((g) => g.campos.length);
-
-  const linha = "flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2.5 text-left text-[13px] transition-colors disabled:cursor-default";
 
   return (
     <div className="grid gap-3">
@@ -154,51 +246,8 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
       </div>
 
       <CartaoLateral chave="modelo" icone={FileText} titulo="Modelo do contrato" texto="Qual texto este contrato usa">
-        {/* dropdown que abre DENTRO do cartão: o gatilho mostra o modelo atual
-            e a lista expande empurrando o resto da lateral pra baixo */}
-        <button type="button" aria-expanded={aberto} disabled={modelos === null} onClick={() => setAberto((v) => !v)}
-          className="mt-3 flex h-11 w-full cursor-pointer items-center gap-2.5 rounded-xl bg-soft px-3 text-left text-[13px] transition-colors hover:bg-line disabled:cursor-default">
-          <span className={"min-w-0 flex-1 truncate " + (modelos === null ? "text-ink-soft" : "font-semibold text-ink")}>
-            {modelos === null ? "Carregando modelos…" : modeloAtual?.nome || (modeloId ? "Modelo apagado" : "Sem modelo")}
-          </span>
-          {modeloAtual?.ativo ? (
-            <span className="shrink-0 rounded-[6px] bg-paper px-2 py-[3px] text-[10.5px] font-semibold tracking-[.03em] text-ink-soft">Padrão</span>
-          ) : null}
-          <ChevronDown size={16} className={"shrink-0 text-ink-soft transition-[rotate] duration-300 " + (aberto ? "rotate-180" : "")} />
-        </button>
-
-        <div inert={!aberto}
-          className={"grid transition-[grid-template-rows,opacity] duration-300 ease-[var(--ease-desliza)] " +
-            (aberto ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}>
-          <div className="min-h-0 overflow-hidden">
-            <div className="grid gap-0.5 pt-1.5">
-              {(modelos || []).map((m) => {
-                const atual = m.id === modeloId;
-                return (
-                  <button key={m.id} type="button" disabled={ocupado} aria-pressed={atual}
-                    onClick={() => { setAberto(false); if (!atual) aoEscolher(m.id); }}
-                    className={linha + " " + (atual ? "bg-accent-tint font-semibold text-accent" : "text-ink hover:bg-soft")}>
-                    <span className={"inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-colors " +
-                      (atual ? "bg-accent text-white" : "bg-line")}>
-                      {atual ? <Check size={12} strokeWidth={3} /> : null}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{m.nome || "Sem nome"}</span>
-                    {m.ativo ? (
-                      <span className={"shrink-0 rounded-[6px] px-2 py-[3px] text-[10.5px] font-semibold tracking-[.03em] " +
-                        (atual ? "bg-paper text-ink-soft" : "bg-soft text-ink-soft")}>Padrão</span>
-                    ) : null}
-                  </button>
-                );
-              })}
-
-              {/* "Novo modelo" abre um pop-up (nome + de onde parte) */}
-              <button type="button" disabled={ocupado} onClick={() => setCriando(true)}
-                className={linha + " text-ink-soft hover:bg-soft hover:text-ink"}>
-                <Plus size={18} className="shrink-0" /> Novo modelo
-              </button>
-            </div>
-          </div>
-        </div>
+        <SeletorModelo modelos={modelos} modeloId={modeloId} ocupado={ocupado} aberto={aberto} setAberto={setAberto}
+          aoEscolher={aoEscolher} aoNovo={() => setCriando(true)} />
         <ModalNovoModelo aberto={criando} ocupado={ocupado} aoFechar={() => setCriando(false)}
           aoCriar={async (n, b) => { const ok = await aoCriar(n, b); if (ok) setAberto(false); return ok; }} />
       </CartaoLateral>
