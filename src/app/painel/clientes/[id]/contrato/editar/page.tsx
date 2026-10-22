@@ -35,6 +35,7 @@ import type { JSONContent } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
 import { EditorContrato } from "@/components/EditorContrato";
 import { useConfirmar } from "@/components/ModalConfirmar";
+import { CartaoAviso } from "@/components/ui";
 import { ModalNovoModelo, type BaseModelo } from "@/components/ModalNovoModelo";
 import { SeletorItens } from "@/components/SeletorItens";
 import { alternarItem, type ItemEscolhido, type Produto } from "@/lib/produtos";
@@ -142,6 +143,12 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
 
   return (
     <div className="grid gap-3">
+      {/* o que é esta coluna, numa frase (mesmo CartaoAviso do kit, sem
+          sombra e no raio dos cartões vizinhos) */}
+      <CartaoAviso tom="info" className="!rounded-[20px] !px-4 !shadow-none">
+        Monte o contrato por aqui: escolha o modelo, marque o pacote e coloque campos e blocos no texto. Tudo salva sozinho.
+      </CartaoAviso>
+
       <CartaoLateral chave="modelo" icone={FileText} titulo="Modelo do contrato" texto="Qual texto este contrato usa">
         {/* dropdown que abre DENTRO do cartão: o gatilho mostra o modelo atual
             e a lista expande empurrando o resto da lateral pra baixo */}
