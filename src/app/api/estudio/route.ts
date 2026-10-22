@@ -353,7 +353,12 @@ export async function POST(req: Request) {
         /* Contrato ainda rascunho E ninguém confirmou nada: ninguém viu esse
            conteúdo ainda, então só atualiza o snapshot em dia, sem versionar
            (não há o que preservar como "versão anterior"). */
-        if (contrato.status === "rascunho" && !contrato.jordan_confirmado_em) {
+        /* Contrato na Autentique (desde 22/10/2026): a versão que vale é o
+           documento de lá, e o "mudou desde o envio" vem do autentique_hash.
+           Versionar aqui a cada salvamento (o editor grava pacote e valores
+           sozinho) só empilharia versões e apagaria a confirmação do
+           fotógrafo, que lá já está assinada. Atualiza o snapshot e pronto. */
+        if (contrato.autentique_id || (contrato.status === "rascunho" && !contrato.jordan_confirmado_em)) {
           await rest("contratos?id=eq." + contrato.id, {
             method: "PATCH",
             body: { snapshot: snapshot },

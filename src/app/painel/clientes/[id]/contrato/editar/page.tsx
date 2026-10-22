@@ -28,7 +28,7 @@
 import { use, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, LayoutTemplate, LoaderCircle, MapPin, PenLine,
+  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
   PenTool, Plus, Search, Send, Table, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
@@ -36,6 +36,8 @@ import type { Editor } from "@tiptap/react";
 import { EditorContrato } from "@/components/EditorContrato";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { ModalNovoModelo, type BaseModelo } from "@/components/ModalNovoModelo";
+import { SeletorItens } from "@/components/SeletorItens";
+import { alternarItem, type ItemEscolhido, type Produto } from "@/lib/produtos";
 import { useVoltar } from "@/lib/voltar";
 import type { Contrato } from "@/lib/ficha";
 import { ERRO_SESSAO, api, avisoDeCota, rotaDaRevisaoAntiga, urlNoAutentique } from "@/lib/painel";
@@ -66,6 +68,8 @@ type LateralProps = {
   ocupado: boolean;
   aoEscolher: (id: string) => void;
   aoCriar: (nome: string, base: BaseModelo) => Promise<boolean>;
+  /* pacote e valores do casal */
+  valores: Parameters<typeof SeletorItens>[0];
 };
 
 /* Cartão flutuante da lateral: mesmo cabeçalho da ficha (ícone em quadrado
@@ -92,7 +96,7 @@ function CartaoLateral({ icone: Icone, titulo, texto, children }: {
 /* Lateral exclusiva do contrato de um cliente (o editor de modelos não tem).
    Três cartões: o modelo do contrato (trocar ou criar), os campos do casal e
    os blocos. */
-function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolher, aoCriar }: LateralProps) {
+function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolher, aoCriar, valores }: LateralProps) {
   const [criando, setCriando] = useState(false);
   const [busca, setBusca] = useState("");
   /* o chip que acabou de entrar no texto fica verde por um instante */
@@ -170,6 +174,10 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
           aoCriar={async (n, b) => { const ok = await aoCriar(n, b); if (ok) setAberto(false); return ok; }} />
       </CartaoLateral>
 
+      <CartaoLateral icone={Package} titulo="Pacote e valores" texto="O que o casal contratou. Vai pra tabela de itens e pros valores.">
+        <SeletorItens {...valores} />
+      </CartaoLateral>
+
       <CartaoLateral icone={Braces} titulo="Campos" texto="Clique pra pôr no cursor. O valor vem da ficha.">
         <label className="mt-3 flex h-9 items-center gap-2 rounded-[10px] bg-soft px-3 text-ink-soft">
           <Search size={15} className="shrink-0" />
@@ -224,7 +232,10 @@ function LateralContrato({ editor, fechar, modelos, modeloId, ocupado, aoEscolhe
   );
 }
 
-type Cliente = { id: string; noivo?: string | null; noiva?: string | null; email?: string | null };
+type Cliente = {
+  id: string; noivo?: string | null; noiva?: string | null; email?: string | null;
+  itens?: ItemEscolhido[] | null; total?: number | string | null; entrada?: number | string | null;
+};
 type Resposta = { cliente: Cliente; contrato: Contrato | null };
 type RespostaEnvio = {
   link?: string | null; mensagem?: string; telefone?: string;
@@ -249,6 +260,13 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   const [modelos, setModelos] = useState<ModeloResumo[] | null>(null);
   const [modeloId, setModeloId] = useState<string | null>(null);
   const [trocando, setTrocando] = useState(false);
+  /* pacote e valores (cartão da lateral); gravados no cliente, não no contrato */
+  const [produtos, setProdutos] = useState<Produto[] | null>(null);
+  const [itens, setItens] = useState<ItemEscolhido[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
+  const [entrada, setEntrada] = useState<number | null>(null);
+  const valoresPendentes = useRef<{ itens: ItemEscolhido[]; total: number | null; entrada: number | null } | null>(null);
+  const timerValores = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const pendente = useRef<{ json: JSONContent; html: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -270,6 +288,11 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
         }
         setCarga(r);
         setModeloId(c?.template_id ?? null);
+        setItens(Array.isArray(r.cliente.itens)
+          ? r.cliente.itens.map((i) => ({ id: String(i.id), nome: String(i.nome ?? ""), valor: Number(i.valor) || 0, ...(i.tipo ? { tipo: i.tipo } : {}) }))
+          : []);
+        setTotal(r.cliente.total != null && r.cliente.total !== "" ? Number(r.cliente.total) : null);
+        setEntrada(r.cliente.entrada != null && r.cliente.entrada !== "" ? Number(r.cliente.entrada) : null);
         temDocumento.current = !!c?.autentique_id;
         setAlterado(!!c?.alterado_desde_envio);
       })
@@ -294,6 +317,48 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       .then((r) => { if (vivo) setModelos(r?.modelos ?? []); });
     return () => { vivo = false; };
   }, []);
+
+  useEffect(() => {
+    let vivo = true;
+    api<{ produtos: Produto[] }>("/api/produtos")
+      .catch(() => null)
+      .then((r) => { if (vivo) setProdutos(r?.produtos ?? []); });
+    return () => { vivo = false; };
+  }, []);
+
+  /* ---------- pacote e valores ---------- */
+  const salvarValores = useCallback(async () => {
+    if (timerValores.current) { clearTimeout(timerValores.current); timerValores.current = null; }
+    const v = valoresPendentes.current;
+    if (!v) return;
+    valoresPendentes.current = null;
+    try {
+      /* mesma ação da ficha: o servidor atualiza o snapshot do contrato junto */
+      await api("/api/estudio", { acao: "atualizar", id, cliente: { itens: v.itens, total: v.total, entrada: v.entrada } });
+      setEstado({ texto: "Todas as alterações foram salvas", tom: "ok" });
+      if (temDocumento.current) setAlterado(true);
+    } catch (e) {
+      setEstado({ texto: (e as Error).message || "Não consegui salvar os valores.", tom: "erro" });
+    }
+  }, [id]);
+
+  function mudarValores(novo: { itens: ItemEscolhido[]; total: number | null; entrada: number | null }) {
+    setItens(novo.itens);
+    setTotal(novo.total);
+    setEntrada(novo.entrada);
+    valoresPendentes.current = novo;
+    setEstado({ texto: "Editando…" });
+    if (timerValores.current) clearTimeout(timerValores.current);
+    timerValores.current = setTimeout(() => { void salvarValores(); }, ESPERA_MS);
+  }
+
+  /* itens mudaram: total = soma e entrada = 30% (regra da ficha) */
+  function comItens(novos: ItemEscolhido[]) {
+    const soma = novos.reduce((s, i) => s + (Number(i.valor) || 0), 0);
+    mudarValores(novos.length
+      ? { itens: novos, total: soma, entrada: Math.round(soma * 30) / 100 }
+      : { itens: novos, total, entrada });
+  }
 
   /* ---------- salvamento automático (mesmo desenho do editor de modelos) ---------- */
   const salvarAgora = useCallback(async () => {
@@ -328,8 +393,8 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
      é montado no servidor a partir do que está gravado */
   const descarregar = useCallback(async () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-    await salvarAgora();
-  }, [salvarAgora]);
+    await Promise.all([salvarAgora(), salvarValores()]);
+  }, [salvarAgora, salvarValores]);
 
   const voltar = useVoltar("/painel/clientes/" + encodeURIComponent(id), descarregar);
 
@@ -524,7 +589,14 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       lateral={(editor, fechar) => (
         <LateralContrato editor={editor} fechar={fechar} modelos={modelos} modeloId={modeloId} ocupado={trocando || !!enviando}
           aoEscolher={(m) => { void trocarModelo(editor, m, true).then((ok) => { if (ok) fechar(); }); }}
-          aoCriar={(nome, base) => criarModelo(editor, nome, base)} />
+          aoCriar={(nome, base) => criarModelo(editor, nome, base)}
+          valores={{
+            produtos, itens, total, entrada, travado: !!enviando,
+            aoAlternar: (p) => comItens(alternarItem(itens, p, produtos || [])),
+            aoValorItem: (pid, valor) => comItens(itens.map((i) => (i.id === pid ? { ...i, valor } : i))),
+            aoTotal: (t) => mudarValores({ itens, total: t, entrada: t != null ? Math.round(t * 30) / 100 : entrada }),
+            aoEntrada: (e) => mudarValores({ itens, total, entrada: e }),
+          }} />
       )}
     />
     </>

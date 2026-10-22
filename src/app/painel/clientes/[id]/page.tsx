@@ -14,11 +14,11 @@
     o último salvamento).
   - CPF e CEP: máscara ao digitar, formatado ao exibir, só dígitos ao salvar.
     Não é cosmético: o índice único do banco é (cpf_noivo, data_evento).
-  - Total = soma dos itens, entrada = 30%. Total editado à mão recalcula a
-    entrada; editar a entrada não mexe no total.
-  - A ÚNICA trava de edição é o casal já ter assinado: aí pacote, adicionais,
-    total e entrada ficam só leitura, e nem entram no payload (o servidor os
-    descartaria e a comparação de "já salvo" acusaria mudança pra sempre).
+  - Pacote, adicionais, total e entrada NÃO se editam aqui desde 22/10/2026:
+    a escolha mora no cartão "Pacote e valores" do editor do contrato, com as
+    opções de Produtos e serviços. A ficha só mostra o resumo e nunca manda
+    esses três campos no payload (senão uma ficha aberta noutra aba
+    sobrescreveria o que foi escolhido no contrato).
   - Gerar contrato não exige ficha completa: a lista do que falta vai como
     aviso na confirmação, sem impedir.
   - autoComplete="off" em tudo: o navegador lia os rótulos (E-mail, CEP...),
@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen } from "lucide-react";
+import { CalendarHeart, ChevronDown, File, FileCheck, FileText, Heart, MapPin, NotebookPen, Pencil } from "lucide-react";
 import { Area, Aviso, Botao, BotaoVoltar, Campo, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
@@ -37,15 +37,13 @@ import { SecaoFicha, AcaoSecao } from "@/components/SecaoFicha";
 import { CampoCopiavel } from "@/components/CampoCopiavel";
 import { HeroCliente } from "@/components/HeroCliente";
 import { TituloMobile } from "@/components/cabecalho-mobile";
-import { PillsPacote, ResumoItens } from "@/components/PillsPacote";
 import { TimelineContrato } from "@/components/TimelineContrato";
 import { ModalLink, type DadosLink } from "@/components/ModalLink";
 import { ModalContratoEnviado, type DadosEnviado } from "@/components/ModalContratoEnviado";
-import { CATALOGO, PACOTES } from "@/lib/catalogo";
 import { abrirContratoEmNovaGuia, avisoDeCota, rotaDoContrato, urlNoAutentique } from "@/lib/painel";
 import {
   CAMPOS_FICHA, FICHA_VAZIA, MASCARAS, SO_DIGITOS_AO_SALVAR,
-  formatarMoeda, parseMoeda, soDigitos, copiarTexto,
+  formatarMoeda, soDigitos, copiarTexto,
   type CampoFicha, type Cliente, type Contrato, type Ficha, type ItemContrato,
 } from "@/lib/ficha";
 
@@ -109,27 +107,19 @@ function fichaDe(cliente: Cliente | null): Ficha {
 function itensDe(cliente: Cliente | null): ItemContrato[] {
   if (!cliente || !Array.isArray(cliente.itens)) return [];
   return cliente.itens.map((i) => {
-    const cat = CATALOGO[i.id];
-    return { id: i.id, nome: cat ? cat.nome : i.nome, valor: Number(i.valor) };
+    return { id: i.id, nome: i.nome, valor: Number(i.valor) };
   });
 }
 
-/** Lê a ficha como o backend espera (números crus, só dígitos, itens). */
-function montarCliente(ficha: Ficha, itens: ItemContrato[], travado: boolean): Record<string, unknown> {
+/** Lê a ficha como o backend espera (só dígitos onde precisa). */
+function montarCliente(ficha: Ficha): Record<string, unknown> {
   const cliente: Record<string, unknown> = { ...ficha };
-  (["total", "entrada"] as const).forEach((k) => {
-    if (ficha[k]) cliente[k] = ficha[k].replace(/\./g, "").replace(",", ".");
-  });
   SO_DIGITOS_AO_SALVAR.forEach((k) => {
     if (ficha[k]) cliente[k] = soDigitos(ficha[k]);
   });
-  cliente.itens = itens;
-  /* casal já assinou: nem manda os valores. O servidor descarta esses três
-     campos nesse caso, então enviá-los faria a tela dizer "Salvo" sobre algo
-     que foi jogado fora, e a comparação acusaria mudança pra sempre. */
-  if (travado) {
-    delete cliente.itens; delete cliente.total; delete cliente.entrada;
-  }
+  /* pacote e valores são do editor do contrato (ver o cabeçalho) */
+  delete cliente.total;
+  delete cliente.entrada;
   return cliente;
 }
 
@@ -244,7 +234,7 @@ export default function PaginaCliente() {
     clienteIdRef.current = r.cliente.id;
     setClienteId(r.cliente.id);
     /* marco zero do autosave: "o que está na tela é o que está no banco" */
-    ultimoSalvo.current = JSON.stringify(montarCliente(f, its, r.contrato?.status === "assinado"));
+    ultimoSalvo.current = JSON.stringify(montarCliente(f));
     setStatusSalvo({ texto: "" });
   }, [definirContrato]);
 
@@ -272,7 +262,7 @@ export default function PaginaCliente() {
   useEffect(() => {
     if (ehNovo) {
       carregadoId.current = null;
-      ultimoSalvo.current = JSON.stringify(montarCliente(FICHA_VAZIA, [], false));
+      ultimoSalvo.current = JSON.stringify(montarCliente(FICHA_VAZIA));
       return;
     }
     /* a ficha nova que acabou de ser criada troca a URL pelo id real; nesse
@@ -317,6 +307,27 @@ export default function PaginaCliente() {
     }).catch((e: unknown) => falhou(e, (msg) => avisar(msg)));
   }, [carregando, enviadoAgora, contrato, falhou, avisar]);
 
+  /* O pacote e os valores mudam no editor do contrato, que abre noutra
+     guia. Voltando pra cá, relê só esses três do banco, sem mexer no que
+     está sendo digitado na ficha. */
+  useEffect(() => {
+    if (ehNovo) return;
+    function aoVoltar() {
+      const id = clienteIdRef.current;
+      if (document.visibilityState !== "visible" || !id) return;
+      api<Resposta>("/api/estudio?id=" + encodeURIComponent(id)).then((r) => {
+        const its = itensDe(r.cliente);
+        setItens(its);
+        itensRef.current = its;
+        const f = fichaDe(r.cliente);
+        atualizarFicha((atual) => ({ ...atual, total: f.total, entrada: f.entrada }));
+        definirContrato(r.contrato ?? null);
+      }).catch(() => { /* rede fora: fica o resumo de antes */ });
+    }
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => document.removeEventListener("visibilitychange", aoVoltar);
+  }, [ehNovo, definirContrato]);
+
   /* ---------- salvamento ---------- */
 
   /** Cria ou atualiza; devolve o id (o novo, quando acabou de nascer). */
@@ -347,7 +358,7 @@ export default function PaginaCliente() {
     /* ficha nova ainda sem dono: espera um nome antes de existir no banco */
     if (!clienteIdRef.current && !(f.noivo.trim() || f.noiva.trim())) return;
     if (salvando.current) { refazerDepois.current = true; return; }
-    const payload = montarCliente(f, itensRef.current, travadoRef.current);
+    const payload = montarCliente(f);
     const agora = JSON.stringify(payload);
     if (agora === ultimoSalvo.current) return;
     salvando.current = true;
@@ -423,59 +434,6 @@ export default function PaginaCliente() {
     } catch { /* sem rede ou CEP fora do ar: o fotógrafo digita à mão */ }
   }
 
-  /* Total editado à mão recalcula a entrada nos mesmos 30% dos itens. Só nesse
-     sentido: editar a entrada não mexe no total. */
-  function mudarTotal(valor: string) {
-    if (travado) return;
-    const n = parseMoeda(valor);
-    atualizarFicha((f) => ({ ...f, total: valor, entrada: n != null ? formatarMoeda(n * 0.3) : f.entrada }));
-    agendarSalvamento();
-  }
-
-  /** reformata o que foi digitado à mão, ao sair do campo */
-  function sairDeMoeda(campo: "total" | "entrada") {
-    atualizarFicha((f) => {
-      const n = parseMoeda(f[campo]);
-      return { ...f, [campo]: n != null ? formatarMoeda(n) : "" };
-    });
-    salvarLogo();
-  }
-
-  /* ---------- itens do contrato ---------- */
-
-  function aplicarItens(novos: ItemContrato[]) {
-    setItens(novos);
-    itensRef.current = novos;
-    if (!novos.length) return;
-    const total = novos.reduce((s, i) => s + (Number(i.valor) || 0), 0);
-    atualizarFicha((f) => ({ ...f, total: formatarMoeda(total), entrada: formatarMoeda(total * 0.3) }));
-  }
-
-  function alternarItem(id: string) {
-    if (travadoRef.current) return;
-    let novos = [...itensRef.current];
-    const tem = (x: string) => novos.some((i) => i.id === x);
-    if (PACOTES.includes(id)) {
-      const jaEra = tem(id);
-      novos = novos.filter((i) => !PACOTES.includes(i.id));
-      if (!jaEra) novos.unshift({ id, nome: CATALOGO[id].nome, valor: CATALOGO[id].preco });
-    } else if (tem(id)) {
-      novos = novos.filter((i) => i.id !== id);
-    } else {
-      novos.push({ id, nome: CATALOGO[id].nome, valor: CATALOGO[id].preco });
-    }
-    /* o Eternal já inclui o pré-wedding */
-    if (tem("eternal")) novos = novos.filter((i) => i.id !== "prewedding");
-    aplicarItens(novos);
-    salvarLogo(); /* marcar/desmarcar item é ação pronta: grava na hora */
-  }
-
-  function editarValorItem(id: string, valor: number) {
-    if (travadoRef.current) return;
-    aplicarItens(itensRef.current.map((i) => (i.id === id ? { ...i, valor } : i)));
-    agendarSalvamento();
-  }
-
   /* ---------- contrato ---------- */
 
   /* guia nova: o contrato é documento, e quem abre quase sempre quer conferir
@@ -528,7 +486,7 @@ export default function PaginaCliente() {
 
     setOcupado(true);
     try {
-      const payload = montarCliente(fichaRef.current, itensRef.current, travadoRef.current);
+      const payload = montarCliente(fichaRef.current);
       await salvarCliente(payload);
       ultimoSalvo.current = JSON.stringify(payload);
       await api("/api/estudio", { acao: "gerar-contrato", id: clienteIdRef.current });
@@ -622,7 +580,7 @@ export default function PaginaCliente() {
     e.preventDefault();
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
     const eraNovo = !clienteIdRef.current;
-    const payload = montarCliente(fichaRef.current, itensRef.current, travadoRef.current);
+    const payload = montarCliente(fichaRef.current);
     const enviado = JSON.stringify(payload);
     setStatusSalvo({ texto: "Salvando…" });
     try {
@@ -788,21 +746,39 @@ export default function PaginaCliente() {
                   </AcaoSecao>
                 }
               >
-                <PillsPacote itens={itens} travado={travado} onAlternar={alternarItem} onEditarValor={editarValorItem} />
-                <ResumoItens itens={itens} />
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3.5">
-                  <Campo id="f-total" rotulo="Total (R$)" autoComplete="off" inputMode="decimal" readOnly={travado}
-                    className={"h-11 py-0 text-base font-semibold tabular-nums " + (travado ? "text-ink-soft" : "text-accent-deep")}
-                    value={ficha.total} onChange={(e) => mudarTotal(e.target.value)} onBlur={() => sairDeMoeda("total")} />
-                  <Campo id="f-entrada" rotulo="Entrada (R$)" autoComplete="off" inputMode="decimal" readOnly={travado}
-                    className={"h-11 py-0 text-base font-semibold tabular-nums " + (travado ? "text-ink-soft" : "text-accent-deep")}
-                    value={ficha.entrada} onChange={(e) => { if (!travado) mudarCampo("entrada", e.target.value); }} onBlur={() => sairDeMoeda("entrada")} />
+                {/* resumo só leitura: a escolha mora no editor do contrato */}
+                {itens.length ? (
+                  <div className="flex flex-col gap-0.5">
+                    {itens.map((i) => (
+                      <div key={i.id} className="flex items-center gap-3 rounded-[10px] px-2 py-2 text-sm">
+                        <span className="min-w-0 flex-1 truncate text-ink">{i.nome}</span>
+                        <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-ink-soft">R$ {formatarMoeda(i.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="m-0 px-2 py-1 text-[13.5px] text-ink-soft">Nenhum pacote escolhido ainda.</p>
+                )}
+                <div className="mt-3 grid grid-cols-2 gap-2.5">
+                  <div className="rounded-[10px] bg-soft px-3.5 py-2.5">
+                    <span className="block text-[12px] font-medium text-ink-soft">Total</span>
+                    <span className="block text-base font-semibold tabular-nums text-accent-deep">R$ {ficha.total || "0,00"}</span>
+                  </div>
+                  <div className="rounded-[10px] bg-soft px-3.5 py-2.5">
+                    <span className="block text-[12px] font-medium text-ink-soft">Entrada</span>
+                    <span className="block text-base font-semibold tabular-nums text-accent-deep">R$ {ficha.entrada || "0,00"}</span>
+                  </div>
                 </div>
                 {travado ? (
-                  <p className="m-0 mt-1 text-[12.5px] leading-[1.5] text-ink-soft">
+                  <p className="m-0 mt-3 text-[12.5px] leading-[1.5] text-ink-soft">
                     O casal já assinou: pacote, adicionais e valores ficam como estão no contrato.
                   </p>
-                ) : null}
+                ) : (
+                  <Botao type="button" variante="secundario" className="mt-3 w-full" disabled={!clienteId || ocupado}
+                    onClick={() => { if (contratoGerado) void editarContrato(); else void acaoDoContrato(); }}>
+                    <Pencil size={15} /> {itens.length ? "Editar pacote e valores" : "Escolher pacote e valores"}
+                  </Botao>
+                )}
               </SecaoFicha>
 
               {/* só aparece quando existe mesmo um contrato pra este cliente */}

@@ -72,11 +72,11 @@ export default function PaginaProdutos() {
       {erro ? <p className="m-0 text-[13px] text-erro">{erro}</p> : null}
 
       {produtos === null && !erro ? (
-        <div className="grid gap-5">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
           {[0, 1].map((i) => <div key={i} className="h-[220px] animate-pulse rounded-[22px] bg-paper shadow-card" />)}
         </div>
       ) : produtos ? (
-        <div className="grid gap-5">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
           <Grupo icone={<Package size={16} />} titulo="Pacotes" texto="O casal escolhe um."
             itens={pacotes} catalogo={produtos} aoAbrir={setEditando} />
           <Grupo icone={<Sparkles size={16} />} titulo="Adicionais" texto="Somam ao pacote, quantos o casal quiser."

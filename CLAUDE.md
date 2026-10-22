@@ -20,15 +20,16 @@ Tiptap (editor de contrato) · jose (cookie de sessão).
 src/app/entrar               login
 src/app/painel/              área logada; layout.tsx checa a sessão: tela nova nasce protegida
   page.tsx                   home (saudação, clima, KPIs, próximos eventos, links)
-  clientes/                  lista, [id] (ficha), [id]/contrato (revisão e confirmação)
+  clientes/                  lista, [id] (ficha), [id]/contrato/editar (editor do contrato do cliente), [id]/contrato (revisão antiga, texto fixo)
+  produtos/                  produtos e serviços (catálogo de pacotes e adicionais, tabela `produtos`)
   pendencias/                rascunhos, aguardando assinatura, confirmados sem contrato
   configuracoes/             perfil, localização, senha; contrato/ (modelos + assinaturas), contrato/[id] (editor)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             proposta comercial que o casal lê
-src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook)
+src/app/api/                 sessao, config, templates, produtos, estudio, orcamento, assinatura (só baixa a via), autentique (webhook)
 src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, Skeleton
 src/lib/                     supabase.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
-                             catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
+                             produtos.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes)
 supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco)
 ```
@@ -62,6 +63,16 @@ não a que você digitou. Deixe só `hidden` + `md:inline-flex`.
 Sempre o Supabase local em Docker (`supabase start`, portas 553xx), nunca o
 banco do Jordan. `supabase/migrations/` é a verdade do schema: coluna nova
 entra como migração, nunca por `alter table` solto no psql.
+O banco local é compartilhado com as worktrees de outras sessões: se o
+`migration up` recusar por versões que só existem noutra branch, aplique o
+SQL da sua migração com `psql` e registre a versão em
+`supabase_migrations.schema_migrations`, sem `repair` (apagaria o histórico
+delas).
+
+Pacote, adicionais, total e entrada se escolhem no cartão "Pacote e valores"
+do editor do contrato, com as opções de `produtos`; a ficha só mostra o
+resumo e não manda esses campos no salvamento. O item guarda o valor do
+momento da escolha (o catálogo pode mudar depois).
 
 ## Assinatura: Autentique (desde 21/10/2026)
 
