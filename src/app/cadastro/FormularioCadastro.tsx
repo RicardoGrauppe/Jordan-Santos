@@ -210,7 +210,14 @@ const CSS = `
 
 /* ---------- fluxo em etapas ---------- */
 .cad{overflow-x:clip}
-.cad .topo-etapa{display:flex;align-items:center;gap:12px;margin-bottom:26px;min-height:40px}
+/* topo das etapas fixo ao rolar (brandbook 18). Sticky e não fixed: ele
+   fica fora das etapas (que entram com transform), então gruda sem pular, e
+   continua ocupando o lugar dele no fluxo. Fundo branco que se desfaz num
+   degradê embaixo, espelho da barra do botão no rodapé. overflow-x:clip do
+   .cad não atrapalha: clip não cria contêiner de rolagem, hidden criaria. */
+.cad .topo-etapa{display:flex;align-items:center;gap:12px;min-height:40px;
+  position:sticky;top:0;z-index:40;margin:calc(-12px - var(--sat)) 0 6px;padding:calc(12px + var(--sat)) 0 20px;
+  background:linear-gradient(to bottom,var(--paper) 70%,rgba(255,255,255,0))}
 .cad .voltar-etapa{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;color:var(--ink);flex-shrink:0;transition:background .15s ease}
 @media (hover:hover){.cad .voltar-etapa:hover{background:var(--soft)}}
 .cad .voltar-etapa:focus-visible{outline:none;background:var(--soft-foco)}
