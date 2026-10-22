@@ -25,8 +25,7 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, EllipsisVertical, Eye, Globe, History, RotateCcw } from "lucide-react";
-import { EditorAtelie } from "@/components/EditorAtelie";
-import { EditorAtelieV2 } from "@/components/EditorAtelieV2";
+import dynamic from "next/dynamic";
 import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
@@ -35,6 +34,11 @@ import { contatoDaPagina, type DadosSite } from "@/lib/atelie/blocos";
 import { AVISO_DE_EXEMPLO, temExemplo } from "@/lib/atelie/modelo-guiado";
 import { api, ERRO_SESSAO } from "@/lib/painel";
 import { useVoltar } from "@/lib/voltar";
+
+/* Cada tela entra sob demanda pra só o CSS dela carregar: a moldura própria
+   traz o editor-tema.css, que mudaria a cara da tela original do Puck. */
+const EditorAtelie = dynamic(() => import("@/components/EditorAtelie").then((m) => m.EditorAtelie), { ssr: false });
+const EditorAtelieV2 = dynamic(() => import("@/components/EditorAtelieV2").then((m) => m.EditorAtelieV2), { ssr: false });
 
 const ESPERA_MS = 800;
 const URL_API = "/api/atelie";
@@ -55,9 +59,9 @@ export default function EditorDoModelo({ params, searchParams }: {
   searchParams: Promise<{ tela?: string }>;
 }) {
   const { id } = use(params);
-  /* PROVA (22/10/2026): ?tela=padrao abre a tela padrão do Puck pra comparar
-     com a moldura própria; o resto da página é o mesmo nas duas */
-  const Editor = use(searchParams).tela === "padrao" ? EditorAtelieV2 : EditorAtelie;
+  /* PROVA (22/10/2026): ?tela=padrao abre a tela original do Puck pra
+     comparar com a moldura própria; salvar e publicar são os mesmos */
+  const telaOriginal = use(searchParams).tela === "padrao";
   const router = useRouter();
   const confirmar = useConfirmar();
   const { mostrar, elemento: toast } = useToast();
@@ -286,9 +290,19 @@ export default function EditorDoModelo({ params, searchParams }: {
   /* página vazia não vai pro ar (a API também barra): o site ficaria em branco */
   const motivoDesligado = !temBlocos ? "Coloque pelo menos um bloco antes" : nadaAPublicar ? "O site já está igual a este modelo" : undefined;
 
+  if (telaOriginal) {
+    return (
+      <>
+        <EditorAtelieV2 key={chaveEditor} dados={modelo.rascunho} contato={contatoDaPagina(raiz)} aoMudar={aoMudar}
+          titulo={nome} aoPublicar={() => { if (!motivoDesligado && !publicando) void publicar(); else if (motivoDesligado) mostrar(motivoDesligado); }} />
+        {toast}
+      </>
+    );
+  }
+
   return (
     <>
-      <Editor
+      <EditorAtelie
         key={chaveEditor}
         dados={modelo.rascunho}
         contato={contatoDaPagina(raiz)}

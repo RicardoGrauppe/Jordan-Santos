@@ -1,0 +1,47 @@
+/*
+  Os textos do editor do Puck em português. Fica num arquivo só dele pra
+  servir às duas telas do Ateliê sem que uma arraste o CSS da outra.
+*/
+import type { Dictionary } from "@puckeditor/core";
+
+export const DICIONARIO: Dictionary = {
+  "header-publish": "Publicar",
+  "header-undo": "Desfazer",
+  "header-redo": "Refazer",
+  "header-toggle-leftsidebar": "Abrir ou fechar a lateral esquerda",
+  "header-toggle-rightsidebar": "Abrir ou fechar a lateral direita",
+  "header-toggle-menubar": "Abrir ou fechar o menu",
+  "action-selectparent": "Selecionar o bloco de fora",
+  "action-duplicate": "Duplicar",
+  "action-delete": "Apagar",
+  "label-page": "Página",
+  "label-component": "Bloco",
+  "outline-empty": "Nenhum bloco ainda",
+  "outline-item-collapse": "Recolher",
+  "outline-item-expand": "Abrir",
+  "outline-header-title": "Estrutura",
+  "outline-header-collapseall": "Recolher tudo",
+  "outline-item-duplicate": "Duplicar",
+  "outline-item-delete": "Apagar",
+  "drawer-category-collapse": "Recolher {title}",
+  "drawer-category-expand": "Abrir {title}",
+  "drawer-category-other": "Outros",
+  "canvas-noconfig": "Bloco desconhecido: {type}",
+  "field-readonly": "Só leitura",
+  "field-arrayitem-summary": "Item {index}",
+  "field-arrayitem-duplicate": "Duplicar",
+  "field-arrayitem-delete": "Apagar",
+  "viewport-zoom-in": "Aproximar",
+  "viewport-zoom-out": "Afastar",
+  "viewport-zoom-auto": "{zoom}% (automático)",
+  "viewport-toggle-menu": "Tamanhos de tela",
+  "viewport-switch": "Ver em {label}",
+  "viewport-switch-default": "Trocar tamanho de tela",
+  "plugin-blocks": "Blocos",
+  "plugin-outline": "Estrutura",
+  "plugin-fields": "Campos",
+  "plugin-components": "Blocos",
+  "layout-maximize": "maximizar",
+  "layout-minimize": "minimizar",
+  "loader-loading": "carregando",
+};

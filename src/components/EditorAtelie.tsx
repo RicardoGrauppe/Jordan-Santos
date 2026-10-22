@@ -22,7 +22,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ComponentType, type ReactNode } from "react";
-import { createUsePuck, Drawer, Puck, type Dictionary, type Permissions } from "@puckeditor/core";
+import { createUsePuck, Drawer, Puck, type Permissions } from "@puckeditor/core";
+import { DICIONARIO } from "@/lib/atelie/dicionario";
 import "@puckeditor/core/no-external.css";
 import "@/lib/atelie/editor-tema.css";
 import {
@@ -67,45 +68,6 @@ export function useCelular(): boolean {
    render. Editar campo continua valendo no celular. */
 export const PERMISSOES_COMPUTADOR: Permissions = { drag: true, insert: true, duplicate: true, delete: true, edit: true };
 export const PERMISSOES_CELULAR: Permissions = { drag: false, insert: false, duplicate: false, delete: false, edit: true };
-
-export const DICIONARIO: Dictionary = {
-  "header-publish": "Publicar",
-  "header-undo": "Desfazer",
-  "header-redo": "Refazer",
-  "action-selectparent": "Selecionar o bloco de fora",
-  "action-duplicate": "Duplicar",
-  "action-delete": "Apagar",
-  "label-page": "Página",
-  "label-component": "Bloco",
-  "outline-empty": "Nenhum bloco ainda",
-  "outline-item-collapse": "Recolher",
-  "outline-item-expand": "Abrir",
-  "outline-header-title": "Estrutura",
-  "outline-header-collapseall": "Recolher tudo",
-  "outline-item-duplicate": "Duplicar",
-  "outline-item-delete": "Apagar",
-  "drawer-category-collapse": "Recolher {title}",
-  "drawer-category-expand": "Abrir {title}",
-  "drawer-category-other": "Outros",
-  "canvas-noconfig": "Bloco desconhecido: {type}",
-  "field-readonly": "Só leitura",
-  "field-arrayitem-summary": "Item {index}",
-  "field-arrayitem-duplicate": "Duplicar",
-  "field-arrayitem-delete": "Apagar",
-  "viewport-zoom-in": "Aproximar",
-  "viewport-zoom-out": "Afastar",
-  "viewport-zoom-auto": "{zoom}% (automático)",
-  "viewport-toggle-menu": "Tamanhos de tela",
-  "viewport-switch": "Ver em {label}",
-  "viewport-switch-default": "Trocar tamanho de tela",
-  "plugin-blocks": "Blocos",
-  "plugin-outline": "Estrutura",
-  "plugin-fields": "Campos",
-  "plugin-components": "Blocos",
-  "layout-maximize": "maximizar",
-  "layout-minimize": "minimizar",
-  "loader-loading": "carregando",
-};
 
 /* Como cada bloco se apresenta na lista: ícone e uma linha do que ele é. */
 export const APRESENTACAO: Record<TipoDeBloco, { Icone: ComponentType<{ size?: number }>; linha: string }> = {
