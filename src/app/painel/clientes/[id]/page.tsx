@@ -806,7 +806,7 @@ export default function PaginaCliente() {
                     <button type="button" onClick={() => setTrocaEmail({ ocupado: false, erro: "" })}
                       className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-soft px-3.5 text-[13px] font-semibold text-accent transition-colors hover:bg-line">
                       {/* no celular só "Trocar": o campo do e-mail ficava com 9 letras à vista */}
-                      <Mail size={15} /> Trocar<span className="hidden sm:inline"> e reenviar</span>
+                      <Mail size={15} /> <span>Trocar<span className="hidden sm:inline"> e reenviar</span></span>
                     </button>
                   ) : undefined}
                   onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
