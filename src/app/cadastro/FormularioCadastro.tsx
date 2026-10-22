@@ -45,7 +45,7 @@ import {
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
 import Image from "next/image";
-import { CalendarHeart, Heart, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
+import { CalendarHeart, Heart, Info, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
@@ -299,6 +299,9 @@ const CSS = `
 .cad .dica-card{display:flex;gap:12px;align-items:center;background:#EAF1F3;border-radius:16px;padding:14px 16px;margin-top:18px}
 .cad .dica-icone{flex-shrink:0;width:36px;height:36px;border-radius:12px;background:var(--paper);color:var(--accent);display:flex;align-items:center;justify-content:center}
 .cad .dica-card p{font-size:14px;line-height:1.5;color:var(--accent);font-weight:400}
+/* a explicação de cada etapa usa o mesmo card, com o ícone no topo porque o
+   texto costuma quebrar em várias linhas */
+.cad .dica-card.explica{align-items:flex-start;margin:16px 0 26px}
 @media (min-width:960px){
   .cad .pagina.larga{max-width:1040px}
   .cad .boas-vindas{grid-template-columns:1fr 1fr;gap:64px;align-items:center}
@@ -1029,7 +1032,10 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
               <section key={secao} className="etapa" {...atributosEtapa(secao)}>
                 <div className="etapa-corpo">
                   <h1>{TITULO_SECAO[secao]}</h1>
-                  <p className="sub">{secao === "assinar" ? explicaAssinar : SOBRE_ETAPA[secao].explica}</p>
+                  <div className="dica-card explica">
+                    <span className="dica-icone"><Info size={18} strokeWidth={1.8} aria-hidden /></span>
+                    <p>{secao === "assinar" ? explicaAssinar : SOBRE_ETAPA[secao].explica}</p>
+                  </div>
                   {corpoDaSecao(secao)}
                   <button className="cta" type="submit">{textoDoBotao}</button>
                 </div>
