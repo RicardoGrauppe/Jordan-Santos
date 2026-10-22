@@ -19,8 +19,8 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Copy, EllipsisVertical, ExternalLink, Eye, Globe, History, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { Botao, CartaoAviso, Selo } from "@/components/ui";
+import { ClipboardList, Copy, TriangleAlert, EllipsisVertical, ExternalLink, Eye, Globe, History, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { CartaoAviso, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
 import { Sk, SkLinha } from "@/components/Skeleton";
@@ -352,20 +352,61 @@ export default function Atelie() {
   return (
     <div className="mx-auto max-w-[1040px]">
       <TituloMobile titulo="Ateliê" acao={{ rotulo: "Abrir o site", Icone: ExternalLink, aoAcionar: abrirSite }} />
-      {/* no celular o título vive no cabeçalho (ver cabecalho-mobile.tsx) */}
-      <div className="mb-2 hidden items-center justify-between gap-4 md:flex">
-        <h1 className="m-0 flex items-center gap-2.5 text-[26px] font-bold text-ink">Ateliê <Selo tom="atencao">Beta</Selo></h1>
-        <Botao variante="secundario" onClick={abrirSite}>
-          <ExternalLink size={16} /> Abrir o site
-        </Botao>
-      </div>
-      {/* Beta (brandbook, seção 19): sai junto com o selo do título quando o
-          Ateliê sair do teste */}
-      <div className="mb-3">
-        <CartaoAviso tom="atencao">
-          O Ateliê está em fase de testes (beta) e ainda não funciona 100%. Antes de pôr um modelo no ar, confira em &quot;Ver como fica&quot; se ficou do jeito que você quer.
-        </CartaoAviso>
-      </div>
+      {/* BANNER (22/10/2026, pedido do Ricardo): no lugar do título solto e do
+          cartão bege do beta. Mesma família do herói da ficha do cliente
+          (degradê petróleo, luz no canto, nada com sombra por dentro). À
+          direita, um desenho das duas coisas que se monta aqui, uma janela de
+          site e um formulário, feito em CSS (sem imagem). O aviso de beta
+          virou uma linha dentro do banner: sai junto com o selo quando o
+          Ateliê sair do teste (brandbook, seção 19). */}
+      <section className="relative isolate mb-2 overflow-hidden rounded-[18px] px-5 py-6 text-white shadow-[0_14px_34px_rgba(0,54,70,.22),inset_0_1px_0_rgba(255,255,255,.07)] md:rounded-3xl md:px-8 md:py-8 bg-[radial-gradient(130%_150%_at_12%_-10%,rgba(255,255,255,.12),transparent_46%),linear-gradient(135deg,#013243_0%,#003646_46%,#0b4d61_100%)]">
+        <span aria-hidden className="pointer-events-none absolute -right-[70px] -top-20 -z-[1] h-[250px] w-[250px] rounded-full bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,.14),rgba(255,255,255,.03)_60%,transparent_72%)]" />
+        <span aria-hidden className="pointer-events-none absolute -bottom-[140px] right-[24%] -z-[1] h-[230px] w-[230px] rounded-full bg-[radial-gradient(circle,rgba(15,90,113,.55),transparent_70%)]" />
+
+        <div className="relative flex items-center gap-8">
+          <div className="min-w-0 flex-1">
+            {/* no celular o título já está no cabeçalho do app */}
+            <h1 className="m-0 hidden items-center gap-2.5 text-[32px] font-semibold leading-[1.1] md:flex">
+              Ateliê
+              <span className="rounded-[8px] bg-[#F2D48A]/20 px-2 py-[3px] text-[11px] font-semibold tracking-[.03em] text-[#F6DFA6]">Beta</span>
+            </h1>
+            <p className="m-0 max-w-[520px] text-[14.5px] leading-[1.55] text-white/75 md:mt-2.5">
+              Seu site e seus formulários, montados com blocos prontos. Mexa à vontade: o casal só vê o que você puser no ar.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2.5">
+              <button type="button" onClick={abrirSite}
+                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-paper px-4 text-[13.5px] font-semibold text-accent transition-transform hover:-translate-y-px active:scale-[.96]">
+                <ExternalLink size={15} /> Abrir o site
+              </button>
+              <button type="button" onClick={() => window.open("/cadastro", "_blank", "noopener")}
+                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-white/[.14] px-4 text-[13.5px] font-semibold text-white transition-colors hover:bg-white/25">
+                <ClipboardList size={15} /> Ver formulário
+              </button>
+            </div>
+            <p className="m-0 mt-4 flex items-start gap-2 text-[12.5px] leading-[1.5] text-white/60">
+              <TriangleAlert size={14} className="mt-[2px] shrink-0 text-[#F6DFA6]" />
+              Em fase de testes. Antes de pôr um modelo no ar, confira em &quot;Ver como fica&quot;.
+            </p>
+          </div>
+
+          {/* desenho: janela de site atrás, formulário na frente */}
+          <div aria-hidden className="relative hidden h-[170px] w-[250px] shrink-0 md:block">
+            <div className="absolute right-6 top-0 h-[140px] w-[200px] rotate-[-4deg] overflow-hidden rounded-[14px] bg-white/[.10] backdrop-blur-[6px]">
+              <div className="flex gap-1 px-3 py-2.5"><span className="h-1.5 w-1.5 rounded-full bg-white/40" /><span className="h-1.5 w-1.5 rounded-full bg-white/30" /><span className="h-1.5 w-1.5 rounded-full bg-white/20" /></div>
+              <div className="mx-3 h-[52px] rounded-[8px] bg-white/[.14]" />
+              <div className="mx-3 mt-2.5 h-1.5 w-24 rounded-full bg-white/25" />
+              <div className="mx-3 mt-1.5 h-1.5 w-16 rounded-full bg-white/15" />
+            </div>
+            <div className="absolute bottom-0 right-0 w-[130px] rotate-[5deg] rounded-[14px] bg-paper p-3 shadow-[0_10px_24px_rgba(0,0,0,.18)]">
+              <div className="h-1.5 w-14 rounded-full bg-accent/70" />
+              <div className="mt-2.5 h-5 rounded-[6px] bg-soft" />
+              <div className="mt-1.5 h-5 rounded-[6px] bg-soft" />
+              <div className="mt-2.5 h-5 w-16 rounded-[6px] bg-accent" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Duas prateleiras de modelos (22/10/2026): sites e formulários. Cada
           uma diz o que o modelo "ativo" dela faz, porque não é a mesma coisa:
           o site no ar é a vitrine, o formulário em uso é o cadastro do casal. */}
