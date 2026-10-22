@@ -16,10 +16,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowDown, ArrowUp, CalendarHeart, ExternalLink, Lock, MapPin, Pencil, Plus,
+  ArrowDown, ArrowUp, Asterisk, CalendarHeart, ExternalLink, Eye, EyeOff, Lock, LockOpen, MapPin, Pencil, Plus,
   Sparkles, Trash2, TriangleAlert, UserRound, X,
 } from "lucide-react";
-import { Botao, BotaoVoltar, Campo, CartaoAviso, Chave, Estado } from "@/components/ui";
+import { Botao, BotaoVoltar, Campo, CartaoAviso, Estado } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { EditorFotos } from "./EditorFotos";
@@ -68,9 +68,39 @@ function BotaoEditar({ aberto, aoAlternar, rotulo }: { aberto: boolean; aoAltern
   );
 }
 
-/* As três chaves de todo campo (brandbook 18): Obrigatório, Aparece e
-   Cadeado. O cadeado trava as outras duas; obrigatório também trava quando o
-   campo está escondido (não dá pra exigir o que o casal não vê). */
+/* As três escolhas de todo campo (brandbook 18), como botões de ícone numa
+   pílula: Aparece, Obrigatório e Cadeado. Eram três chaves por linha e a
+   página virava um painel de controle. O cadeado trava os outros dois;
+   obrigatório também trava quando o campo está escondido (não dá pra exigir
+   o que o casal não vê). O texto do estado mora embaixo do nome. */
+function BotaoAlterna({
+  ligado, travado = false, rotulo, Icone, IconeDesligado, aoMudar,
+}: {
+  ligado: boolean;
+  travado?: boolean;
+  rotulo: string;
+  Icone: typeof Eye;
+  IconeDesligado?: typeof Eye;
+  aoMudar: (v: boolean) => void;
+}) {
+  const Mostrado = !ligado && IconeDesligado ? IconeDesligado : Icone;
+  return (
+    <button type="button" aria-pressed={ligado} aria-label={rotulo} title={rotulo} disabled={travado}
+      onClick={() => aoMudar(!ligado)}
+      className={
+        "inline-flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-[9px] outline-none transition-colors " +
+        "disabled:cursor-default " +
+        /* travado, o ligado continua legível (é o estado que vale); o
+           desligado some mais, porque não há o que fazer com ele */
+        (ligado
+          ? "bg-accent-tint text-accent focus-visible:bg-[#D9E6EA] disabled:opacity-60"
+          : "text-ink-soft/80 hover:bg-soft hover:text-ink focus-visible:bg-soft disabled:opacity-35")
+      }>
+      <Mostrado size={15} strokeWidth={1.9} />
+    </button>
+  );
+}
+
 function ChavesCampo({
   rotuloObrigatorio = "Obrigatório", visivel, obrigatorio, travado, aoMudar,
 }: {
@@ -81,11 +111,25 @@ function ChavesCampo({
   aoMudar: (m: { visivel?: boolean; obrigatorio?: boolean; travado?: boolean }) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-      <Chave rotulo={rotuloObrigatorio} ligada={obrigatorio} desligada={travado || !visivel}
+    <div className="flex shrink-0 items-center gap-0.5 rounded-[11px] bg-white p-0.5 shadow-[0_1px_2px_rgba(29,29,27,.06)]">
+      <BotaoAlterna rotulo="Aparece" Icone={Eye} IconeDesligado={EyeOff} ligado={visivel} travado={travado}
+        aoMudar={(v) => aoMudar({ visivel: v })} />
+      <BotaoAlterna rotulo={rotuloObrigatorio} Icone={Asterisk} ligado={obrigatorio} travado={travado || !visivel}
         aoMudar={(v) => aoMudar({ obrigatorio: v })} />
-      <Chave rotulo="Aparece" ligada={visivel} desligada={travado} aoMudar={(v) => aoMudar({ visivel: v })} />
-      <Chave rotulo="Cadeado" ligada={travado} aoMudar={(v) => aoMudar({ travado: v })} />
+      <BotaoAlterna rotulo="Cadeado" Icone={Lock} IconeDesligado={LockOpen} ligado={travado}
+        aoMudar={(v) => aoMudar({ travado: v })} />
+    </div>
+  );
+}
+
+/* Legenda dos ícones, uma vez só, logo abaixo da explicação da página */
+function LegendaBotoes() {
+  const item = "inline-flex items-center gap-1.5";
+  return (
+    <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5 px-1 text-[12px] text-ink-soft">
+      <span className={item}><Eye size={13} className="text-accent" /> Aparece pro casal</span>
+      <span className={item}><Asterisk size={13} className="text-accent" /> Obrigatório</span>
+      <span className={item}><Lock size={13} className="text-accent" /> Cadeado (trava os outros dois)</span>
     </div>
   );
 }
@@ -116,7 +160,7 @@ function LinhaCampoFixo({
   const estado = !ajuste.visivel
     ? (def.foraDoContrato || def.aviso ? "Escondido" : "Escondido, fica em branco no contrato")
     : ajuste.obrigatorio ? "Obrigatório"
-    : ehNome && parNomes ? "Basta um dos dois nomes"
+    : ehNome && parNomes ? "Basta um dos dois"
     : "Opcional";
   /* aviso só pra quem o contrato usa e quando ele pode chegar vazio */
   const podeFaltar = !ajuste.visivel || (!ajuste.obrigatorio && !(ehNome && parNomes));
@@ -124,15 +168,13 @@ function LinhaCampoFixo({
 
   return (
     <div className={LINHA + (ajuste.visivel ? "" : " opacity-60")}>
-      <div className="flex items-start gap-3 md:items-center">
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:flex-row md:items-center md:gap-4">
-          <div className="min-w-0 md:flex-1">
-            <div className="truncate text-[13.5px] font-semibold text-ink">{ajuste.rotulo}</div>
-            <EstadoCampo travado={ajuste.travado} texto={estado} aviso={aviso} />
-          </div>
-          <ChavesCampo visivel={ajuste.visivel} obrigatorio={ajuste.obrigatorio} travado={ajuste.travado}
-            aoMudar={(m) => aoMudar({ ...ajuste, ...m })} />
+      <div className="flex items-center gap-2 md:gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13.5px] font-semibold text-ink">{ajuste.rotulo}</div>
+          <EstadoCampo travado={ajuste.travado} texto={estado} aviso={aviso} />
         </div>
+        <ChavesCampo visivel={ajuste.visivel} obrigatorio={ajuste.obrigatorio} travado={ajuste.travado}
+          aoMudar={(m) => aoMudar({ ...ajuste, ...m })} />
         <BotaoEditar aberto={aberto} aoAlternar={() => setAberto((v) => !v)} rotulo={ajuste.rotulo} />
       </div>
 
@@ -187,18 +229,16 @@ function LinhaPergunta({
 
   return (
     <div className={LINHA + (pergunta.visivel ? "" : " opacity-60")}>
-      <div className="flex items-start gap-3 md:items-center">
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:flex-row md:items-center md:gap-4">
-          <div className="min-w-0 md:flex-1">
-            <div className={"truncate text-[13.5px] font-semibold " + (pergunta.rotulo.trim() ? "text-ink" : "text-ink-soft")}>
-              {pergunta.rotulo.trim() || "Pergunta nova"}
-            </div>
-            <EstadoCampo travado={pergunta.travado} aviso={aviso}
-              texto={tipo + (!pergunta.visivel ? ", escondida" : pergunta.obrigatorio ? ", obrigatória" : ", opcional")} />
+      <div className="flex items-center gap-2 md:gap-3">
+        <div className="min-w-0 flex-1">
+          <div className={"truncate text-[13.5px] font-semibold " + (pergunta.rotulo.trim() ? "text-ink" : "text-ink-soft")}>
+            {pergunta.rotulo.trim() || "Pergunta nova"}
           </div>
-          <ChavesCampo rotuloObrigatorio="Obrigatória" visivel={pergunta.visivel} obrigatorio={pergunta.obrigatorio}
-            travado={pergunta.travado} aoMudar={(m) => aoMudar({ ...pergunta, ...m })} />
+          <EstadoCampo travado={pergunta.travado} aviso={aviso}
+            texto={tipo + (!pergunta.visivel ? ", escondida" : pergunta.obrigatorio ? ", obrigatória" : ", opcional")} />
         </div>
+        <ChavesCampo rotuloObrigatorio="Obrigatória" visivel={pergunta.visivel} obrigatorio={pergunta.obrigatorio}
+          travado={pergunta.travado} aoMudar={(m) => aoMudar({ ...pergunta, ...m })} />
         <BotaoEditar aberto={aberta} aoAlternar={() => setAberta((v) => !v)} rotulo={pergunta.rotulo || "pergunta"} />
       </div>
 
@@ -441,10 +481,11 @@ export default function PaginaFormulario() {
         </div>
       </div>
 
-      <CartaoAviso className="mb-4">
+      <CartaoAviso className="mb-3">
         É o formulário que o casal preenche pra confirmar a data. Mude o texto das perguntas, esconda o que você não usa e
         crie perguntas suas. Ligue o cadeado no que não pode mudar sem querer.
       </CartaoAviso>
+      <LegendaBotoes />
 
       {erroCarga ? <p className="text-[13px] text-erro">{erroCarga}</p> : null}
 
