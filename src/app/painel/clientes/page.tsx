@@ -200,7 +200,11 @@ export default function ListaClientes() {
           atalhos da previsão): num menu fechado o filtro ativo fica escondido
           atrás de um clique, e aqui ele é a explicação de por que a lista tem
           o tamanho que tem. */}
-      <div className="mb-[18px] flex flex-wrap items-center gap-2">
+      {/* No celular os cinco pills quebravam em duas linhas, com
+          "Arquivado" sozinho na segunda. Agora é UMA linha que rola de lado,
+          encostando nas bordas da tela (o -mx/px compensa o respiro da
+          página) e sem barra de rolagem, como o resto dos produtos. */}
+      <div className="-mx-5 mb-[18px] flex items-center gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
         {FILTROS.map((f) => (
           <button
             key={f.valor}
@@ -208,7 +212,7 @@ export default function ListaClientes() {
             aria-pressed={status === f.valor}
             onClick={() => setStatus(f.valor)}
             className={
-              "inline-flex cursor-pointer items-center rounded-full px-3.5 py-[7px] text-[12.5px] font-semibold " +
+              "inline-flex shrink-0 cursor-pointer items-center rounded-full px-3.5 py-[7px] text-[12.5px] font-semibold " +
               "transition-[background,color] duration-150 [-webkit-tap-highlight-color:transparent] " +
               /* inativa em papel: em soft ela tinha a MESMA cor da página e
                  virava texto solto, sem cara de botão */
@@ -246,7 +250,13 @@ export default function ListaClientes() {
             simplesmente não anima. */}
         <div
           className={
-            "relative py-3.5 pl-[18px] pr-[18px] transition-colors duration-200 md:block " +
+            /* no celular: barra PRÓPRIA, de 52px, redonda nos quatro
+               cantos e com respiro embaixo. Antes ela era o cabeçalho de uma
+               tabela que no celular não existe: colada só no primeiro card,
+               com a altura do padding (a camada de colunas some ali), e o
+               botão de excluir vazando por baixo. */
+            "relative mb-2.5 h-[52px] rounded-2xl pl-[18px] pr-[18px] transition-colors duration-200 " +
+            "md:mb-0 md:block md:h-auto md:rounded-none md:py-3.5 " +
             /* no celular a lista é longa e a faixa fica no TOPO dela: sem
                grudar, você marca um cliente lá embaixo e o botão de excluir
                some da tela. Gruda logo abaixo do cabeçalho do app (56px), que
@@ -264,7 +274,7 @@ export default function ListaClientes() {
                é passageiro. Com seleção, petróleo CHEIO: a faixa muda de
                função e a cor diz isso antes de qualquer texto. */
             (marcados.length
-              ? "block rounded-t-2xl bg-accent md:rounded-none"
+              ? "block bg-accent"
               : "hidden bg-line")
           }
         >
@@ -278,7 +288,7 @@ export default function ListaClientes() {
             aria-label={todosMarcados ? "Desmarcar todos" : "Marcar todos"}
             onClick={() => setMarcados(todosMarcados ? [] : visiveis.map((x) => x.id))}
             className={
-              "absolute left-[21px] top-1/2 z-[1] flex h-[18px] w-[18px] -translate-y-1/2 cursor-pointer items-center " +
+              "absolute left-[20px] top-1/2 z-[1] flex h-[18px] w-[18px] -translate-y-1/2 cursor-pointer items-center " +
               "justify-center rounded-[6px] transition-colors md:left-[25px] " +
               (marcados.length ? "bg-paper text-accent" : `bg-paper text-transparent hover:text-accent-deep`)
             }
@@ -311,7 +321,7 @@ export default function ListaClientes() {
           <div
             aria-hidden={marcados.length ? undefined : true}
             className={
-              "absolute inset-y-0 left-[58px] right-3 flex items-center gap-2 md:left-[62px] md:right-[18px] " +
+              "absolute inset-y-0 left-[52px] right-2.5 flex items-center gap-2 md:left-[62px] md:right-[18px] " +
               "transition-[opacity,translate] duration-200 ease-[var(--ease-desliza)] " +
               (marcados.length ? "" : "pointer-events-none translate-y-1 opacity-0")
             }
@@ -358,23 +368,30 @@ export default function ListaClientes() {
                   <Link
                     href={"/painel/clientes/" + c.id}
                     className={
-                      "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 rounded-[18px] bg-paper py-3.5 pl-[58px] pr-[46px] no-underline " +
+                      /* celular: card 2×2, nome e status em cima, data e
+                         total embaixo, cada um no seu canto. A lixeira saiu
+                         do card (marcar no avatar e excluir na barra faz o
+                         mesmo), e com ela o recuo de 46px à direita. */
+                      "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-[18px] bg-paper py-3.5 pl-[62px] pr-4 no-underline " +
                       "md:items-center md:rounded-none md:py-[17px] md:pl-[62px] md:pr-[18px] " +
                       /* hover em accent-tint, e não soft: soft é a cor da
                          PÁGINA, e a linha sob o mouse parecia um buraco no
                          cartão. A linha marcada vai um passo além (petróleo a
                          12%), pra marcado e só-apontado não se confundirem. */
                       `transition-colors hover:bg-accent-tint ` +
-                      (marcados.includes(c.id) ? "!bg-accent/12 " : "") + COLUNAS
+                      /* no celular não existe hover pra se distinguir do
+                         marcado, então o marcado usa o tom claro (o 12% de
+                         petróleo virava um cinza encardido no card) */
+                      (marcados.includes(c.id) ? "!bg-accent-tint md:!bg-accent/12 " : "") + COLUNAS
                     }
                   >
-                    <span className="col-span-2 flex items-center md:col-span-1">
+                    <span className="col-start-1 row-start-1 flex min-w-0 items-center md:col-auto md:row-auto">
                       <span className={"truncate text-base font-medium md:text-[14.5px] " + (c.noivo || c.noiva ? "text-ink" : "text-ink-soft")}>{nome}</span>
                     </span>
                     {/* "a definir" é ausência de dado, então sai no tom
                         apagado mesmo na tabela, onde a data real é escura */}
-                    <span className={"text-[13.5px] text-ink-soft md:text-[14.5px] " + (c.data_evento ? "md:text-ink" : "")}>{dataCurta(c.data_evento)}</span>
-                    <span className="row-span-2 justify-self-end md:row-span-1 md:justify-self-start">
+                    <span className={"col-start-1 row-start-2 text-[13.5px] text-ink-soft md:col-auto md:row-auto md:text-[14.5px] " + (c.data_evento ? "md:text-ink" : "")}>{dataCurta(c.data_evento)}</span>
+                    <span className="col-start-2 row-start-1 justify-self-end md:col-auto md:row-auto md:justify-self-start">
                       <Selo tom={TOM_STATUS[st] ?? "neutro"}>{ROTULO_STATUS[st] ?? st}</Selo>
                     </span>
                     {/* alinhado à ESQUERDA, como o título em cima (pedido do
@@ -382,7 +399,7 @@ export default function ListaClientes() {
                         tabular-nums segura a leitura dos valores: os dígitos
                         têm a mesma largura e a vírgula dos centavos cai no
                         mesmo ponto quando o número de casas é igual. */}
-                    <span className="text-left text-[14.5px] font-semibold tabular-nums text-ink">
+                    <span className="col-start-2 row-start-2 text-right text-[14.5px] font-semibold tabular-nums text-ink md:col-auto md:row-auto md:text-left">
                       {c.total != null && c.total !== "" ? moeda(Number(c.total)) : ""}
                     </span>
                     <span className="hidden md:block" />
@@ -401,8 +418,8 @@ export default function ListaClientes() {
                     aria-label={"Selecionar " + nome}
                     onClick={() => alternarMarcado(c.id)}
                     className={
-                      "absolute left-3.5 top-2.5 z-[1] flex h-8 w-8 cursor-pointer items-center justify-center rounded-full " +
-                      "text-xs font-semibold tracking-[.02em] transition-colors md:left-[18px] md:top-1/2 md:-translate-y-1/2 " +
+                      "absolute left-4 top-1/2 z-[1] flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full " +
+                      "text-xs font-semibold tracking-[.02em] transition-colors md:left-[18px] md:h-8 md:w-8 " +
                       (marcados.includes(c.id)
                         ? "bg-accent text-white"
                         : `bg-soft text-accent hover:bg-accent hover:text-white`)
@@ -428,7 +445,7 @@ export default function ListaClientes() {
                     aria-label={"Excluir " + nome}
                     onClick={() => excluir(c)}
                     className={
-                      "absolute right-1.5 top-1.5 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ink-soft opacity-30 transition-[opacity,color,background] " +
+                      "absolute right-1.5 top-1.5 hidden h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-ink-soft opacity-30 transition-[opacity,color,background] md:inline-flex " +
                       /* no computador some até passar o mouse: nove lixeiras
                          cinzas paradas numa coluna era o ruído mais forte da
                          tabela. No celular fica, porque lá não existe hover. */
