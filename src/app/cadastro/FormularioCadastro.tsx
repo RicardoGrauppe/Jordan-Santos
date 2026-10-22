@@ -65,7 +65,7 @@ type Valores = Record<CampoControlado, string>;
 const VAZIO: Valores = {
   noivo: "", noiva: "", cpfNoivo: "", cpfNoiva: "", email: "",
   cep: "", numero: "", endereco: "", complemento: "", bairro: "", cidade: "", estado: "",
-  data: "", horario: "", local: "",
+  data: "", horario: "", local: "", enderecoEvento: "",
 };
 
 /* `campo` é o id de um campo fixo ou de uma pergunta nova ("p_...") */
@@ -541,7 +541,7 @@ const ICONE_ETAPA: Record<SecaoFormulario, typeof Heart> = {
 const CAMPOS_DA_SECAO: Record<SecaoFormulario, CampoId[]> = {
   assinar: ["noivo", "noiva", "cpfNoivo", "cpfNoiva", "contato", "email"],
   endereco: ["cep", "numero", "endereco", "complemento", "bairro", "cidade", "estado"],
-  evento: ["data", "horario", "local"],
+  evento: ["data", "horario", "local", "enderecoEvento"],
   extra: [],
 };
 
@@ -790,6 +790,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
       { campo: "data", valor: v("data"), ok: true, vazio: "Escolha a data do casamento." },
       { campo: "horario", valor: v("horario"), ok: true, vazio: "Escolha o horário." },
       { campo: "local", valor: v("local"), ok: true, vazio: "Preencha o local do evento." },
+      { campo: "enderecoEvento", valor: v("enderecoEvento"), ok: true, vazio: "Preencha o endereço do evento." },
     ];
     for (const r of regras) {
       if (DEFINICAO[r.campo].secao !== secao || !aparece(r.campo)) continue;
@@ -843,6 +844,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
           dataEvento: v("data"),
           horario: v("horario"),
           local: v("local"),
+          enderecoEvento: v("enderecoEvento"),
           respostas: Object.fromEntries(perguntas.map((p) => [p.id, (respostas[p.id] ?? "").trim()])),
           /* sem itens/total: o fotógrafo escolhe o pacote/adicionais depois,
              no painel. A rota trata a ausência disso de propósito. */
@@ -981,6 +983,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
             b={fixo("horario", { type: "time", onClick: abrirPicker })}
           />
           {fixo("local")}
+          {fixo("enderecoEvento", { autoComplete: "off" })}
           {extras("evento")}
         </>
       );

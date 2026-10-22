@@ -44,7 +44,7 @@ export const TITULO_SECAO = Object.fromEntries(SECOES.map((x) => [x.id, x.titulo
 export type CampoFixoId =
   | "noivo" | "noiva" | "cpfNoivo" | "cpfNoiva" | "contato" | "email"
   | "cep" | "numero" | "endereco" | "complemento" | "bairro" | "cidade" | "estado"
-  | "data" | "horario" | "local";
+  | "data" | "horario" | "local" | "enderecoEvento";
 
 export type RegraCampo = "travado" | "opcional" | "livre";
 
@@ -57,6 +57,8 @@ export type DefinicaoCampo = {
   obrigatorio: boolean;
   /** por que está travado, na voz do painel */
   porque?: string;
+  /** não vai pro contrato: escondido, não deixa nada em branco lá */
+  foraDoContrato?: boolean;
 };
 
 /* Na ordem em que aparecem no /cadastro. */
@@ -76,7 +78,10 @@ export const CAMPOS_FIXOS: readonly DefinicaoCampo[] = [
   { id: "estado", secao: "endereco", rotulo: "Estado", placeholder: "UF", regra: "livre", obrigatorio: true },
   { id: "data", secao: "evento", rotulo: "Data do casamento", placeholder: "", regra: "travado", obrigatorio: true, porque: "Sempre pedida, é ela que separa um casal do outro" },
   { id: "horario", secao: "evento", rotulo: "Horário", placeholder: "", regra: "livre", obrigatorio: true },
-  { id: "local", secao: "evento", rotulo: "Local do evento", placeholder: "Nome do espaço ou endereço", regra: "livre", obrigatorio: true },
+  { id: "local", secao: "evento", rotulo: "Local do evento", placeholder: "Nome do espaço", regra: "livre", obrigatorio: true },
+  /* onde o espaço fica, pra quem vai fotografar chegar (22/10/2026). Não
+     entra no contrato, que cita só o local. */
+  { id: "enderecoEvento", secao: "evento", rotulo: "Endereço do evento", placeholder: "Rua, número, cidade", regra: "livre", obrigatorio: false, foraDoContrato: true },
 ];
 
 export const DEFINICAO: Record<CampoFixoId, DefinicaoCampo> = Object.fromEntries(

@@ -74,7 +74,7 @@ function LinhaCampoFixo({
   const pedido = ajuste.visivel && ajuste.obrigatorio;
   const sub = def.regra === "travado"
     ? null
-    : !ajuste.visivel ? "Escondido, fica em branco no contrato"
+    : !ajuste.visivel ? (def.foraDoContrato ? "Escondido" : "Escondido, fica em branco no contrato")
     : pedido ? "Obrigatório" : "Opcional";
 
   return (

@@ -18,7 +18,7 @@ export type StatusContrato = "rascunho" | "enviado" | "visualizado" | "assinado"
 /** Campos de texto da ficha, na mesma chave que a coluna do banco. */
 export const CAMPOS_FICHA = [
   "noivo", "cpf_noivo", "tel_noivo", "noiva", "cpf_noiva", "tel_noiva", "email",
-  "data_evento", "horario", "local_evento",
+  "data_evento", "horario", "local_evento", "endereco_evento",
   "cep", "endereco", "numero", "complemento", "bairro", "cidade", "estado",
   "origem", "observacoes", "total", "entrada",
 ] as const;

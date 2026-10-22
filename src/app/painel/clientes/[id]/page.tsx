@@ -665,6 +665,11 @@ export default function PaginaCliente() {
                     <Campo id="f-local" rotulo="Local" autoComplete="off" className="h-11 py-0"
                       value={ficha.local_evento} onChange={(e) => mudarCampo("local_evento", e.target.value)} onBlur={salvarLogo} />
                   </div>
+                  <div className="col-span-full">
+                    <Campo id="f-endereco-evento" rotulo="Endereço do evento" autoComplete="off" className="h-11 py-0"
+                      placeholder="Rua, número, cidade"
+                      value={ficha.endereco_evento} onChange={(e) => mudarCampo("endereco_evento", e.target.value)} onBlur={salvarLogo} />
+                  </div>
                 </div>
               </SecaoFicha>
 

@@ -30,7 +30,7 @@ import { enviarParaAssinatura, hashDoConteudo, sincronizarContrato, substituirNa
 const CAMPOS = [
   "status", "noivo", "cpf_noivo", "noiva", "cpf_noiva", "tel_noivo", "tel_noiva",
   "email", "cep", "endereco", "numero", "complemento", "bairro", "cidade", "estado",
-  "data_evento", "horario", "local_evento", "itens", "total", "entrada",
+  "data_evento", "horario", "local_evento", "endereco_evento", "itens", "total", "entrada",
   "origem", "observacoes",
 ] as const;
 

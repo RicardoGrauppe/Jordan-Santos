@@ -52,6 +52,7 @@ type DadosEmail = {
   dataBr: string | null;
   horario: string | null;
   local: string | null;
+  enderecoEvento: string | null;
   respostas: RespostaFormulario[];
   itens: Item[];
   total: number | null;
@@ -138,6 +139,7 @@ function templateNovoCliente(c: DadosEmail, link: string): { html: string; texto
             linha("Data do evento", c.dataBr) +
             linha("Horário", c.horario) +
             linha("Local", c.local) +
+            linha("Endereço do evento", c.enderecoEvento) +
             c.respostas.map((r) => linha(escHtml(r.rotulo), exibirResposta(r))).join("") +
             linha("Origem", "Orçamento do site") +
           '</table>' +
@@ -163,6 +165,7 @@ function templateNovoCliente(c: DadosEmail, link: string): { html: string; texto
     "Data do evento: " + c.dataBr + "\n" +
     "Horário: " + (c.horario ?? "") + "\n" +
     "Local: " + (c.local ?? "") + "\n" +
+    (c.enderecoEvento ? "Endereço do evento: " + c.enderecoEvento + "\n" : "") +
     c.respostas.map((r) => r.rotulo + ": " + exibirResposta(r) + "\n").join("") +
     "Origem: Orçamento do site\n\n" +
     (c.itens.length
@@ -190,6 +193,7 @@ export async function POST(req: Request) {
   const cidade = textoCurto(dados.cidade, 100);
   const estado = textoCurto(dados.estado, 40);
   const local = textoCurto(dados.local, 160);
+  const enderecoEvento = textoCurto(dados.enderecoEvento, 200);
   const horario = typeof dados.horario === "string" && /^\d{2}:\d{2}/.test(dados.horario) ? dados.horario : null;
   const dataIso = typeof dados.dataEvento === "string" &&
     /^\d{4}-\d{2}-\d{2}$/.test(dados.dataEvento) ? dados.dataEvento : null;
@@ -218,7 +222,7 @@ export async function POST(req: Request) {
   const formulario = await lerFormulario();
   const preenchido: Record<Exclude<CampoFixoId, "noivo" | "noiva" | "cpfNoivo" | "cpfNoiva">, unknown> = {
     contato, email, cep, endereco, numero, complemento, bairro, cidade, estado,
-    data: dataIso, horario, local,
+    data: dataIso, horario, local, enderecoEvento,
   };
   const faltando = (Object.keys(preenchido) as (keyof typeof preenchido)[])
     .some((id) => campoExigido(formulario, id) && !preenchido[id]);
@@ -267,6 +271,7 @@ export async function POST(req: Request) {
     cep: cep || null, endereco: endereco, numero: numero, complemento: complemento || null,
     bairro: bairro, cidade: cidade, estado: estado,
     data_evento: dataIso, horario: horario, local_evento: local,
+    endereco_evento: enderecoEvento || null,
     respostas_formulario: respostas,
     itens: itens, total: totalNum, entrada: entradaNum,
     origem: "Orçamento do site", observacoes: null,
@@ -318,7 +323,7 @@ export async function POST(req: Request) {
       cpfNoivoFmt: cpfNoivo, cpfNoivaFmt: cpfNoiva,
       contato: contato, email: email,
       endereco: endereco, numero: numero, complemento: complemento, bairro: bairro, cidade: cidade, estado: estado, cep: cep,
-      dataBr: dataBr(dataIso), horario: horario, local: local,
+      dataBr: dataBr(dataIso), horario: horario, local: local, enderecoEvento: enderecoEvento,
       respostas: respostas,
       itens: itens, total: totalNum,
     }, link);
