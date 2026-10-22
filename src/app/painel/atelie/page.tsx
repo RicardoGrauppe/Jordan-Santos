@@ -64,7 +64,7 @@ const rotaEditor = (id: string) => "/painel/atelie/" + id;
    pai (sobra um fio do fundo na curva, mais ainda com o cartão subindo no
    hover). Por isso a caixa tem o próprio raio, `isolate` (camada própria,
    que o recorte respeita) e fundo claro: o que ainda vazar some no branco. */
-function Miniatura({ id, versao }: { id: string; versao: string }) {
+function Miniatura({ id, versao, aoPintar }: { id: string; versao: string; aoPintar?: (id: string) => void }) {
   const caixa = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0);
   /* a prévia é a página inteira do site e demora: até ela pintar, a capa
@@ -92,7 +92,7 @@ function Miniatura({ id, versao }: { id: string; versao: string }) {
           aria-hidden="true"
           tabIndex={-1}
           loading="lazy"
-          onLoad={() => setPronta(versao)}
+          onLoad={() => { setPronta(versao); aoPintar?.(id); }}
           className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
           style={{ width: LARGURA_SITE, height: LARGURA_SITE / 1.6, transform: `scale(${escala})` }}
         />
@@ -112,8 +112,8 @@ type ItemMenu = { rotulo: string; icone: ReactNode; perigo?: boolean; disabled?:
 
 /* Botão que ocupa o cartão inteiro + kebab por cima, como irmãos (botão
    dentro de botão é HTML inválido). Mesmo desenho do índice de contratos. */
-function CartaoModelo({ modelo, noAr, aoAbrir, menu }: {
-  modelo: Modelo; noAr: boolean; aoAbrir: () => void; menu: ItemMenu[];
+function CartaoModelo({ modelo, noAr, aoAbrir, menu, aoPintar }: {
+  modelo: Modelo; noAr: boolean; aoAbrir: () => void; menu: ItemMenu[]; aoPintar?: (id: string) => void;
 }) {
   const [aberto, setAberto] = useState(false);
   const raiz = useRef<HTMLDivElement>(null);
@@ -134,7 +134,7 @@ function CartaoModelo({ modelo, noAr, aoAbrir, menu }: {
   return (
     <div ref={raiz} className="relative rounded-[18px] bg-paper shadow-card transition-[transform,box-shadow] duration-150 [@media(hover:hover)]:hover:-translate-y-px [@media(hover:hover)]:hover:shadow-card-hover">
       <button type="button" onClick={aoAbrir} className="block w-full cursor-pointer overflow-hidden rounded-[18px] bg-transparent p-0 text-left">
-        <Miniatura id={modelo.id} versao={modelo.atualizado_em} />
+        <Miniatura id={modelo.id} versao={modelo.atualizado_em} aoPintar={aoPintar} />
         <span className="block px-4 pb-4 pt-3.5">
           <span className="block truncate text-[14.5px] font-semibold leading-[1.3] text-ink">{modelo.nome}</span>
           <span className="mt-1 block text-[12px] text-ink-soft">
@@ -204,6 +204,19 @@ export default function Atelie() {
   const confirmar = useConfirmar();
   const { mostrar, elemento: toast } = useToast();
   const [dados, setDados] = useState<Resposta | null>(null);
+  /* Capas: a prévia do site é a página inteira e demora; a capa do
+     formulário é uma foto e chega em instantes. Pra as capas também
+     aparecerem juntas, a dos formulários espera todas as prévias de site
+     pintarem (ou 4s, pra uma prévia travada não segurar a tela). */
+  const [pintadas, setPintadas] = useState<Set<string>>(() => new Set());
+  const [desistiu, setDesistiu] = useState(false);
+  const aoPintar = useCallback((id: string) => setPintadas((p) => (p.has(id) ? p : new Set(p).add(id))), []);
+  useEffect(() => {
+    if (!dados) return;
+    const t = setTimeout(() => setDesistiu(true), 4000);
+    return () => clearTimeout(t);
+  }, [dados]);
+  const capasProntas = !!dados && (desistiu || dados.modelos.every((m) => pintadas.has(m.id)));
   const [criando, setCriando] = useState(false);
   const [versoesDe, setVersoesDe] = useState<{ modelo: Modelo; noAr: boolean } | null>(null);
   const fecharVersoes = useCallback(() => setVersoesDe(null), []);
@@ -426,7 +439,7 @@ export default function Atelie() {
             {modelos.map((m) => {
               const noAr = m.id === dados.ativo;
               return (
-                <CartaoModelo key={m.id} modelo={m} noAr={noAr} aoAbrir={() => router.push(rotaEditor(m.id))} menu={menuDe(m, noAr)} />
+                <CartaoModelo key={m.id} modelo={m} noAr={noAr} aoAbrir={() => router.push(rotaEditor(m.id))} menu={menuDe(m, noAr)} aoPintar={aoPintar} />
               );
             })}
             <CartaoNovo aoClicar={novo} ocupado={criando} />
@@ -449,7 +462,7 @@ export default function Atelie() {
       </div>
       {/* as duas seções aparecem JUNTAS, de cima pra baixo: os formulários
           carregam mais rápido e, sozinhos, surgiam antes dos sites */}
-      <FormulariosAtelie mostrar={mostrar} liberado={!!dados} />
+      <FormulariosAtelie mostrar={mostrar} liberado={!!dados} capasLiberadas={capasProntas} />
 
       {versoesDe ? (
         <VersoesAtelie idModelo={versoesDe.modelo.id} noAr={versoesDe.noAr}

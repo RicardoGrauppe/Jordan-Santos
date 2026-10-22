@@ -32,7 +32,7 @@ type ItemMenu = { rotulo: string; icone: ReactNode; perigo?: boolean; disabled?:
 const URL_API = "/api/formulario";
 const rotaEditor = (id: string) => "/painel/atelie/formulario/" + id;
 
-function Cartao({ modelo, emUso, aoAbrir, menu }: { modelo: Resumo; emUso: boolean; aoAbrir: () => void; menu: ItemMenu[] }) {
+function Cartao({ modelo, emUso, aoAbrir, menu, capaLiberada }: { modelo: Resumo; emUso: boolean; aoAbrir: () => void; menu: ItemMenu[]; capaLiberada: boolean }) {
   const [aberto, setAberto] = useState(false);
   /* a capa chega depois do cartão: shimmer no lugar dela até a foto pintar */
   const [capaPronta, setCapaPronta] = useState(false);
@@ -52,11 +52,11 @@ function Cartao({ modelo, emUso, aoAbrir, menu }: { modelo: Resumo; emUso: boole
           {modelo.capa ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={urlFoto(modelo.capa, 750)} alt="" onLoad={() => setCapaPronta(true)} onError={() => setCapaPronta(true)}
-              className={"h-full w-full object-cover transition-opacity duration-500 " + (capaPronta ? "opacity-100" : "opacity-0")} />
+              className={"h-full w-full object-cover transition-opacity duration-500 " + (capaPronta && capaLiberada ? "opacity-100" : "opacity-0")} />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-accent"><ClipboardList size={30} strokeWidth={1.5} /></span>
           )}
-          {modelo.capa && !capaPronta ? <Sk className="absolute inset-0 rounded-none" /> : null}
+          {modelo.capa && !(capaPronta && capaLiberada) ? <Sk className="absolute inset-0 rounded-none" /> : null}
         </span>
         <span className="block px-4 pb-4 pt-3.5">
           <span className="block truncate text-[14.5px] font-semibold leading-[1.3] text-ink">{modelo.nome}</span>
@@ -95,10 +95,12 @@ function Cartao({ modelo, emUso, aoAbrir, menu }: { modelo: Resumo; emUso: boole
   );
 }
 
-export function FormulariosAtelie({ mostrar, liberado = true }: {
+export function FormulariosAtelie({ mostrar, liberado = true, capasLiberadas = true }: {
   mostrar: (texto: string, opts?: { ok?: boolean }) => void;
   /** a página segura esta seção no skeleton até a de cima (Sites) chegar */
   liberado?: boolean;
+  /** e as capas no shimmer até as prévias dos sites pintarem */
+  capasLiberadas?: boolean;
 }) {
   const router = useRouter();
   const confirmar = useConfirmar();
@@ -192,7 +194,7 @@ export function FormulariosAtelie({ mostrar, liberado = true }: {
       {dados && liberado ? (
         <>
           {lista.map((m) => (
-            <Cartao key={m.id} modelo={m} emUso={m.id === dados.ativo} aoAbrir={() => router.push(rotaEditor(m.id))} menu={menuDe(m, m.id === dados.ativo)} />
+            <Cartao key={m.id} modelo={m} emUso={m.id === dados.ativo} aoAbrir={() => router.push(rotaEditor(m.id))} menu={menuDe(m, m.id === dados.ativo)} capaLiberada={capasLiberadas} />
           ))}
           <button type="button" onClick={novo} disabled={criando}
             className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[18px] bg-[#EEF0F3] text-[13.5px] font-semibold text-accent transition-colors hover:bg-accent-tint disabled:cursor-default disabled:opacity-60 sm:min-h-[200px]">
