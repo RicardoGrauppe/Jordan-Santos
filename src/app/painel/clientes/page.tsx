@@ -38,7 +38,7 @@ import {
 /* Os três números do banner. Arquivado não conta em nada: arquivar existe
    pra tirar da frente. Contrato "esperando" é o que está na Autentique com
    o casal (o do sistema antigo não tem link vivo, ver lib/painel). */
-function numerosDaCarteira(clientes: ClienteLista[] | null): { rotulo: string; valor: string; detalhe?: string }[] {
+function numerosDaCarteira(clientes: ClienteLista[] | null): { rotulo: string; valor: string }[] {
   if (!clientes) return [{ rotulo: "Ativos", valor: "—" }, { rotulo: "Próximo casamento", valor: "—" }, { rotulo: "Pra assinar", valor: "—" }];
   const vivos = clientes.filter((c) => c.status !== "arquivado");
   const hoje = new Date().toISOString().slice(0, 10);
@@ -50,9 +50,9 @@ function numerosDaCarteira(clientes: ClienteLista[] | null): { rotulo: string; v
   const esperando = vivos.filter((c) =>
     (c.contrato_status === "enviado" || c.contrato_status === "visualizado") && c.contrato_autentique_id).length;
   return [
-    { rotulo: "Ativos", valor: String(ativos), detalhe: ativos === 1 ? "casal" : "casais" },
-    { rotulo: "Próximo casamento", valor: proximo ? dataSemAnoSeEsteAno(proximo.data_evento) : "—", detalhe: proximo ? nomeCasal(proximo) : "nenhum marcado" },
-    { rotulo: "Pra assinar", valor: String(esperando), detalhe: esperando === 1 ? "contrato" : "contratos" },
+    { rotulo: "Ativos", valor: String(ativos) },
+    { rotulo: "Próximo casamento", valor: proximo ? dataSemAnoSeEsteAno(proximo.data_evento) : "—" },
+    { rotulo: "Pra assinar", valor: String(esperando) },
   ];
 }
 
@@ -239,7 +239,6 @@ export default function ListaClientes() {
                   <span className="md:hidden">{n.rotulo.replace(" casamento", "")}</span><span className="hidden md:inline">{n.rotulo}</span>
                 </dt>
                 <dd className="m-0 mt-0.5 truncate text-[17px] font-semibold leading-[1.3] tabular-nums md:text-[20px]">{n.valor}</dd>
-                <dd className="m-0 truncate text-[11.5px] text-white/60">{n.detalhe || "\u00a0"}</dd>
               </div>
             ))}
           </dl>
