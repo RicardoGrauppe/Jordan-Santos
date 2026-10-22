@@ -477,7 +477,7 @@ type Etapa = "inicio" | SecaoFormulario | "revisar";
    casal: voz do estúdio, primeira pessoa do plural (TOM-DE-VOZ.md). */
 const SOBRE_ETAPA: Record<SecaoFormulario, { explica: string; resumo: string }> = {
   assinar: {
-    explica: "Dados de quem assina (se for só um de vocês, só os dele). O contrato vai pelo WhatsApp e o e-mail confirma quem assina.",
+    explica: "Dados de quem vai assinar o contrato. Se só uma pessoa for assinar, basta preencher os dados dela.",
     resumo: "Quem assina o contrato e como falamos com vocês",
   },
   endereco: {
@@ -546,10 +546,10 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
 
   const cfg = formulario.campos;
   const aparece = (id: CampoId) => cfg[id].visivel;
-  /* "(opcional)" só em campo que o fotógrafo deixou opcional. Nomes e CPF
-     seguem a regra do par, explicada no texto da etapa. */
-  const opcional = (id: CampoId) => cfg[id].visivel && !cfg[id].obrigatorio && id !== "noivo" && id !== "noiva" &&
-    id !== "cpfNoivo" && id !== "cpfNoiva";
+  /* "(opcional)" em todo campo que não é exigido, CPF incluído. Os nomes
+     ficam sem: um dos dois é obrigatório (regra do par, explicada no card
+     da etapa), e marcar os dois como opcionais diria o contrário. */
+  const opcional = (id: CampoId) => cfg[id].visivel && !cfg[id].obrigatorio && id !== "noivo" && id !== "noiva";
   const perguntas = perguntasVisiveis(formulario);
   const perguntasDa = (secao: SecaoFormulario) => perguntas.filter((p) => p.secao === secao);
 
@@ -942,10 +942,6 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
     return <>{extras("extra")}</>;
   }
 
-  /* o CPF só é citado na explicação se o fotógrafo deixou ele aparecer */
-  const explicaAssinar = SOBRE_ETAPA.assinar.explica +
-    (aparece("cpfNoivo") || aparece("cpfNoiva") ? " CPF é opcional." : "");
-
   return (
     <main className={`cad ${fonteSerif.variable} ${fonteSans.variable}`}>
       <style>{CSS}</style>
@@ -1034,7 +1030,7 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
                   <h1>{TITULO_SECAO[secao]}</h1>
                   <div className="dica-card explica">
                     <span className="dica-icone"><Info size={18} strokeWidth={1.8} aria-hidden /></span>
-                    <p>{secao === "assinar" ? explicaAssinar : SOBRE_ETAPA[secao].explica}</p>
+                    <p>{SOBRE_ETAPA[secao].explica}</p>
                   </div>
                   {corpoDaSecao(secao)}
                   <button className="cta" type="submit">{textoDoBotao}</button>
