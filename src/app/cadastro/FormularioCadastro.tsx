@@ -45,7 +45,7 @@ import {
   type ChangeEvent, type FormEvent, type InputHTMLAttributes, type MouseEvent, type ReactNode, type Ref,
 } from "react";
 import Image from "next/image";
-import { ArrowRight, CalendarHeart, Heart, Info, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
+import { ArrowRight, CalendarHeart, Heart, Info, Pencil, Lightbulb, MapPin, MessageCircleHeart, UsersRound } from "lucide-react";
 import type { Iti } from "intl-tel-input";
 import "intl-tel-input/dist/css/intlTelInput.css";
 import { fonteSans, fonteSerif } from "@/lib/fontes-marca";
@@ -344,16 +344,40 @@ const CSS = `
 }
 
 /* revisão: um bloco por etapa, no fundo soft, com o Editar no canto */
+/* cartão-convite: o resumo do grande dia no topo da revisão (brandbook 18) */
+.cad .convite{text-align:center;color:#fff;border-radius:22px;padding:30px 24px 26px;margin-bottom:14px;
+  background:radial-gradient(120% 90% at 50% 0%,#0B4C5F 0%,var(--accent) 62%)}
+.cad .convite-rotulo{display:block;font-size:11px;letter-spacing:.22em;text-transform:uppercase;opacity:.72}
+.cad .convite-nomes{font-family:var(--serif);font-size:32px;line-height:1.15;margin-top:10px;text-wrap:balance}
+.cad .convite-coracao{display:block;margin:14px auto 12px;opacity:.85}
+.cad .convite-data{font-size:16px;font-weight:400;line-height:1.45}
+.cad .convite-onde{font-size:14px;line-height:1.5;opacity:.8;margin-top:2px}
+.cad .convite-contagem{display:inline-block;margin-top:16px;font-size:12px;letter-spacing:.06em;font-weight:400;
+  padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.14)}
+
+/* um bloco por etapa: ícone da etapa, título e Editar em cima, valores embaixo */
 .cad .revisao{display:grid;gap:12px}
-.cad .revisao-bloco{background:var(--soft);border-radius:14px;padding:16px 18px}
-.cad .revisao-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
-.cad .revisao-titulo{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
-.cad .editar{font-size:13px;color:var(--accent);padding:6px 10px;margin:-6px -10px -6px 0;border-radius:999px;transition:background .15s ease}
+.cad .revisao > *{animation:cad-sobe .55s cubic-bezier(.22,1,.36,1) both}
+.cad .revisao > :nth-child(1){animation-delay:200ms}
+.cad .revisao > :nth-child(2){animation-delay:290ms}
+.cad .revisao > :nth-child(3){animation-delay:380ms}
+.cad .revisao > :nth-child(4){animation-delay:470ms}
+.cad .revisao > :nth-child(5){animation-delay:560ms}
+.cad .revisao > :nth-child(6){animation-delay:650ms}
+.cad .revisao-bloco{background:var(--soft);border-radius:18px;padding:16px 16px 18px}
+.cad .revisao-topo{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.cad .revisao-icone{width:36px;height:36px;border-radius:50%;background:var(--paper);color:var(--accent);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center}
+.cad .revisao-titulo{flex:1;min-width:0;font-size:15px;font-weight:500;color:var(--ink);line-height:1.3}
+.cad .editar{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;font-size:13px;font-weight:400;color:var(--accent);
+  background:var(--paper);padding:7px 12px;border-radius:999px;transition:background .15s ease}
 @media (hover:hover){.cad .editar:hover{background:var(--soft-foco)}}
 .cad .editar:focus-visible{outline:none;background:var(--soft-foco)}
-.cad .revisao dl{display:grid;gap:8px;margin:0}
+.cad .revisao dl{display:grid;gap:12px;margin:0}
+@media (min-width:480px){.cad .revisao dl{padding-left:48px}}
 .cad .revisao dt{font-size:12px;color:var(--ink-soft);line-height:1.4}
-.cad .revisao dd{margin:0;font-size:15px;color:var(--ink);font-weight:400;line-height:1.45;word-break:break-word;white-space:pre-line}
+.cad .revisao dd{margin:2px 0 0;font-size:15px;color:var(--ink);font-weight:400;line-height:1.45;word-break:break-word;white-space:pre-line}
+.cad .revisao .vazio{font-size:14px;color:var(--ink-soft)}
 
 /* recebido: o check se desenha e o texto sobe */
 .cad .sucesso{animation:cad-sobe .6s cubic-bezier(.22,1,.36,1) both}
@@ -368,6 +392,7 @@ const CSS = `
   .cad .slide,.cad .slide img{transition:none}
   .cad .passos .icone,.cad .passos li::before{animation:none}
   .cad .cta.brilho::after{display:none}
+  .cad .revisao > *{animation:none}
   .cad .cta.brilho .seta{animation:none}
   .cad .check path{animation:none;stroke-dashoffset:0}
   .cad .progresso span{transition:none}
@@ -505,6 +530,46 @@ function FotosAbertura({ rodando }: { rodando: boolean }) {
   );
 }
 
+/* ---------- cartão-convite da revisão ----------
+   O resumo do grande dia, no tom de um convite (brandbook 18). Recebe tudo
+   pronto, sem estado: a revisão monta quando entra e lê os valores dali. */
+function dataPorExtenso(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const [a, m, d] = iso.split("-").map(Number);
+  const texto = new Date(a, m - 1, d).toLocaleDateString("pt-BR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+function contagem(data: string, hoje: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || !/^\d{4}-\d{2}-\d{2}$/.test(hoje)) return "";
+  const dias = Math.round((Date.UTC(...(data.split("-").map(Number) as [number, number, number])) -
+    Date.UTC(...(hoje.split("-").map(Number) as [number, number, number]))) / 86400000);
+  if (dias < 0) return "";
+  if (dias === 0) return "É hoje!";
+  if (dias === 1) return "É amanhã!";
+  return "Faltam " + dias.toLocaleString("pt-BR") + " dias";
+}
+
+function CartaoConvite({ nomes, data, horario, local, hoje }: {
+  nomes: string; data: string; horario: string; local: string; hoje: string;
+}) {
+  const quando = dataPorExtenso(data);
+  const onde = [horario ? "às " + horario : "", local].filter(Boolean).join(" · ");
+  const falta = contagem(data, hoje);
+  return (
+    <div className="convite">
+      <span className="convite-rotulo">O grande dia de</span>
+      <p className="convite-nomes">{nomes}</p>
+      <Heart className="convite-coracao" size={16} strokeWidth={1.8} fill="currentColor" aria-hidden />
+      {quando ? <p className="convite-data">{quando}</p> : null}
+      {onde ? <p className="convite-onde">{onde}</p> : null}
+      {falta ? <span className="convite-contagem">{falta}</span> : null}
+    </div>
+  );
+}
+
 /* ---------- etapas ---------- */
 
 type Etapa = "inicio" | SecaoFormulario | "revisar";
@@ -564,6 +629,9 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
      cópia tirada na hora de entrar nela: ler o plugin durante o render não
      acompanharia as mudanças */
   const [contatoRevisao, setContatoRevisao] = useState("");
+  /* "hoje" da contagem do cartão-convite, tirado ao entrar na revisão (ler o
+     relógio durante o render não é puro) */
+  const [hojeRevisao, setHojeRevisao] = useState("");
   /* veio do "Editar" da revisão: o botão da etapa leva de volta pra revisão
      em vez de andar por todas as etapas seguintes de novo */
   const [daRevisao, setDaRevisao] = useState(false);
@@ -707,7 +775,11 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
   }, [etapa]);
 
   function irPara(destino: Etapa) {
-    if (destino === "revisar") setContatoRevisao(contatoLegivel());
+    if (destino === "revisar") {
+      setContatoRevisao(contatoLegivel());
+      const d = new Date();
+      setHojeRevisao(d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"));
+    }
     setDirecao(etapas.indexOf(destino) < indice ? "tras" : "frente");
     setErroGeral("");
     setEtapa(destino);
@@ -1091,21 +1163,33 @@ export function FormularioCadastro({ formulario }: { formulario: Formulario }) {
             <section className="etapa" {...atributosEtapa("revisar")}>
               <div className="etapa-corpo">
                 <h1>Confere se está tudo certo</h1>
-                <p className="sub">Se algo estiver errado, toque em Editar. Depois é só confirmar que a gente cuida do resto.</p>
+                <p className="sub">Se algo estiver errado, é só editar. Depois é confirmar que a gente cuida do resto.</p>
                 {etapa === "revisar" ? (
                   <div className="revisao">
+                    <CartaoConvite
+                      nomes={[valores.noivo.trim(), valores.noiva.trim()].filter(Boolean).join(" & ")}
+                      data={valores.data}
+                      horario={aparece("horario") ? valores.horario : ""}
+                      local={aparece("local") ? valores.local.trim() : ""}
+                      hoje={hojeRevisao}
+                    />
                     {secoes.map((secao) => {
                       const linhas = linhasDaRevisao(secao);
+                      const Icone = ICONE_ETAPA[secao];
                       return (
                         <div key={secao} className="revisao-bloco">
                           <div className="revisao-topo">
+                            <span className="revisao-icone"><Icone size={17} strokeWidth={1.8} aria-hidden /></span>
                             <span className="revisao-titulo">{TITULO_SECAO[secao]}</span>
-                            <button type="button" className="editar" onClick={() => editar(secao)}>Editar</button>
+                            <button type="button" className="editar" onClick={() => editar(secao)}
+                              aria-label={"Editar " + TITULO_SECAO[secao]}>
+                              <Pencil size={13} strokeWidth={1.8} aria-hidden /> Editar
+                            </button>
                           </div>
                           <dl>
                             {linhas.length ? linhas.map((l) => (
                               <div key={l.rotulo}><dt>{l.rotulo}</dt><dd>{l.valor}</dd></div>
-                            )) : <dd>Nada preenchido</dd>}
+                            )) : <dd className="vazio">Nada preenchido</dd>}
                           </dl>
                         </div>
                       );
