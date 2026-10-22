@@ -16,7 +16,7 @@
     Ricardo em 05/10/2026). Antes era um botão com preferência guardada no
     localStorage; agora não há estado pra lembrar, porque o repouso é sempre o
     recolhido e o aberto dura o tempo do mouse.
-  - No celular a barra de baixo é a navegação inteira: os seis destinos são os
+  - No celular a barra de baixo é a navegação inteira: os cinco destinos são os
     mesmos que o computador tem espalhados pelo header e pela lateral. Avisos,
     busca e conta viram tela cheia, porque dropdown no polegar não funciona.
 */
@@ -60,7 +60,9 @@ const itemMenuConta =
 const ITENS: { href: string; rotulo: string; Icone: typeof House; soLateral?: boolean }[] = [
   { href: "/painel", rotulo: "Home", Icone: House },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: Users },
-  { href: "/painel/atelie", rotulo: "Ateliê", Icone: LayoutTemplate },
+  /* `soLateral` (22/10/2026): a barra de baixo do celular é só Home, Clientes,
+     Buscar, Notificações e Opções; o Ateliê mora dentro de Opções lá */
+  { href: "/painel/atelie", rotulo: "Ateliê", Icone: LayoutTemplate, soLateral: true },
   /* O Formulário saiu daqui em 22/10/2026: virou um tipo de modelo dentro
      do Ateliê (seção Formulários), pra não ter duas páginas de modelo. */
 ];
@@ -79,8 +81,8 @@ const POSICAO_NAV: Record<string, number> = {
   "/painel": 0,
   "/painel/clientes": 1,
   "/painel/atelie": 1.5,
-  avisos: 2,
-  busca: 3,
+  busca: 2,
+  avisos: 3,
   conta: 4,
 };
 const POSICAO_FUNDO = 9;
@@ -658,7 +660,7 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
           iPhone (--sab). Sem borda: o que a destaca é a LUZ, vinda de cima —
           degradê de branco pro quase-branco, fio claro na aresta de cima, fio
           escuro na de baixo e a sombra caindo em camadas (ver
-          --shadow-flutuante no globals.css). Só ícones: seis destinos fixos, e
+          --shadow-flutuante no globals.css). Só ícones: cinco destinos fixos (Home, Clientes, Buscar, Notificações, Opções; o resto mora em Opções), e
           o rótulo que sobrava embaixo comia altura sem dizer nada novo depois
           do primeiro uso. */}
       <nav className={
@@ -684,6 +686,16 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
         <button
           type="button"
+          aria-label="Buscar casal"
+          onClick={() => alternarTela("busca")}
+          title="Buscar casal"
+          className={itemNav + tomItem(tela === "busca")}
+        >
+          <Search size={20} />
+        </button>
+
+        <button
+          type="button"
           aria-label="Notificações"
           onClick={() => alternarTela("avisos")}
           title="Notificações"
@@ -697,19 +709,9 @@ export function AppShell({ children, nome }: { children: ReactNode; nome?: strin
 
         <button
           type="button"
-          aria-label="Buscar casal"
-          onClick={() => alternarTela("busca")}
-          title="Buscar casal"
-          className={itemNav + tomItem(tela === "busca")}
-        >
-          <Search size={20} />
-        </button>
-
-        <button
-          type="button"
-          aria-label="Menu da conta"
+          aria-label="Opções"
           onClick={() => alternarTela("conta")}
-          title="Menu da conta"
+          title="Opções"
           className={itemNav + tomItem(tela === "conta")}
         >
           <Menu size={20} />
@@ -809,13 +811,20 @@ function TelaContaMobile({
   const aba = aberta ? 0 : -1;
 
   return (
-    <TelaMobile aberta={aberta} daEsquerda={daEsquerda} rotulo="Menu da conta">
+    <TelaMobile aberta={aberta} daEsquerda={daEsquerda} rotulo="Opções">
       <TopoTelaMobile>
-        <h2 className="flex-1 text-[26px] font-bold text-ink">Menu</h2>
+        <h2 className="flex-1 text-[26px] font-bold text-ink">Opções</h2>
       </TopoTelaMobile>
 
       <CorpoTelaMobile>
         <CartaoPlano nome={nome} />
+
+        {/* o que não cabe na barra de baixo (só os cinco de todo dia) */}
+        <Link href="/painel/atelie" tabIndex={aba} onClick={aoFechar} className={item}>
+          <LayoutTemplate size={19} className="shrink-0 text-ink-soft" />
+          Ateliê
+          <ChevronRight size={18} className="ml-auto shrink-0 text-line" />
+        </Link>
 
         <Link href="/painel/configuracoes/contrato" tabIndex={aba} onClick={aoFechar} className={item}>
           <FileText size={19} className="shrink-0 text-ink-soft" />
