@@ -35,7 +35,6 @@ import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
 import { SecaoFicha } from "@/components/SecaoFicha";
 import { CampoCopiavel } from "@/components/CampoCopiavel";
-import { BotaoCopiar, BotaoWhatsApp, Dado, Faltando } from "@/components/FichaLeitura";
 import { HeroCliente } from "@/components/HeroCliente";
 import { TituloMobile } from "@/components/cabecalho-mobile";
 import { ContratoVazio, TimelineContrato } from "@/components/TimelineContrato";
@@ -68,16 +67,6 @@ const CAMPOS_CONTRATO: { campo: CampoFicha; rotulo: string }[] = [
   { campo: "data_evento", rotulo: "Data do evento" },
   { campo: "local_evento", rotulo: "Local do evento" },
 ];
-
-type SecaoDaFicha = "casal" | "evento" | "endereco" | "anotacoes";
-
-/** "terça-feira, 30/09/2026": o dia da semana é o que o fotógrafo confere
- *  na agenda. Meio-dia evita o fuso empurrar a data pro dia anterior. */
-function dataPorExtenso(iso: string): string {
-  const d = new Date(iso.slice(0, 10) + "T12:00:00");
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("pt-BR", { weekday: "long" }) + ", " + d.toLocaleDateString("pt-BR");
-}
 
 type Resposta = { cliente: Cliente; contrato: Contrato | null };
 type Msg = { texto: string; tom?: "ok" | "erro" };
@@ -191,11 +180,6 @@ export default function PaginaCliente() {
   const [trocaEmail, setTrocaEmail] = useState<{ ocupado: boolean; erro: string } | null>(null);
   const enviadoTratado = useRef(false);
   const [ocupado, setOcupado] = useState(false);
-  /* modo edição por cartão (ver SecaoFicha). Quem chega mandado pro e-mail
-     (?campo=email) já cai com o casal em edição. */
-  const [editando, setEditando] = useState<Partial<Record<SecaoDaFicha, boolean>>>(
-    () => (campoAlvo === "email" ? { casal: true } : {}),
-  );
 
   const travado = contrato?.status === "assinado";
   /* contrato na Autentique esperando o casal: o e-mail é o de quem assina lá,
@@ -682,46 +666,6 @@ export default function PaginaCliente() {
     try { el.showPicker(); } catch { /* Firefox exige gesto; clique é gesto, mas fica de rede */ }
   }
 
-  /* ---------- leitura x edição dos cartões ---------- */
-
-  /* ficha nova ainda sem cliente: tudo em edição, não há o que ler */
-  const fichaEmBranco = ehNovo && !clienteId;
-  const podeConcluir = !fichaEmBranco;
-  const emEdicao = (s: SecaoDaFicha) => fichaEmBranco || !!editando[s];
-
-  /* abre o cartão em edição e, vindo de um "Faltando", já põe o cursor no
-     campo (o campo só existe depois do render, daí o timeout) */
-  function abrirEdicao(secao: SecaoDaFicha, campoId?: string) {
-    setEditando((e) => ({ ...e, [secao]: true }));
-    if (!campoId) return;
-    setTimeout(() => {
-      const el = document.getElementById(campoId);
-      if (!el) return;
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
-      (el as HTMLInputElement).focus({ preventScroll: true });
-    }, 30);
-  }
-  function concluir(secao: SecaoDaFicha) {
-    salvarLogo();
-    setEditando((e) => ({ ...e, [secao]: false }));
-  }
-
-  /* papel dentro do bloco cinza da leitura; cinza ao lado do campo na edição */
-  const botaoTrocarEmail = (sobreCinza: boolean) => (
-    <button type="button" onClick={() => setTrocaEmail({ ocupado: false, erro: "" })}
-      className={"inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 text-[13px] font-semibold text-accent transition-colors hover:bg-line " + (sobreCinza ? "h-8 bg-paper" : "bg-soft px-3.5")}>
-      {/* no celular só "Trocar": o e-mail ficava com 9 letras à vista */}
-      <Mail size={15} /> <span>Trocar<span className="hidden sm:inline"> e reenviar</span></span>
-    </button>
-  );
-
-  const enderecoLinhas = [
-    [[ficha.endereco, ficha.numero].filter(Boolean).join(", "), ficha.complemento].filter(Boolean).join(" · "),
-    [ficha.bairro, [ficha.cidade, ficha.estado].filter(Boolean).join("/")].filter(Boolean).join(" · "),
-    ficha.cep ? "CEP " + ficha.cep : "",
-  ].filter(Boolean);
-  const enderecoCompleto = enderecoLinhas.join(", ");
-
   /* o quarto número do herói: a mesma situação do cartão Contrato, curta */
   const situacaoCurta = !contratoGerado ? "Sem contrato"
     : contrato?.status === "visualizado" ? "Aberto pelo casal"
@@ -831,228 +775,120 @@ export default function PaginaCliente() {
               ) : null}
             </div>
 
-            {/* ---------- coluna esquerda: o casal ----------
-                Cada cartão mostra o dado como texto (leitura) e vira
-                formulário no Editar. Os campos só existem no modo edição. */}
+            {/* ---------- coluna esquerda: o casal ---------- */}
             <div className="min-w-0 min-[1080px]:order-1">
-              <SecaoFicha icone={<Heart size={16} />} titulo="O casal" descricao="Contratantes e contato"
-                editando={emEdicao("casal")} aoEditar={() => abrirEdicao("casal")} aoConcluir={podeConcluir ? () => concluir("casal") : undefined}>
-                {emEdicao("casal") ? (
-                  <>
-                    {/* uma coluna por pessoa: o olho lê "o noivo" de cima a baixo */}
-                    <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                      <div className="min-w-0">
-                        <CampoCopiavel id="f-noivo" rotulo="Noivo" value={ficha.noivo} avisar={avisar}
-                          onChange={(e) => mudarCampo("noivo", e.target.value)} onBlur={salvarLogo} />
-                        <CampoCopiavel id="f-cpf-noivo" rotulo="CPF do noivo" value={ficha.cpf_noivo} avisar={avisar}
-                          inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                          onChange={(e) => mudarCampo("cpf_noivo", e.target.value)} onBlur={salvarLogo} />
-                        <CampoCopiavel id="f-tel-noivo" rotulo="Telefone do noivo" value={ficha.tel_noivo} avisar={avisar}
-                          copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
-                          onChange={(e) => mudarCampo("tel_noivo", e.target.value)} onBlur={salvarLogo} />
-                      </div>
-                      <div className="min-w-0">
-                        <CampoCopiavel id="f-noiva" rotulo="Noiva" value={ficha.noiva} avisar={avisar}
-                          onChange={(e) => mudarCampo("noiva", e.target.value)} onBlur={salvarLogo} />
-                        <CampoCopiavel id="f-cpf-noiva" rotulo="CPF da noiva" value={ficha.cpf_noiva} avisar={avisar}
-                          inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                          onChange={(e) => mudarCampo("cpf_noiva", e.target.value)} onBlur={salvarLogo} />
-                        <CampoCopiavel id="f-tel-noiva" rotulo="Telefone da noiva" value={ficha.tel_noiva} avisar={avisar}
-                          copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
-                          onChange={(e) => mudarCampo("tel_noiva", e.target.value)} onBlur={salvarLogo} />
-                      </div>
-                    </div>
-                    <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
-                      readOnly={emailNaAutentique}
-                      acao={emailNaAutentique ? botaoTrocarEmail(false) : undefined}
-                      onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
-                    {emailNaAutentique ? (
-                      <p className="m-0 -mt-2 text-[11.5px] leading-[1.5] text-ink-soft/85">
-                        O contrato já foi pra esse e-mail. Se estiver errado, troque e reenvie pro casal.
-                      </p>
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                      {([
-                        { papel: "Noivo", nome: ficha.noivo, cpf: ficha.cpf_noivo, tel: ficha.tel_noivo },
-                        { papel: "Noiva", nome: ficha.noiva, cpf: ficha.cpf_noiva, tel: ficha.tel_noiva },
-                      ]).map((p) => (
-                        <div key={p.papel} className="min-w-0 rounded-2xl bg-soft px-4 py-3">
-                          <span className="block text-[12px] font-medium text-ink-soft">{p.papel}</span>
-                          <div className="flex items-center gap-1">
-                            <span className={"min-w-0 flex-1 truncate text-[15px] font-semibold " + (p.nome ? "text-ink" : "text-ink-soft")}>
-                              {p.nome || "Sem nome"}
-                            </span>
-                            {p.nome ? <BotaoCopiar rotulo={p.papel} valor={p.nome} avisar={avisar} /> : null}
-                          </div>
-                          {p.cpf ? (
-                            <div className="flex items-center gap-1 text-[13.5px] text-ink">
-                              <span className="min-w-0 flex-1 truncate tabular-nums"><span className="text-ink-soft">CPF </span>{p.cpf}</span>
-                              <BotaoCopiar rotulo={"CPF do " + p.papel.toLowerCase()} valor={p.cpf} avisar={avisar} />
-                            </div>
-                          ) : null}
-                          {p.tel ? (
-                            <div className="flex items-center gap-1 text-[13.5px] text-ink">
-                              <span className="min-w-0 flex-1 truncate tabular-nums">{p.tel}</span>
-                              <BotaoWhatsApp telefone={p.tel} />
-                            </div>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                    {/* e-mail num bloco igual ao das pessoas: o endereço é comprido
-                        e, numa linha com rótulo e botões, quebrava no meio */}
-                    {ficha.email ? (
-                      <div className="mt-2.5 rounded-2xl bg-soft px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <span className="flex-1 text-[12px] font-medium text-ink-soft">E-mail do casal</span>
-                          {emailNaAutentique ? botaoTrocarEmail(true) : null}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="min-w-0 flex-1 truncate text-[14.5px] text-ink" title={ficha.email}>{ficha.email}</span>
-                          <BotaoCopiar rotulo="E-mail" valor={ficha.email} avisar={avisar} />
-                        </div>
-                      </div>
-                    ) : null}
-                    <Faltando aoAbrir={(id) => abrirEdicao("casal", id)} itens={[
-                      !ficha.noivo ? { id: "f-noivo", rotulo: "Nome do noivo" } : null,
-                      !ficha.cpf_noivo ? { id: "f-cpf-noivo", rotulo: "CPF do noivo" } : null,
-                      !ficha.tel_noivo ? { id: "f-tel-noivo", rotulo: "Telefone do noivo" } : null,
-                      !ficha.noiva ? { id: "f-noiva", rotulo: "Nome da noiva" } : null,
-                      !ficha.cpf_noiva ? { id: "f-cpf-noiva", rotulo: "CPF da noiva" } : null,
-                      !ficha.tel_noiva ? { id: "f-tel-noiva", rotulo: "Telefone da noiva" } : null,
-                      !ficha.email ? { id: "f-email", rotulo: "E-mail" } : null,
-                    ].filter((x): x is { id: string; rotulo: string } => !!x)} />
-                  </>
-                )}
-              </SecaoFicha>
-
-              <SecaoFicha icone={<CalendarHeart size={16} />} titulo="O evento" descricao="Data, horário e local"
-                editando={emEdicao("evento")} aoEditar={() => abrirEdicao("evento")} aoConcluir={podeConcluir ? () => concluir("evento") : undefined}>
-                {emEdicao("evento") ? (
-                  <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                    <Campo id="f-data" rotulo="Data do casamento" type="date" autoComplete="off" className="h-11 py-0"
-                      value={ficha.data_evento} onChange={(e) => mudarCampo("data_evento", e.target.value)} onBlur={salvarLogo} onClick={abrirPicker} />
-                    <Campo id="f-horario" rotulo="Horário" type="time" autoComplete="off" className="h-11 py-0"
-                      value={ficha.horario} onChange={(e) => mudarCampo("horario", e.target.value)} onBlur={salvarLogo} onClick={abrirPicker} />
-                    <div className="col-span-full">
-                      <Campo id="f-local" rotulo="Local" autoComplete="off" className="h-11 py-0"
-                        value={ficha.local_evento} onChange={(e) => mudarCampo("local_evento", e.target.value)} onBlur={salvarLogo} />
-                    </div>
+              <SecaoFicha icone={<Heart size={16} />} titulo="O casal" descricao="Contratantes e contato" chave="casal"
+                forcarAberta={ehNovo || campoAlvo === "email"}>
+                {/* uma coluna por pessoa: o olho lê "o noivo" de cima a baixo,
+                    em vez de pular entre noivo e noiva a cada campo */}
+                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <CampoCopiavel id="f-noivo" rotulo="Noivo" value={ficha.noivo} avisar={avisar}
+                      onChange={(e) => mudarCampo("noivo", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-cpf-noivo" rotulo="CPF do noivo" value={ficha.cpf_noivo} avisar={avisar}
+                      inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
+                      onChange={(e) => mudarCampo("cpf_noivo", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-tel-noivo" rotulo="Telefone do noivo" value={ficha.tel_noivo} avisar={avisar}
+                      copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
+                      onChange={(e) => mudarCampo("tel_noivo", e.target.value)} onBlur={salvarLogo} />
                   </div>
-                ) : (
-                  <>
-                    {ficha.data_evento ? <Dado rotulo="Data">{dataPorExtenso(ficha.data_evento)}</Dado> : null}
-                    {ficha.horario ? <Dado rotulo="Horário">{ficha.horario.slice(0, 5)}</Dado> : null}
-                    {ficha.local_evento ? (
-                      <Dado rotulo="Local" acoes={<BotaoCopiar rotulo="Local" valor={ficha.local_evento} avisar={avisar} />}>{ficha.local_evento}</Dado>
-                    ) : null}
-                    <Faltando aoAbrir={(id) => abrirEdicao("evento", id)} itens={[
-                      !ficha.data_evento ? { id: "f-data", rotulo: "Data" } : null,
-                      !ficha.horario ? { id: "f-horario", rotulo: "Horário" } : null,
-                      !ficha.local_evento ? { id: "f-local", rotulo: "Local" } : null,
-                    ].filter((x): x is { id: string; rotulo: string } => !!x)} />
-                  </>
-                )}
-              </SecaoFicha>
-
-              <SecaoFicha icone={<MapPin size={16} />} titulo="Endereço" descricao="Vai no contrato"
-                editando={emEdicao("endereco")} aoEditar={() => abrirEdicao("endereco")} aoConcluir={podeConcluir ? () => concluir("endereco") : undefined}>
-                {emEdicao("endereco") ? (
-                  /* grade de 6: cada campo com a largura do que cabe nele */
-                  <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-6 [&>*]:min-w-0">
-                    <div className="sm:col-span-2">
-                      <CampoCopiavel id="f-cep" rotulo="CEP" value={ficha.cep} avisar={avisar}
-                        inputMode="numeric" placeholder="00000-000" maxLength={9}
-                        onChange={(e) => mudarCampo("cep", e.target.value)} onBlur={salvarLogo} />
-                    </div>
-                    <div className="sm:col-span-4">
-                      <CampoCopiavel id="f-endereco" rotulo="Endereço" value={ficha.endereco} avisar={avisar}
-                        onChange={(e) => mudarCampo("endereco", e.target.value)} onBlur={salvarLogo} />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <CampoCopiavel id="f-numero" rotulo="Número" value={ficha.numero} avisar={avisar}
-                        onChange={(e) => mudarCampo("numero", e.target.value)} onBlur={salvarLogo} />
-                    </div>
-                    <div className="sm:col-span-4">
-                      <Campo id="f-complemento" rotulo="Complemento" autoComplete="off" className="h-11 py-0"
-                        value={ficha.complemento} onChange={(e) => mudarCampo("complemento", e.target.value)} onBlur={salvarLogo} />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <CampoCopiavel id="f-bairro" rotulo="Bairro" value={ficha.bairro} avisar={avisar}
-                        onChange={(e) => mudarCampo("bairro", e.target.value)} onBlur={salvarLogo} />
-                    </div>
-                    <div className="sm:col-span-3">
-                      <CampoCopiavel id="f-cidade" rotulo="Cidade" value={ficha.cidade} avisar={avisar}
-                        onChange={(e) => mudarCampo("cidade", e.target.value)} onBlur={salvarLogo} />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <Campo id="f-estado" rotulo="UF" autoComplete="off" placeholder="UF" maxLength={2} className="h-11 py-0 uppercase"
-                        value={ficha.estado} onChange={(e) => mudarCampo("estado", e.target.value.toUpperCase())} onBlur={salvarLogo} />
-                    </div>
+                  <div className="min-w-0">
+                    <CampoCopiavel id="f-noiva" rotulo="Noiva" value={ficha.noiva} avisar={avisar}
+                      onChange={(e) => mudarCampo("noiva", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-cpf-noiva" rotulo="CPF da noiva" value={ficha.cpf_noiva} avisar={avisar}
+                      inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
+                      onChange={(e) => mudarCampo("cpf_noiva", e.target.value)} onBlur={salvarLogo} />
+                    <CampoCopiavel id="f-tel-noiva" rotulo="Telefone da noiva" value={ficha.tel_noiva} avisar={avisar}
+                      copiavel={false} whatsapp inputMode="tel" placeholder="(00) 00000-0000"
+                      onChange={(e) => mudarCampo("tel_noiva", e.target.value)} onBlur={salvarLogo} />
                   </div>
-                ) : (
-                  <>
-                    {/* o endereço inteiro numa linha só, do jeito que se cola
-                        numa mensagem; o copiar leva tudo junto */}
-                    {enderecoCompleto ? (
-                      <div className="flex items-start gap-3 rounded-2xl bg-soft px-4 py-3">
-                        <div className="min-w-0 flex-1 text-[14.5px] leading-[1.55] text-ink">
-                          {enderecoLinhas.map((l) => <span key={l} className="block">{l}</span>)}
-                        </div>
-                        <BotaoCopiar rotulo="Endereço" valor={enderecoCompleto} avisar={avisar} />
-                      </div>
-                    ) : null}
-                    <Faltando aoAbrir={(id) => abrirEdicao("endereco", id)} itens={[
-                      !ficha.cep ? { id: "f-cep", rotulo: "CEP" } : null,
-                      !ficha.endereco ? { id: "f-endereco", rotulo: "Endereço" } : null,
-                      !ficha.numero ? { id: "f-numero", rotulo: "Número" } : null,
-                      !ficha.bairro ? { id: "f-bairro", rotulo: "Bairro" } : null,
-                      !ficha.cidade ? { id: "f-cidade", rotulo: "Cidade" } : null,
-                      !ficha.estado ? { id: "f-estado", rotulo: "UF" } : null,
-                    ].filter((x): x is { id: string; rotulo: string } => !!x)} />
-                  </>
-                )}
+                </div>
+                <CampoCopiavel id="f-email" rotulo="E-mail do casal" value={ficha.email} avisar={avisar} type="email"
+                  readOnly={emailNaAutentique}
+                  acao={emailNaAutentique ? (
+                    <button type="button" onClick={() => setTrocaEmail({ ocupado: false, erro: "" })}
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[10px] bg-soft px-3.5 text-[13px] font-semibold text-accent transition-colors hover:bg-line">
+                      {/* no celular só "Trocar": o campo do e-mail ficava com 9 letras à vista */}
+                      <Mail size={15} /> <span>Trocar<span className="hidden sm:inline"> e reenviar</span></span>
+                    </button>
+                  ) : undefined}
+                  onChange={(e) => { if (!emailNaAutentique) mudarCampo("email", e.target.value); }} onBlur={salvarLogo} />
+                {emailNaAutentique ? (
+                  <p className="m-0 -mt-2 text-[11.5px] leading-[1.5] text-ink-soft/85">
+                    O contrato já foi pra esse e-mail. Se estiver errado, troque e reenvie pro casal.
+                  </p>
+                ) : null}
               </SecaoFicha>
 
-              <SecaoFicha icone={<NotebookPen size={16} />} titulo="Anotações" descricao="Só você vê"
-                editando={emEdicao("anotacoes")} aoEditar={() => abrirEdicao("anotacoes")} aoConcluir={podeConcluir ? () => concluir("anotacoes") : undefined}>
-                {emEdicao("anotacoes") ? (
-                  <>
-                    <div className="mb-3.5 sm:max-w-[50%]">
-                      <label htmlFor="f-origem" className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">Como conheceu</label>
-                      <div className="relative">
-                        <select
-                          id="f-origem"
-                          autoComplete="off"
-                          value={ficha.origem}
-                          onChange={(e) => { mudarCampo("origem", e.target.value); salvarLogo(); }}
-                          className="h-11 w-full cursor-pointer appearance-none rounded-[10px] bg-soft pl-3.5 pr-9 text-sm text-ink outline-none transition-colors focus:bg-[#EEF0F3]"
-                        >
-                          <option value="">Selecione</option>
-                          {ORIGENS.map((o) => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                        <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden />
-                      </div>
-                    </div>
-                    <Area id="f-observacoes" rotulo="Observações" autoComplete="off" placeholder="Anotações internas, só você vê."
-                      className="min-h-[72px]" value={ficha.observacoes}
-                      onChange={(e) => mudarCampo("observacoes", e.target.value)} onBlur={salvarLogo} />
-                  </>
-                ) : (
-                  <>
-                    {ficha.origem ? <Dado rotulo="Como conheceu">{ficha.origem}</Dado> : null}
-                    {ficha.observacoes ? (
-                      <p className="m-0 mt-1 whitespace-pre-wrap rounded-2xl bg-soft px-4 py-3 text-[14px] leading-[1.6] text-ink">{ficha.observacoes}</p>
-                    ) : null}
-                    <Faltando aoAbrir={(id) => abrirEdicao("anotacoes", id)} itens={[
-                      !ficha.origem ? { id: "f-origem", rotulo: "Como conheceu" } : null,
-                      !ficha.observacoes ? { id: "f-observacoes", rotulo: "Observação" } : null,
-                    ].filter((x): x is { id: string; rotulo: string } => !!x)} />
-                  </>
-                )}
+              <SecaoFicha icone={<CalendarHeart size={16} />} titulo="O evento" descricao="Data, horário e local" chave="evento">
+                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                  <Campo id="f-data" rotulo="Data do casamento" type="date" autoComplete="off" className="h-11 py-0"
+                    value={ficha.data_evento} onChange={(e) => mudarCampo("data_evento", e.target.value)} onBlur={salvarLogo} onClick={abrirPicker} />
+                  <Campo id="f-horario" rotulo="Horário" type="time" autoComplete="off" className="h-11 py-0"
+                    value={ficha.horario} onChange={(e) => mudarCampo("horario", e.target.value)} onBlur={salvarLogo} onClick={abrirPicker} />
+                  <div className="col-span-full">
+                    <Campo id="f-local" rotulo="Local" autoComplete="off" className="h-11 py-0"
+                      value={ficha.local_evento} onChange={(e) => mudarCampo("local_evento", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                </div>
+              </SecaoFicha>
+
+              <SecaoFicha icone={<MapPin size={16} />} titulo="Endereço" descricao="Vai no contrato" chave="endereco">
+                {/* grade de 6: cada campo com a largura do que cabe nele (UF
+                    não precisa de um terço da linha, endereço precisa de mais) */}
+                <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-6 [&>*]:min-w-0">
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-cep" rotulo="CEP" value={ficha.cep} avisar={avisar}
+                      inputMode="numeric" placeholder="00000-000" maxLength={9}
+                      onChange={(e) => mudarCampo("cep", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <CampoCopiavel id="f-endereco" rotulo="Endereço" value={ficha.endereco} avisar={avisar}
+                      onChange={(e) => mudarCampo("endereco", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-numero" rotulo="Número" value={ficha.numero} avisar={avisar}
+                      onChange={(e) => mudarCampo("numero", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <Campo id="f-complemento" rotulo="Complemento" autoComplete="off" className="h-11 py-0"
+                      value={ficha.complemento} onChange={(e) => mudarCampo("complemento", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <CampoCopiavel id="f-bairro" rotulo="Bairro" value={ficha.bairro} avisar={avisar}
+                      onChange={(e) => mudarCampo("bairro", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <CampoCopiavel id="f-cidade" rotulo="Cidade" value={ficha.cidade} avisar={avisar}
+                      onChange={(e) => mudarCampo("cidade", e.target.value)} onBlur={salvarLogo} />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <Campo id="f-estado" rotulo="UF" autoComplete="off" placeholder="UF" maxLength={2} className="h-11 py-0 uppercase"
+                      value={ficha.estado} onChange={(e) => mudarCampo("estado", e.target.value.toUpperCase())} onBlur={salvarLogo} />
+                  </div>
+                </div>
+              </SecaoFicha>
+
+              <SecaoFicha icone={<NotebookPen size={16} />} titulo="Anotações" descricao="Só você vê" chave="anotacoes">
+                <div className="mb-3.5 sm:max-w-[50%]">
+                  <label htmlFor="f-origem" className="mb-1.5 block text-[12.5px] font-medium text-ink-soft">Como conheceu</label>
+                  <div className="relative">
+                    <select
+                      id="f-origem"
+                      autoComplete="off"
+                      value={ficha.origem}
+                      onChange={(e) => { mudarCampo("origem", e.target.value); salvarLogo(); }}
+                      className="h-11 w-full cursor-pointer appearance-none rounded-[10px] bg-soft pl-3.5 pr-9 text-sm text-ink outline-none transition-colors focus:bg-[#EEF0F3]"
+                    >
+                      <option value="">Selecione</option>
+                      {ORIGENS.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden />
+                  </div>
+                </div>
+                <Area id="f-observacoes" rotulo="Observações" autoComplete="off" placeholder="Anotações internas, só você vê."
+                  className="min-h-[72px]" value={ficha.observacoes}
+                  onChange={(e) => mudarCampo("observacoes", e.target.value)} onBlur={salvarLogo} />
               </SecaoFicha>
             </div>
           </div>
