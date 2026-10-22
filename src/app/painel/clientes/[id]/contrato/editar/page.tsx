@@ -28,7 +28,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Info, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
+  ArrowLeft, Braces, CalendarHeart, Check, ChevronDown, ExternalLink, FileText, Heart, Info, PanelLeft, Package, LayoutTemplate, LoaderCircle, MapPin, PenLine,
   PenTool, Plus, Search, Send, Table, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { JSONContent } from "@tiptap/core";
@@ -626,32 +626,40 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
   }
 
   /* ---------- botão principal: o fluxo inteiro mora nele ---------- */
-  const botao = assinado || (contrato.autentique_id && !alterado)
-    ? (
+  /* o botão principal, em dois tamanhos: no cabeçalho (computador) e na
+     barra fixa de baixo (celular, largura cheia) */
+  const soAbrir = assinado || (contrato.autentique_id && !alterado);
+  const botao = (onde: "topo" | "rodape") => {
+    const base = onde === "topo"
+      /* `hidden` + `md:inline-flex` sem `inline-flex` solto (CLAUDE.md, responsivo) */
+      ? (assinado ? "inline-flex " : "hidden md:inline-flex ") + "h-10 shrink-0 px-4"
+      : "flex h-12 w-full flex-1 justify-center px-4";
+    return soAbrir ? (
       <a href={contrato.autentique_id ? urlNoAutentique(contrato.autentique_id) : "#"} target="_blank" rel="noreferrer"
-        className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-accent px-4 text-[13.5px] font-semibold text-white no-underline transition-colors hover:bg-accent-hover">
+        className={base + " items-center gap-2 rounded-xl bg-accent text-[13.5px] font-semibold text-white no-underline transition-colors hover:bg-accent-hover"}>
         <ExternalLink size={15} /> Abrir na Autentique
       </a>
-    )
-    : (
+    ) : (
       <button type="button" disabled={!!enviando} onClick={() => void enviar(!!contrato.autentique_id)}
-        className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-accent px-4 text-[13.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50">
+        className={base + " cursor-pointer items-center gap-2 rounded-xl bg-accent text-[13.5px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-default disabled:opacity-50"}>
         <Send size={15} /> {contrato.autentique_id ? "Atualizar na Autentique" : "Assinar e enviar"}
       </button>
     );
+  };
 
   const topo = (
     <div className="pt-2">
-      <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+      <div className="flex items-start gap-x-2 md:gap-x-3">
         <button type="button" onClick={() => { void voltar(); }} aria-label="Voltar pra ficha"
-          className="mt-1 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-line hover:text-accent">
+          className="-ml-2 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-line hover:text-accent md:ml-0 md:mt-1">
           <ArrowLeft size={18} />
         </button>
         <div className="min-w-0 flex-1">
-          <h1 className="m-0 truncate text-[20px] font-bold text-ink md:text-[22px]">
+          <h1 className="m-0 truncate text-[17px] font-bold leading-9 text-ink md:text-[22px] md:leading-tight">
             Contrato{casal ? " · " + casal : ""}
           </h1>
-          <p className={"m-0 text-[12.5px] " + (estado.tom === "ok" ? "text-ok" : estado.tom === "erro" ? "text-erro" : "text-ink-soft")}>
+          {/* no celular uma linha só (o resto do cabeçalho é a barra de formatação) */}
+          <p className={"m-0 truncate text-[12.5px] md:whitespace-normal " + (estado.tom === "ok" ? "text-ok" : estado.tom === "erro" ? "text-erro" : "text-ink-soft")}>
             {estado.texto || (assinado
               ? "Assinado pelos dois. A via oficial está na Autentique."
               : contrato.autentique_id
@@ -659,7 +667,7 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
                 : "Rascunho. Edite o texto e insira os campos pela lateral. Os dados vêm da ficha do cliente.")}
           </p>
         </div>
-        {botao}
+        {botao("topo")}
       </div>
 
     </div>
@@ -678,6 +686,15 @@ export default function EditorContratoDoCliente({ params }: { params: Promise<{ 
       aoMudar={aoMudar}
       topo={topo}
       dados={dadosFolha}
+      rodapeMobile={(abrirPainel) => (
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={abrirPainel} aria-label="Abrir painel do contrato"
+            className="inline-flex h-12 shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-soft px-4 text-[13.5px] font-semibold text-accent transition-colors active:bg-line">
+            <PanelLeft size={17} /> Painel
+          </button>
+          {botao("rodape")}
+        </div>
+      )}
       lateral={(editor, fechar) => (
         <LateralContrato editor={editor} fechar={fechar} modelos={modelos} modeloId={modeloId} ocupado={trocando || !!enviando}
           aoEscolher={(m) => { void trocarModelo(editor, m, true).then((ok) => { if (ok) fechar(); }); }}

@@ -59,9 +59,12 @@ export type EditorContratoProps = {
   /** dados do casal pra tabela de itens e assinaturas desenhadas na folha
    *  (o editor de modelos não tem casal: elas aparecem com texto de exemplo) */
   dados?: DadosFolha;
+  /** celular: barra fixa embaixo (ação principal + abrir o painel). Com ela,
+   *  a barra de formatação vira uma linha só e o "Inserir" sai (o painel tem) */
+  rodapeMobile?: (abrirPainel: () => void) => ReactNode;
 };
 
-export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados = null }: EditorContratoProps) {
+export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados = null, rodapeMobile }: EditorContratoProps) {
   /* a loja das NodeViews acompanha o que a lateral mexe (pacote, total) */
   useEffect(() => { definirDadosFolha(dados); }, [dados]);
   useEffect(() => () => definirDadosFolha(null), []);
@@ -153,7 +156,10 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
         {topo}
         {/* barra: no celular vira duas linhas por `order`; a ordem do DOM serve
             ao desktop, onde tudo cabe numa só */}
-        <div className="flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap md:justify-center">
+        <div className={rodapeMobile
+          /* uma linha só, rolando de lado se não couber; sem `order` */
+          ? "-mx-5 flex items-center gap-1.5 overflow-x-auto px-5 py-1.5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:justify-center md:overflow-visible md:px-0 [&>*]:shrink-0 [&>*]:basis-auto [&_*]:order-none"
+          : "flex flex-wrap items-center gap-1.5 py-1.5 pb-2 md:flex-nowrap md:justify-center"}>
         <select
           aria-label="Estilo do texto"
           value={estiloAtual}
@@ -185,7 +191,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
 
         {/* Inserir: FORA do grupo dos ícones e ancorado à direita no celular,
             pra o menu dele não ser cortado e ele ficar sempre à mão */}
-        <div ref={menuRef} className="relative order-2 ml-auto md:order-none md:ml-0">
+        <div ref={menuRef} className={"relative order-2 ml-auto md:order-none md:ml-0 " + (rodapeMobile ? "hidden md:block" : "")}>
           <button
             type="button"
             aria-haspopup="true" aria-expanded={menuAberto} aria-label="Inserir" title="Inserir"
@@ -210,7 +216,7 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
           ) : null}
         </div>
 
-        {lateral ? (
+        {lateral && !rodapeMobile ? (
           <button type="button" aria-label="Abrir painel" title="Abrir painel" onClick={() => setGavetaAberta(true)}
             className={"order-first md:hidden " + icone(gavetaAberta)}>
             <PanelLeft size={17} />
@@ -233,7 +239,12 @@ export function EditorContrato({ conteudoInicial, aoMudar, topo, lateral, dados 
               {lateral(editor, fecharGaveta)}
             </div>
           </aside>
-          <EditorContent editor={editor} className="documento-editor folha-a4 min-w-0 flex-1" />
+          <EditorContent editor={editor} className={"documento-editor folha-a4 min-w-0 flex-1 " + (rodapeMobile ? "com-rodape" : "")} />
+          {rodapeMobile ? (
+            <div className="fixed inset-x-0 bottom-0 z-20 bg-paper px-4 pb-[calc(10px+var(--sab))] pt-2.5 shadow-[0_-6px_20px_rgba(29,29,27,.08)] md:hidden">
+              {rodapeMobile(() => setGavetaAberta(true))}
+            </div>
+          ) : null}
           {/* celular: gaveta pela esquerda, por cima do documento */}
           <div className={"fixed inset-0 z-30 md:hidden " + (gavetaAberta ? "" : "pointer-events-none")} aria-hidden={!gavetaAberta}>
             <div onClick={fecharGaveta}

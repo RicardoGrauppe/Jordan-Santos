@@ -74,7 +74,8 @@ PDF** (`lib/contrato-folha.ts` + `.folha-a4` no globals.css, Roboto 10 pt,
 margem 56 pt): a quebra de página é simulada como o pdfmake faz (bloco que não
 cabe desce, parágrafo é partido na linha) e bateu linha a linha com o PDF
 gerado. Mudou medida, fonte ou margem no `gerar-pdfmake.ts`? Mude nos dois
-lugares. A tabela de itens e o bloco de assinaturas são desenhados de verdade;
+lugares. No celular (< 768px) a folha vira texto ajustado à tela, a 16px, sem
+quebras; a ação principal e o "Painel" ficam numa barra fixa embaixo. A tabela de itens e o bloco de assinaturas são desenhados de verdade;
 no contrato do cliente a tabela é sempre digitável: mexer numa célula fixa as
 linhas em `attrs.linhas` do nó (o PDF respeita); "Voltar pro pacote" desfaz.
 

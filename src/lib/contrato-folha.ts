@@ -262,6 +262,9 @@ function montar(doc: NoPM, quebras: Quebra[], sobra: number): DecorationSet {
 
 function calcular(view: EditorView): { quebras: Quebra[]; sobra: number } {
   const raiz = view.dom as HTMLElement;
+  /* celular: o texto se ajusta à tela (globals.css) e não há página pra
+     quebrar; a folha A4 com as quebras é a do computador */
+  if (raiz.offsetWidth < FOLHA.largura - 2) return { quebras: [], sobra: 0 };
   const topo = raiz.getBoundingClientRect().top + FOLHA.margem;
   const espacos = Array.from(raiz.querySelectorAll<HTMLElement>("[data-quebra]"))
     .map((e) => ({ y: e.getBoundingClientRect().top, h: Number(e.getAttribute("data-quebra")) || 0 }));

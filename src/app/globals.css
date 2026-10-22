@@ -299,3 +299,26 @@ input[type="search"]::-webkit-search-decoration {
 }
 .folha-a4 li.quebra-folha, .folha-a4 .ProseMirror .quebra-folha { margin: 0; }
 .folha-a4 .fim-folha { display: block; flex: none; }
+
+/* Folha no CELULAR (22/10/2026): a A4 de 794px não cabe e virava rolagem de
+   lado com o texto cortado. Abaixo de 768px o texto se ajusta à tela, a 16px
+   (o iOS dá zoom ao focar texto menor), e as quebras de página somem: quem
+   quer ver as páginas como no PDF vê no computador. CSS puro com max-width
+   (a regra do CLAUDE.md é contra as variantes max-* do TAILWIND). */
+@media (max-width: 767px) {
+  .folha-a4 { padding: 12px 12px 32px; overflow-x: visible; }
+  .folha-a4.com-rodape { padding-bottom: 120px; }
+  .folha-a4 .ProseMirror {
+    width: auto; min-height: 0; padding: 22px 18px; border-radius: 16px;
+    font-size: 16px; line-height: 1.5;
+  }
+  .folha-a4 .ProseMirror p, .folha-a4 .ProseMirror li > p { margin-bottom: 12px; }
+  .folha-a4 .ProseMirror h2 { font-size: 19px; }
+  .folha-a4 .ProseMirror h3 { font-size: 17px; }
+  .folha-a4 .ProseMirror ol, .folha-a4 .ProseMirror ul { padding-left: 20px; }
+  .folha-a4 .tabela-folha table { font-size: 14px; }
+  .folha-a4 .tabela-folha th { font-size: 11.5px; }
+  .folha-a4 .tabela-folha-remover { right: 2px; }
+  .folha-a4 .tabela-folha td:last-child .celula-folha { width: 6.5em; padding-right: 22px; }
+  .folha-a4 .quebra-folha, .folha-a4 .fim-folha { display: none; }
+}
