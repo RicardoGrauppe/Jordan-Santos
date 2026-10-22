@@ -27,15 +27,15 @@ src/app/painel/              área logada; layout.tsx checa a sessão: tela nova
   atelie/                    galeria dos modelos de site (pôr no ar, duplicar, renomear, apagar); [id] (editor, tela cheia)
 src/app/cadastro             formulário que o casal preenche (sem AppShell)
 src/app/proposta             mesmo site da raiz, mantido pra não quebrar link já enviado
-src/app/atelie/previa/[id]   prévia do RASCUNHO de um modelo, só pra quem está logado (404 pros outros)
+src/app/atelie/previa/[id]   prévia do RASCUNHO (ou ?versao=) de um modelo, só logado (404 pros outros); ?barra=1 põe a barra da prévia
 src/app/midia/[caminho]      entrega as fotos do Ateliê (do Storage) pro site; pública, nome sorteado
 src/app/api/                 sessao, config, templates, estudio, orcamento, assinatura (só baixa a via), autentique (webhook), atelie
-src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, CamposAtelie (foto, biblioteca, foco), Skeleton
+src/components/              ui.tsx (kit), AppShell.tsx (moldura), ModalConfirmar, ModalAssinatura, EditorContrato, EditorAtelie, CamposAtelie (foto, biblioteca, foco), VersoesAtelie, BarraDaPrevia, Skeleton
 src/lib/                     supabase.ts, storage.ts, sessao.ts, util.ts, painel.ts, contrato-editor.ts, contrato-template.ts,
                              catalogo.ts, ficha.ts, email.ts, autentique.ts, contrato-autentique.ts,
                              contrato-pdf/ (montar.ts, gerar.ts, gerar-pdfmake.ts, fontes),
                              atelie/ (blocos.tsx, tipos.ts, proposta-css.ts, modelo-inicial.ts, modelos.ts, midias.ts, PaginaDoSite.tsx, editor-tema.css)
-supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos) + atelie_midias (site_midias)
+supabase/migrations/         schema (cópia do original) + contrato_snapshot (colunas que lá só existiam no banco) + atelie (site_modelos) + atelie_midias (site_midias) + atelie_versoes (site_versoes)
 ```
 
 ## Dependências travadas
@@ -163,6 +163,10 @@ O fotógrafo monta **modelos de site** (uma página longa cada) com os blocos de
   "Cartões"). Nos blocos de foto em altura natural o `foco` segue no dado e
   no style, mas o campo fica escondido (`visible: false`): lá ele não muda
   nada.
+- **Toda publicação vira uma versão** (`site_versoes`, as 30 últimas por
+  modelo). Restaurar leva a versão pro RASCUNHO e nunca publica sozinho;
+  descartar faz o rascunho voltar ao publicado. Os dois recarregam o editor
+  e remontam o Puck (`key`), porque ele não aceita trocar os dados por fora.
 - **"Pôr no ar" publica o modelo do jeito que ele está** (rascunho vira
   publicado) e troca o site na hora, por isso confirma. Modelo sem bloco não
   vai pro ar e o modelo no ar não se apaga: as duas coisas deixariam o site

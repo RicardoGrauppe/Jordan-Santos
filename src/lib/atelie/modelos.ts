@@ -143,11 +143,67 @@ export async function porNoAr(id: string): Promise<"ok" | "nao-existe" | "vazio"
   const modelo = await lerModelo(id);
   if (!modelo) return "nao-existe";
   if (!modelo.rascunho?.content?.length) return "vazio";
+  const agora = new Date().toISOString();
   await rest("site_modelos?id=eq." + encodeURIComponent(id), {
     method: "PATCH",
-    body: { publicado: modelo.rascunho, publicado_em: new Date().toISOString() },
+    body: { publicado: modelo.rascunho, publicado_em: agora },
   });
   await gravarSiteAtivo(id);
+  await guardarVersao(id, modelo.rascunho, agora);
+  return "ok";
+}
+
+/* ---------- versões publicadas ---------- */
+
+const VERSOES_MAX = 30;
+
+export type ResumoVersao = { id: string; publicado_em: string; blocos: number };
+
+/** Guarda o que acabou de ir pro ar e apaga as mais antigas que as 30 últimas. */
+async function guardarVersao(modeloId: string, dados: DadosSite, quando: string): Promise<void> {
+  await rest("site_versoes", { method: "POST", body: { modelo_id: modeloId, dados, publicado_em: quando } });
+  const sobrando = (await rest<{ id: string }[]>(
+    "site_versoes?modelo_id=eq." + encodeURIComponent(modeloId) +
+    "&select=id&order=publicado_em.desc&offset=" + VERSOES_MAX,
+  )) ?? [];
+  if (sobrando.length) {
+    await rest("site_versoes?id=in.(" + sobrando.map((v) => v.id).join(",") + ")", { method: "DELETE" });
+  }
+}
+
+export async function listarVersoes(modeloId: string): Promise<ResumoVersao[]> {
+  const linhas = (await rest<{ id: string; publicado_em: string; dados: DadosSite }[]>(
+    "site_versoes?modelo_id=eq." + encodeURIComponent(modeloId) + "&select=id,publicado_em,dados&order=publicado_em.desc",
+  )) ?? [];
+  return linhas.map((v) => ({ id: v.id, publicado_em: v.publicado_em, blocos: v.dados?.content?.length ?? 0 }));
+}
+
+/** Uma versão publicada, só se for mesmo daquele modelo. */
+export async function versaoDe(modeloId: string, versaoId: string): Promise<{ dados: DadosSite; publicado_em: string } | null> {
+  const linhas = await rest<{ dados: DadosSite; publicado_em: string }[]>(
+    "site_versoes?id=eq." + encodeURIComponent(versaoId) + "&modelo_id=eq." + encodeURIComponent(modeloId) +
+    "&select=dados,publicado_em&limit=1",
+  );
+  return linhas?.[0] ?? null;
+}
+
+/**
+ * Leva uma versão publicada pro rascunho. Não publica: o fotógrafo vê no
+ * editor como ficou e publica quando quiser.
+ */
+export async function restaurarVersao(modeloId: string, versaoId: string): Promise<boolean> {
+  const versao = await versaoDe(modeloId, versaoId);
+  if (!versao) return false;
+  return salvarRascunho(modeloId, versao.dados);
+}
+
+/** Joga fora o que foi editado desde a última publicação: o rascunho volta a
+    ser a versão no ar. Modelo nunca publicado não tem pra onde voltar. */
+export async function descartarMudancas(id: string): Promise<"ok" | "nao-existe" | "nunca-publicado"> {
+  const modelo = await lerModelo(id);
+  if (!modelo) return "nao-existe";
+  if (!modelo.publicado) return "nunca-publicado";
+  await salvarRascunho(id, modelo.publicado);
   return "ok";
 }
 
@@ -175,6 +231,7 @@ export async function garantirModeloInicial(): Promise<void> {
   const id = criados?.[0]?.id;
   if (!id) return;
   await gravarSiteAtivo(id);
+  await guardarVersao(id, MODELO_INICIAL, agora);
 }
 
 /** Rascunho de um modelo, pra prévia do fotógrafo. null quando não existe. */

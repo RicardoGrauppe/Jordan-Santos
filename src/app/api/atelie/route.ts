@@ -5,6 +5,7 @@
         Na primeira chamada, com o banco vazio, cria o modelo da proposta já
         publicado e no ar (garantirModeloInicial).
   GET ?id=<uuid> → { modelo: ModeloParaEditar }  o que o editor abre
+  GET ?versoes=<uuid> → { versoes: ResumoVersao[] }  as publicações daquele modelo
 
   POST {acao:"salvar", id, rascunho} → { ok }  o salvamento automático do editor
 
@@ -13,12 +14,15 @@
   POST {acao:"renomear", id, nome} → { ok }
   POST {acao:"por-no-ar", id}      → { ok }  publica o rascunho e vira o site
   POST {acao:"apagar", id}         → { ok }  nunca o que está no ar
+  POST {acao:"descartar", id}      → { ok }  o rascunho volta a ser o que está publicado
+  POST {acao:"restaurar-versao", id, versao} → { ok }  a versão vai pro rascunho, sem publicar
 */
 import { NextResponse } from "next/server";
 import { sessaoAtual } from "@/lib/sessao";
 import {
-  apagarModelo, criarModeloEmBranco, duplicarModelo, garantirModeloInicial, idDoSiteAtivo,
-  listarModelos, modeloParaEditar, nomeValido, porNoAr, rascunhoValido, renomearModelo, salvarRascunho,
+  apagarModelo, criarModeloEmBranco, descartarMudancas, duplicarModelo, garantirModeloInicial, idDoSiteAtivo,
+  listarModelos, listarVersoes, modeloParaEditar, nomeValido, porNoAr, rascunhoValido, renomearModelo,
+  restaurarVersao, salvarRascunho,
 } from "@/lib/atelie/modelos";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -31,7 +35,19 @@ export async function GET(req: Request) {
   const sessao = await sessaoAtual("admin");
   if (!sessao) return erro("sessão inválida", 401);
 
-  const pedido = new URL(req.url).searchParams.get("id");
+  const busca = new URL(req.url).searchParams;
+  const versoesDe = busca.get("versoes");
+  if (versoesDe !== null) {
+    if (!UUID.test(versoesDe)) return erro("modelo inválido", 400);
+    try {
+      return NextResponse.json({ versoes: await listarVersoes(versoesDe) });
+    } catch (e) {
+      console.error("atelie falhou:", (e as Error).message);
+      return erro("Não consegui carregar as versões, tente de novo.", 502);
+    }
+  }
+
+  const pedido = busca.get("id");
   if (pedido !== null) {
     if (!UUID.test(pedido)) return erro("modelo inválido", 400);
     try {
@@ -94,6 +110,20 @@ export async function POST(req: Request) {
       const r = await porNoAr(id);
       if (r === "nao-existe") return erro("Esse modelo não existe mais.", 404);
       if (r === "vazio") return erro("Coloque pelo menos um bloco antes de pôr no ar.", 409);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (acao === "descartar") {
+      const r = await descartarMudancas(id);
+      if (r === "nao-existe") return erro("Esse modelo não existe mais.", 404);
+      if (r === "nunca-publicado") return erro("Esse modelo nunca foi publicado, não há pra onde voltar.", 409);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (acao === "restaurar-versao") {
+      const versao = typeof corpo.versao === "string" && UUID.test(corpo.versao) ? corpo.versao : null;
+      if (!versao) return erro("versão inválida", 400);
+      if (!(await restaurarVersao(id, versao))) return erro("Essa versão não existe mais.", 404);
       return NextResponse.json({ ok: true });
     }
 

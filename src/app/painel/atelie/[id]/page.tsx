@@ -14,13 +14,19 @@
   Publicar é a única ação primária: no modelo que está no ar ela publica as
   mudanças; nos outros, "Pôr no ar" troca o site. As duas confirmam, porque
   mudam o que o público vê.
+
+  O menu "Mais" (reticências) guarda o resto: Versões publicadas (ver e
+  restaurar no rascunho) e Descartar mudanças (o rascunho volta a ser o que
+  está publicado). Depois dos dois, o editor recarrega o modelo e remonta o
+  Puck com o conteúdo novo, porque ele não aceita trocar os dados por fora.
 */
 "use client";
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Eye, Globe } from "lucide-react";
+import { ArrowLeft, EllipsisVertical, Eye, Globe, History, RotateCcw } from "lucide-react";
 import { EditorAtelie } from "@/components/EditorAtelie";
+import { VersoesAtelie } from "@/components/VersoesAtelie";
 import { Botao, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
@@ -57,6 +63,12 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   const [foraDoAr, setForaDoAr] = useState(false);
   const [publicando, setPublicando] = useState(false);
   const [temBlocos, setTemBlocos] = useState(false);
+  const [publicadoEm, setPublicadoEm] = useState<string | null>(null);
+  /* trocar a chave remonta o Puck com o conteúdo recarregado */
+  const [chaveEditor, setChaveEditor] = useState(0);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [versoesAbertas, setVersoesAbertas] = useState(false);
+  const menu = useRef<HTMLDivElement>(null);
 
   const pendente = useRef<DadosSite | null>(null);
   const ultimoSalvo = useRef("");
@@ -66,24 +78,34 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   const salvando = useRef(false);
   const repetir = useRef(false);
 
+  const aplicar = useCallback((m: Modelo) => {
+    setModelo(m);
+    setNome(m.nome); nomeRef.current = m.nome; nomeSalvo.current = m.nome;
+    setRaiz(m.rascunho.root.props);
+    setNoAr(m.noAr); setForaDoAr(m.pendente); setTemBlocos(m.rascunho.content.length > 0);
+    setPublicadoEm(m.publicado_em);
+    ultimoSalvo.current = JSON.stringify(m.rascunho);
+  }, []);
+
   useEffect(() => {
     let vivo = true;
     api<{ modelo: Modelo }>(URL_API + "?id=" + encodeURIComponent(id))
-      .then(({ modelo: m }) => {
-        if (!vivo) return;
-        setModelo(m);
-        setNome(m.nome); nomeRef.current = m.nome; nomeSalvo.current = m.nome;
-        setRaiz(m.rascunho.root.props);
-        setNoAr(m.noAr); setForaDoAr(m.pendente); setTemBlocos(m.rascunho.content.length > 0);
-        ultimoSalvo.current = JSON.stringify(m.rascunho);
-      })
+      .then(({ modelo: m }) => { if (vivo) aplicar(m); })
       .catch((e) => {
         if (!vivo) return;
         if ((e as Error).message === ERRO_SESSAO) { router.replace("/entrar"); return; }
         setFalhaAoAbrir((e as Error).message || "Não consegui abrir este modelo.");
       });
     return () => { vivo = false; };
-  }, [id, router]);
+  }, [id, router, aplicar]);
+
+  /* menu "Mais": fecha ao tocar fora (por contenção, ver o cartão da galeria) */
+  useEffect(() => {
+    if (!menuAberto) return;
+    const fechar = (e: PointerEvent) => { if (!menu.current?.contains(e.target as Node)) setMenuAberto(false); };
+    document.addEventListener("pointerdown", fechar);
+    return () => document.removeEventListener("pointerdown", fechar);
+  }, [menuAberto]);
 
   const salvarAgora = useCallback(async () => {
     if (salvando.current) { repetir.current = true; return; }
@@ -154,10 +176,58 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   }, [id]);
 
   const voltar = useVoltar("/painel/atelie", descarregar);
+  const fecharVersoes = useCallback(() => setVersoesAbertas(false), []);
 
   async function verComoFica() {
     await descarregar();
-    window.open("/atelie/previa/" + id, "_blank", "noopener");
+    window.open("/atelie/previa/" + id + "?barra=1", "_blank", "noopener");
+  }
+
+  /* Troca o conteúdo do editor pelo que está no banco agora. O que estava
+     esperando pra salvar é jogado fora de propósito: quem chama acabou de
+     substituir o rascunho. */
+  async function recarregar() {
+    if (timer.current) clearTimeout(timer.current);
+    pendente.current = null;
+    const { modelo: m } = await api<{ modelo: Modelo }>(URL_API + "?id=" + encodeURIComponent(id));
+    aplicar(m);
+    setEstado({ texto: "Tudo salvo", tom: "ok" });
+    setChaveEditor((k) => k + 1);
+  }
+
+  async function descartar() {
+    setMenuAberto(false);
+    const ok = await confirmar({
+      titulo: "Descartar as mudanças?",
+      texto: "O que você editou desde a última publicação vai embora, e o modelo volta a ficar igual ao que foi publicado.",
+      rotuloOk: "Descartar",
+      perigo: true,
+    });
+    if (!ok) return;
+    try {
+      if (timer.current) clearTimeout(timer.current);
+      pendente.current = null;
+      await api(URL_API, { acao: "descartar", id });
+      await recarregar();
+      mostrar("Mudanças descartadas");
+    } catch (e) { mostrar((e as Error).message || "Não consegui descartar, tente de novo."); }
+  }
+
+  async function restaurar(versao: { id: string; quando: string }) {
+    const ok = await confirmar({
+      titulo: "Restaurar esta versão?",
+      texto: `O rascunho passa a ser a versão publicada em ${versao.quando}. O que está no rascunho agora é substituído. O site não muda até você publicar.`,
+      rotuloOk: "Restaurar",
+    });
+    if (!ok) return;
+    try {
+      if (timer.current) clearTimeout(timer.current);
+      pendente.current = null;
+      await api(URL_API, { acao: "restaurar-versao", id, versao: versao.id });
+      setVersoesAbertas(false);
+      await recarregar();
+      mostrar("Versão restaurada no rascunho ✓", { ok: true });
+    } catch (e) { mostrar((e as Error).message || "Não consegui restaurar, tente de novo."); }
   }
 
   async function publicar() {
@@ -180,7 +250,7 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
       await descarregar();
       await api(URL_API, { acao: "por-no-ar", id });
       mostrar(noAr ? "Mudanças publicadas ✓" : "No ar ✓", { ok: true });
-      setNoAr(true); setForaDoAr(false);
+      setNoAr(true); setForaDoAr(false); setPublicadoEm(new Date().toISOString());
     } catch (e) {
       mostrar((e as Error).message || "Não consegui publicar, tente de novo.");
     } finally { setPublicando(false); }
@@ -199,12 +269,14 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
   const corEstado = estado.tom === "ok" ? "text-ok" : estado.tom === "erro" ? "text-erro" : "text-ink-soft";
   const nadaAPublicar = noAr && !foraDoAr;
   const rotuloPublicar = noAr ? "Publicar mudanças" : "Pôr no ar";
+  const podeDescartar = Boolean(publicadoEm) && foraDoAr;
   /* página vazia não vai pro ar (a API também barra): o site ficaria em branco */
   const motivoDesligado = !temBlocos ? "Coloque pelo menos um bloco antes" : nadaAPublicar ? "O site já está igual a este modelo" : undefined;
 
   return (
     <>
       <EditorAtelie
+        key={chaveEditor}
         dados={modelo.rascunho}
         contato={contatoDaPagina(raiz)}
         aoMudar={aoMudar}
@@ -241,9 +313,32 @@ export default function EditorDoModelo({ params }: { params: Promise<{ id: strin
               <span className="hidden sm:inline">{rotuloPublicar}</span>
               <span className="sm:hidden">{noAr ? "Publicar" : "No ar"}</span>
             </Botao>
+            <div ref={menu} className="relative">
+              <button type="button" aria-label="Mais opções" aria-haspopup="true" aria-expanded={menuAberto}
+                onClick={() => setMenuAberto((v) => !v)}
+                className={"inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-soft hover:text-ink " + (menuAberto ? "bg-soft text-ink" : "")}>
+                <EllipsisVertical size={18} />
+              </button>
+              {menuAberto ? (
+                <div className="absolute right-0 top-12 z-[60] min-w-[230px] rounded-xl bg-paper p-1.5 shadow-alta">
+                  <button type="button" onClick={() => { setMenuAberto(false); setVersoesAbertas(true); }}
+                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-[11px] py-[9px] text-left text-[13.5px] text-ink hover:bg-soft">
+                    <History size={15} className="opacity-85" /> Versões publicadas
+                  </button>
+                  <button type="button" onClick={() => { void descartar(); }} disabled={!podeDescartar}
+                    title={podeDescartar ? undefined : publicadoEm ? "Não há mudança fora do ar" : "Este modelo nunca foi publicado"}
+                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-[11px] py-[9px] text-left text-[13.5px] text-erro enabled:hover:bg-erro-tint disabled:cursor-not-allowed disabled:opacity-40">
+                    <RotateCcw size={15} className="opacity-85" /> Descartar mudanças
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </>
         }
       />
+      {versoesAbertas ? (
+        <VersoesAtelie idModelo={id} noAr={noAr} aoRestaurar={(v) => { void restaurar(v); }} aoFechar={fecharVersoes} />
+      ) : null}
       {toast}
     </>
   );

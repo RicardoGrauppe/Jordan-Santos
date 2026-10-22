@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, EllipsisVertical, ExternalLink, Eye, Globe, Pencil, PenLine, Plus, Trash2 } from "lucide-react";
+import { Copy, EllipsisVertical, ExternalLink, Eye, Globe, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Botao, CartaoAviso, Selo } from "@/components/ui";
 import { useConfirmar } from "@/components/ModalConfirmar";
 import { useToast } from "@/components/Toast";
@@ -214,7 +214,7 @@ export default function Atelie() {
   }, [falhou]);
 
   const abrirSite = () => window.open("/", "_blank", "noopener");
-  const verComoFica = (m: Modelo) => window.open(rotaPrevia(m.id), "_blank", "noopener");
+  const verComoFica = (m: Modelo) => window.open(rotaPrevia(m.id) + "?barra=1", "_blank", "noopener");
 
   async function porNoAr(m: Modelo, jaNoAr: boolean) {
     const ok = await confirmar(jaNoAr
@@ -236,6 +236,18 @@ export default function Atelie() {
       await carregar();
       mostrar(jaNoAr ? "Mudanças publicadas ✓" : "No ar ✓", { ok: true });
     } catch (e) { falhou(e, "Não consegui pôr no ar, tente de novo."); }
+  }
+
+  async function descartar(m: Modelo) {
+    const ok = await confirmar({
+      titulo: `Descartar as mudanças de "${m.nome}"?`,
+      texto: "O que foi editado desde a última publicação vai embora, e o modelo volta a ficar igual ao que foi publicado.",
+      rotuloOk: "Descartar",
+      perigo: true,
+    });
+    if (!ok) return;
+    try { await api(URL_API, { acao: "descartar", id: m.id }); await carregar(); mostrar("Mudanças descartadas"); }
+    catch (e) { falhou(e, "Não consegui descartar, tente de novo."); }
   }
 
   async function duplicar(m: Modelo) {
@@ -287,6 +299,9 @@ export default function Atelie() {
       { rotulo: "Editar", icone: <PenLine size={15} />, acao: () => router.push(rotaEditor(m.id)) },
       { rotulo: "Ver como fica", icone: <Eye size={15} />, acao: () => verComoFica(m) },
       { rotulo: "Duplicar", icone: <Copy size={15} />, acao: () => duplicar(m) },
+      ...(m.publicado_em && m.pendente
+        ? [{ rotulo: "Descartar mudanças", icone: <RotateCcw size={15} />, perigo: true, acao: () => descartar(m) }]
+        : []),
       { rotulo: "Renomear", icone: <Pencil size={15} />, acao: () => renomear(m) },
       {
         rotulo: "Apagar", icone: <Trash2 size={15} />, perigo: true,
